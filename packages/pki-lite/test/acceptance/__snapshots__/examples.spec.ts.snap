@@ -9,13 +9,6 @@ exports[`Examples > crl-request 1`] = `
 
 exports[`Examples > ocsp-request 1`] = `
 [
-  "AIAs: [AuthorityInfoAccess] SEQUENCE :
-  [6] :
-    IA5String : ''
-  [6] :
-    IA5String : ''
-  [6] :
-    IA5String : ''",
   "No OCSP response found",
 ]
 `;
