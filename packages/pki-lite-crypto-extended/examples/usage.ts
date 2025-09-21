@@ -6,7 +6,7 @@
  */
 
 import 'pki-lite-crypto-extended' // Automatically sets up extended provider
-import { getCryptoProvider } from 'pki-lite/core/crypto/crypto'
+import { getCryptoProvider } from 'pki-lite/core/crypto/crypto.js'
 
 async function demonstrateUsage() {
     const provider = getCryptoProvider()
