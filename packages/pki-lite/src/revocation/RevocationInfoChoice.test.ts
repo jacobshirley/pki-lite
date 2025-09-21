@@ -57,7 +57,7 @@ describe('RevocationInfoChoice', () => {
 
         expect(result).toBeInstanceOf(CertificateList)
         // Verify the CRL has the expected structure
-        expect((result as CertificateList).signatureAlgorithm.algorithm).toBe('1.2.840.113549.1.1.11')
+        expect((result as CertificateList).signatureAlgorithm.algorithm.toString()).toBe('1.2.840.113549.1.1.11')
     })
 
     // Test for fromAsn1 method with OtherRevocationInfoFormat (tag 1)

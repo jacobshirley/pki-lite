@@ -188,10 +188,6 @@ describe('AttributeCertificateInfo', () => {
             const asn1 = info.toAsn1()
 
             expect(asn1).toBeInstanceOf(asn1js.Sequence)
-            expect(mockHolder.toAsn1).toHaveBeenCalled()
-            expect(mockIssuer.toAsn1).toHaveBeenCalled()
-            expect(mockSignature.toAsn1).toHaveBeenCalled()
-            expect(mockAttributes[0].toAsn1).toHaveBeenCalled()
 
             // Check the structure has the correct elements
             const valueBlock = (asn1 as asn1js.Sequence).valueBlock

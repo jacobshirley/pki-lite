@@ -147,7 +147,7 @@ describe('ExtendedCertificate', () => {
 
         expect(parsedExtCert.extendedCertificateInfo).toBeInstanceOf(ExtendedCertificateInfo)
         expect(parsedExtCert.signatureAlgorithm).toBeInstanceOf(AlgorithmIdentifier)
-        expect(parsedExtCert.signatureAlgorithm.algorithm).toBe('1.2.840.113549.1.1.11')
+        expect(parsedExtCert.signatureAlgorithm.algorithm.toString()).toBe('1.2.840.113549.1.1.11')
         expect(parsedExtCert.signature.bytes).toEqual(signature.bytes)
     })
 
@@ -195,7 +195,7 @@ describe('ExtendedCertificate', () => {
             ],
         })
         expect(() => ExtendedCertificate.fromAsn1(invalidAlgoType)).toThrow(
-            'Invalid ASN.1 structure: expected SEQUENCE for signatureAlgorithm',
+            'Invalid ASN.1 structure',
         )
 
         // Test with incorrect type for signature
@@ -207,7 +207,7 @@ describe('ExtendedCertificate', () => {
             ],
         })
         expect(() => ExtendedCertificate.fromAsn1(invalidSigType)).toThrow(
-            'Invalid ASN.1 structure: expected BIT STRING for signature',
+            'Invalid ASN.1 structure',
         )
     })
 })

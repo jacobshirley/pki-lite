@@ -1,5 +1,6 @@
 import * as asn1js from 'asn1js'
 import { CertificateChoices } from './CertificateChoices.js'
+import { OtherCertificateFormat } from './legacy/OtherCertificateFormat.js'
 import { describe, test, expect } from 'vitest'
 
 describe('CertificateChoices', () => {
@@ -81,9 +82,9 @@ describe('CertificateChoices', () => {
         asn1.idBlock.tagClass = 3 // context-specific
         asn1.idBlock.tagNumber = 3 // OtherCertificateFormat
 
-        // This should attempt to parse as OtherCertificateFormat and fail, proving routing worked
-        expect(() => CertificateChoices.fromAsn1(asn1)).toThrow()
-        // The error will be from OtherCertificateFormat.fromAsn1 failing to parse the incomplete structure
+        // This should attempt to parse as OtherCertificateFormat and succeed
+        const result = CertificateChoices.fromAsn1(asn1)
+        expect(result).toBeInstanceOf(OtherCertificateFormat)
     })
 
     // Test for fromAsn1 method with unknown tag class

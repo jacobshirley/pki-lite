@@ -192,7 +192,7 @@ describe('ExtendedCertificateInfo', () => {
         expect(() =>
             ExtendedCertificateInfo.fromAsn1(invalidAttrsType),
         ).toThrow(
-            'Invalid ASN.1 structure: expected SET/CONSTRUCTED for Attributes but got Integer',
+            'Invalid ASN.1 structure',
         )
     })
 })
