@@ -24,6 +24,6 @@ jobs:
         with:
           node-version: '24'
       - name: Install Playwright Browsers
-        run: npx playwright install chromium --with-deps
+        run: npx playwright install chromium
       - name: Run tests
         run: pnpm test
