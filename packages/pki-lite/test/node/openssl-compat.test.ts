@@ -106,7 +106,7 @@ describe('OpenSSL compatibility', () => {
             await opensslValidate({
                 signature: derEncoded, // Use the ContentInfo wrapper
                 data,
-                caCert: rsaSigningKeys.caCert,
+                caCertPem: rsaSigningKeys.caCertPem,
             })
 
             const cmsStructure = await opensslCmsToText(derEncoded)
@@ -455,7 +455,7 @@ describe('OpenSSL compatibility', () => {
             await opensslValidate({
                 signature: derEncoded, // Use the ContentInfo wrapper
                 data,
-                caCert: rsaSigningKeys.caCert,
+                caCertPem: rsaSigningKeys.caCertPem,
             })
         })
 
@@ -498,7 +498,7 @@ describe('OpenSSL compatibility', () => {
             await opensslValidate({
                 signature: derEncoded, // Use the ContentInfo wrapper
                 data,
-                caCert: ecP256SigningKeys.caCert,
+                caCertPem: ecP256SigningKeys.caCertPem,
             })
 
             const verified = await signedData.verify({

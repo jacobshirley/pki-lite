@@ -10,9 +10,12 @@ function getTempFolder(): string {
     return tmpFolder
 }
 
-export async function runOpenSSL(args: string[]): Promise<Buffer> {
+export async function runOpenSSL(args: string[], commandPath: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
+        fs.writeFileSync(commandPath, `openssl ${args.join(' ')}`)
+
         const child = spawn('openssl', args)
+
         const output: Buffer[] = []
         const error: Buffer[] = []
 
@@ -35,24 +38,25 @@ export async function runOpenSSL(args: string[]): Promise<Buffer> {
 
 export async function opensslValidate(options: {
     signature: Uint8Array
-    caCert?: Uint8Array
+    caCertPem?: string
     data?: Uint8Array
 }): Promise<void> {
-    const { signature, caCert, data } = options
+    const { signature, caCertPem, data } = options
 
     const tmpFolder = getTempFolder()
     const signaturePath = `${tmpFolder}/signature.der`
     const dataPath = `${tmpFolder}/data.bin`
     const caCertPath = `${tmpFolder}/caCert.pem`
+    const commandPath = `${tmpFolder}/debug.sh`
 
     fs.writeFileSync(signaturePath, signature)
     data && fs.writeFileSync(dataPath, data)
-    caCert && fs.writeFileSync(caCertPath, caCert)
+    caCertPem && fs.writeFileSync(caCertPath, caCertPem)
 
     if (!fs.existsSync(signaturePath)) {
         throw new Error('Signature file not found')
     }
-    if (caCert && !fs.existsSync(caCertPath)) {
+    if (caCertPem && !fs.existsSync(caCertPath)) {
         throw new Error('CA certificate file not found')
     }
     if (data && !fs.existsSync(dataPath)) {
@@ -66,11 +70,11 @@ export async function opensslValidate(options: {
         'DER',
         '-in',
         signaturePath,
-        ...(caCert ? ['-CAfile', caCertPath] : []),
+        ...(caCertPem ? ['-CAfile', caCertPath] : []),
         ...(data ? ['-content', dataPath] : []),
     ].flat()
 
-    const result = await runOpenSSL(args)
+    const result = await runOpenSSL(args, commandPath)
     if (!result.length) {
         throw new Error('Signature validation failed')
     }
@@ -79,6 +83,7 @@ export async function opensslValidate(options: {
 export async function opensslCmsToText(signature: Uint8Array): Promise<string> {
     const tmpFolder = getTempFolder()
     const signaturePath = `${tmpFolder}/signature.der`
+    const commandPath = `${tmpFolder}/debug.sh`
 
     fs.writeFileSync(signaturePath, signature)
 
@@ -93,7 +98,7 @@ export async function opensslCmsToText(signature: Uint8Array): Promise<string> {
         '-print',
     ]
 
-    const result = await runOpenSSL(args)
+    const result = await runOpenSSL(args, commandPath)
     if (!result.length) {
         throw new Error('Failed to convert CMS to text')
     }
@@ -117,6 +122,7 @@ export async function opensslCmsDecrypt(options: {
     const envelopedDataPath = `${tmpFolder}/envelopedData.der`
     const recipientCertificatePath = `${tmpFolder}/recipient.pem`
     const recipientPrivateKeyPath = `${tmpFolder}/recipient.key`
+    const commandPath = `${tmpFolder}/debug.sh`
 
     fs.writeFileSync(envelopedDataPath, envelopedData)
     fs.writeFileSync(recipientCertificatePath, recipientCertificatePem)
@@ -138,7 +144,7 @@ export async function opensslCmsDecrypt(options: {
     ]
 
     try {
-        const output = await runOpenSSL(args)
+        const output = await runOpenSSL(args, commandPath)
 
         return {
             success: true,
@@ -156,12 +162,13 @@ export async function opensslCmsDecrypt(options: {
 export async function opensslAsn1Parse(asn1Data: Uint8Array): Promise<any> {
     const tmpFolder = getTempFolder()
     const asn1Path = `${tmpFolder}/data.der`
+    const commandPath = `${tmpFolder}/debug.sh`
 
     fs.writeFileSync(asn1Path, asn1Data)
 
     const args = ['cms', '-inform', 'DER', '-in', asn1Path, '-cmsout', '-print']
 
-    const result = await runOpenSSL(args)
+    const result = await runOpenSSL(args, commandPath)
     if (!result.length) {
         throw new Error('Failed to parse ASN.1 data')
     }
