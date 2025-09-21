@@ -22,8 +22,8 @@ pnpm install
 # Compile all packages (takes ~18 seconds) - NEVER CANCEL
 pnpm compile
 
-# Run Node.js tests (takes ~7 seconds for node tests)
-cd packages/pki-lite && pnpm test:node
+# Run Node.js tests (takes ~55 seconds for all packages)
+pnpm test --project=node
 ```
 
 ### Build and Compilation
@@ -44,10 +44,11 @@ pnpm compile:validate
 
 ```bash
 # Working Tests (RELIABLE):
-# Run Node.js-only tests - NEVER CANCEL, takes ~7 seconds. Set timeout to 30+ seconds.
-cd packages/pki-lite && pnpm test:node
+# Run Node.js-only tests for all packages - NEVER CANCEL, takes ~55 seconds. Set timeout to 90+ seconds.
+pnpm test --project=node
 
-# Run crypto-extended tests with browser disabled - takes ~2 seconds
+# Run individual package Node.js tests - takes ~7 seconds each
+cd packages/pki-lite && pnpm test:node
 cd packages/pki-lite-crypto-extended && pnpm test:acceptance
 
 # PROBLEMATIC Tests (Playwright Issues):
@@ -90,11 +91,11 @@ pnpm test:acceptance
 # 1. Compile (NEVER CANCEL - 18 seconds)
 pnpm compile
 
-# 2. Run Node.js tests (7 seconds)
-cd packages/pki-lite && pnpm test:node
+# 2. Run Node.js tests (55 seconds for all packages)
+pnpm test --project=node
 
 # 3. Test core functionality with examples
-npx tsx examples/self-signed-certificate.ts
+cd packages/pki-lite && npx tsx examples/self-signed-certificate.ts
 
 # 4. Test crypto-extended if modified
 cd packages/pki-lite-crypto-extended && pnpm test:acceptance
@@ -104,7 +105,7 @@ cd packages/pki-lite-crypto-extended && pnpm test:acceptance
 After making changes, ALWAYS test these scenarios:
 1. **Certificate Generation**: Run `npx tsx examples/self-signed-certificate.ts` and verify PEM certificate output
 2. **PKCS#12 Operations**: Run `npx tsx examples/pfx-bags.ts` and verify successful parsing
-3. **Core PKI Tests**: Run `pnpm test:node` and ensure all 6 tests pass
+3. **Core PKI Tests**: Run `pnpm test --project=node` and ensure 1096+ tests pass with minimal failures
 4. **Crypto-Extended**: Run `cd packages/pki-lite-crypto-extended && pnpm test:acceptance` and verify 2 tests pass
 
 ## Common Tasks
@@ -142,13 +143,14 @@ pki-lite/                          # Monorepo root
 ### Development Workflow
 1. Make changes to source files
 2. Run `pnpm compile` (18 seconds)
-3. Test with Node.js tests: `cd packages/pki-lite && pnpm test:node`
-4. Validate with examples: `npx tsx examples/self-signed-certificate.ts`
+3. Test with Node.js tests: `pnpm test --project=node` (55 seconds)
+4. Validate with examples: `cd packages/pki-lite && npx tsx examples/self-signed-certificate.ts`
 5. For crypto changes: `cd packages/pki-lite-crypto-extended && pnpm test:acceptance`
 
 ### Commit Practices
 - Always compile and test before committing
-- Run the complete validation workflow: `pnpm compile && cd packages/pki-lite && pnpm test:node && npx tsx examples/self-signed-certificate.ts && npx tsx examples/pfx-bags.ts && cd ../pki-lite-crypto-extended && pnpm test:acceptance`
+- Run the complete validation workflow: `pnpm compile && pnpm test --project=node`
+- Test specific functionality with examples: `cd packages/pki-lite && npx tsx examples/self-signed-certificate.ts && npx tsx examples/pfx-bags.ts`
 - Commit message should be descriptive of the PKI functionality changed
 - Test any examples related to your changes
 
@@ -179,7 +181,7 @@ The GitHub Actions workflow (`.github/workflows/test.yaml`) runs:
 npm install -g pnpm@10.14.0 && pnpm install && pnpm compile
 
 # Development cycle
-pnpm compile && cd packages/pki-lite && pnpm test:node && npx tsx examples/self-signed-certificate.ts
+pnpm compile && pnpm test --project=node
 
 # Extended crypto validation
 cd packages/pki-lite-crypto-extended && pnpm test:acceptance
