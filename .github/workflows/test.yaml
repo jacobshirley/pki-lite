@@ -1,0 +1,32 @@
+name: Test
+on:
+  push:
+    branches:
+      - master
+      - ci/test # For testing changes to this workflow
+  merge_group:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+  checks: write
+jobs:
+  Tests:
+    runs-on: ubuntu-latest
+    name: Tests
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: true
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      - name: Install Playwright Browsers
+        run: pnpm dlx playwright install chromium --only-shell
+      - name: Compile
+        run: pnpm compile
+      - name: Run tests
+        run: pnpm test

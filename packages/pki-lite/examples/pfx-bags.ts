@@ -1,0 +1,69 @@
+import { PFX } from '../src/pkcs12/PFX.js'
+
+const pem = `-----BEGIN PKCS12-----
+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
+-----END PKCS12-----`
+
+const pfx = PFX.fromPem(pem)
+console.log('PFX version:', pfx.version)
+console.log('Has MAC data:', !!pfx.macData)
+
+const bags = await pfx.getBags('test')
+console.log(`Found ${bags.length} bags`)
+
+const privateKeys = await pfx.getPrivateKeys('test')
+console.log(`Found ${privateKeys.length} private keys`)
+privateKeys.forEach((key, index) => {
+    console.log(`Private Key ${index + 1}:`, key.getPrivateKey().toPem())
+})
+
+const certificates = await pfx.getX509Certificates('test')
+console.log(`Found ${certificates.length} certificates`)
+certificates.forEach((cert, index) => {
+    console.log(`Certificate ${index + 1}:`, cert.toPem())
+})
