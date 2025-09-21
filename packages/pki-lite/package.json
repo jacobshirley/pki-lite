@@ -19,8 +19,7 @@
         "test:unit": "vitest run src/",
         "test:node": "vitest run test/node",
         "test:acceptance": "vitest run test/acceptance",
-        "test:integration": "vitest run test/integration",
-        "test:examples": "vitest run examples/"
+        "test:integration": "vitest run test/integration"
     },
     "keywords": [],
     "author": "",
