@@ -13,15 +13,7 @@ import { ResponseBytes } from '../../ocsp/ResponseBytes.js'
 import { OCSPResponseStatus } from '../../ocsp/OCSPResponseStatus.js'
 import { ResponseData } from '../../ocsp/ResponseData.js'
 
-// Dummy BasicOCSPResponse for testing
-class DummyOCSP extends BasicOCSPResponse {
-    toAsn1() {
-        return new asn1js.Sequence({ value: [] })
-    }
-    static fromAsn1(_asn1: any) {
-        return new DummyOCSP({} as any)
-    }
-}
+
 
 describe('RevocationValues', () => {
     test('encodes and decodes empty', () => {
