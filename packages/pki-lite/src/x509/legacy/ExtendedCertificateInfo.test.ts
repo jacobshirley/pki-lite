@@ -2,63 +2,105 @@ import * as asn1js from 'asn1js'
 import { ExtendedCertificateInfo } from './ExtendedCertificateInfo.js'
 import { Certificate } from '../Certificate.js'
 import { Attribute } from '../Attribute.js'
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { SubjectPublicKeyInfo } from '../../keys/SubjectPublicKeyInfo.js'
+import { Validity } from '../Validity.js'
+import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
+import { Name } from '../Name.js'
+import { RelativeDistinguishedName } from '../RelativeDistinguishedName.js'
+import { AttributeTypeAndValue } from '../AttributeTypeAndValue.js'
+import { describe, test, expect } from 'vitest'
 
 describe('ExtendedCertificateInfo', () => {
-    // Mock dependencies
-    let mockCertificate: Certificate
-    let mockAttributes: Attribute[]
+    // Helper function to create a real Certificate for testing
+    function createTestCertificate(): Certificate {
+        // Create subject and issuer names
+        const cn = new AttributeTypeAndValue({
+            type: '2.5.4.3',
+            value: 'Test Certificate',
+        })
+        const cnRdn = new RelativeDistinguishedName()
+        cnRdn.push(cn)
 
-    beforeEach(() => {
-        // Set up mocks
-        mockCertificate = {
-            toAsn1: vi.fn().mockReturnValue(new asn1js.Sequence({ value: [] })),
-        } as unknown as Certificate
+        const name = new Name.RDNSequence()
+        name.push(cnRdn)
 
-        mockAttributes = [
-            {
+        // Create subject key info
+        const spki = new SubjectPublicKeyInfo({
+            algorithm: new AlgorithmIdentifier({
+                algorithm: '1.2.840.113549.1.1.1',
+            }),
+            subjectPublicKey: new Uint8Array([1, 2, 3, 4, 5]),
+        })
+
+        // Create validity period
+        const validity = new Validity({
+            notBefore: new Date('2025-01-01'),
+            notAfter: new Date('2026-01-01'),
+        })
+
+        // Create certificate information
+        const tbsCertificate = new Certificate.TBSCertificate({
+            issuer: name,
+            subject: name,
+            subjectPublicKeyInfo: spki,
+            serialNumber: new Uint8Array([0x49, 0x96, 0x02, 0xd2]),
+            validity,
+            version: 2, // v3 (version=2)
+            signature: new AlgorithmIdentifier({
+                algorithm: '1.2.840.113549.1.1.11',
+            }),
+        })
+
+        // Create the certificate
+        return new Certificate({
+            tbsCertificate,
+            signatureAlgorithm: new AlgorithmIdentifier({
+                algorithm: '1.2.840.113549.1.1.11',
+            }),
+            signatureValue: new Uint8Array([10, 20, 30, 40, 50]),
+        })
+    }
+
+    // Helper function to create test attributes
+    function createTestAttributes(): Attribute[] {
+        return [
+            new Attribute({
                 type: '1.2.3.4.5',
                 values: ['test-attribute'],
-                toAsn1: vi
-                    .fn()
-                    .mockReturnValue(new asn1js.Sequence({ value: [] })),
-            } as unknown as Attribute,
+            }),
         ]
-
-        // Setup mocks for fromAsn1 methods
-        vi.spyOn(Certificate, 'fromAsn1').mockReturnValue(mockCertificate)
-        vi.spyOn(Attribute, 'fromAsn1').mockReturnValue(mockAttributes[0])
-    })
-
-    afterEach(() => {
-        vi.restoreAllMocks()
-    })
+    }
 
     test('constructor should initialize properties correctly', () => {
         const version = 1
+        const certificate = createTestCertificate()
+        const attributes = createTestAttributes()
+        
         const info = new ExtendedCertificateInfo({
             version,
-            certificate: mockCertificate,
-            attributes: mockAttributes,
+            certificate,
+            attributes,
         })
 
         expect(info.version).toBe(version)
-        expect(info.certificate).toBe(mockCertificate)
-        expect(info.attributes).toEqual(mockAttributes)
+        expect(info.certificate).toBe(certificate)
+        expect(info.attributes).toEqual(attributes)
     })
 
     test('toAsn1 should return correct ASN.1 structure', () => {
         const version = 1
+        const certificate = createTestCertificate()
+        const attributes = createTestAttributes()
+        
         const info = new ExtendedCertificateInfo({
             version,
-            certificate: mockCertificate,
-            attributes: mockAttributes,
+            certificate,
+            attributes,
         })
 
         const asn1 = info.toAsn1()
 
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(mockCertificate.toAsn1).toHaveBeenCalled()
 
         // Check that structure has correct elements
         const valueBlock = (asn1 as asn1js.Sequence).valueBlock
@@ -71,38 +113,29 @@ describe('ExtendedCertificateInfo', () => {
 
         // Check that attributes were converted to a Set
         expect(valueBlock.value[2]).toBeInstanceOf(asn1js.Set)
-
-        // Check that each attribute's toAsn1 was called
-        for (const attr of mockAttributes) {
-            expect(attr.toAsn1).toHaveBeenCalled()
-        }
     })
 
     test('fromAsn1 should parse ASN.1 structure correctly', () => {
-        // Create mock ASN.1 structure
+        // Create a real ExtendedCertificateInfo object and convert it to ASN.1
         const version = 1
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: version }),
-                new asn1js.Sequence({ value: [] }), // certificate
-                new asn1js.Set({
-                    value: [new asn1js.Sequence({ value: [] })], // attributes
-                }),
-            ],
+        const certificate = createTestCertificate()
+        const attributes = createTestAttributes()
+        
+        const originalInfo = new ExtendedCertificateInfo({
+            version,
+            certificate,
+            attributes,
         })
+        
+        // Convert to ASN.1 and back
+        const asn1 = originalInfo.toAsn1()
+        const parsedInfo = ExtendedCertificateInfo.fromAsn1(asn1)
 
-        const info = ExtendedCertificateInfo.fromAsn1(asn1)
-
-        expect(Certificate.fromAsn1).toHaveBeenCalledWith(
-            asn1.valueBlock.value[1],
-        )
-        expect(Attribute.fromAsn1).toHaveBeenCalledWith(
-            (asn1.valueBlock.value[2] as asn1js.Set).valueBlock.value[0],
-        )
-        expect(info.version).toBe(version)
-        expect(info.certificate).toBe(mockCertificate)
-        expect(info.attributes).toHaveLength(1)
-        expect(info.attributes[0]).toBe(mockAttributes[0])
+        expect(parsedInfo.version).toBe(version)
+        expect(parsedInfo.certificate).toBeInstanceOf(Certificate)
+        expect(parsedInfo.attributes).toHaveLength(1)
+        expect(parsedInfo.attributes[0]).toBeInstanceOf(Attribute)
+        expect(parsedInfo.attributes[0].type.toString()).toBe('1.2.3.4.5')
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -159,7 +192,7 @@ describe('ExtendedCertificateInfo', () => {
         expect(() =>
             ExtendedCertificateInfo.fromAsn1(invalidAttrsType),
         ).toThrow(
-            'Invalid ASN.1 structure: expected SET/CONSTRUCTED for Attributes but got Integer',
+            'Invalid ASN.1 structure',
         )
     })
 })

@@ -4,84 +4,82 @@ import { CertificateList } from '../x509/CertificateList.js'
 import { OtherRevocationInfoFormat } from './OtherRevocationInfoFormat.js'
 import { TBSCertList } from '../x509/TBSCertList.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { Name } from '../x509/Name.js'
+import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
+import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
+import { describe, test, expect } from 'vitest'
 
 describe('RevocationInfoChoice', () => {
-    // Setup mocks for fromAsn1 methods
-    beforeEach(() => {
-        vi.spyOn(CertificateList, 'fromAsn1').mockImplementation(() => {
-            // Create a minimal mock CRL instance
-            const mockTbsCertList = {} as TBSCertList
-            const mockAlgorithm = {} as AlgorithmIdentifier
-            const mockSignatureValue = new Uint8Array([1, 2, 3, 4])
+    // Helper function to create a simple CRL for testing
+    function createSimpleCRL(): CertificateList {
+        // Create issuer name
+        const cn = new AttributeTypeAndValue({
+            type: '2.5.4.3',
+            value: 'Test CA',
+        })
+        const cnRdn = new RelativeDistinguishedName()
+        cnRdn.push(cn)
 
-            return new CertificateList({
-                tbsCertList: mockTbsCertList,
-                signatureAlgorithm: mockAlgorithm,
-                signatureValue: mockSignatureValue,
-            })
+        const name = new Name.RDNSequence()
+        name.push(cnRdn)
+
+        // Create minimal TBS cert list
+        const tbsCertList = new TBSCertList({
+            signature: new AlgorithmIdentifier({
+                algorithm: '1.2.840.113549.1.1.11',
+            }), // SHA256 with RSA
+            issuer: name,
+            thisUpdate: new Date('2025-01-01'),
+            nextUpdate: new Date('2026-01-01'),
+            version: 1 as 1, // Explicit type annotation to fix compilation
         })
 
-        vi.spyOn(OtherRevocationInfoFormat, 'fromAsn1').mockImplementation(
-            () => {
-                return new OtherRevocationInfoFormat({
-                    otherRevInfoFormat: '1.2.3.4',
-                    otherRevInfo: 'test-revocation-info',
-                })
-            },
-        )
-    })
-
-    afterEach(() => {
-        vi.restoreAllMocks()
-    })
+        // Create the CRL
+        return new CertificateList({
+            tbsCertList,
+            signatureAlgorithm: new AlgorithmIdentifier({
+                algorithm: '1.2.840.113549.1.1.11',
+            }), // SHA256 with RSA
+            signatureValue: new Uint8Array([1, 2, 3, 4]),
+        })
+    }
 
     // Test for fromAsn1 method with CertificateList (tag 0)
     test('fromAsn1 should correctly identify CertificateList', () => {
-        // Create a mock ASN.1 sequence with tag number 0 (default for CRL)
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [] }), // tbsCertList
-                new asn1js.Sequence({ value: [] }), // signatureAlgorithm
-                new asn1js.BitString({
-                    valueHex: new Uint8Array([1, 2, 3, 4]),
-                }), // signatureValue
-            ],
-        })
+        // Create a real CRL and get its ASN.1 representation
+        const crl = createSimpleCRL()
+        const asn1 = crl.toAsn1()
 
-        // Set tag number explicitly to ensure it's 0
+        // Set tag number explicitly to ensure it's 0 (default for CRL)
         asn1.idBlock.tagNumber = 0
 
         const result = RevocationInfoChoice.fromAsn1(asn1)
 
-        expect(CertificateList.fromAsn1).toHaveBeenCalledWith(asn1)
         expect(result).toBeInstanceOf(CertificateList)
+        // Verify the CRL has the expected structure
+        expect((result as CertificateList).signatureAlgorithm.algorithm.toString()).toBe('1.2.840.113549.1.1.11')
     })
 
     // Test for fromAsn1 method with OtherRevocationInfoFormat (tag 1)
     test('fromAsn1 should correctly identify OtherRevocationInfoFormat', () => {
-        // Create a mock ASN.1 sequence with tag number 1 for OtherRevocationInfoFormat
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '1.2.3.4' }),
-                new asn1js.PrintableString({ value: 'test-revocation-info' }),
-            ],
+        // Create a real OtherRevocationInfoFormat and get its ASN.1 representation
+        const otherRevInfo = new OtherRevocationInfoFormat({
+            otherRevInfoFormat: '1.2.3.4',
+            otherRevInfo: 'test-revocation-info',
         })
+        const asn1 = otherRevInfo.toAsn1()
 
         // Set tag number to 1 for OtherRevocationInfoFormat
         asn1.idBlock.tagNumber = 1
 
         const result = RevocationInfoChoice.fromAsn1(asn1)
 
-        expect(OtherRevocationInfoFormat.fromAsn1).toHaveBeenCalledWith(asn1)
         expect(result).toBeInstanceOf(OtherRevocationInfoFormat)
+        expect((result as OtherRevocationInfoFormat).otherRevInfoFormat.toString()).toBe('1.2.3.4')
     })
 
     // Integration test with real objects
     test('fromAsn1 integration test for CertificateList', () => {
-        // Restore the mocks for this test
-        vi.restoreAllMocks()
-
         // Create a simplified real ASN.1 structure for a CRL
         const tbsCertListAsn1 = new asn1js.Sequence({
             value: [
@@ -140,9 +138,6 @@ describe('RevocationInfoChoice', () => {
 
     // Integration test with real objects
     test('fromAsn1 integration test for OtherRevocationInfoFormat', () => {
-        // Restore the mocks for this test
-        vi.restoreAllMocks()
-
         // Create a real ASN.1 structure for OtherRevocationInfoFormat
         const asn1 = new asn1js.Sequence({
             value: [
