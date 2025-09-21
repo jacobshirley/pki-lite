@@ -55,9 +55,9 @@ export async function opensslValidate(options: {
         '-inform',
         'DER',
         '-in',
-        signaturePath,
-        ...(caCert ? ['-CAfile', caCertPath] : []),
-        ...(data ? ['-content', dataPath] : []),
+        `"${signaturePath}"`,
+        ...(caCert ? ['-CAfile', `"${caCertPath}"`] : []),
+        ...(data ? ['-content', `"${dataPath}"`] : []),
     ].flat()
 
     const result = await runOpenSSL(args)
@@ -77,7 +77,7 @@ export async function opensslCmsToText(signature: Uint8Array): Promise<string> {
         '-inform',
         'DER',
         '-in',
-        signaturePath,
+        `"${signaturePath}"`,
         '-noverify',
         '-cmsout',
         '-print',
@@ -118,13 +118,13 @@ export async function opensslCmsDecrypt(options: {
         '-inform',
         'DER',
         '-in',
-        envelopedDataPath,
+        `"${envelopedDataPath}"`,
         '-out',
-        `${tmpFolder}/decrypted.bin`,
+        `"${tmpFolder}/decrypted.bin"`,
         '-recip',
-        recipientCertificatePath,
+        `"${recipientCertificatePath}"`,
         '-inkey',
-        recipientPrivateKeyPath,
+        `"${recipientPrivateKeyPath}"`,
     ]
 
     try {
@@ -149,7 +149,7 @@ export async function opensslAsn1Parse(asn1Data: Uint8Array): Promise<any> {
 
     fs.writeFileSync(asn1Path, asn1Data)
 
-    const args = ['cms', '-inform', 'DER', '-in', asn1Path, '-cmsout', '-print']
+    const args = ['cms', '-inform', 'DER', '-in', `"${asn1Path}"`, '-cmsout', '-print']
 
     const result = await runOpenSSL(args)
     if (!result.length) {
