@@ -45,7 +45,7 @@ describe('ExtendedCertificateInfo', () => {
             subjectPublicKeyInfo: spki,
             serialNumber: new Uint8Array([0x49, 0x96, 0x02, 0xd2]),
             validity,
-            version: 2, // v3
+            version: 2, // v3 (version=2)
             signature: new AlgorithmIdentifier({
                 algorithm: '1.2.840.113549.1.1.11',
             }),
