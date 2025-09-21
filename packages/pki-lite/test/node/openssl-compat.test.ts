@@ -20,7 +20,7 @@ import { ecP256SigningKeys } from '../../test-fixtures/signing-keys/ec-p256/inde
 
 describe('OpenSSL compatibility', () => {
     describe('EnvelopedData', () => {
-        test('should work with OpenSSL', async () => {
+        test('Envelope Data should be decryptable with OpenSSL', async () => {
             const data = 'Hello World'
 
             const envelopedData = (

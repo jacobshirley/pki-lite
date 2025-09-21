@@ -49,6 +49,16 @@ export async function opensslValidate(options: {
     data && fs.writeFileSync(dataPath, data)
     caCert && fs.writeFileSync(caCertPath, caCert)
 
+    if (!fs.existsSync(signaturePath)) {
+        throw new Error('Signature file not found')
+    }
+    if (caCert && !fs.existsSync(caCertPath)) {
+        throw new Error('CA certificate file not found')
+    }
+    if (data && !fs.existsSync(dataPath)) {
+        throw new Error('Data file not found')
+    }
+
     const args = [
         'cms',
         '-verify',
