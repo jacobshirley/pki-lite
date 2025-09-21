@@ -28,5 +28,7 @@ jobs:
           cache: 'pnpm'
       - name: Install Playwright Browsers
         run: pnpm dlx playwright install chromium --only-shell
+      - name: Compile
+        run: pnpm compile
       - name: Run tests
         run: pnpm test
