@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "pnpm -r --sort run compile",
-    "test": "pnpm -r --sort run test"
+    "compile": "pnpm -r run compile",
+    "test": "pnpm -r run test"
   },
   "keywords": [],
   "author": "",
