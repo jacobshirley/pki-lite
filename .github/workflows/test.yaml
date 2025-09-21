@@ -24,6 +24,6 @@ jobs:
         with:
           node-version: '24'
       - name: Install Playwright Browsers
-        run: pnpm playwright install chromium --only-shell
+        run: pnpm dlx playwright install chromium --only-shell
       - name: Run tests
         run: pnpm test
