@@ -1,9 +1,9 @@
 import { spawn } from 'child_process'
+import { randomUUID } from 'crypto'
 import fs from 'fs'
-import { get } from 'http'
 
 function getTempFolder(): string {
-    const tmpFolder = `${import.meta.dirname}/tmp`
+    const tmpFolder = `${import.meta.dirname}/tmp/${randomUUID()}`
     if (!fs.existsSync(tmpFolder)) {
         fs.mkdirSync(tmpFolder, { recursive: true })
     }
