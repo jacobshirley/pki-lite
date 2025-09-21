@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "compile": "pnpm -r run compile",
-    "test": "pnpm -r run test"
+    "test": "pnpm -r --no-sort run test"
   },
   "keywords": [],
   "author": "",
