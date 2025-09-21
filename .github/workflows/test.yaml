@@ -17,6 +17,10 @@ jobs:
     name: Tests
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Update apt and OpenSSL
+        run: |
+          sudo apt-get update
+          sudo apt-get install --only-upgrade openssl
       - name: OpenSSL Version
         run: openssl version
       - uses: pnpm/action-setup@v4
