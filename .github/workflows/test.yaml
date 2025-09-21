@@ -25,6 +25,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '24'
+          cache: 'pnpm'
       - name: Install Playwright Browsers
         run: pnpm dlx playwright install chromium --only-shell
       - name: Run tests
