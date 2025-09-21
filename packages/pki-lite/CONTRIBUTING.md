@@ -1,10 +1,10 @@
-# Contributing to @devex/pki-lite
+# Contributing to pki-lite
 
-Thank you for your interest in contributing to @devex/pki-lite! This document provides an overview of the main concepts, architecture, and contribution guidelines for the package.
+Thank you for your interest in contributing to pki-lite! This document provides an overview of the main concepts, architecture, and contribution guidelines for the package.
 
 ## Overview
 
-@devex/pki-lite is a lightweight Public Key Infrastructure (PKI) library for JavaScript/TypeScript that provides comprehensive support for X.509 certificates, PKCS standards, and cryptographic operations. It's designed to work in both browser and Node.js environments with minimal dependencies.
+pki-lite is a lightweight Public Key Infrastructure (PKI) library for JavaScript/TypeScript that provides comprehensive support for X.509 certificates, PKCS standards, and cryptographic operations. It's designed to work in both browser and Node.js environments with minimal dependencies.
 
 ## Main Concepts
 
@@ -199,4 +199,4 @@ If you're unsure about anything, you can:
 2. Check the relevant RFC or standard
 3. Look at the test files for usage examples
 
-Thank you for contributing to @devex/pki-lite!
+Thank you for contributing to pki-lite!

@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Examples > usage.ts 1`] = `
+"=== MD5 Hashing ===
+=== MD5 Hashing ===
+MD5: 65a8e27d8879283831b664bd8b7f0ad4
+
+=== AES ECB Encryption ===
+MD5: 65a8e27d8879283831b664bd8b7f0ad4
+
+=== AES ECB Encryption ===
+Original: Secret message!!
+Decrypted: Secret message!!
+Match: true
+
+=== AES CBC (No Padding) ===
+Original: Secret message!!
+Decrypted: Secret message!!
+Match: true
+
+=== AES CBC (No Padding) ===
+Original length: 16
+Decrypted length: 16
+Data match: true
+
+=== Standard Algorithms (Fallback) ===
+Original length: 16
+Decrypted length: 16
+Data match: true
+
+=== Standard Algorithms (Fallback) ===
+"
+`;

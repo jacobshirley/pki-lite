@@ -1,0 +1,37 @@
+{
+    "name": "pki-lite",
+    "type": "module",
+    "version": "1.0.0",
+    "description": "",
+    "main": "dist/index.js",
+    "exports": {
+        "./*": {
+            "types": "./dist/*.d.ts",
+            "default": "./dist/*"
+        }
+    },
+    "scripts": {
+        "compile": "pnpm compile:validate && tsc -p tsconfig.prod.json",
+        "compile:validate": "tsc -p tsconfig.json --noEmit",
+        "watch": "tsc -watch -p tsconfig.prod.json",
+        "watch:all": "tsc -watch -p tsconfig.json",
+        "test": "vitest run",
+        "test:unit": "vitest run src/",
+        "test:acceptance": "vitest run test/acceptance",
+        "test:integration": "vitest run test/integration",
+        "test:examples": "vitest run examples/"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@10.14.0",
+    "dependencies": {
+        "asn1js": "3.0.6"
+    },
+    "devDependencies": {
+        "@types/node": "^24.3.3",
+        "@vitest/browser": "^3.2.4",
+        "typescript": "5.8.2",
+        "vitest": "^3.2.4"
+    }
+}

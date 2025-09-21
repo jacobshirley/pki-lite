@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest'
-import { SafeContents } from '../../src/pkcs12/SafeContents.js'
-import { SafeBag } from '../../src/pkcs12/SafeBag.js'
-import { asn1js } from '../../src/core/PkiBase.js'
+import { SafeContents } from './SafeContents.js'
+import { SafeBag } from './SafeBag.js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('SafeContents', () => {
     test('fromAsn1 should throw if not a Sequence', () => {

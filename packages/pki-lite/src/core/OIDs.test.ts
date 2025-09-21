@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { OIDs } from '../core/OIDs.js'
+import { OIDs } from './OIDs.js'
 
 describe('OIDs', () => {
     it('should have correct values', () => {

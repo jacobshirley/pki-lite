@@ -1,4 +1,4 @@
-# @devex/pki-lite
+# pki-lite
 
 A lightweight, modern JavaScript/TypeScript library for Public Key Infrastructure (PKI) operations in browser and Node.js environments. This package provides comprehensive support for X.509 certificates, PKCS standards, and cryptographic operations with minimal dependencies.
 
@@ -17,11 +17,11 @@ A lightweight, modern JavaScript/TypeScript library for Public Key Infrastructur
 ## Installation
 
 ```bash
-npm install @devex/pki-lite
+npm install pki-lite
 # or
-pnpm add @devex/pki-lite
+pnpm add pki-lite
 # or
-yarn add @devex/pki-lite
+yarn add pki-lite
 ```
 
 ## Basic Usage
@@ -29,7 +29,7 @@ yarn add @devex/pki-lite
 ### Working with X.509 Certificates
 
 ```typescript
-import { Certificate } from '@devex/pki-lite/x509/Certificate'
+import { Certificate } from 'pki-lite/x509/Certificate'
 
 // Parse a certificate from PEM format
 const cert = Certificate.fromPem(`-----BEGIN CERTIFICATE-----
@@ -54,8 +54,8 @@ const pemString = cert.toPem()
 ### Creating a Self-Signed Certificate
 
 ```typescript
-import { Certificate } from '@devex/pki-lite/x509/Certificate'
-import { PrivateKeyInfo } from '@devex/pki-lite/keys/PrivateKeyInfo'
+import { Certificate } from 'pki-lite/x509/Certificate'
+import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo'
 
 // Create a self-signed certificate
 const selfSigned = await Certificate.createSelfSignedCertificate({
@@ -74,7 +74,7 @@ console.log('Self-Signed Certificate PEM:', selfSigned.toPem())
 ### Working with PKCS#12 (PFX) Files
 
 ```typescript
-import { PFX } from '@devex/pki-lite/pkcs12/PFX'
+import { PFX } from 'pki-lite/pkcs12/PFX'
 
 // Parse a PFX/P12 file
 const pfx = PFX.fromPem(pfxPemString)
@@ -95,8 +95,8 @@ certificates.forEach((cert, index) => {
 ### Certificate Validation
 
 ```typescript
-import { Certificate } from '@devex/pki-lite/x509/Certificate'
-import { CertificateValidator } from '@devex/pki-lite/core/CertificateValidator'
+import { Certificate } from 'pki-lite/x509/Certificate'
+import { CertificateValidator } from 'pki-lite/core/CertificateValidator'
 
 // Create validator with trust anchors (root certificates)
 const validator = new CertificateValidator({
@@ -118,7 +118,7 @@ if (result.revocationStatus) {
 ### Working with Certificate Revocation Lists (CRLs)
 
 ```typescript
-import { CertificateList } from '@devex/pki-lite/x509/CertificateList'
+import { CertificateList } from 'pki-lite/x509/CertificateList'
 
 // Parse a CRL from PEM format
 const crl = CertificateList.fromPem(`-----BEGIN X509 CRL-----
@@ -141,9 +141,9 @@ revokedCerts.forEach((cert) => {
 ### OCSP Requests and Responses
 
 ```typescript
-import { Certificate } from '@devex/pki-lite/x509/Certificate'
-import { OCSPRequest } from '@devex/pki-lite/ocsp/OCSPRequest'
-import { OCSPResponse } from '@devex/pki-lite/ocsp/OCSPResponse'
+import { Certificate } from 'pki-lite/x509/Certificate'
+import { OCSPRequest } from 'pki-lite/ocsp/OCSPRequest'
+import { OCSPResponse } from 'pki-lite/ocsp/OCSPResponse'
 
 // Create an OCSP request
 const request = await OCSPRequest.create({
@@ -283,4 +283,4 @@ ISC
 
 ## See Also
 
-- [@devex/pki-lite-crypto-extended](../pki-lite-crypto-extended): Extended cryptographic operations for pki-lite
+- [pki-lite-crypto-extended](../pki-lite-crypto-extended): Extended cryptographic operations for pki-lite

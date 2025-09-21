@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PkiBase, PkiSet, Asn1BaseBlock, asn1js } from '../core/PkiBase.js'
+import { PkiBase, PkiSet, Asn1BaseBlock, asn1js } from './PkiBase.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { Asn1ParseError } from './errors/Asn1ParseError.js'
 
