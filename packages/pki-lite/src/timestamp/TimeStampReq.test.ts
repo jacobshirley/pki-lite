@@ -269,14 +269,6 @@ describe('TimeStampReq', () => {
         const fetchSpy = vi.fn().mockResolvedValue(mockResponse)
         globalThis.fetch = fetchSpy
 
-        // Mock TimeStampResp.fromAsn1 to avoid circular dependency issues in test
-        const mockFromAsn1 = vi
-            .fn()
-            .mockReturnValue({ status: { isSuccess: () => true } })
-        vi.doMock('./TimeStampResp', () => ({
-            TimeStampResp: { fromAsn1: mockFromAsn1 },
-        }))
-
         const messageImprint = createTestMessageImprint()
         const req = new TimeStampReq({
             version: 1,
@@ -304,7 +296,7 @@ describe('TimeStampReq', () => {
                 }),
             )
         } catch (error) {
-            // Expected in test environment due to mocking complexities
+            // Expected in test environment due to network mocking complexities
             expect(error).toBeDefined()
         }
     })

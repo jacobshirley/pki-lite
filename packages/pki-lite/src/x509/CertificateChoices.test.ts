@@ -8,32 +8,26 @@ import { OtherCertificateFormat } from './legacy/OtherCertificateFormat.js'
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 
 describe('CertificateChoices', () => {
-    // Setup mocks for fromAsn1 methods
+    // Setup test spies to verify routing logic without full parsing
     beforeEach(() => {
         vi.spyOn(Certificate, 'fromAsn1').mockImplementation(() => {
-            return {} as Certificate
+            throw new Error('Certificate.fromAsn1 called')
         })
 
         vi.spyOn(ExtendedCertificate, 'fromAsn1').mockImplementation(() => {
-            //@ts-expect-error
-            return new ExtendedCertificate({})
+            throw new Error('ExtendedCertificate.fromAsn1 called')
         })
 
         vi.spyOn(AttributeCertificateV1, 'fromAsn1').mockImplementation(() => {
-            //@ts-expect-error
-            return new AttributeCertificateV1({})
+            throw new Error('AttributeCertificateV1.fromAsn1 called')
         })
 
         vi.spyOn(AttributeCertificate, 'fromAsn1').mockImplementation(() => {
-            //@ts-expect-error
-            return new AttributeCertificate({})
+            throw new Error('AttributeCertificate.fromAsn1 called')
         })
 
         vi.spyOn(OtherCertificateFormat, 'fromAsn1').mockImplementation(() => {
-            return new OtherCertificateFormat({
-                otherCert: '1.2.3.4',
-                otherCertFormat: 'test-cert',
-            })
+            throw new Error('OtherCertificateFormat.fromAsn1 called')
         })
     })
 
@@ -54,8 +48,8 @@ describe('CertificateChoices', () => {
             ],
         })
 
-        CertificateChoices.fromAsn1(asn1)
-
+        // Certificate has universal tag class (1) and sequence tag number (16)
+        expect(() => CertificateChoices.fromAsn1(asn1)).toThrow('Certificate.fromAsn1 called')
         expect(Certificate.fromAsn1).toHaveBeenCalledWith(asn1)
     })
 
@@ -69,8 +63,7 @@ describe('CertificateChoices', () => {
         asn1.idBlock.tagClass = 3 // context-specific
         asn1.idBlock.tagNumber = 0 // ExtendedCertificate
 
-        CertificateChoices.fromAsn1(asn1)
-
+        expect(() => CertificateChoices.fromAsn1(asn1)).toThrow('ExtendedCertificate.fromAsn1 called')
         expect(ExtendedCertificate.fromAsn1).toHaveBeenCalledWith(asn1)
     })
 
@@ -84,8 +77,7 @@ describe('CertificateChoices', () => {
         asn1.idBlock.tagClass = 3 // context-specific
         asn1.idBlock.tagNumber = 1 // AttributeCertificateV1
 
-        CertificateChoices.fromAsn1(asn1)
-
+        expect(() => CertificateChoices.fromAsn1(asn1)).toThrow('AttributeCertificateV1.fromAsn1 called')
         expect(AttributeCertificateV1.fromAsn1).toHaveBeenCalledWith(asn1)
     })
 
@@ -99,8 +91,7 @@ describe('CertificateChoices', () => {
         asn1.idBlock.tagClass = 3 // context-specific
         asn1.idBlock.tagNumber = 2 // AttributeCertificate
 
-        CertificateChoices.fromAsn1(asn1)
-
+        expect(() => CertificateChoices.fromAsn1(asn1)).toThrow('AttributeCertificate.fromAsn1 called')
         expect(AttributeCertificate.fromAsn1).toHaveBeenCalledWith(asn1)
     })
 
@@ -117,8 +108,7 @@ describe('CertificateChoices', () => {
         asn1.idBlock.tagClass = 3 // context-specific
         asn1.idBlock.tagNumber = 3 // OtherCertificateFormat
 
-        CertificateChoices.fromAsn1(asn1)
-
+        expect(() => CertificateChoices.fromAsn1(asn1)).toThrow('OtherCertificateFormat.fromAsn1 called')
         expect(OtherCertificateFormat.fromAsn1).toHaveBeenCalledWith(asn1)
     })
 
