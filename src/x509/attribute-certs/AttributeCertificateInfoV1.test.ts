@@ -1,0 +1,181 @@
+import * as asn1js from 'asn1js'
+import { AttributeCertificateInfoV1 } from './AttributeCertificateInfoV1.js'
+import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
+import { Attribute } from '../Attribute.js'
+import { Extension } from '../Extension.js'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+
+describe('AttributeCertificateInfoV1', () => {
+    // Mock dependencies
+    let mockSignature: AlgorithmIdentifier
+    let mockAttributes: Attribute[]
+
+    beforeEach(() => {
+        mockSignature = {
+            algorithm: '1.2.840.113549.1.1.11',
+            parameters: null,
+            toAsn1: vi.fn().mockReturnValue(new asn1js.Sequence({ value: [] })),
+        } as unknown as AlgorithmIdentifier
+
+        mockAttributes = [
+            {
+                type: '1.2.3.4.5',
+                values: ['test-attribute'],
+                toAsn1: vi
+                    .fn()
+                    .mockReturnValue(new asn1js.Sequence({ value: [] })),
+            } as unknown as Attribute,
+        ]
+
+        // Setup mocks for fromAsn1 methods
+        vi.spyOn(AlgorithmIdentifier, 'fromAsn1').mockReturnValue(mockSignature)
+        vi.spyOn(Attribute, 'fromAsn1').mockReturnValue(mockAttributes[0])
+    })
+
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    test('constructor should initialize properties correctly', () => {
+        const version = 0
+        const subject = new Uint8Array([1, 2, 3])
+        const issuer = new Uint8Array([4, 5, 6])
+        const serialNumber = new Uint8Array([7, 8, 9])
+        const validityPeriod = {
+            notBefore: new Date('2023-01-01'),
+            notAfter: new Date('2024-01-01'),
+        }
+
+        const info = new AttributeCertificateInfoV1({
+            version,
+            subject,
+            issuer,
+            signature: mockSignature,
+            serialNumber,
+            validityPeriod,
+            attributes: mockAttributes,
+        })
+
+        expect(info.version).toBe(version)
+        expect(info.subject).toBe(subject)
+        expect(info.issuer).toBe(issuer)
+        expect(info.signature).toBe(mockSignature)
+        expect(info.serialNumber).toBe(serialNumber)
+        expect(info.validityPeriod).toBe(validityPeriod)
+        expect(info.attributes).toBe(mockAttributes)
+        expect(info.issuerUniqueID).toBeUndefined()
+        expect(info.extensions).toBeUndefined()
+    })
+
+    test('toAsn1 should return correct ASN.1 structure', () => {
+        const version = 0
+        const subject = new Uint8Array([1, 2, 3])
+        const issuer = new Uint8Array([4, 5, 6])
+        const serialNumber = new Uint8Array([7, 8, 9])
+        const validityPeriod = {
+            notBefore: new Date('2023-01-01'),
+            notAfter: new Date('2024-01-01'),
+        }
+
+        const info = new AttributeCertificateInfoV1({
+            version,
+            subject,
+            issuer,
+            signature: mockSignature,
+            serialNumber,
+            validityPeriod,
+            attributes: mockAttributes,
+        })
+
+        const asn1 = info.toAsn1()
+
+        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(mockSignature.toAsn1).toHaveBeenCalled()
+        expect(mockAttributes[0].toAsn1).toHaveBeenCalled()
+
+        // Check the structure has the correct elements
+        const valueBlock = (asn1 as asn1js.Sequence).valueBlock
+        expect(valueBlock.value.length).toBe(7) // No optional fields
+        expect(valueBlock.value[0]).toBeInstanceOf(asn1js.Integer) // version
+        expect(valueBlock.value[1]).toBeInstanceOf(asn1js.OctetString) // subject
+        expect(valueBlock.value[2]).toBeInstanceOf(asn1js.OctetString) // issuer
+
+        // Check version value
+        const versionAsn1 = valueBlock.value[0] as asn1js.Integer
+        expect(versionAsn1.valueBlock.valueDec).toBe(version)
+
+        // Check validity period
+        expect(valueBlock.value[5]).toBeInstanceOf(asn1js.Sequence)
+        const validityBlock = (valueBlock.value[5] as asn1js.Sequence)
+            .valueBlock
+        expect(validityBlock.value.length).toBe(2)
+        expect(validityBlock.value[0]).toBeInstanceOf(asn1js.GeneralizedTime)
+        expect(validityBlock.value[1]).toBeInstanceOf(asn1js.GeneralizedTime)
+    })
+
+    test('fromAsn1 should parse ASN.1 structure correctly', () => {
+        const version = 0
+        const subject = new Uint8Array([1, 2, 3])
+        const issuer = new Uint8Array([4, 5, 6])
+        const serialNumber = new Uint8Array([7, 8, 9])
+        const notBefore = new Date('2023-01-01')
+        const notAfter = new Date('2024-01-01')
+
+        // Create mock ASN.1 structure
+        const asn1 = new asn1js.Sequence({
+            value: [
+                new asn1js.Integer({ value: version }),
+                new asn1js.OctetString({ valueHex: subject }), // subject
+                new asn1js.OctetString({ valueHex: issuer }), // issuer
+                new asn1js.Sequence({ value: [] }), // signature
+                new asn1js.Integer({ valueHex: serialNumber }),
+                new asn1js.Sequence({
+                    // validityPeriod
+                    value: [
+                        new asn1js.GeneralizedTime({ valueDate: notBefore }),
+                        new asn1js.GeneralizedTime({ valueDate: notAfter }),
+                    ],
+                }),
+                new asn1js.Sequence({
+                    // attributes
+                    value: [
+                        new asn1js.Sequence({ value: [] }), // attribute
+                    ],
+                }),
+            ],
+        })
+
+        const info = AttributeCertificateInfoV1.fromAsn1(asn1)
+
+        expect(AlgorithmIdentifier.fromAsn1).toHaveBeenCalledWith(
+            asn1.valueBlock.value[3],
+        )
+        expect(Attribute.fromAsn1).toHaveBeenCalled()
+
+        expect(info.version).toBe(version)
+        expect(info.signature).toBe(mockSignature)
+        expect(info.attributes).toHaveLength(1)
+        expect(info.attributes[0]).toBe(mockAttributes[0])
+    })
+
+    test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
+        // Test with non-Sequence
+        const invalidAsn1 = new asn1js.Integer({ value: 1 })
+        expect(() => AttributeCertificateInfoV1.fromAsn1(invalidAsn1)).toThrow(
+            'Invalid ASN.1 structure: expected SEQUENCE',
+        )
+
+        // Test with insufficient elements
+        const insufficientElements = new asn1js.Sequence({
+            value: [
+                new asn1js.Integer({ value: 1 }),
+                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
+                new asn1js.OctetString({ valueHex: new Uint8Array([4, 5, 6]) }),
+                // Missing other required elements
+            ],
+        })
+        expect(() =>
+            AttributeCertificateInfoV1.fromAsn1(insufficientElements),
+        ).toThrow('Invalid ASN.1 structure: expected at least 7 elements')
+    })
+})

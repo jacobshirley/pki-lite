@@ -1,0 +1,10 @@
+{
+    "extends": "@devex/tsconfig",
+    "compilerOptions": {
+        "outDir": "dist",
+        "target": "ES2022",
+        "module": "nodenext",
+        "moduleResolution": "nodenext"
+    },
+    "include": ["src/**/*", "examples/**/*", "test/**/*", "test-fixtures"]
+}
