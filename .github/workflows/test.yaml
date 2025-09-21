@@ -4,6 +4,9 @@ on:
     branches:
       - master
       - ci/test # For testing changes to this workflow
+  pull_request:
+    branches:
+      - master
   merge_group:
   workflow_dispatch:
   workflow_call:
