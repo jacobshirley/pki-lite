@@ -8,9 +8,9 @@ const examples = [
     'timestamp-request',
 ]
 
-describe.sequential('Examples', () => {
+describe('Examples', () => {
     for (const exampleFile of examples) {
-        test(`${exampleFile}`, async () => {
+        test.sequential(`${exampleFile}`, async () => {
             const logs: string[] = []
             const { log } = console
             console.log = (...args: any[]) => {

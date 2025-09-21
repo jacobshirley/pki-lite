@@ -8,13 +8,15 @@ export default defineConfig({
                 test: {
                     name: 'node',
                     environment: 'node',
+                                        exclude: ['node_modules'],
+
                 },
             },
             {
                 test: {
                     name: 'browser',
                     include: ['**/*.(test|spec).ts'],
-                    exclude: ['test/node/**'],
+                    exclude: ['test/node/**', 'node_modules'],
                     browser: {
                         // Disable CORS to test the timestamp request example
                         provider: playwright({

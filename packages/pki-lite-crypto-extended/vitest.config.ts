@@ -3,13 +3,39 @@ import { playwright } from '@vitest/browser/providers/playwright'
 
 export default defineConfig({
     test: {
-        browser: {
-            provider: playwright(),
-            enabled: true,
-            headless: true,
-            screenshotFailures: false,
-            // at least one instance is required
-            instances: [{ browser: 'chromium' }],
-        },
+        projects: [
+            {
+                test: {
+                    name: 'node',
+                    environment: 'node',
+                    exclude: ['node_modules'],
+                },
+            },
+            {
+                test: {
+                    name: 'browser',
+                    include: ['**/*.(test|spec).ts'],
+                    exclude: ['test/node/**', 'node_modules'],
+                    browser: {
+                        // Disable CORS to test the timestamp request example
+                        provider: playwright({
+                            contextOptions: {
+                                extraHTTPHeaders: {
+                                    'Content-Type':
+                                        'application/timestamp-query',
+                                },
+                            },
+                            launchOptions: {
+                                args: ['--disable-web-security'],
+                            },
+                        }),
+                        enabled: true,
+                        headless: true,
+                        screenshotFailures: false,
+                        instances: [{ browser: 'chromium' }],
+                    },
+                },
+            },
+        ],
     },
 })
