@@ -10,11 +10,14 @@ function getTempFolder(): string {
     return tmpFolder
 }
 
-export async function runOpenSSL(args: string[], commandPath: string): Promise<Buffer> {
+export async function runOpenSSL(args: string[], debugFolder: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-        fs.writeFileSync(commandPath, `openssl ${args.join(' ')}`)
+        const dockerOpenssl = `docker run --rm -v ${debugFolder}:/data -w /data alpine/openssl:latest`
+        fs.writeFileSync(debugFolder + '/debug.sh', `${dockerOpenssl} ${args.map(x => x.replace(debugFolder + '/', '')).join(' ')}`, {
+            mode: 0o755,
+        })
 
-        const child = spawn('openssl', args)
+        const child = spawn('./debug.sh', { cwd: debugFolder, shell: true })
 
         const output: Buffer[] = []
         const error: Buffer[] = []
@@ -47,7 +50,6 @@ export async function opensslValidate(options: {
     const signaturePath = `${tmpFolder}/signature.der`
     const dataPath = `${tmpFolder}/data.bin`
     const caCertPath = `${tmpFolder}/caCert.pem`
-    const commandPath = `${tmpFolder}/debug.sh`
 
     fs.writeFileSync(signaturePath, signature)
     data && fs.writeFileSync(dataPath, data)
@@ -74,7 +76,7 @@ export async function opensslValidate(options: {
         ...(data ? ['-content', dataPath] : []),
     ].flat()
 
-    const result = await runOpenSSL(args, commandPath)
+    const result = await runOpenSSL(args, tmpFolder)
     if (!result.length) {
         throw new Error('Signature validation failed')
     }
@@ -83,7 +85,6 @@ export async function opensslValidate(options: {
 export async function opensslCmsToText(signature: Uint8Array): Promise<string> {
     const tmpFolder = getTempFolder()
     const signaturePath = `${tmpFolder}/signature.der`
-    const commandPath = `${tmpFolder}/debug.sh`
 
     fs.writeFileSync(signaturePath, signature)
 
@@ -98,7 +99,7 @@ export async function opensslCmsToText(signature: Uint8Array): Promise<string> {
         '-print',
     ]
 
-    const result = await runOpenSSL(args, commandPath)
+    const result = await runOpenSSL(args, tmpFolder)
     if (!result.length) {
         throw new Error('Failed to convert CMS to text')
     }
@@ -122,7 +123,6 @@ export async function opensslCmsDecrypt(options: {
     const envelopedDataPath = `${tmpFolder}/envelopedData.der`
     const recipientCertificatePath = `${tmpFolder}/recipient.pem`
     const recipientPrivateKeyPath = `${tmpFolder}/recipient.key`
-    const commandPath = `${tmpFolder}/debug.sh`
 
     fs.writeFileSync(envelopedDataPath, envelopedData)
     fs.writeFileSync(recipientCertificatePath, recipientCertificatePem)
@@ -144,7 +144,7 @@ export async function opensslCmsDecrypt(options: {
     ]
 
     try {
-        const output = await runOpenSSL(args, commandPath)
+        const output = await runOpenSSL(args, tmpFolder)
 
         return {
             success: true,
@@ -162,13 +162,12 @@ export async function opensslCmsDecrypt(options: {
 export async function opensslAsn1Parse(asn1Data: Uint8Array): Promise<any> {
     const tmpFolder = getTempFolder()
     const asn1Path = `${tmpFolder}/data.der`
-    const commandPath = `${tmpFolder}/debug.sh`
 
     fs.writeFileSync(asn1Path, asn1Data)
 
     const args = ['cms', '-inform', 'DER', '-in', asn1Path, '-cmsout', '-print']
 
-    const result = await runOpenSSL(args, commandPath)
+    const result = await runOpenSSL(args, tmpFolder)
     if (!result.length) {
         throw new Error('Failed to parse ASN.1 data')
     }
