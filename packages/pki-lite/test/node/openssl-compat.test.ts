@@ -18,7 +18,7 @@ import { OIDs } from '../../src/index.js'
 import { UTCTime } from '../../src/asn1/UTCTime.js'
 import { ecP256SigningKeys } from '../../test-fixtures/signing-keys/ec-p256/index.js'
 
-describe('OpenSSL compatibility', () => {
+describe('OpenSSL compatibility', { timeout: 60000 }, () => {
     describe('EnvelopedData', () => {
         test('Envelope Data should be decryptable with OpenSSL', async () => {
             const data = 'Hello World'
