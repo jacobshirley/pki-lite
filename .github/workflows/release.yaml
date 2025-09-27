@@ -11,7 +11,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  packages: write
   id-token: write
 
 jobs:
@@ -59,6 +58,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Create GitHub Release
     needs: publish
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
@@ -74,3 +76,4 @@ jobs:
           draft: true # test for now
           prerelease: true
           generateReleaseNotes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
