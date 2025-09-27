@@ -9,6 +9,11 @@ on:
 
   # Manual trigger
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 1.2.3)'
+        required: true
+        type: string
 permissions:
   contents: read
   packages: write
@@ -28,6 +33,10 @@ jobs:
       - name: Get release version from branch ref
         id: get_release_version
         run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           # Get branch name from GitHub context
           BRANCH_REF="${{ github.event.pull_request.head.ref }}"
           # Extract version (e.g., v1.2.3)
