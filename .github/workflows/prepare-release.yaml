@@ -1,0 +1,75 @@
+name: Prepare Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to prepare as (e.g. patch, minor, major)'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+        required: true
+      preid:
+        description: 'Prerelease identifier (e.g. alpha, beta, rc). Only used if version is a prerelease type'
+        type: choice
+        required: false
+        options:
+          - alpha
+          - beta
+          - rc
+      force:
+        description: 'Force prepare even if no changes detected'
+        required: false
+        type: boolean
+permissions:
+  actions: write
+  checks: write
+  contents: write
+  pull-requests: write
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    name: Prepare Release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+        with:
+          run_install: true
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      - name: Compile
+        run: pnpm compile
+      - name: Bump version
+        run: ./scripts/bump-version.sh ${{ github.event.inputs.version }} --preid='${{ github.event.inputs.preid }}'
+      - name: Generate docs
+        run: pnpm docs:gen:md
+      - name: Set up committer
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Prepare release
+        run: ./scripts/prepare-release.sh --create-pr --force=${{ github.event.inputs.force }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Get release version
+        id: get_release_version
+        run: echo "version=$(cat .release-version)" >> $GITHUB_OUTPUT
+      - name: Pack
+        run: pnpm pack -r
+      - name: Push artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: pki-lite-${{ steps.get_release_version.outputs.version }}
+          path: ./*.tgz
+      - name: Test publish
+        run: pnpm publish -r --dry-run --publish-branch=$(git branch --show-current) --no-git-checks

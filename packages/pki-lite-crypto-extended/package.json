@@ -1,0 +1,60 @@
+{
+    "name": "pki-lite-crypto-extended",
+    "version": "1.0.0-alpha.6",
+    "description": "Extended cryptographic provider for pki-lite with MD5 hashing and AES ECB/CBC support",
+    "main": "dist/index.js",
+    "scripts": {
+        "compile": "pnpm compile:validate && tsc -p tsconfig.prod.json",
+        "compile:validate": "tsc -p tsconfig.json --noEmit",
+        "watch": "tsc -p tsconfig.prod.json --watch",
+        "test": "vitest run",
+        "test:unit": "vitest run test/unit",
+        "test:acceptance": "vitest run test/acceptance --browser.enabled=false",
+        "test:watch": "vitest"
+    },
+    "files": [
+        "dist",
+        "!**/*.tsbuildinfo"
+    ],
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./*": {
+            "import": "./dist/*",
+            "types": "./dist/*.d.ts"
+        }
+    },
+    "keywords": [
+        "cryptography",
+        "pki",
+        "md5",
+        "aes",
+        "ecb",
+        "cbc",
+        "encryption",
+        "hashing",
+        "crypto",
+        "security"
+    ],
+    "author": "Jacob Shirley",
+    "license": "MIT",
+    "packageManager": "pnpm@10.14.0",
+    "dependencies": {
+        "@noble/ciphers": "1.3.0",
+        "@noble/hashes": "1.8.0",
+        "node-forge": "^1.3.1"
+    },
+    "peerDependencies": {
+        "pki-lite": "1.0.0-alpha.6"
+    },
+    "devDependencies": {
+        "@types/node": "^24.5.1",
+        "@types/node-forge": "^1.3.14",
+        "@vitest/browser": "^3.2.4",
+        "playwright": "^1.55.0",
+        "typescript": "5.8.2",
+        "vitest": "^3.2.4"
+    }
+}

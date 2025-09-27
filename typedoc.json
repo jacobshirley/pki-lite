@@ -1,0 +1,18 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": ["packages/*"],
+    "name": "PKI-Lite",
+    "entryPointStrategy": "packages",
+    "disableSources": true,
+    "alwaysCreateEntryPointModule": false,
+    "cleanOutputDir": true,
+    "pretty": true,
+    "packageOptions": {
+        "includeVersion": false,
+        "entryPoints": ["src/index.ts"]
+    },
+    "searchInDocuments": true,
+    "searchGroupBoosts": {
+        "Classes": 3
+    }
+}
