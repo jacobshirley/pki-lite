@@ -9,7 +9,7 @@ if [[ " $* " == *" --force=true"* ]]; then
 fi
 
 # Stage all package.json updates
-git add **/package.json package.json
+git add **/package.json package.json pnpm-lock.yaml
 
 # Get current version
 CURRENT_VERSION=$(node -p "require('./package.json').version")

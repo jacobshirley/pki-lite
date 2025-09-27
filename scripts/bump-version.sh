@@ -53,3 +53,6 @@ find . -name 'package.json' -not -path '*/node_modules/*' | while read -r pkg_fi
 done
 
 echo "Version bump completed successfully to $NEW_VERSION"
+
+# Update lockfile
+pnpm install --lockfile-only
