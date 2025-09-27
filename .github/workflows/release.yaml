@@ -11,7 +11,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   publish:
@@ -19,6 +18,7 @@ jobs:
     name: Publish to npm
     permissions:
       contents: write
+      id-token: write
     if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/'))
     steps:
       - name: Checkout repository
@@ -71,6 +71,6 @@ jobs:
         uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2
         with:
           draft: true # test for now
-          prerelease: true # always prerelease for now
+          prerelease: $
           generate_release_notes: true
           tag_name: v${{ steps.get_release_version.outputs.version }}
