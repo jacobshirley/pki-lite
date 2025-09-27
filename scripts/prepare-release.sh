@@ -3,6 +3,11 @@
 
 set -e 
 
+force_args=()
+if [[ " $* " == *" --force=true"* ]]; then
+    force_args+=("--force")
+fi
+
 # Stage all package.json updates
 git add **/package.json package.json
 
@@ -16,7 +21,7 @@ git checkout -b "release/v$CURRENT_VERSION"
 git commit -m "release($CURRENT_VERSION): prepare"
 
 # Push the branch to the remote repository
-git push origin "release/v$CURRENT_VERSION" -u
+git push origin "release/v$CURRENT_VERSION" -u "${force_args[@]}"
 
 if [[ " $* " == *" --create-pr "* ]]; then
     # Create a pull request using GitHub CLI
