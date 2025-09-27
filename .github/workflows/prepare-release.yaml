@@ -23,7 +23,7 @@ on:
         required: false
         type: boolean
 permissions:
-  actions: read
+  actions: write
   checks: write
   contents: write
   pull-requests: write
