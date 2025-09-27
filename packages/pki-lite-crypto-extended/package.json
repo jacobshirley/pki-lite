@@ -12,6 +12,10 @@
         "test:acceptance": "vitest run test/acceptance --browser.enabled=false",
         "test:watch": "vitest"
     },
+    "files": [
+        "dist",
+        "!**/*.tsbuildinfo"
+    ],
     "exports": {
         ".": {
             "import": "./dist/index.js",

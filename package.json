@@ -9,6 +9,7 @@
         "compile": "pnpm -r run compile && pnpm compile:examples && pnpm compile:test",
         "compile:examples": "node ./scripts/build-examples.ts",
         "compile:test": "tsc --noEmit",
+        "prepublish": "pnpm -r run compile",
         "test": "pnpm -r --no-sort run test",
         "prepare": "husky || true",
         "lint:staged": "lint-staged --allow-empty",
