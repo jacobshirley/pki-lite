@@ -2,7 +2,6 @@ import * as asn1js from 'asn1js'
 import { AttributeCertificateInfoV1 } from './AttributeCertificateInfoV1.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { Attribute } from '../Attribute.js'
-import { Extension } from '../Extension.js'
 import { describe, test, expect, beforeEach } from 'vitest'
 
 describe('AttributeCertificateInfoV1', () => {
