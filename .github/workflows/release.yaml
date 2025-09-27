@@ -26,6 +26,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: 'pnpm'
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
         with:
@@ -33,16 +38,9 @@ jobs:
       - name: Get release version from branch ref
         id: get_release_version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          # Get branch name from GitHub context
-          BRANCH_REF="${{ github.event.pull_request.head.ref }}"
-          # Extract version (e.g., v1.2.3)
-          RELEASE_VERSION="${BRANCH_REF#release/v}"
-          echo "version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
-      - name: Download artifact
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        with:
-          name: pki-lite-${{ steps.get_release_version.outputs.version }}
+          node -p "require('./package.json').version" >> .release-version
+          echo "version=$(cat .release-version)" >> $GITHUB_OUTPUT
+      - name: Compile
+        run: pnpm compile
+      - name: Publish package
+        run: pnpm publish --dry-run

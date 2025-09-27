@@ -65,4 +65,6 @@ jobs:
         with:
           name: pki-lite-${{ steps.get_release_version.outputs.version }}
           path: ./*.tgz
+      - name: Test publish
+        run: pnpm publish -r --dry-run
           
