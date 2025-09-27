@@ -6,7 +6,7 @@
     "private": true,
     "scripts": {
         "compile": "pnpm -r run compile && pnpm compile:examples && pnpm compile:test",
-        "compile:examples": "node ./scripts/build-examples.ts",
+        "compile:examples": "node ./scripts/build-examples.ts && prettier --write EXAMPLES.md",
         "compile:test": "tsc --noEmit",
         "prepublish": "pnpm -r run compile",
         "test": "pnpm -r --no-sort run test",

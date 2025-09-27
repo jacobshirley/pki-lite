@@ -1,4 +1,4 @@
-name: Publish Release
+name: Release
 
 on:
   pull_request:
@@ -9,38 +9,68 @@ on:
 
   # Manual trigger
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to publish (e.g. 1.2.3)'
-        required: true
-        type: string
 permissions:
   contents: read
-  packages: write
+  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     name: Publish to npm
+    permissions:
+      contents: write
     if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/'))
     steps:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+        with:
+          run_install: true
       - name: Set up Node.js
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '24'
           cache: 'pnpm'
-      - name: Set up pnpm
-        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
-        with:
-          run_install: false
-      - name: Get release version from branch ref
+      - name: Get release version
         id: get_release_version
-        run: |
-          node -p "require('./package.json').version" >> .release-version
-          echo "version=$(cat .release-version)" >> $GITHUB_OUTPUT
+        run: echo "version=$(jq -r .version ./package.json)" >> $GITHUB_OUTPUT
       - name: Compile
         run: pnpm compile
-      - name: Publish package
-        run: pnpm publish --dry-run
+      - name: Publish packages
+        run: pnpm -r publish --tag=latest --provenance
+      - name: Tag version
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag v${{ steps.get_release_version.outputs.version }}
+          git push origin v${{ steps.get_release_version.outputs.version }} || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pack
+        run: pnpm -r pack
+      - name: Push artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: pki-lite-${{ steps.get_release_version.outputs.version }}
+          path: ./*.tgz
+  github-release:
+    runs-on: ubuntu-latest
+    name: Create GitHub Release
+    needs: publish
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+      - name: Get release version
+        id: get_release_version
+        run: VERSION_FILE=$(ls *.tgz | head -n 1) && echo "version=$(echo $VERSION_FILE | sed -E 's/^pki-lite-(.*)\.tgz$/\1/')" >> $GITHUB_OUTPUT
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2
+        with:
+          draft: true # test for now
+          prerelease: true # always prerelease for now
+          generate_release_notes: true
+          tag_name: v${{ steps.get_release_version.outputs.version }}

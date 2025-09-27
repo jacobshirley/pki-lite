@@ -51,6 +51,8 @@ jobs:
         run: pnpm compile
       - name: Bump version
         run: ./scripts/bump-version.sh ${{ github.event.inputs.version }} --preid='${{ github.event.inputs.preid }}'
+      - name: Generate docs
+        run: pnpm docs:gen
       - name: Set up committer
         run: |
           git config --global user.name "github-actions[bot]"
@@ -64,7 +66,7 @@ jobs:
         run: echo "version=$(cat .release-version)" >> $GITHUB_OUTPUT
       - name: Pack
         run: pnpm pack -r
-      - name: Push artifact
+      - name: Push artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: pki-lite-${{ steps.get_release_version.outputs.version }}
