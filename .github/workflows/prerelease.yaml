@@ -30,6 +30,10 @@ jobs:
         run: pnpm compile
       - name: Bump version
         run: ./scripts/bump-version.sh ${{ github.event.inputs.version }} --preid='${{ github.event.inputs.preid }}'
+      - name: Set up committer
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
       - name: Create prerelease branch
         run: ./scripts/prerelease-branch.sh --create-pr
       - name: Pack
