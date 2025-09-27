@@ -15,10 +15,9 @@ on:
           - prerelease
         required: true
       preid:
-        description: 'Prerelease identifier (e.g. alpha, beta, rc)'
+        description: 'Prerelease identifier (e.g. alpha, beta, rc). Only used if version is a prerelease type'
         type: choice
         required: false
-        default: ''
         options:
           - alpha
           - beta
