@@ -1,0 +1,5 @@
+{
+    "readme": "none",
+    "entryPointStrategy": "expand",
+    "entryPoints": ["src/**/*.ts"]
+}

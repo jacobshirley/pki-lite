@@ -1,0 +1,54 @@
+{
+    "name": "pki-lite-monorepo",
+    "version": "1.0.0",
+    "description": "",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "compile": "pnpm -r run compile && pnpm compile:examples && pnpm compile:test",
+        "compile:examples": "node ./scripts/build-examples.ts",
+        "compile:test": "tsc --noEmit",
+        "test": "pnpm -r --no-sort run test",
+        "prepare": "husky || true",
+        "lint:staged": "lint-staged --allow-empty",
+        "lint:commit": "commitlint --edit $1",
+        "format": "prettier --write '**/*.{js,ts,json,md}'",
+        "docs:gen": "pnpm docs:gen:md && pnpm docs:gen:html",
+        "docs:gen:md": "typedoc --options typedoc.json --plugin typedoc-plugin-markdown --readme none && pnpm format",
+        "docs:gen:html": "typedoc --options typedoc.json --out docs-html --projectDocuments 'CONTRIBUTING.md' --projectDocuments 'EXAMPLES.md'"
+    },
+    "lint-staged": {
+        "*.{js,ts,json,md}": "pnpm format"
+    },
+    "keywords": [],
+    "author": "Jacob Shirley",
+    "license": "MIT",
+    "packageManager": "pnpm@10.14.0",
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/jacobshirley/pki-lite.git"
+    },
+    "readme": "README.md",
+    "pnpm": {
+        "overrides": {
+            "vitest": "$vitest",
+            "@vitest/browser": "$vitest"
+        }
+    },
+    "dependencies": {
+        "pki-lite": "^1.0.0",
+        "pki-lite-crypto-extended": "^1.0.0"
+    },
+    "devDependencies": {
+        "@commitlint/cli": "^19.8.1",
+        "@commitlint/config-conventional": "^19.8.1",
+        "@types/node": "^24.5.2",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.0",
+        "playwright": "^1.55.0",
+        "prettier": "^3.6.2",
+        "typedoc": "^0.28.13",
+        "typedoc-plugin-markdown": "^4.9.0",
+        "vitest": "^4.0.0-beta.12"
+    }
+}
