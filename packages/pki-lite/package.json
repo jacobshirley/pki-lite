@@ -28,7 +28,22 @@
         "test:integration": "vitest run test/integration",
         "prepack": "cp ../../README.md . && cp ../../EXAMPLES.md ."
     },
-    "keywords": [],
+    "keywords": [
+        "pkijs",
+        "pki",
+        "x509",
+        "crypto",
+        "webcrypto",
+        "nodejs",
+        "typescript",
+        "asn1",
+        "certificate",
+        "csr",
+        "pki-lite",
+        "p12",
+        "pkcs12",
+        "pem"
+    ],
     "author": "Jacob Shirley",
     "license": "MIT",
     "packageManager": "pnpm@10.14.0",

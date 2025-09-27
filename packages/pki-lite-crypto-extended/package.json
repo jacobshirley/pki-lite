@@ -36,7 +36,14 @@
         "encryption",
         "hashing",
         "crypto",
-        "security"
+        "security",
+        "pkcs",
+        "x509",
+        "certificate",
+        "webcrypto",
+        "nodejs",
+        "typescript",
+        "pem"
     ],
     "author": "Jacob Shirley",
     "license": "MIT",
