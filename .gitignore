@@ -145,3 +145,4 @@ vite.config.ts.timestamp-*
 
 tmp/
 docs-html/
+.release-version

@@ -14,6 +14,9 @@ git add **/package.json package.json
 # Get current version
 CURRENT_VERSION=$(node -p "require('./package.json').version")
 
+# Output the current version to use in other steps
+echo "$CURRENT_VERSION" > .release-version
+
 # Create a new branch for the release
 git checkout -b "release/v$CURRENT_VERSION"
 

@@ -55,11 +55,14 @@ jobs:
         run: ./scripts/prepare-release.sh --create-pr --force=${{ github.event.inputs.force }}
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Get release version
+        id: get_release_version
+        run: echo "version=$(cat .release-version)" >> $GITHUB_OUTPUT
       - name: Pack
         run: pnpm pack -r
       - name: Push artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: pki-lite
+          name: pki-lite-${{ steps.get_release_version.outputs.version }}
           path: ./*.tgz
           
