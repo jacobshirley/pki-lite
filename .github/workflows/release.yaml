@@ -35,12 +35,7 @@ jobs:
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
         with:
           run_install: false
-      - name: Get release version from branch ref
-        id: get_release_version
-        run: |
-          node -p "require('./package.json').version" >> .release-version
-          echo "version=$(cat .release-version)" >> $GITHUB_OUTPUT
       - name: Compile
         run: pnpm compile
       - name: Publish package
-        run: pnpm publish --dry-run
+        run: pnpm publish --tag=latest
