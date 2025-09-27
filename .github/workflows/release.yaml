@@ -68,7 +68,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2
         with:
-          draft: true # test for now
+          draft: false
           prerelease: ${{ contains(steps.get_release_version.outputs.version, '-') }}
           generate_release_notes: true
           tag_name: v${{ steps.get_release_version.outputs.version }}
