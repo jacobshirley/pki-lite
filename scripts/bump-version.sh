@@ -1,8 +1,8 @@
 #!/bin/bash
-# Usage: ./prerelease-version.sh <new-version>
-# Example: ./prerelease-version.sh patch
-# Example: ./prerelease-version.sh 1.2.3
-# Example: ./prerelease-version.sh major
+# Usage: ./bump-version.sh <new-version>
+# Example: ./bump-version.sh patch
+# Example: ./bump-version.sh 1.2.3
+# Example: ./bump-version.sh major
 
 set -e 
 

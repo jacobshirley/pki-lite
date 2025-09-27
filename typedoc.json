@@ -3,7 +3,6 @@
     "entryPoints": ["packages/*"],
     "name": "PKI-Lite",
     "entryPointStrategy": "packages",
-    "includeVersion": true,
     "disableSources": true,
     "alwaysCreateEntryPointModule": false,
     "cleanOutputDir": true,

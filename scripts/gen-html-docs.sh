@@ -4,7 +4,8 @@ pnpm exec typedoc \
     --projectDocuments 'README.md' \
     --projectDocuments 'CONTRIBUTING.md' \
     --projectDocuments 'EXAMPLES.md' \
-    --githubPages true
+    --githubPages \
+    --includeVersion
 
 # Replace link in docs
 

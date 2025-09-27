@@ -1,8 +1,8 @@
-**PKI-Lite v1.0.0**
+**PKI-Lite**
 
 ---
 
-# PKI-Lite v1.0.0
+# PKI-Lite
 
 ## Packages
 
