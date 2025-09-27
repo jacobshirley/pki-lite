@@ -70,4 +70,4 @@ jobs:
           name: pki-lite-${{ steps.get_release_version.outputs.version }}
           path: ./*.tgz
       - name: Test publish
-        run: pnpm publish -r --dry-run --publish-branch=$(git branch --show-current)
+        run: pnpm publish -r --dry-run --publish-branch=$(git branch --show-current) --no-git-checks
