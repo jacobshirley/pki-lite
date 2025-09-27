@@ -1,0 +1,33 @@
+name: Publish Release
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+    types:
+      - closed
+
+  # Manual trigger
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Publish to npm
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/'))
+    steps:
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+        with:
+          run_install: true
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: pki-lite
+      - name: Publish packages
+        run: pnpm publish -r --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

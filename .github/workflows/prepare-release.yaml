@@ -1,9 +1,9 @@
-name: Pre-Release
+name: Prepare Release
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to prerelease as (e.g. patch, minor, major)'
+        description: 'Version to prepare as (e.g. patch, minor, major)'
         required: true
       preid:
         description: 'Prerelease identifier (e.g. alpha, beta, rc)'
@@ -14,15 +14,18 @@ permissions:
   contents: write
   pull-requests: write
 jobs:
-  prerelease:
+  prepare-release:
     runs-on: ubuntu-latest
-    name: Pre-Release
+    name: Prepare Release
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
         with:
           run_install: true
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -34,8 +37,8 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Create prerelease branch
-        run: ./scripts/prerelease-branch.sh --create-pr
+      - name: Prepare release
+        run: ./scripts/prepare-release.sh --create-pr
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Pack
@@ -43,5 +46,6 @@ jobs:
       - name: Push artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
+          name: pki-lite
           path: ./*.tgz
           

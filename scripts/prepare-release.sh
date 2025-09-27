@@ -1,10 +1,10 @@
 #!/bin/bash
-# Usage: ./prerelease-branch.sh
+# Usage: ./prepare-release.sh
 
 set -e 
 
 # Stage all package.json updates
-git add **/package.json
+git add **/package.json package.json
 
 # Get current version
 CURRENT_VERSION=$(node -p "require('./package.json').version")
@@ -13,7 +13,7 @@ CURRENT_VERSION=$(node -p "require('./package.json').version")
 git checkout -b "release/v$CURRENT_VERSION"
 
 # Commit the changes
-git commit -m "release($CURRENT_VERSION): bump version to $CURRENT_VERSION"
+git commit -m "release($CURRENT_VERSION): prepare"
 
 # Push the branch to the remote repository
 git push origin "release/v$CURRENT_VERSION" -u
