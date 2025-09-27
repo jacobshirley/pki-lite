@@ -34,3 +34,17 @@ jobs:
         run: pnpm compile
       - name: Publish package
         run: pnpm publish --tag=latest
+  github-release:
+    runs-on: ubuntu-latest
+    name: Create GitHub Release
+    needs: publish
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: ncipollo/release-action@v1.18.0
+        with:
+          tag: ${{ github.event.pull_request.head.ref }}
+          name: ${{ github.event.pull_request.head.ref }}
+          draft: true # test for now
+          prerelease: true
+          generateReleaseNotes: true
