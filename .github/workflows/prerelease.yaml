@@ -9,9 +9,10 @@ on:
         description: 'Prerelease identifier (e.g. alpha, beta, rc)'
         required: false
 permissions:
-  contents: read
   actions: read
   checks: write
+  contents: write
+  pull-requests: write
 jobs:
   prerelease:
     runs-on: ubuntu-latest
@@ -29,6 +30,8 @@ jobs:
         run: pnpm compile
       - name: Bump version
         run: ./scripts/bump-version.sh ${{ github.event.inputs.version }} --preid='${{ github.event.inputs.preid }}'
+      - name: Create prerelease branch
+        run: ./scripts/prerelease-branch.sh --create-pr
       - name: Pack
         run: pnpm pack -r
       - name: Push artifact

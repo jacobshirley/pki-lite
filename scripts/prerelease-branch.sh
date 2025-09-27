@@ -9,5 +9,17 @@ git add **/package.json
 # Get current version
 CURRENT_VERSION=$(node -p "require('./package.json').version")
 
+# Create a new branch for the release
+git checkout -b "release/v$CURRENT_VERSION"
+
 # Commit the changes
 git commit -m "release($CURRENT_VERSION): bump version to $CURRENT_VERSION"
+
+# Push the branch to the remote repository
+git push origin "release/v$CURRENT_VERSION" -u
+
+if [[ " $* " == *" --create-pr "* ]]; then
+    # Create a pull request using GitHub CLI
+    PR_TITLE="chore: prerelease $CURRENT_VERSION"
+    gh pr create --fill --head "release/v$CURRENT_VERSION" --base master --body "Automated prerelease branch for version $CURRENT_VERSION"
+fi
