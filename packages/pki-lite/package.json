@@ -1,7 +1,7 @@
 {
     "name": "pki-lite",
     "type": "module",
-    "version": "1.0.0-alpha.0",
+    "version": "1.0.0-alpha.1",
     "description": "",
     "main": "dist/index.js",
     "exports": {
@@ -12,9 +12,9 @@
     },
     "files": [
         "dist",
-        "!**/*.tsbuildinfo"
+        "!**/*.tsbuildinfo",
+        "EXAMPLES.md"
     ],
-    "readme": "../../README.md",
     "scripts": {
         "compile": "pnpm compile:validate && tsc -p tsconfig.prod.json",
         "compile:validate": "tsc -p tsconfig.json --noEmit",
@@ -25,7 +25,8 @@
         "test:unit": "vitest run src/",
         "test:node": "vitest run test/node",
         "test:acceptance": "vitest run test/acceptance",
-        "test:integration": "vitest run test/integration"
+        "test:integration": "vitest run test/integration",
+        "prepack": "cp ../../README.md . && cp ../../EXAMPLES.md ."
     },
     "keywords": [],
     "author": "Jacob Shirley",

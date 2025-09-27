@@ -1,9 +1,8 @@
 {
     "name": "pki-lite-monorepo",
-    "version": "1.0.0-alpha.0",
-    "description": "",
+    "version": "1.0.0-alpha.1",
+    "description": "Lightweight, modular, and extensible Public Key Infrastructure (PKI) library for JavaScript and TypeScript.",
     "type": "module",
-    "main": "index.js",
     "private": true,
     "scripts": {
         "compile": "pnpm -r run compile && pnpm compile:examples && pnpm compile:test",
