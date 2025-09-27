@@ -51,6 +51,8 @@ jobs:
         run: pnpm compile
       - name: Bump version
         run: ./scripts/bump-version.sh ${{ github.event.inputs.version }} --preid='${{ github.event.inputs.preid }}'
+      - name: Generate docs
+        run: pnpm docs:gen
       - name: Set up committer
         run: |
           git config --global user.name "github-actions[bot]"
