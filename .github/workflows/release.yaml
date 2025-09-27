@@ -18,6 +18,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     name: Publish to npm
+    permissions:
+      contents: write
     if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/'))
     steps:
       - name: Checkout repository
@@ -31,21 +33,44 @@ jobs:
         with:
           node-version: '24'
           cache: 'pnpm'
+      - name: Get release version
+        id: get_release_version
+        run: echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
       - name: Compile
         run: pnpm compile
+      - name: Pack
+        run: pnpm -r pack
+      - name: Push artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        with:
+          name: pki-lite-${{ steps.get_release_version.outputs.version }}
+          path: ./*.tgz
       - name: Publish packages
         run: pnpm -r publish --tag=latest --provenance
+      - name: Tag version
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag v${{ steps.get_release_version.outputs.version }}
+          git push origin v${{ steps.get_release_version.outputs.version }} || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   github-release:
     runs-on: ubuntu-latest
     name: Create GitHub Release
     needs: publish
     steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+      - name: Get release version
+        id: get_release_version
+        run: VERSION_FILE=$(ls *.tgz | head -n 1) && echo "version=$(echo $VERSION_FILE | sed -E 's/^pki-lite-(.*)\.tgz$/\1/')" >> $GITHUB_OUTPUT
       - name: Create Release
         id: create_release
         uses: ncipollo/release-action@v1.18.0
         with:
-          tag: ${{ github.event.pull_request.head.ref }}
-          name: ${{ github.event.pull_request.head.ref }}
+          tag: v${{ steps.get_release_version.outputs.version }}
+          artifacts: '*.tgz'
           draft: true # test for now
           prerelease: true
           generateReleaseNotes: true
