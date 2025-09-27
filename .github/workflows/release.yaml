@@ -69,11 +69,9 @@ jobs:
         run: VERSION_FILE=$(ls *.tgz | head -n 1) && echo "version=$(echo $VERSION_FILE | sed -E 's/^pki-lite-(.*)\.tgz$/\1/')" >> $GITHUB_OUTPUT
       - name: Create Release
         id: create_release
-        uses: ncipollo/release-action@v1.18.0
+        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2
         with:
-          tag: v${{ steps.get_release_version.outputs.version }}
-          artifacts: '*.tgz'
           draft: true # test for now
-          prerelease: true
-          generateReleaseNotes: true
-          token: ${{ github.token }}
+          prerelease: true # always prerelease for now
+          generate_release_notes: true
+          tag_name: v${{ steps.get_release_version.outputs.version }}
