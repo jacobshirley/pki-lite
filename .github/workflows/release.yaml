@@ -35,7 +35,7 @@ jobs:
           cache: 'pnpm'
       - name: Get release version
         id: get_release_version
-        run: echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
+        run: echo "version=$(jq -r .version ./package.json)" >> $GITHUB_OUTPUT
       - name: Compile
         run: pnpm compile
       - name: Pack
