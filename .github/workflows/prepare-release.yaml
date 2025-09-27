@@ -16,8 +16,12 @@ on:
         required: true
       preid:
         description: 'Prerelease identifier (e.g. alpha, beta, rc)'
-        type: string
+        type: choice
         required: false
+        options:
+          - alpha
+          - beta
+          - rc
       force:
         description: 'Force prepare even if no changes detected'
         required: false
