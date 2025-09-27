@@ -26,5 +26,5 @@ git push origin "release/v$CURRENT_VERSION" -u "${force_args[@]}"
 if [[ " $* " == *" --create-pr "* ]]; then
     # Create a pull request using GitHub CLI
     PR_TITLE="chore: prerelease $CURRENT_VERSION"
-    gh pr create --fill --head "release/v$CURRENT_VERSION" --base master --body "Automated prerelease branch for version $CURRENT_VERSION"
+    gh pr create --fill --head "release/v$CURRENT_VERSION" --base master --body "Automated prerelease branch for version $CURRENT_VERSION" || true # Ignore errors if PR already exists
 fi
