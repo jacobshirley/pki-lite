@@ -76,4 +76,4 @@ jobs:
           draft: true # test for now
           prerelease: true
           generateReleaseNotes: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
