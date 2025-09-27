@@ -18,6 +18,7 @@ on:
         description: 'Prerelease identifier (e.g. alpha, beta, rc)'
         type: choice
         required: false
+        default: ''
         options:
           - alpha
           - beta
