@@ -8,8 +8,8 @@ if [[ " $* " == *" --force=true"* ]]; then
     force_args+=("--force")
 fi
 
-# Stage all package.json updates
-git add **/package.json package.json pnpm-lock.yaml
+# Stage all
+git add --all
 
 # Get current version
 CURRENT_VERSION=$(node -p "require('./package.json').version")
