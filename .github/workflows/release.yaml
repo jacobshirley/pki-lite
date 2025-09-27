@@ -34,7 +34,7 @@ jobs:
       - name: Compile
         run: pnpm compile
       - name: Publish package
-        run: pnpm publish --tag=latest
+        run: pnpm publish --tag=latest --provenance
   github-release:
     runs-on: ubuntu-latest
     name: Create GitHub Release
