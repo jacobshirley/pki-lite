@@ -74,3 +74,4 @@ jobs:
           prerelease: $
           generate_release_notes: true
           tag_name: v${{ steps.get_release_version.outputs.version }}
+          files: './*.tgz'
