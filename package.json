@@ -15,7 +15,7 @@
         "lint:commit": "commitlint --edit $1",
         "format": "prettier --write '**/*.{js,ts,json,md}'",
         "docs:gen": "pnpm docs:gen:md && pnpm docs:gen:html",
-        "docs:gen:md": "typedoc --options typedoc.json --plugin typedoc-plugin-markdown --readme none && pnpm format",
+        "docs:gen:md": "./scripts/gen-md-docs.sh",
         "docs:gen:html": "./scripts/gen-html-docs.sh"
     },
     "lint-staged": {
