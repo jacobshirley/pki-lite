@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - docs/* # Useful for testing changes to docs
 
   workflow_dispatch:
 
