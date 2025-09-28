@@ -72,6 +72,7 @@
 - [core/PkiBase.test](core/PkiBase.test/README.md)
 - [core/utils](core/utils/README.md)
 - [core/utils.test](core/utils.test/README.md)
+- [index](index/README.md)
 - [keys/ECDSASignature](keys/ECDSASignature/README.md)
 - [keys/ECDSASignature.test](keys/ECDSASignature.test/README.md)
 - [keys/ECPrivateKey](keys/ECPrivateKey/README.md)
