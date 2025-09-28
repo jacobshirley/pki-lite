@@ -27,7 +27,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                version: [docs-test, docs-test2, latest] # Add your major versions here
+                version: [v1, latest, master] # Add your major versions here
         steps:
             - name: Checkout ${{ matrix.version }}
               uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
