@@ -222,5 +222,4 @@ The package includes comprehensive tests covering:
 
 ## Related Packages
 
-- [pki-lite](../pki-lite) - Base PKI and cryptographic library
-- [pki-lite-crypto-extended](../pki-lite-crypto-extended) - This package
+- [pki-lite](https://www.npmjs.com/package/pki-lite) - Base PKI and cryptographic library
