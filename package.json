@@ -37,8 +37,8 @@
         }
     },
     "dependencies": {
-        "pki-lite": "1.0.1",
-        "pki-lite-crypto-extended": "1.0.1"
+        "pki-lite": "^1.0.1",
+        "pki-lite-crypto-extended": "^1.0.1"
     },
     "devDependencies": {
         "@commitlint/cli": "^19.8.1",
