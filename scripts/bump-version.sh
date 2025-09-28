@@ -36,7 +36,7 @@ find . -name 'package.json' -not -path '*/node_modules/*' | while read -r pkg_fi
       const fs = require('fs');
       const pkg = JSON.parse(fs.readFileSync('$pkg_file', 'utf8'));
       const newVersion = '$NEW_VERSION';
-      ['dependencies', 'devDependencies', 'peerDependencies'].forEach(depType => {
+      ['dependencies', 'devDependencies'].forEach(depType => {
         if (pkg[depType]) {
           Object.keys(pkg[depType]).forEach(dep => {
             if (dep.startsWith('pki-lite')) {
