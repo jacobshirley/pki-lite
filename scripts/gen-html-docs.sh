@@ -6,7 +6,3 @@ pnpm exec typedoc \
     --projectDocuments 'EXAMPLES.md' \
     --githubPages \
     --includeVersion
-
-# Replace link in docs
-
-find docs-html -type f -name '*.html' -exec sed -i '' 's/media\/README.md/index.html/g' {} +
