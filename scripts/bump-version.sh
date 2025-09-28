@@ -40,7 +40,12 @@ find . -name 'package.json' -not -path '*/node_modules/*' | while read -r pkg_fi
         if (pkg[depType]) {
           Object.keys(pkg[depType]).forEach(dep => {
             if (dep.startsWith('pki-lite')) {
-              pkg[depType][dep] = newVersion;
+              const initialChar = pkg[depType][dep][0];
+              if (['^', '~', '>', '<', '='].includes(initialChar)) {
+                pkg[depType][dep] = initialChar + newVersion;
+              } else {
+                pkg[depType][dep] = newVersion;
+              }
             }
           });
         }

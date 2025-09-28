@@ -57,7 +57,7 @@
         "node-forge": "^1.3.1"
     },
     "peerDependencies": {
-        "pki-lite": "1.0.1"
+        "pki-lite": "^1.0.1"
     },
     "devDependencies": {
         "@types/node": "^24.5.1",
