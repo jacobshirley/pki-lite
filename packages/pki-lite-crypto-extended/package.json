@@ -16,16 +16,6 @@
         "dist",
         "!**/*.tsbuildinfo"
     ],
-    "exports": {
-        ".": {
-            "import": "./dist/index.js",
-            "types": "./dist/index.d.ts"
-        },
-        "./*": {
-            "import": "./dist/*",
-            "types": "./dist/*.d.ts"
-        }
-    },
     "repository": {
         "url": "https://github.com/jacobshirley/pki-lite"
     },
