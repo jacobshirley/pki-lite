@@ -26,6 +26,9 @@
             "types": "./dist/*.d.ts"
         }
     },
+    "repository": {
+        "url": "https://github.com/jacobshirley/pki-lite"
+    },
     "keywords": [
         "cryptography",
         "pki",

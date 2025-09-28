@@ -10,6 +10,9 @@
             "default": "./dist/*"
         }
     },
+    "repository": {
+        "url": "https://github.com/jacobshirley/pki-lite"
+    },
     "files": [
         "dist",
         "!**/*.tsbuildinfo",
