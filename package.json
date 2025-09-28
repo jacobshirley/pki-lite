@@ -16,7 +16,7 @@
         "format": "prettier --write '**/*.{js,ts,json,md}'",
         "docs:gen": "pnpm docs:gen:md && pnpm docs:gen:html",
         "docs:gen:md": "typedoc --options typedoc.json --plugin typedoc-plugin-markdown --readme none && pnpm format",
-        "docs:gen:html": "typedoc --options typedoc.json --out docs-html --projectDocuments 'CONTRIBUTING.md' --projectDocuments 'EXAMPLES.md'"
+        "docs:gen:html": "./scripts/gen-html-docs.sh"
     },
     "lint-staged": {
         "*.{js,ts,json,md}": "pnpm format"
@@ -50,6 +50,6 @@
         "prettier": "^3.6.2",
         "typedoc": "^0.28.13",
         "typedoc-plugin-markdown": "^4.9.0",
-        "vitest": "^4.0.0-beta.12"
+        "vitest": "^4.0.0-beta.11"
     }
 }
