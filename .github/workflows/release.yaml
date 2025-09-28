@@ -42,7 +42,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git tag v${{ steps.get_release_version.outputs.version }}
+          MAJOR_VERSION=$(echo ${{ steps.get_release_version.outputs.version }} | cut -d. -f1)
+          git tag v${MAJOR_VERSION} || true
+          git tag latest || true
           git push origin v${{ steps.get_release_version.outputs.version }} || true
+          git push origin v${MAJOR_VERSION} || true
+          git push origin latest || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Pack
