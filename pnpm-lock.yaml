@@ -13,10 +13,10 @@ importers:
   .:
     dependencies:
       pki-lite:
-        specifier: ^1.0.1
+        specifier: ^1.0.2
         version: link:packages/pki-lite
       pki-lite-crypto-extended:
-        specifier: ^1.0.1
+        specifier: ^1.0.2
         version: link:packages/pki-lite-crypto-extended
     devDependencies:
       '@commitlint/cli':
