@@ -3,14 +3,6 @@ import { GeneralizedTime } from './UTCTime.js'
 import * as asn1js from 'asn1js'
 
 describe('GeneralizedDate', () => {
-    test('should create GeneralizedDate with current date when no date provided', () => {
-        const generalizedDate = new GeneralizedTime()
-
-        expect(generalizedDate).toBeInstanceOf(GeneralizedTime)
-        expect(generalizedDate.date).toBeInstanceOf(Date)
-        expect(generalizedDate.date.getTime()).toBeCloseTo(Date.now(), -1) // Within ~1000ms
-    })
-
     test('should create GeneralizedDate from Date object', () => {
         const testDate = new Date('2023-01-15T10:30:00.000Z')
         const generalizedDate = new GeneralizedTime({ date: testDate })

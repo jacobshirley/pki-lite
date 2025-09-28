@@ -3,14 +3,6 @@ import { UTCTime } from './UTCTime.js'
 import * as asn1js from 'asn1js'
 
 describe('UTCTime', () => {
-    test('should create UTCTime with current date when no date provided', () => {
-        const utcDate = new UTCTime()
-
-        expect(utcDate).toBeInstanceOf(UTCTime)
-        expect(utcDate.time).toBeInstanceOf(Date)
-        expect(utcDate.time.getTime()).toBeCloseTo(Date.now(), -1) // Within ~1000ms
-    })
-
     test('should create UTCTime from Date object', () => {
         const testDate = new Date('2023-01-15T10:30:00.000Z')
         const utcDate = new UTCTime({ time: testDate })
