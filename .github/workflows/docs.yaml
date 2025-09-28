@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: [docs-test, docs-test2] # Add your major versions here
+        version: [docs-test, docs-test2, latest] # Add your major versions here
     steps:
       - name: Checkout ${{ matrix.version }}
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -47,6 +47,9 @@ jobs:
         run: pnpm compile
       - name: Build docs
         run: pnpm docs:gen ${{ matrix.version }}
+      - name: Copy latest to root
+        if: matrix.version == 'latest'
+        run: cp -r docs-html/latest docs-html
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
