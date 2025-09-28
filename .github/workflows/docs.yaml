@@ -23,10 +23,16 @@ defaults:
 
 jobs:
   build:
-    name: Build
+    name: Build Docs for ${{ matrix.version }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [v1, latest] # Add your major versions here
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Checkout ${{ matrix.version }}
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          ref: ${{ matrix.version }}
       - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
         with:
           run_install: true

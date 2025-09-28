@@ -8,12 +8,9 @@ echo "Generating docs for version: $NEW_VERSION"
 
 pnpm exec typedoc \
     --options typedoc.json \
-    --out docs-html \
+    --out docs-html/v$NEW_VERSION \
     --projectDocuments 'README.md' \
     --projectDocuments 'CONTRIBUTING.md' \
     --projectDocuments 'EXAMPLES.md' \
     --githubPages \
     --includeVersion
-
-# Copy to versioned folder
-rsync -a docs-html/ docs-html/v$NEW_VERSION/
