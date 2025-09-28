@@ -21,7 +21,7 @@ echo "$CURRENT_VERSION" > .release-version
 git checkout -b "release/v$CURRENT_VERSION"
 
 # Commit the changes
-git commit -m "release($CURRENT_VERSION): prepare"
+git commit -m "release(v$CURRENT_VERSION): prepare"
 
 # Push the branch to the remote repository
 git push origin "release/v$CURRENT_VERSION" -u "${force_args[@]}"
