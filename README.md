@@ -1,4 +1,4 @@
-**[Examples](./EXAMPLES.md)** | **[Documentation](https://jacobshirley.github.io/pki-lite)**
+**[Examples](./EXAMPLES.md)** | **[Documentation](https://jacobshirley.github.io/pki-lite/v1.0.2)**
 
 # PKI-Lite: Lightweight Public Key Infrastructure Library
 
