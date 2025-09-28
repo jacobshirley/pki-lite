@@ -16,4 +16,4 @@ pnpm exec typedoc \
     --includeVersion
 
 # Copy to versioned folder
-cp -r docs-html docs-html/v$NEW_VERSION
+rsync -Rr docs-html docs-html/v$NEW_VERSION
