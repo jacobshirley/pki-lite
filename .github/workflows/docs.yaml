@@ -60,6 +60,9 @@ jobs:
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          merge-multiple: true
+          path: ./docs-html
       - name: List files
         run: ls -R docs-html
       - name: Move to root
