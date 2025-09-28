@@ -2,7 +2,12 @@
 
 set -e
 
-NEW_VERSION=${1:-"$(node -p "require('../package.json').version")"}
+NEW_VERSION=$1
+
+if [ -z "$NEW_VERSION" ]; then
+    echo "Usage: $0 <new-version>"
+    exit 1
+fi
 
 echo "Generating HTML docs for version: $NEW_VERSION"
 
