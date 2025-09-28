@@ -16,7 +16,7 @@ pnpm exec typedoc \
     --includeVersion
 
 # Update absolute doc links to versioned path
-find docs-html -type f -name '*.html' -exec sed -i '' "s|https://jacobshirley.github.io/pki-lite|https://jacobshirley.github.io/pki-lite/v$NEW_VERSION|g" {} +
+find docs-html -type f -name '*.html' -exec sh -c 'sed -i "" "s|https://jacobshirley.github.io/pki-lite|https://jacobshirley.github.io/pki-lite/v$NEW_VERSION|g" "$0"' {} \;
 
 # Copy to versioned folder
 rsync -a docs-html/ docs-html/v$NEW_VERSION/
