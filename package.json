@@ -13,8 +13,8 @@
         "prepare": "husky || true",
         "lint:staged": "lint-staged --allow-empty",
         "lint:commit": "commitlint --edit $1",
-        "format": "prettier --write '**/*.{js,ts,json,md}'",
-        "docs:gen": "pnpm docs:gen:md && pnpm docs:gen:html",
+        "format": "prettier --write '**/*.{js,ts,json,md,yaml,yml}'",
+        "docs:gen": "sh -c 'pnpm docs:gen:md \"$@\" && pnpm docs:gen:html \"$@\"' --",
         "docs:gen:md": "./scripts/gen-md-docs.sh",
         "docs:gen:html": "./scripts/gen-html-docs.sh"
     },
