@@ -2,13 +2,11 @@
 
 set -e
 
-# Get latest version from package.json
-NEW_VERSION=$(node -p "require('./package.json').version")
-echo "Generating docs for version: $NEW_VERSION"
+NEW_VERSION=${1:-"$(node -p "require('../package.json').version")"}
 
 pnpm exec typedoc \
     --options typedoc.json \
-    --out docs-html/v$NEW_VERSION \
+    --out docs-html/$NEW_VERSION \
     --projectDocuments 'README.md' \
     --projectDocuments 'CONTRIBUTING.md' \
     --projectDocuments 'EXAMPLES.md' \

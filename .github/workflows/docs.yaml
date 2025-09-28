@@ -46,7 +46,7 @@ jobs:
       - name: Compile TypeScript
         run: pnpm compile
       - name: Build docs
-        run: pnpm docs:gen
+        run: pnpm docs:gen ${{ matrix.version }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa #v3
         with:
