@@ -4,6 +4,9 @@
 
 A modern, lightweight JavaScript/TypeScript library for Public Key Infrastructure (PKI) operations. PKI-Lite provides core cryptographic capabilities for working with X.509 certificates, PKCS standards, digital signatures, and more.
 
+> **Notice:**  
+> _This package is new. If you plan to use it in production, please review the code and functionality closely to ensure it meets your security and reliability requirements._
+
 ## Features
 
 - **X.509 Certificate Operations**: Create, validate, and manage X.509 certificates
@@ -150,5 +153,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## Acknowledgments
 
-- Uses [asn1js](https://www.npmjs.com/package/asn1js)
+- Uses [asn1js](https://www.npmjs.com/package/asn1js) for ASN.1 parsing and serialization
 - Extended crypto functionality provided by [noble-hashes](https://github.com/paulmillr/noble-hashes) and [noble-ciphers](https://github.com/paulmillr/noble-ciphers) and [node-forge](https://github.com/digitalbazaar/forge)
