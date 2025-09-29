@@ -39,6 +39,7 @@
         "pem"
     ],
     "author": "Jacob Shirley",
+    "homepage": "https://jacobshirley.github.io/pki-lite/v1",
     "license": "MIT",
     "packageManager": "pnpm@10.14.0",
     "dependencies": {

@@ -14,6 +14,7 @@
     "repository": {
         "url": "https://github.com/jacobshirley/pki-lite"
     },
+    "homepage": "https://jacobshirley.github.io/pki-lite/v1",
     "files": [
         "dist",
         "!**/*.tsbuildinfo",
