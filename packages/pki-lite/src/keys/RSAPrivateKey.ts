@@ -128,14 +128,6 @@ export class RSAPrivateKey extends PkiBase<RSAPrivateKey> {
     }
 
     /**
-     * Converts the RSA private key to DER format.
-     */
-    toDer(): Uint8Array {
-        const asn1 = this.toAsn1()
-        return new Uint8Array(asn1.toBER(false))
-    }
-
-    /**
      * Extracts the RSA key component from this private key.
      *
      * @returns A new RSAPublicKey containing the parts of this key

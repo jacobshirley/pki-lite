@@ -105,14 +105,6 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
     }
 
     /**
-     * Converts the ECPrivateKey to a DER-encoded byte array
-     */
-    toDer(): Uint8Array {
-        const asn1 = this.toAsn1()
-        return new Uint8Array(asn1.toBER(false))
-    }
-
-    /**
      * Converts the ECPrivateKey to a PEM-encoded string
      */
     toPem(): string {

@@ -54,14 +54,6 @@ export class RSAPublicKey extends PkiBase<RSAPublicKey> {
     }
 
     /**
-     * Converts the RSA key to DER format.
-     */
-    toDer(): Uint8Array {
-        const asn1 = this.toAsn1()
-        return new Uint8Array(asn1.toBER(false))
-    }
-
-    /**
      * Parses an ASN.1 structure to create an RSAPublicKey.
      *
      * @param asn1 The ASN.1 structure

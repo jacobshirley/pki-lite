@@ -97,7 +97,7 @@ export abstract class PkiBase<T extends object = any> {
      *
      * @returns The DER-encoded bytes of this object
      */
-    toDer(): Uint8Array {
+    toDer(): Uint8Array<ArrayBuffer> {
         return asn1ToDer(this.toAsn1())
     }
 
@@ -212,7 +212,7 @@ export abstract class PkiArray<T extends PkiBase<any>> extends Array<T> {
      *
      * @returns The DER-encoded bytes of this array
      */
-    toDer(): Uint8Array {
+    toDer(): Uint8Array<ArrayBuffer> {
         return asn1ToDer(this.toAsn1())
     }
 
@@ -254,15 +254,6 @@ export class PkiSet<T extends PkiBase<any> = any> extends PkiArray<T> {
         return new asn1js.Set({
             value: [...this].map((item) => item.toAsn1()),
         })
-    }
-
-    /**
-     * Converts this set to DER format.
-     *
-     * @returns The DER-encoded bytes of this set
-     */
-    toDer(): Uint8Array {
-        return asn1ToDer(this.toAsn1())
     }
 
     /**
@@ -339,15 +330,6 @@ export class PkiSequence<T extends PkiBase<any> = any> extends PkiArray<T> {
     }
 
     /**
-     * Converts this sequence to DER format.
-     *
-     * @returns The DER-encoded bytes of this sequence
-     */
-    toDer(): Uint8Array {
-        return asn1ToDer(this.toAsn1())
-    }
-
-    /**
      * Compares this sequence with another for equality.
      * Two sequences are considered equal if they have the same length and
      * all corresponding items are equal in the same order.
@@ -405,7 +387,7 @@ export class PkiSequence<T extends PkiBase<any> = any> extends PkiArray<T> {
  * @param value The ASN.1 structure to encode
  * @returns The DER-encoded bytes
  */
-export function asn1ToDer(value: Asn1BaseBlock): Uint8Array {
+export function asn1ToDer(value: Asn1BaseBlock): Uint8Array<ArrayBuffer> {
     return new Uint8Array(value.toBER(false))
 }
 
