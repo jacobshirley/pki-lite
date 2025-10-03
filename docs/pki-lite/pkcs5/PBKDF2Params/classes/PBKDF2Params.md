@@ -51,7 +51,7 @@ PBKDF2-params ::= SEQUENCE {
 
 ###### salt
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`OctetString`](../../../asn1/OctetString/classes/OctetString.md) \| [`AlgorithmIdentifier`](../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
+`Uint8Array`\<`ArrayBuffer`\> \| [`OctetString`](../../../asn1/OctetString/classes/OctetString.md) \| [`AlgorithmIdentifier`](../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
 
 #### Returns
 
@@ -207,13 +207,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

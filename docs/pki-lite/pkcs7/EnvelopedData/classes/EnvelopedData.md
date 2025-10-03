@@ -198,7 +198,7 @@ Used for PEM headers and debugging output.
 
 ### decrypt()
 
-> **decrypt**(`privateKey`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+> **decrypt**(`privateKey`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 #### Parameters
 
@@ -208,7 +208,7 @@ Used for PEM headers and debugging output.
 
 #### Returns
 
-`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 ---
 
@@ -302,13 +302,13 @@ Converts the EnvelopedData to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -429,7 +429,7 @@ Creates an EnvelopedData from an ASN.1 structure.
 
 ##### cms
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | [`ContentInfo`](../../ContentInfo/classes/ContentInfo.md)
+`Uint8Array`\<`ArrayBuffer`\> | [`ContentInfo`](../../ContentInfo/classes/ContentInfo.md)
 
 #### Returns
 
@@ -445,7 +445,7 @@ Creates an EnvelopedData from an ASN.1 structure.
 
 ##### der
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 

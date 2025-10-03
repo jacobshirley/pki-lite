@@ -6,7 +6,7 @@
 
 # Function: base64ToArray()
 
-> **base64ToArray**(`base64`): `Uint8Array<ArrayBuffer>`
+> **base64ToArray**(`base64`): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts a base64 string to a Uint8Array<ArrayBuffer> in a browser-compatible way.
 Uses the atob() function available in both browsers and Node.js.
@@ -21,6 +21,6 @@ The base64 string to decode
 
 ## Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The decoded bytes

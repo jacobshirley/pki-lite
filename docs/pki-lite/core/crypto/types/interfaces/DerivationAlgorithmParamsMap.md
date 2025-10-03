@@ -36,6 +36,6 @@ Desired key length in bytes (optional)
 
 #### salt
 
-> **salt**: `Uint8Array<ArrayBuffer>`
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
 
 Salt value for key derivation

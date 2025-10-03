@@ -71,7 +71,7 @@ Initialization parameters
 
 ### valueBeforeDecodeView
 
-> **valueBeforeDecodeView**: `Uint8Array<ArrayBuffer>`
+> **valueBeforeDecodeView**: `Uint8Array`
 
 #### Since
 
@@ -159,7 +159,7 @@ Base function for converting block from BER encoded array of bytes
 
 ASN.1 BER encoded array
 
-`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
 
 ##### \_inputOffset
 

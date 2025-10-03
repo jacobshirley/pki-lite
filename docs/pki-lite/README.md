@@ -160,6 +160,8 @@
 - [pkcs7/EnvelopedData.test](pkcs7/EnvelopedData.test/README.md)
 - [pkcs7/IssuerAndSerialNumber](pkcs7/IssuerAndSerialNumber/README.md)
 - [pkcs7/IssuerAndSerialNumber.test](pkcs7/IssuerAndSerialNumber.test/README.md)
+- [pkcs7/MessageAuthenticationCode](pkcs7/MessageAuthenticationCode/README.md)
+- [pkcs7/MessageAuthenticationCode.test](pkcs7/MessageAuthenticationCode.test/README.md)
 - [pkcs7/recipients/KEKIdentifier](pkcs7/recipients/KEKIdentifier/README.md)
 - [pkcs7/recipients/KEKIdentifier.test](pkcs7/recipients/KEKIdentifier.test/README.md)
 - [pkcs7/recipients/KEKRecipientInfo](pkcs7/recipients/KEKRecipientInfo/README.md)

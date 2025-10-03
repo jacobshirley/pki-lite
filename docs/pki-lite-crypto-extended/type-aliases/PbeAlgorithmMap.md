@@ -22,7 +22,7 @@ Parameters for supported PBE algorithms
 
 #### salt
 
-> **salt**: `Uint8Array<ArrayBuffer>`
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -36,7 +36,7 @@ Parameters for supported PBE algorithms
 
 #### salt
 
-> **salt**: `Uint8Array<ArrayBuffer>`
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -50,7 +50,7 @@ Parameters for supported PBE algorithms
 
 #### salt
 
-> **salt**: `Uint8Array<ArrayBuffer>`
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -64,4 +64,4 @@ Parameters for supported PBE algorithms
 
 #### salt
 
-> **salt**: `Uint8Array<ArrayBuffer>`
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>

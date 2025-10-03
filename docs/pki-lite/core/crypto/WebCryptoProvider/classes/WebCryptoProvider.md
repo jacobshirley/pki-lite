@@ -87,7 +87,7 @@ Converts symmetric encryption algorithm parameters to a content encryption algor
 
 The symmetric encryption algorithm parameters
 
-[`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
+[`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
 
 #### Returns
 
@@ -103,7 +103,7 @@ Content encryption algorithm as an AlgorithmIdentifier
 
 ### decrypt()
 
-> **decrypt**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+> **decrypt**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Decrypts the given data using the specified private key and asymmetric algorithm.
 
@@ -111,7 +111,7 @@ Decrypts the given data using the specified private key and asymmetric algorithm
 
 ##### data
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The data to decrypt
 
@@ -129,7 +129,7 @@ The decryption algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Promise resolving to the decrypted data as a Uint8Array<ArrayBuffer>
 
@@ -141,7 +141,7 @@ Promise resolving to the decrypted data as a Uint8Array<ArrayBuffer>
 
 ### decryptSymmetric()
 
-> **decryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+> **decryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Decrypts the given data using the specified symmetric key and algorithm.
 
@@ -149,7 +149,7 @@ Decrypts the given data using the specified symmetric key and algorithm.
 
 ##### data
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The data to decrypt
 
@@ -157,17 +157,17 @@ The data to decrypt
 
 The symmetric key to use for decryption
 
-`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | `CryptoKey`
+`string` | `Uint8Array`\<`ArrayBuffer`\> | `CryptoKey`
 
 ##### algorithm
 
 The decryption algorithm to use
 
-[`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
+[`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
 
 #### Returns
 
-`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Promise resolving to the decrypted data as a Uint8Array<ArrayBuffer>
 
@@ -185,23 +185,23 @@ Promise resolving to the decrypted data as a Uint8Array<ArrayBuffer>
 
 ##### password
 
-`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | `CryptoKey`
+`string` | `Uint8Array`\<`ArrayBuffer`\> | `CryptoKey`
 
 ##### algorithm
 
 ###### params
 
-\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
+\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
 
 ###### params.derivationAlgorithm
 
-\{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}
+\{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}
 
 Key derivation algorithm and parameters
 
 ###### params.derivationAlgorithm.params
 
-\{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}
+\{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}
 
 ###### params.derivationAlgorithm.params.hash
 
@@ -223,7 +223,7 @@ Desired key length in bytes (optional)
 
 ###### params.derivationAlgorithm.params.salt
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 Salt value for key derivation
 
@@ -249,7 +249,7 @@ Symmetric encryption algorithm and parameters
 
 ### deriveKey()
 
-> **deriveKey**(`password`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+> **deriveKey**(`password`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Derives a cryptographic key from a password using the specified algorithm.
 
@@ -259,7 +259,7 @@ Derives a cryptographic key from a password using the specified algorithm.
 
 The password or key material to derive from
 
-`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | `CryptoKey`
+`string` | `Uint8Array`\<`ArrayBuffer`\> | `CryptoKey`
 
 ##### algorithm
 
@@ -267,17 +267,17 @@ The key derivation algorithm parameters
 
 ###### params
 
-\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
+\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
 
 ###### params.derivationAlgorithm
 
-\{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}
+\{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}
 
 Key derivation algorithm and parameters
 
 ###### params.derivationAlgorithm.params
 
-\{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}
+\{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}
 
 ###### params.derivationAlgorithm.params.hash
 
@@ -299,7 +299,7 @@ Desired key length in bytes (optional)
 
 ###### params.derivationAlgorithm.params.salt
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 Salt value for key derivation
 
@@ -319,7 +319,7 @@ Symmetric encryption algorithm and parameters
 
 #### Returns
 
-`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Promise resolving to the derived key as a Uint8Array<ArrayBuffer>
 
@@ -331,7 +331,7 @@ Promise resolving to the derived key as a Uint8Array<ArrayBuffer>
 
 ### digest()
 
-> **digest**(`data`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+> **digest**(`data`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Computes a cryptographic hash of the input data.
 
@@ -339,7 +339,7 @@ Computes a cryptographic hash of the input data.
 
 ##### data
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The data to hash
 
@@ -351,7 +351,7 @@ The hash algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 The computed hash bytes
 
@@ -393,7 +393,7 @@ Digest algorithm as a Uint8Array<ArrayBuffer> or AlgorithmIdentifier
 
 ### encrypt()
 
-> **encrypt**(`data`, `publicKeyInfo`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+> **encrypt**(`data`, `publicKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Encrypts data using asymmetric (public key) cryptography.
 
@@ -401,7 +401,7 @@ Encrypts data using asymmetric (public key) cryptography.
 
 ##### data
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The data to encrypt
 
@@ -419,7 +419,7 @@ The encryption algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
@@ -431,7 +431,7 @@ Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
 ### encryptSymmetric()
 
-> **encryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+> **encryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Encrypts the given data using the specified symmetric key and algorithm.
 
@@ -439,7 +439,7 @@ Encrypts the given data using the specified symmetric key and algorithm.
 
 ##### data
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The data to encrypt
 
@@ -447,17 +447,17 @@ The data to encrypt
 
 The symmetric key to use for encryption
 
-`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | `CryptoKey`
+`string` | `Uint8Array`\<`ArrayBuffer`\> | `CryptoKey`
 
 ##### algorithm
 
 The encryption algorithm to use
 
-[`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
+[`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
 
 #### Returns
 
-`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
@@ -469,7 +469,7 @@ Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
 ### generateKeyPair()
 
-> **generateKeyPair**(`options`): `Promise`\<\{ `privateKey`: `Uint8Array<ArrayBuffer>`; `publicKey`: `Uint8Array<ArrayBuffer>`; \}\>
+> **generateKeyPair**(`options`): `Promise`\<\{ `privateKey`: `Uint8Array`\<`ArrayBuffer`\>; `publicKey`: `Uint8Array`\<`ArrayBuffer`\>; \}\>
 
 Generates an asymmetric key pair for the specified algorithm and options.
 
@@ -497,11 +497,11 @@ Configuration options including algorithm, key size, and other parameters
 
 ###### publicExponent?
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
-`Promise`\<\{ `privateKey`: `Uint8Array<ArrayBuffer>`; `publicKey`: `Uint8Array<ArrayBuffer>`; \}\>
+`Promise`\<\{ `privateKey`: `Uint8Array`\<`ArrayBuffer`\>; `publicKey`: `Uint8Array`\<`ArrayBuffer`\>; \}\>
 
 A Promise that resolves to an object containing the public and private keys
 
@@ -513,7 +513,7 @@ A Promise that resolves to an object containing the public and private keys
 
 ### generateSymmetricKey()
 
-> **generateSymmetricKey**(`algorithm`): `Uint8Array<ArrayBuffer>`
+> **generateSymmetricKey**(`algorithm`): `Uint8Array`\<`ArrayBuffer`\>
 
 Generates a symmetric key for the specified encryption algorithm.
 
@@ -527,7 +527,7 @@ The encryption algorithm to use
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The generated symmetric key as a Uint8Array<ArrayBuffer>
 
@@ -603,7 +603,7 @@ The EC named curve identifier
 
 ##### password
 
-`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`string` | `Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
@@ -613,7 +613,7 @@ The EC named curve identifier
 
 ### getRandomValues()
 
-> **getRandomValues**(`length`): `Uint8Array<ArrayBuffer>`
+> **getRandomValues**(`length`): `Uint8Array`\<`ArrayBuffer`\>
 
 Generates cryptographically secure random bytes.
 
@@ -627,7 +627,7 @@ The number of random bytes to generate
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 Array containing the random bytes
 
@@ -671,7 +671,7 @@ Web Crypto API compatible algorithm specification
 
 ###### params
 
-\{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}
+\{ `hash`: [`HashAlgorithm`](../../types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}
 
 ###### params.hash
 
@@ -693,7 +693,7 @@ Desired key length in bytes (optional)
 
 ###### params.salt
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 Salt value for key derivation
 
@@ -767,7 +767,7 @@ Key encryption algorithm as an AlgorithmIdentifier
 
 ### sign()
 
-> **sign**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+> **sign**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Creates a digital signature for the given data.
 
@@ -775,7 +775,7 @@ Creates a digital signature for the given data.
 
 ##### data
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The data to sign
 
@@ -793,7 +793,7 @@ The signature algorithm and parameters
 
 #### Returns
 
-`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Promise resolving to the signature bytes
 
@@ -899,7 +899,7 @@ Desired key length in bytes (optional)
 
 ###### params.salt
 
-> **salt**: `Uint8Array<ArrayBuffer>`
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
 
 Salt value for key derivation
 
@@ -983,7 +983,7 @@ Desired key length in bytes (optional)
 
 ###### params.derivationAlgorithm.params.salt
 
-> **salt**: `Uint8Array<ArrayBuffer>`
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
 
 Salt value for key derivation
 
@@ -1039,7 +1039,7 @@ Verifies a digital signature against the original data.
 
 ##### data
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The original data that was signed
 
@@ -1051,7 +1051,7 @@ The signer's public key
 
 ##### signature
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The signature to verify
 

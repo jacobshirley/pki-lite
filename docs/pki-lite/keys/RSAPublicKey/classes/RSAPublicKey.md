@@ -35,11 +35,11 @@ Creates a new RSAPublicKey instance.
 
 ###### modulus
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### publicExponent
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
@@ -53,7 +53,7 @@ Creates a new RSAPublicKey instance.
 
 ### modulus
 
-> **modulus**: `Uint8Array<ArrayBuffer>`
+> **modulus**: `Uint8Array`\<`ArrayBuffer`\>
 
 The modulus (n)
 
@@ -61,7 +61,7 @@ The modulus (n)
 
 ### publicExponent
 
-> **publicExponent**: `Uint8Array<ArrayBuffer>`
+> **publicExponent**: `Uint8Array`\<`ArrayBuffer`\>
 
 The exponent (e)
 
@@ -185,15 +185,17 @@ Converts the RSA key to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
-Converts the RSA key to DER format.
+Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
-#### Overrides
+The DER-encoded bytes of this object
+
+#### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toDer`](../../../core/PkiBase/classes/PkiBase.md#toder)
 
@@ -306,7 +308,7 @@ Parses DER encoded data to create an RSAPublicKey.
 
 ##### der
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER encoded data
 
