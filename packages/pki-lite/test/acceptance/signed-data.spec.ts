@@ -12,7 +12,7 @@ import { SigningCertificateV2 } from '../../src/x509/attributes/SigningCertifica
 import { ecP256SigningKeys } from '../../test-fixtures/signing-keys/ec-p256/index.js'
 
 describe('SignedData', () => {
-    test.only('Create RSASSA_PKCS1_v1_5/SHA-256 Signed Data signature with CRLs and OCSP responses', async () => {
+    test('Create RSASSA_PKCS1_v1_5/SHA-256 Signed Data signature with CRLs and OCSP responses', async () => {
         const data = new TextEncoder().encode('test')
         const signedData = await SignedData.builder()
             .setData(data)
