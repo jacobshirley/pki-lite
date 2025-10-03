@@ -108,7 +108,7 @@
 
 ### valueBeforeDecodeView
 
-> **valueBeforeDecodeView**: `Uint8Array<ArrayBuffer>`
+> **valueBeforeDecodeView**: `Uint8Array`
 
 #### Since
 
@@ -196,7 +196,7 @@ since version 3.0.0
 
 ##### inputBuffer
 
-`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
 
 ##### inputOffset
 
@@ -228,7 +228,7 @@ Function converting ArrayBuffer into ASN.1 internal string
 
 ASN.1 BER encoded array
 
-`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
 
 #### Returns
 

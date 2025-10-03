@@ -14,7 +14,7 @@ Converts bytes to a hexadecimal string representation.
 
 ### bytes
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The bytes to convert
 

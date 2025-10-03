@@ -16,7 +16,7 @@ Parses DER-encoded bytes into an ASN.1 structure.
 
 The DER-encoded bytes to parse
 
-`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
 
 ## Returns
 

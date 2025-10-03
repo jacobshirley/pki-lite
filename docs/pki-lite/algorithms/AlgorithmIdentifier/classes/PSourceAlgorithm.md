@@ -199,11 +199,11 @@ true if the objects are equal, false otherwise
 
 ### getLabelBytes()
 
-> **getLabelBytes**(): `Uint8Array<ArrayBuffer>`
+> **getLabelBytes**(): `Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -262,13 +262,13 @@ The ASN.1 SEQUENCE structure
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -427,7 +427,7 @@ An AlgorithmIdentifier
 
 ##### bytes
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`
 
 #### Returns
 
@@ -481,7 +481,7 @@ An AlgorithmIdentifier
 
 ### randomBytes()
 
-> `static` **randomBytes**(`length`): `Uint8Array<ArrayBuffer>`
+> `static` **randomBytes**(`length`): `Uint8Array`\<`ArrayBuffer`\>
 
 #### Parameters
 
@@ -491,7 +491,7 @@ An AlgorithmIdentifier
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Inherited from
 

@@ -66,11 +66,11 @@ Creates a new AttributeCertificateInfo instance.
 
 ###### issuerUniqueID?
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### serialNumber
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### signature
 
@@ -128,13 +128,13 @@ Creates a new AttributeCertificateInfo instance.
 
 ### issuerUniqueID?
 
-> `optional` **issuerUniqueID**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+> `optional` **issuerUniqueID**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
 ### serialNumber
 
-> **serialNumber**: `Uint8Array<ArrayBuffer>`
+> **serialNumber**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -282,13 +282,13 @@ Converts the AttributeCertificateInfo to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

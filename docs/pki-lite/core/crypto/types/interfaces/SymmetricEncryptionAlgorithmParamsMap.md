@@ -25,7 +25,7 @@ Includes both standalone symmetric algorithms and password-based encryption.
 
 #### nonce
 
-> **nonce**: `Uint8Array<ArrayBuffer>`
+> **nonce**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -43,7 +43,7 @@ Authentication tag length in bytes
 
 #### nonce
 
-> **nonce**: `Uint8Array<ArrayBuffer>`
+> **nonce**: `Uint8Array`\<`ArrayBuffer`\>
 
 Initialization vector/nonce
 
@@ -73,7 +73,7 @@ Authentication tag length in bytes
 
 #### nonce
 
-> **nonce**: `Uint8Array<ArrayBuffer>`
+> **nonce**: `Uint8Array`\<`ArrayBuffer`\>
 
 Initialization vector/nonce
 
@@ -89,7 +89,7 @@ Initialization vector/nonce
 
 #### nonce
 
-> **nonce**: `Uint8Array<ArrayBuffer>`
+> **nonce**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -103,7 +103,7 @@ Initialization vector/nonce
 
 #### nonce
 
-> **nonce**: `Uint8Array<ArrayBuffer>`
+> **nonce**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -131,7 +131,7 @@ Authentication tag length in bytes
 
 #### nonce
 
-> **nonce**: `Uint8Array<ArrayBuffer>`
+> **nonce**: `Uint8Array`\<`ArrayBuffer`\>
 
 Initialization vector/nonce
 
@@ -147,7 +147,7 @@ Initialization vector/nonce
 
 #### nonce
 
-> **nonce**: `Uint8Array<ArrayBuffer>`
+> **nonce**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -161,7 +161,7 @@ Initialization vector/nonce
 
 #### nonce
 
-> **nonce**: `Uint8Array<ArrayBuffer>`
+> **nonce**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -189,7 +189,7 @@ Authentication tag length in bytes
 
 #### nonce
 
-> **nonce**: `Uint8Array<ArrayBuffer>`
+> **nonce**: `Uint8Array`\<`ArrayBuffer`\>
 
 Initialization vector/nonce
 
@@ -231,7 +231,7 @@ Desired key length in bytes (optional)
 
 ##### derivationAlgorithm.params.salt
 
-> **salt**: `Uint8Array<ArrayBuffer>`
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
 
 Salt value for key derivation
 

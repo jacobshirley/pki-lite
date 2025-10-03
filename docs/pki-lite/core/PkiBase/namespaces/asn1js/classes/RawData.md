@@ -32,7 +32,7 @@ Special class providing ability to have "toBER/fromBER" for raw ArrayBuffer
 
 ### dataView
 
-> **dataView**: `Uint8Array<ArrayBuffer>`
+> **dataView**: `Uint8Array`
 
 #### Since
 
@@ -86,7 +86,7 @@ Base function for converting block from BER encoded array of bytes
 
 ASN.1 BER encoded array
 
-`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
 
 ##### inputOffset
 

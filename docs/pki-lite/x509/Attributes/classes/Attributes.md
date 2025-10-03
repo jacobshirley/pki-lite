@@ -1543,7 +1543,9 @@ The zero-based location in the array from which to start removing elements.
 
 `number`
 
-The number of elements to remove.
+The number of elements to remove. Omitting this argument will remove all elements from the start
+paramater location to end of the array. If value of this argument is either a negative number, zero, undefined, or a type
+that cannot be converted to an integer, the function will evaluate the argument as zero and not remove any elements.
 
 ##### Returns
 
@@ -1573,7 +1575,9 @@ The zero-based location in the array from which to start removing elements.
 
 `number`
 
-The number of elements to remove.
+The number of elements to remove. If value of this argument is either a negative number, zero,
+undefined, or a type that cannot be converted to an integer, the function will evaluate the argument as zero and
+not remove any elements.
 
 ###### items
 
@@ -1613,15 +1617,15 @@ An ASN.1 SET containing all items in this collection
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
-Converts this set to DER format.
+Converts this array to DER format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
-The DER-encoded bytes of this set
+The DER-encoded bytes of this array
 
 #### Inherited from
 

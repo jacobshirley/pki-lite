@@ -30,11 +30,11 @@ s INTEGER
 
 ###### r
 
-`number` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`Integer`](../../../asn1/Integer/classes/Integer.md)
+`number` \| `Uint8Array`\<`ArrayBuffer`\> \| [`Integer`](../../../asn1/Integer/classes/Integer.md)
 
 ###### s
 
-`number` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`Integer`](../../../asn1/Integer/classes/Integer.md)
+`number` \| `Uint8Array`\<`ArrayBuffer`\> \| [`Integer`](../../../asn1/Integer/classes/Integer.md)
 
 #### Returns
 
@@ -180,13 +180,13 @@ This is handled by the Integer class.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -254,13 +254,13 @@ A PEM-encoded string with appropriate headers
 
 ### toRaw()
 
-> **toRaw**(): `Uint8Array<ArrayBuffer>`
+> **toRaw**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Convert to raw format (r || s)
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -311,7 +311,7 @@ Parse from DER format.
 
 ##### der
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
@@ -329,7 +329,7 @@ Parse from raw format (r || s).
 
 ##### raw
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 Raw signature bytes (r || s)
 

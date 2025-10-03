@@ -208,13 +208,13 @@ Converts the extension to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -323,7 +323,7 @@ A string representation for debugging
 
 ##### keyIdentifier
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
@@ -393,7 +393,7 @@ An Extension
 
 ##### der
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
@@ -441,7 +441,7 @@ An Extension
 
 ##### keyIdentifier
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | [`OctetString`](../../../asn1/OctetString/classes/OctetString.md)
+`Uint8Array`\<`ArrayBuffer`\> | [`OctetString`](../../../asn1/OctetString/classes/OctetString.md)
 
 #### Returns
 

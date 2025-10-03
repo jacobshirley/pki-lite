@@ -33,7 +33,7 @@ certs [0] EXPLICIT SEQUENCE OF Certificate OPTIONAL
 
 ###### signature
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`BitString`](../../../asn1/BitString/classes/BitString.md)
+`Uint8Array`\<`ArrayBuffer`\> \| [`BitString`](../../../asn1/BitString/classes/BitString.md)
 
 ###### signatureAlgorithm
 
@@ -197,13 +197,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

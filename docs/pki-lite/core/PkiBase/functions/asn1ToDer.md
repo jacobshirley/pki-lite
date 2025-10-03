@@ -6,7 +6,7 @@
 
 # Function: asn1ToDer()
 
-> **asn1ToDer**(`value`): `Uint8Array<ArrayBuffer>`
+> **asn1ToDer**(`value`): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts an ASN.1 structure to DER (Distinguished Encoding Rules) format.
 
@@ -20,6 +20,6 @@ The ASN.1 structure to encode
 
 ## Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes

@@ -42,7 +42,7 @@ The options object containing the certificate information
 
 ###### signature
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`BitString`](../../../../asn1/BitString/classes/BitString.md)
+`Uint8Array`\<`ArrayBuffer`\> \| [`BitString`](../../../../asn1/BitString/classes/BitString.md)
 
 ###### signatureAlgorithm
 
@@ -194,13 +194,13 @@ Converts the AttributeCertificateV1 to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

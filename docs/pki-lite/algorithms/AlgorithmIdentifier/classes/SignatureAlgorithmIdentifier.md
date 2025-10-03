@@ -236,13 +236,13 @@ A new instance of the target type
 
 ### sign()
 
-> **sign**(`data`, `privateKeyInfo`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+> **sign**(`data`, `privateKeyInfo`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 #### Parameters
 
 ##### data
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
+`Uint8Array`\<`ArrayBuffer`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
 
 ##### privateKeyInfo
 
@@ -250,7 +250,7 @@ A new instance of the target type
 
 #### Returns
 
-`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 ---
 
@@ -290,13 +290,13 @@ The ASN.1 SEQUENCE structure
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -389,11 +389,11 @@ A string representation for debugging
 
 ##### data
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
+`Uint8Array`\<`ArrayBuffer`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
 
 ##### signature
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
+`Uint8Array`\<`ArrayBuffer`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
 
 ##### publicKeyInfo
 
@@ -479,7 +479,7 @@ An AlgorithmIdentifier
 
 ##### bytes
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
@@ -533,7 +533,7 @@ An AlgorithmIdentifier
 
 ### randomBytes()
 
-> `static` **randomBytes**(`length`): `Uint8Array<ArrayBuffer>`
+> `static` **randomBytes**(`length`): `Uint8Array`\<`ArrayBuffer`\>
 
 #### Parameters
 
@@ -543,7 +543,7 @@ An AlgorithmIdentifier
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Inherited from
 

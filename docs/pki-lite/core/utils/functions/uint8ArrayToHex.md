@@ -14,7 +14,7 @@ Converts a Uint8Array<ArrayBuffer> to a hex string
 
 ### bytes
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The Uint8Array<ArrayBuffer> to convert
 

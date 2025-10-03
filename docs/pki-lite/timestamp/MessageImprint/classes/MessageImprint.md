@@ -51,7 +51,7 @@ The hash algorithm identifier
 
 ###### hashedMessage
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The computed hash value
 
@@ -84,7 +84,7 @@ Algorithm used to hash the message
 
 ### hashedMessage
 
-> **hashedMessage**: `Uint8Array<ArrayBuffer>`
+> **hashedMessage**: `Uint8Array`\<`ArrayBuffer`\>
 
 The hash value of the message to be timestamped
 
@@ -217,13 +217,13 @@ const der = asn1.toBER(false)
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

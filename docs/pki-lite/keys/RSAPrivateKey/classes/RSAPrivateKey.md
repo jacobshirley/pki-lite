@@ -54,35 +54,35 @@ Creates a new RSAPrivateKey instance.
 
 ###### coefficient
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### exponent1
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### exponent2
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### modulus
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### prime1
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### prime2
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### privateExponent
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### publicExponent
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### version?
 
@@ -100,7 +100,7 @@ Creates a new RSAPrivateKey instance.
 
 ### coefficient
 
-> **coefficient**: `Uint8Array<ArrayBuffer>`
+> **coefficient**: `Uint8Array`\<`ArrayBuffer`\>
 
 The CRT coefficient ((inverse of q) mod p)
 
@@ -108,7 +108,7 @@ The CRT coefficient ((inverse of q) mod p)
 
 ### exponent1
 
-> **exponent1**: `Uint8Array<ArrayBuffer>`
+> **exponent1**: `Uint8Array`\<`ArrayBuffer`\>
 
 The first exponent (d mod (p-1))
 
@@ -116,7 +116,7 @@ The first exponent (d mod (p-1))
 
 ### exponent2
 
-> **exponent2**: `Uint8Array<ArrayBuffer>`
+> **exponent2**: `Uint8Array`\<`ArrayBuffer`\>
 
 The second exponent (d mod (q-1))
 
@@ -124,7 +124,7 @@ The second exponent (d mod (q-1))
 
 ### modulus
 
-> **modulus**: `Uint8Array<ArrayBuffer>`
+> **modulus**: `Uint8Array`\<`ArrayBuffer`\>
 
 The modulus (n)
 
@@ -132,7 +132,7 @@ The modulus (n)
 
 ### prime1
 
-> **prime1**: `Uint8Array<ArrayBuffer>`
+> **prime1**: `Uint8Array`\<`ArrayBuffer`\>
 
 The first prime factor (p)
 
@@ -140,7 +140,7 @@ The first prime factor (p)
 
 ### prime2
 
-> **prime2**: `Uint8Array<ArrayBuffer>`
+> **prime2**: `Uint8Array`\<`ArrayBuffer`\>
 
 The second prime factor (q)
 
@@ -148,7 +148,7 @@ The second prime factor (q)
 
 ### privateExponent
 
-> **privateExponent**: `Uint8Array<ArrayBuffer>`
+> **privateExponent**: `Uint8Array`\<`ArrayBuffer`\>
 
 The private exponent (d)
 
@@ -156,7 +156,7 @@ The private exponent (d)
 
 ### publicExponent
 
-> **publicExponent**: `Uint8Array<ArrayBuffer>`
+> **publicExponent**: `Uint8Array`\<`ArrayBuffer`\>
 
 The exponent (e)
 
@@ -288,15 +288,17 @@ Converts the RSA private key to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
-Converts the RSA private key to DER format.
+Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
-#### Overrides
+The DER-encoded bytes of this object
+
+#### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toDer`](../../../core/PkiBase/classes/PkiBase.md#toder)
 
@@ -423,7 +425,7 @@ Parses DER encoded data to create an RSAPrivateKey.
 
 ##### der
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER encoded data
 

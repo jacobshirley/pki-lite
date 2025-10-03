@@ -357,13 +357,13 @@ ContentInfo object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -468,7 +468,7 @@ Certificate validation options or true for default validation
 
 ###### data?
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`Uint8Array`\<`ArrayBuffer`\>
 
 Optional original data for detached signatures
 
@@ -526,7 +526,7 @@ Creates a SignedData from a ContentInfo structure or DER bytes.
 
 The ContentInfo or DER bytes
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | [`ContentInfo`](../../ContentInfo/classes/ContentInfo.md)
+`Uint8Array`\<`ArrayBuffer`\> | [`ContentInfo`](../../ContentInfo/classes/ContentInfo.md)
 
 #### Returns
 
@@ -546,7 +546,7 @@ Creates a SignedData from a DER-encoded byte array.
 
 ##### der
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded SignedData
 

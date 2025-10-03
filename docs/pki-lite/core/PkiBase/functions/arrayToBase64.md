@@ -15,7 +15,7 @@ Uses the btoa() function available in both browsers and Node.js.
 
 ### bytes
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The bytes to encode
 

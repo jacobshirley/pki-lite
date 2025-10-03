@@ -75,7 +75,7 @@ The signature algorithm
 
 ###### signatureValue
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`BitString`](../../../asn1/BitString/classes/BitString.md)
+`Uint8Array`\<`ArrayBuffer`\> \| [`BitString`](../../../asn1/BitString/classes/BitString.md)
 
 The signature bytes or BitString
 
@@ -257,13 +257,13 @@ const der = asn1.toBER(false) // Convert to DER encoding
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -494,7 +494,7 @@ Creates a CertificateList from DER-encoded bytes.
 
 ##### der
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded CRL bytes
 
