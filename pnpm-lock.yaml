@@ -52,7 +52,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.0-beta.15
-        version: 4.0.0-beta.15(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1)
+        version: 4.0.0-beta.15(@types/node@24.5.2)(@vitest/browser-playwright@4.0.0-beta.15)(jiti@2.6.0)(yaml@2.8.1)
 
   packages/pki-lite:
     dependencies:
@@ -65,7 +65,10 @@ importers:
         version: 24.5.2
       '@vitest/browser':
         specifier: ^4.0.0-beta.15
-        version: 4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))
+        version: 4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15)
+      '@vitest/browser-playwright':
+        specifier: 4.0.0-beta.15
+        version: 4.0.0-beta.15(playwright@1.55.0)(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15)
       playwright:
         specifier: ^1.55.0
         version: 1.55.0
@@ -74,7 +77,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.0-beta.15
-        version: 4.0.0-beta.15(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1)
+        version: 4.0.0-beta.15(@types/node@24.5.2)(@vitest/browser-playwright@4.0.0-beta.15)(jiti@2.6.0)(yaml@2.8.1)
 
   packages/pki-lite-crypto-extended:
     dependencies:
@@ -99,7 +102,10 @@ importers:
         version: 1.3.14
       '@vitest/browser':
         specifier: ^4.0.0-beta.15
-        version: 4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))
+        version: 4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15)
+      '@vitest/browser-playwright':
+        specifier: 4.0.0-beta.15
+        version: 4.0.0-beta.15(playwright@1.55.0)(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15)
       playwright:
         specifier: ^1.55.0
         version: 1.55.0
@@ -108,7 +114,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.0-beta.15
-        version: 4.0.0-beta.15(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1)
+        version: 4.0.0-beta.15(@types/node@24.5.2)(@vitest/browser-playwright@4.0.0-beta.15)(jiti@2.6.0)(yaml@2.8.1)
 
 packages:
 
@@ -510,6 +516,12 @@ packages:
 
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
+
+  '@vitest/browser-playwright@4.0.0-beta.15':
+    resolution: {integrity: sha512-t24rArYR/VSq+dFW2F8MFT4qeblXs3xlQeo3oTBKt8hywueRRKp18Lm0b5D4nKBzSYaaFVzatC5GxG6pk6GBZA==}
+    peerDependencies:
+      playwright: '*'
+      vitest: ^4.0.0-beta.15
 
   '@vitest/browser@4.0.0-beta.15':
     resolution: {integrity: sha512-WfEnZxEb5yDf6YmgdYW04sQ3fsXVsbDhPuAweVFOKAGH4rPRu11dNGRsQu3sYBqYp7C4cECfYmzfpGTqtdydVQ==}
@@ -1615,7 +1627,20 @@ snapshots:
 
   '@types/unist@3.0.3': {}
 
-  '@vitest/browser@4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))':
+  '@vitest/browser-playwright@4.0.0-beta.15(playwright@1.55.0)(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15)':
+    dependencies:
+      '@vitest/browser': 4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15)
+      '@vitest/mocker': 4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))
+      playwright: 1.55.0
+      tinyrainbow: 3.0.3
+      vitest: 4.0.0-beta.15(@types/node@24.5.2)(@vitest/browser-playwright@4.0.0-beta.15)(jiti@2.6.0)(yaml@2.8.1)
+    transitivePeerDependencies:
+      - bufferutil
+      - msw
+      - utf-8-validate
+      - vite
+
+  '@vitest/browser@4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15)':
     dependencies:
       '@vitest/mocker': 4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))
       '@vitest/utils': 4.0.0-beta.15
@@ -1624,7 +1649,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.0.3
-      vitest: 4.0.0-beta.15(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1)
+      vitest: 4.0.0-beta.15(@types/node@24.5.2)(@vitest/browser-playwright@4.0.0-beta.15)(jiti@2.6.0)(yaml@2.8.1)
       ws: 8.18.3
     transitivePeerDependencies:
       - bufferutil
@@ -2246,7 +2271,7 @@ snapshots:
       jiti: 2.6.0
       yaml: 2.8.1
 
-  vitest@4.0.0-beta.15(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1):
+  vitest@4.0.0-beta.15(@types/node@24.5.2)(@vitest/browser-playwright@4.0.0-beta.15)(jiti@2.6.0)(yaml@2.8.1):
     dependencies:
       '@vitest/expect': 4.0.0-beta.15
       '@vitest/mocker': 4.0.0-beta.15(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))
@@ -2271,6 +2296,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.5.2
+      '@vitest/browser-playwright': 4.0.0-beta.15(playwright@1.55.0)(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.1))(vitest@4.0.0-beta.15)
     transitivePeerDependencies:
       - jiti
       - less
