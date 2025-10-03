@@ -45,7 +45,7 @@ The integrity check value length in octets (12, 13, 14, 15, or 16). Default is 1
 
 ###### aesNonce
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The nonce value (initialization vector). Recommended size is 12 octets.
 
@@ -191,13 +191,13 @@ The ASN.1 representation of the GCMParameters
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

@@ -53,7 +53,7 @@ SubjectKeyIdentifier ::= OCTET STRING
 
 ###### signature
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### signatureAlgorithm
 
@@ -95,7 +95,7 @@ SubjectKeyIdentifier ::= OCTET STRING
 
 ### signature
 
-> **signature**: `Uint8Array<ArrayBuffer>`
+> **signature**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -255,13 +255,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -356,7 +356,7 @@ A string representation for debugging
 
 ###### data?
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### publicKeyInfo
 
@@ -398,7 +398,7 @@ A SignerInfo object
 
 ##### derBytes
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 

@@ -38,7 +38,7 @@ Creates a new ECPublicKey
 
 ###### value
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The key as a Uint8Array<ArrayBuffer> in uncompressed format (0x04 || x || y)
 
@@ -54,7 +54,7 @@ The key as a Uint8Array<ArrayBuffer> in uncompressed format (0x04 || x || y)
 
 ### bytes
 
-> **bytes**: `Uint8Array<ArrayBuffer>`
+> **bytes**: `Uint8Array`\<`ArrayBuffer`\>
 
 The bytes representing this bit string.
 
@@ -143,11 +143,11 @@ An object containing the X and Y coordinates
 
 ##### x
 
-> **x**: `Uint8Array<ArrayBuffer>`
+> **x**: `Uint8Array`\<`ArrayBuffer`\>
 
 ##### y
 
-> **y**: `Uint8Array<ArrayBuffer>`
+> **y**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -206,13 +206,13 @@ The ASN.1 BIT STRING structure
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -299,11 +299,11 @@ A PEM-encoded string with appropriate headers
 
 ### toRaw()
 
-> **toRaw**(): `Uint8Array<ArrayBuffer>`
+> **toRaw**(): `Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -366,13 +366,13 @@ Creates an ECPublicKey from the X and Y coordinates of the point
 
 ##### x
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The X coordinate of the point
 
 ##### y
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The Y coordinate of the point
 
@@ -392,7 +392,7 @@ An ECPublicKey object
 
 ##### raw
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 

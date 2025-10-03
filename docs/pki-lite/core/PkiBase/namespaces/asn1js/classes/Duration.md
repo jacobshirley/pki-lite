@@ -104,7 +104,7 @@
 
 ### valueBeforeDecodeView
 
-> **valueBeforeDecodeView**: `Uint8Array<ArrayBuffer>`
+> **valueBeforeDecodeView**: `Uint8Array`
 
 #### Since
 
@@ -192,7 +192,7 @@ since version 3.0.0
 
 ##### inputBuffer
 
-`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
 
 ##### inputOffset
 
@@ -220,7 +220,7 @@ since version 3.0.0
 
 ##### inputBuffer
 
-`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
 
 #### Returns
 

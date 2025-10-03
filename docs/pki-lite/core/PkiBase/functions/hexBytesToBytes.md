@@ -6,7 +6,7 @@
 
 # Function: hexBytesToBytes()
 
-> **hexBytesToBytes**(`hex`): `Uint8Array<ArrayBuffer>`
+> **hexBytesToBytes**(`hex`): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts hexadecimal bytes back to regular bytes.
 Expects input where each pair of bytes represents one hex digit pair.
@@ -15,12 +15,12 @@ Expects input where each pair of bytes represents one hex digit pair.
 
 ### hex
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The hex bytes to convert (each pair of bytes = one output byte)
 
 ## Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The decoded bytes

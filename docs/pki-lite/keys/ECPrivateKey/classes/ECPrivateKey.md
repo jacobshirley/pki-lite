@@ -41,11 +41,11 @@ Creates a new ECPrivateKey
 
 ###### privateKey
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### publicKey?
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
@@ -68,7 +68,7 @@ Most commonly this is a string like '1.2.840.10045.3.1.7' for P-256
 
 ### privateKey
 
-> **privateKey**: `Uint8Array<ArrayBuffer>`
+> **privateKey**: `Uint8Array`\<`ArrayBuffer`\>
 
 The private key value as an octet string
 
@@ -76,7 +76,7 @@ The private key value as an octet string
 
 ### publicKey?
 
-> `optional` **publicKey**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+> `optional` **publicKey**: `Uint8Array`\<`ArrayBuffer`\>
 
 The key component (if included)
 
@@ -208,15 +208,17 @@ Converts the ECPrivateKey to an ASN.1 structure
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
-Converts the ECPrivateKey to a DER-encoded byte array
+Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
-#### Overrides
+The DER-encoded bytes of this object
+
+#### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toDer`](../../../core/PkiBase/classes/PkiBase.md#toder)
 
@@ -311,13 +313,13 @@ The named curve OID (e.g., EC_CURVES.SECP256R1)
 
 ##### privateKey
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The private key value
 
 ##### publicKey?
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`Uint8Array`\<`ArrayBuffer`\>
 
 Optional key value
 
@@ -361,7 +363,7 @@ Creates an ECPrivateKey from a DER-encoded byte array
 
 ##### der
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded ECPrivateKey
 

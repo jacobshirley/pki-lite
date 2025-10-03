@@ -1,7 +1,7 @@
 {
     "name": "pki-lite",
     "type": "module",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -52,7 +52,7 @@
     "readme": "pki-lite is a lightweight JavaScript/TypeScript library for working with PKI (Public Key Infrastructure) concepts such as X.509 certificates, certificate signing requests (CSR), and PEM/PKCS12 formats. It is designed for use in Node.js and browser environments, providing crypto operations with a minimal dependency footprint.",
     "author": "Jacob Shirley",
     "license": "MIT",
-    "packageManager": "pnpm@10.14.0",
+    "packageManager": "pnpm@10.17.1",
     "dependencies": {
         "asn1js": "3.0.6"
     },
@@ -60,7 +60,7 @@
         "@types/node": "^24.3.3",
         "@vitest/browser": "^3.2.4",
         "playwright": "^1.55.0",
-        "typescript": "5.8.2",
+        "typescript": "5.9.3",
         "vitest": "^3.2.4"
     }
 }

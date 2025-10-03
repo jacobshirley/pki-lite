@@ -51,7 +51,7 @@ Creates a new KeyAgreeRecipientInfo instance.
 
 ###### ukm?
 
-`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### version
 
@@ -87,7 +87,7 @@ Creates a new KeyAgreeRecipientInfo instance.
 
 ### ukm?
 
-> `optional` **ukm**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+> `optional` **ukm**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -215,13 +215,13 @@ Converts the KeyAgreeRecipientInfo to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

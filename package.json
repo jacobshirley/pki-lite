@@ -1,6 +1,6 @@
 {
     "name": "pki-lite-monorepo",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "Lightweight, modular, and extensible Public Key Infrastructure (PKI) library for JavaScript and TypeScript.",
     "type": "module",
     "private": true,
@@ -24,7 +24,7 @@
     "keywords": [],
     "author": "Jacob Shirley",
     "license": "MIT",
-    "packageManager": "pnpm@10.14.0",
+    "packageManager": "pnpm@10.17.1",
     "repository": {
         "type": "git",
         "url": "git+ssh://git@github.com/jacobshirley/pki-lite.git"
@@ -38,12 +38,12 @@
         }
     },
     "dependencies": {
-        "pki-lite": "^1.0.5",
-        "pki-lite-crypto-extended": "^1.0.5"
+        "pki-lite": "^1.0.6",
+        "pki-lite-crypto-extended": "^1.0.6"
     },
     "devDependencies": {
-        "@commitlint/cli": "^19.8.1",
-        "@commitlint/config-conventional": "^19.8.1",
+        "@commitlint/cli": "^20.0.0",
+        "@commitlint/config-conventional": "^20.0.0",
         "@types/node": "^24.5.2",
         "husky": "^9.1.7",
         "lint-staged": "^16.2.0",

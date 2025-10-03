@@ -21,6 +21,7 @@ OctetString ::= <value>
 ## Extended by
 
 - [`SubjectKeyIdentifier`](../../../keys/SubjectKeyIdentifier/classes/SubjectKeyIdentifier.md)
+- [`MessageAuthenticationCode`](../../../pkcs7/MessageAuthenticationCode/classes/MessageAuthenticationCode.md)
 - [`iPAddress`](../../../x509/GeneralName/classes/iPAddress.md)
 
 ## Constructors
@@ -35,7 +36,7 @@ OctetString ::= <value>
 
 ###### bytes
 
-`string` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\> \| `OctetString` \| [`PkiSequence`](../../../core/PkiBase/classes/PkiSequence.md)\<`any`\> \| [`PkiSet`](../../../core/PkiBase/classes/PkiSet.md)\<`any`\>
+`string` \| [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\> \| `Uint8Array`\<`ArrayBufferLike`\> \| `OctetString` \| [`PkiSequence`](../../../core/PkiBase/classes/PkiSequence.md)\<`any`\> \| [`PkiSet`](../../../core/PkiBase/classes/PkiSet.md)\<`any`\>
 
 #### Returns
 
@@ -49,7 +50,7 @@ OctetString ::= <value>
 
 ### bytes
 
-> **bytes**: `Uint8Array<ArrayBuffer>`
+> **bytes**: `Uint8Array`\<`ArrayBuffer`\>
 
 ## Accessors
 
@@ -173,13 +174,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
@@ -264,13 +265,13 @@ A string representation for debugging
 
 ---
 
-### toUint8Array<ArrayBuffer>()
+### toUint8Array()
 
-> **toUint8Array<ArrayBuffer>**(): `Uint8Array<ArrayBuffer>`
+> **toUint8Array**(): `Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -298,7 +299,7 @@ A string representation for debugging
 
 ##### der
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 

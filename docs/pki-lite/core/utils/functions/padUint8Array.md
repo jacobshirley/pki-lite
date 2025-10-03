@@ -6,7 +6,7 @@
 
 # Function: padUint8Array()
 
-> **padUint8Array**(`array`, `targetLength`): `Uint8Array<ArrayBuffer>`
+> **padUint8Array**(`array`, `targetLength`): `Uint8Array`\<`ArrayBuffer`\>
 
 Pads a Uint8Array<ArrayBuffer> to the specified length by adding zeros to the left.
 If the array is already at or exceeds the target length, it is returned as-is.
@@ -15,7 +15,7 @@ If the array is already at or exceeds the target length, it is returned as-is.
 
 ### array
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The array to pad
 
@@ -27,6 +27,6 @@ The desired length
 
 ## Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 A new Uint8Array padded to the target length

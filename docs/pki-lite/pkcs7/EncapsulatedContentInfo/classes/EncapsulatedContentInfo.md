@@ -35,7 +35,7 @@ ContentType ::= OBJECT IDENTIFIER
 
 ###### eContent?
 
-`string` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+`string` \| `Uint8Array`\<`ArrayBuffer`\> \| `Uint8Array`\<`ArrayBufferLike`\>
 
 ###### eContentType
 
@@ -53,7 +53,7 @@ ContentType ::= OBJECT IDENTIFIER
 
 ### eContent?
 
-> `optional` **eContent**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
+> `optional` **eContent**: `Uint8Array`\<`ArrayBuffer`\>
 
 ---
 
@@ -181,13 +181,13 @@ Converts the EncapsulatedContentInfo to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

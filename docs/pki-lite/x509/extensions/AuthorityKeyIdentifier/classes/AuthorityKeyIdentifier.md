@@ -36,7 +36,7 @@ authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL
 
 ###### authorityCertSerialNumber?
 
-`number` \| `bigint` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`Integer`](../../../../asn1/Integer/classes/Integer.md)
+`number` \| `bigint` \| `Uint8Array`\<`ArrayBuffer`\> \| [`Integer`](../../../../asn1/Integer/classes/Integer.md)
 
 ###### keyIdentifier?
 
@@ -190,13 +190,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

@@ -56,7 +56,7 @@ Creates a new AuthenticatedData instance.
 
 ###### mac
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\> \| [`MessageAuthenticationCode`](../../MessageAuthenticationCode/classes/MessageAuthenticationCode.md)
 
 ###### macAlgorithm
 
@@ -114,7 +114,7 @@ The encapsulated content information.
 
 ### mac
 
-> **mac**: `MessageAuthenticationCode`
+> **mac**: [`MessageAuthenticationCode`](../../MessageAuthenticationCode/classes/MessageAuthenticationCode.md)
 
 The message authentication code.
 
@@ -170,7 +170,7 @@ Internal AuthAttributes class
 
 ### MessageAuthenticationCode
 
-> `static` **MessageAuthenticationCode**: _typeof_ `MessageAuthenticationCode`
+> `static` **MessageAuthenticationCode**: _typeof_ [`MessageAuthenticationCode`](../../MessageAuthenticationCode/classes/MessageAuthenticationCode.md)
 
 Internal MessageAuthenticationCode class
 
@@ -322,13 +322,13 @@ Wraps this AuthenticatedData in a ContentInfo structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 

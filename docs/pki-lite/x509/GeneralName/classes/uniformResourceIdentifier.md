@@ -30,7 +30,7 @@ IA5String ::= <value>
 
 ###### value
 
-`string` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`IA5String`](../../../asn1/IA5String/classes/IA5String.md)
+`string` \| `Uint8Array`\<`ArrayBufferLike`\> \| [`IA5String`](../../../asn1/IA5String/classes/IA5String.md)
 
 #### Returns
 
@@ -44,7 +44,7 @@ IA5String ::= <value>
 
 ### bytes
 
-> **bytes**: `Uint8Array<ArrayBuffer>`
+> **bytes**: `Uint8Array`\<`ArrayBuffer`\>
 
 #### Inherited from
 
@@ -172,13 +172,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array<ArrayBuffer>`
+> **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array<ArrayBuffer>`
+`Uint8Array`\<`ArrayBuffer`\>
 
 The DER-encoded bytes of this object
 
