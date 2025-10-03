@@ -16,7 +16,7 @@ describe('MacData', () => {
         const md = new MacData({ mac, macSalt })
         const der = md.toDer()
         const decoded = MacData.fromDer(der)
-        expect(decoded.iterations).toBe(1)
+        expect(decoded.iterations).toEqual(1)
         expect(Array.from(decoded.macSalt.bytes)).toEqual([4, 5, 6])
     })
 
@@ -31,6 +31,6 @@ describe('MacData', () => {
         const md = new MacData({ mac, macSalt, iterations: 2048 })
         const der = md.toDer()
         const decoded = MacData.fromDer(der)
-        expect(decoded.iterations).toBe(2048)
+        expect(decoded.iterations).toEqual(2048)
     })
 })

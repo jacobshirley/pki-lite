@@ -19,7 +19,7 @@ export class PasswordRecipientInfo extends PkiBase<PasswordRecipientInfo> {
     version: CMSVersion
     keyDerivationAlgorithm?: AlgorithmIdentifier
     keyEncryptionAlgorithm: AlgorithmIdentifier
-    encryptedKey: Uint8Array
+    encryptedKey: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new PasswordRecipientInfo instance.
@@ -27,7 +27,7 @@ export class PasswordRecipientInfo extends PkiBase<PasswordRecipientInfo> {
     constructor(options: {
         version?: CMSVersion
         keyEncryptionAlgorithm: AlgorithmIdentifier
-        encryptedKey: Uint8Array
+        encryptedKey: Uint8Array<ArrayBuffer>
         keyDerivationAlgorithm?: AlgorithmIdentifier
     }) {
         super()

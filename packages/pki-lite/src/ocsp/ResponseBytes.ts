@@ -14,7 +14,7 @@ export class ResponseBytes extends PkiBase<ResponseBytes> {
 
     constructor(options: {
         responseType: string
-        response: Uint8Array | OctetString | string | PkiBase
+        response: Uint8Array<ArrayBuffer> | OctetString | string | PkiBase
     }) {
         super()
         this.responseType = options.responseType

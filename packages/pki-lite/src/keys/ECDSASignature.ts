@@ -18,8 +18,8 @@ export class ECDSASignature extends PkiBase<ECDSASignature> {
     readonly s: Integer
 
     constructor(options: {
-        r: Uint8Array | Integer | number
-        s: Uint8Array | Integer | number
+        r: Uint8Array<ArrayBuffer> | Integer | number
+        s: Uint8Array<ArrayBuffer> | Integer | number
     }) {
         super()
         this.r = new Integer({ value: options.r })
@@ -81,14 +81,14 @@ export class ECDSASignature extends PkiBase<ECDSASignature> {
     /**
      * Parse from DER format.
      */
-    static fromDer(der: Uint8Array): ECDSASignature {
+    static fromDer(der: Uint8Array<ArrayBuffer>): ECDSASignature {
         return this.fromAsn1(derToAsn1(der))
     }
 
     /**
      * Convert to raw format (r || s)
      */
-    toRaw(): Uint8Array {
+    toRaw(): Uint8Array<ArrayBuffer> {
         let r = this.r.toUnsigned()
         let s = this.s.toUnsigned()
         const fixedLength = Math.max(r.length, s.length)
@@ -109,7 +109,7 @@ export class ECDSASignature extends PkiBase<ECDSASignature> {
      * Parse from raw format (r || s).
      * @param raw Raw signature bytes (r || s)
      */
-    static fromRaw(raw: Uint8Array): ECDSASignature {
+    static fromRaw(raw: Uint8Array<ArrayBuffer>): ECDSASignature {
         if (raw.length % 2 !== 0) {
             throw new Asn1ParseError(
                 'Invalid raw ECDSA signature: length must be even',

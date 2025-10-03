@@ -52,18 +52,18 @@ describe('CertificateValidator', () => {
         test('should validate a valid certificate', async () => {
             const result = await validator.validate(sampleCertificate)
 
-            expect(result.isValid).toBe(true)
-            expect(result.status).toBe(CertificateValidationStatus.VALID)
+            expect(result.isValid).toEqual(true)
+            expect(result.status).toEqual(CertificateValidationStatus.VALID)
             expect(result.messages).toHaveLength(0)
-            expect(result.revocationStatus.isRevoked).toBe(false)
-            expect(result.revocationStatus.source).toBe('NONE')
+            expect(result.revocationStatus.isRevoked).toEqual(false)
+            expect(result.revocationStatus.source).toEqual('NONE')
         })
 
         test('should detect expired certificate', async () => {
             const result = await validator.validate(expiredCertificate)
 
-            expect(result.isValid).toBe(false)
-            expect(result.status).toBe(CertificateValidationStatus.EXPIRED)
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(CertificateValidationStatus.EXPIRED)
             expect(result.messages).toHaveLength(1)
             expect(result.messages[0]).toContain('expired')
         })
@@ -71,8 +71,8 @@ describe('CertificateValidator', () => {
         test('should detect not yet valid certificate', async () => {
             const result = await validator.validate(notYetValidCertificate)
 
-            expect(result.isValid).toBe(false)
-            expect(result.status).toBe(
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(
                 CertificateValidationStatus.NOT_YET_VALID,
             )
             expect(result.messages).toHaveLength(1)
@@ -86,8 +86,8 @@ describe('CertificateValidator', () => {
             })
 
             // Should still be expired if it's more than the tolerance
-            expect(result.isValid).toBe(false)
-            expect(result.status).toBe(CertificateValidationStatus.EXPIRED)
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(CertificateValidationStatus.EXPIRED)
         })
 
         test('should use custom validation time', async () => {
@@ -96,8 +96,8 @@ describe('CertificateValidator', () => {
                 validationTime: customTime,
             })
 
-            expect(result.isValid).toBe(true)
-            expect(result.status).toBe(CertificateValidationStatus.VALID)
+            expect(result.isValid).toEqual(true)
+            expect(result.status).toEqual(CertificateValidationStatus.VALID)
         })
     })
 
@@ -123,11 +123,11 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toBe(false)
-            expect(result.status).toBe(CertificateValidationStatus.REVOKED)
-            expect(result.revocationStatus.isRevoked).toBe(true)
-            expect(result.revocationStatus.source).toBe('CRL')
-            expect(result.revocationStatus.reason).toBe(1)
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(CertificateValidationStatus.REVOKED)
+            expect(result.revocationStatus.isRevoked).toEqual(true)
+            expect(result.revocationStatus.source).toEqual('CRL')
+            expect(result.revocationStatus.reason).toEqual(1)
             expect(result.messages[0]).toContain('Certificate is revoked (CRL)')
         })
 
@@ -149,10 +149,10 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toBe(true)
-            expect(result.status).toBe(CertificateValidationStatus.VALID)
-            expect(result.revocationStatus.isRevoked).toBe(false)
-            expect(result.revocationStatus.source).toBe('NONE')
+            expect(result.isValid).toEqual(true)
+            expect(result.status).toEqual(CertificateValidationStatus.VALID)
+            expect(result.revocationStatus.isRevoked).toEqual(false)
+            expect(result.revocationStatus.source).toEqual('NONE')
         })
 
         test('should handle multiple CRLs', async () => {
@@ -182,11 +182,11 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toBe(false)
-            expect(result.status).toBe(CertificateValidationStatus.REVOKED)
-            expect(result.revocationStatus.isRevoked).toBe(true)
-            expect(result.revocationStatus.source).toBe('CRL')
-            expect(result.revocationStatus.reason).toBe(4)
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(CertificateValidationStatus.REVOKED)
+            expect(result.revocationStatus.isRevoked).toEqual(true)
+            expect(result.revocationStatus.source).toEqual('CRL')
+            expect(result.revocationStatus.reason).toEqual(4)
         })
     })
 
@@ -209,11 +209,11 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toBe(false)
-            expect(result.status).toBe(CertificateValidationStatus.REVOKED)
-            expect(result.revocationStatus.isRevoked).toBe(true)
-            expect(result.revocationStatus.source).toBe('OCSP')
-            expect(result.revocationStatus.reason).toBe(2)
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(CertificateValidationStatus.REVOKED)
+            expect(result.revocationStatus.isRevoked).toEqual(true)
+            expect(result.revocationStatus.source).toEqual('OCSP')
+            expect(result.revocationStatus.reason).toEqual(2)
             expect(result.messages[0]).toContain(
                 'Certificate is revoked (OCSP)',
             )
@@ -235,10 +235,10 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toBe(true)
-            expect(result.status).toBe(CertificateValidationStatus.VALID)
-            expect(result.revocationStatus.isRevoked).toBe(false)
-            expect(result.revocationStatus.source).toBe('OCSP')
+            expect(result.isValid).toEqual(true)
+            expect(result.status).toEqual(CertificateValidationStatus.VALID)
+            expect(result.revocationStatus.isRevoked).toEqual(false)
+            expect(result.revocationStatus.source).toEqual('OCSP')
             expect(result.revocationStatus.details).toContain(
                 'confirmed as valid via OCSP',
             )
@@ -260,10 +260,10 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toBe(true)
-            expect(result.status).toBe(CertificateValidationStatus.VALID)
-            expect(result.revocationStatus.isRevoked).toBe(false)
-            expect(result.revocationStatus.source).toBe('OCSP')
+            expect(result.isValid).toEqual(true)
+            expect(result.status).toEqual(CertificateValidationStatus.VALID)
+            expect(result.revocationStatus.isRevoked).toEqual(false)
+            expect(result.revocationStatus.source).toEqual('OCSP')
             expect(result.revocationStatus.details).toContain(
                 'status unknown via OCSP',
             )
@@ -299,10 +299,10 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toBe(true)
-            expect(result.status).toBe(CertificateValidationStatus.VALID)
-            expect(result.revocationStatus.isRevoked).toBe(false)
-            expect(result.revocationStatus.source).toBe('OCSP')
+            expect(result.isValid).toEqual(true)
+            expect(result.status).toEqual(CertificateValidationStatus.VALID)
+            expect(result.revocationStatus.isRevoked).toEqual(false)
+            expect(result.revocationStatus.source).toEqual('OCSP')
         })
     })
 
@@ -328,8 +328,8 @@ describe('CertificateValidator', () => {
             )
 
             // Should report expired (checked first) rather than revoked
-            expect(result.isValid).toBe(false)
-            expect(result.status).toBe(CertificateValidationStatus.EXPIRED)
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(CertificateValidationStatus.EXPIRED)
             expect(result.messages[0]).toContain('expired')
         })
 
@@ -353,9 +353,9 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toBe(false)
-            expect(result.status).toBe(CertificateValidationStatus.REVOKED)
-            expect(result.revocationStatus.isRevoked).toBe(true)
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(CertificateValidationStatus.REVOKED)
+            expect(result.revocationStatus.isRevoked).toEqual(true)
         })
     })
 
@@ -373,9 +373,9 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toBe(true)
-            expect(result.status).toBe(CertificateValidationStatus.VALID)
-            expect(result.revocationStatus.source).toBe('NONE')
+            expect(result.isValid).toEqual(true)
+            expect(result.status).toEqual(CertificateValidationStatus.VALID)
+            expect(result.revocationStatus.source).toEqual('NONE')
         })
 
         test('should handle missing revocation data', async () => {
@@ -384,9 +384,9 @@ describe('CertificateValidator', () => {
                 checkOCSP: true,
             })
 
-            expect(result.isValid).toBe(true)
-            expect(result.status).toBe(CertificateValidationStatus.VALID)
-            expect(result.revocationStatus.source).toBe('NONE')
+            expect(result.isValid).toEqual(true)
+            expect(result.status).toEqual(CertificateValidationStatus.VALID)
+            expect(result.revocationStatus.source).toEqual('NONE')
         })
     })
 
@@ -424,7 +424,7 @@ describe('CertificateValidator', () => {
                     },
                 )
 
-                expect(result.revocationStatus.reason).toBe(testCase.reason)
+                expect(result.revocationStatus.reason).toEqual(testCase.reason)
                 expect(result.messages[0]).toContain(testCase.text)
             }
         })
@@ -457,10 +457,10 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, options)
 
-                expect(result.isValid).toBe(true)
+                expect(result.isValid).toEqual(true)
                 expect(result.chain).toBeDefined()
                 expect(result.chain?.trustAnchor).toBeDefined()
-                expect(result.chain?.isComplete).toBe(true)
+                expect(result.chain?.isComplete).toEqual(true)
                 expect(result.diagnostics.stepsPerformed).toContain(
                     'Building certificate chain',
                 )
@@ -475,11 +475,11 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, options)
 
-                expect(result.isValid).toBe(false)
-                expect(result.status).toBe(
+                expect(result.isValid).toEqual(false)
+                expect(result.status).toEqual(
                     CertificateValidationStatus.CHAIN_INVALID,
                 )
-                expect(result.chain?.isComplete).toBe(false)
+                expect(result.chain?.isComplete).toEqual(false)
             })
         })
 
@@ -495,10 +495,10 @@ describe('CertificateValidator', () => {
 
                 expect(result.chain).toBeDefined()
                 expect(result.chain?.certificates).toHaveLength(3)
-                expect(result.chain?.certificates[0]).toBe(endEntityCert)
-                expect(result.chain?.certificates[1]).toBe(intermediateCert)
-                expect(result.chain?.certificates[2]).toBe(rootCert)
-                expect(result.chain?.isComplete).toBe(true)
+                expect(result.chain?.certificates[0]).toEqual(endEntityCert)
+                expect(result.chain?.certificates[1]).toEqual(intermediateCert)
+                expect(result.chain?.certificates[2]).toEqual(rootCert)
+                expect(result.chain?.isComplete).toEqual(true)
             })
 
             test('should handle incomplete chain gracefully', async () => {
@@ -510,8 +510,8 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, options)
 
-                expect(result.isValid).toBe(false)
-                expect(result.chain?.isComplete).toBe(false)
+                expect(result.isValid).toEqual(false)
+                expect(result.chain?.isComplete).toEqual(false)
             })
 
             test('should prevent infinite loops in chain building', async () => {
@@ -529,7 +529,7 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(circularCert1, options)
 
-                expect(result.isValid).toBe(false)
+                expect(result.isValid).toEqual(false)
                 expect(result.messages).toEqual(
                     expect.arrayContaining([expect.stringContaining('loop')]),
                 )
@@ -547,7 +547,7 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, options)
 
-                expect(result.isValid).toBe(true)
+                expect(result.isValid).toEqual(true)
                 expect(result.diagnostics.stepsPerformed).toContain(
                     'Validating certificate chain',
                 )
@@ -566,7 +566,7 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, options)
 
-                expect(result.isValid).toBe(true)
+                expect(result.isValid).toEqual(true)
             })
 
             test('should reject invalid CA certificate', async () => {
@@ -589,7 +589,7 @@ describe('CertificateValidator', () => {
                     options,
                 )
 
-                expect(result.isValid).toBe(false)
+                expect(result.isValid).toEqual(false)
                 expect(result.messages).toEqual(
                     expect.arrayContaining([
                         expect.stringContaining('CA constraints violation'),
@@ -623,7 +623,7 @@ describe('CertificateValidator', () => {
                 }
 
                 const result = await validator.validate(endEntityCert, options)
-                expect(result.isValid).toBe(true)
+                expect(result.isValid).toEqual(true)
             })
 
             test('should reject certificate violating name constraints', async () => {
@@ -651,7 +651,7 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, options)
 
-                expect(result.isValid).toBe(false)
+                expect(result.isValid).toEqual(false)
                 expect(result.messages).toEqual(
                     expect.arrayContaining([
                         expect.stringContaining('Name constraints violation'),
@@ -684,7 +684,7 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, options)
 
-                expect(result.isValid, result.messages.join(',')).toBe(true)
+                expect(result.isValid, result.messages.join(',')).toEqual(true)
                 expect(result.messages).toEqual(
                     expect.arrayContaining([
                         expect.stringContaining(
@@ -707,7 +707,7 @@ describe('CertificateValidator', () => {
                 const result = await validator.validate(endEntityCert, options)
 
                 expect(result.policyResult).toBeDefined()
-                expect(result.policyResult?.isValid).toBe(true)
+                expect(result.policyResult?.isValid).toEqual(true)
             })
 
             test('should check required policies', async () => {
@@ -721,7 +721,7 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, options)
 
-                expect(result.policyResult?.isValid).toBe(false)
+                expect(result.policyResult?.isValid).toEqual(false)
                 expect(result.policyResult?.violations).toContain(
                     'Required policy not found: 1.2.3.4.5',
                 )
@@ -745,7 +745,7 @@ describe('CertificateValidator', () => {
                 ).toBeGreaterThan(0)
                 expect(result.diagnostics.warnings).toBeInstanceOf(Array)
                 expect(result.diagnostics.context).toBeDefined()
-                expect(result.diagnostics.context.chainLength).toBe(3)
+                expect(result.diagnostics.context.chainLength).toEqual(3)
             })
 
             test('should include chain information in result', async () => {
@@ -759,7 +759,7 @@ describe('CertificateValidator', () => {
 
                 expect(result.chain).toBeDefined()
                 expect(result.chain?.certificates).toBeDefined()
-                expect(result.chain?.isComplete).toBe(true)
+                expect(result.chain?.isComplete).toEqual(true)
                 expect(result.chain?.trustAnchor).toBeDefined()
             })
         })
@@ -773,7 +773,7 @@ describe('CertificateValidator', () => {
                 expect(result.isValid).toBeDefined()
                 expect(result.messages).toBeDefined()
                 expect(result.revocationStatus).toBeDefined()
-                expect(result.certificate).toBe(endEntityCert)
+                expect(result.certificate).toEqual(endEntityCert)
                 expect(result.validatedAt).toBeDefined()
                 expect(result.diagnostics).toBeDefined()
             })
@@ -788,7 +788,7 @@ describe('CertificateValidator', () => {
                 const result = await validator.validate(endEntityCert, options)
 
                 expect(result.isValid).toBeDefined()
-                expect(result.diagnostics.context.timeTolerance).toBe(5000)
+                expect(result.diagnostics.context.timeTolerance).toEqual(5000)
             })
         })
 
@@ -812,7 +812,7 @@ describe('CertificateValidator', () => {
                 const result = await validator.validateChain(chain, {
                     enforceCAConstraints: true,
                 })
-                expect(result.isValid).toBe(false)
+                expect(result.isValid).toEqual(false)
                 expect(result.messages[0]).toMatch(
                     /pathLenConstraint violation/i,
                 )
@@ -837,7 +837,7 @@ describe('CertificateValidator', () => {
                 const result = await validator.validateChain(chain, {
                     enforceCAConstraints: true,
                 })
-                expect(result.isValid).toBe(true)
+                expect(result.isValid).toEqual(true)
             })
         })
     })

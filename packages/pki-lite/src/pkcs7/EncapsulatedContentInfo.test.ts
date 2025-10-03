@@ -35,7 +35,7 @@ describe('EncapsulatedContentInfo', () => {
         expect(asn1.valueBlock.value).toHaveLength(1) // Only contentType
     })
 
-    it('should convert to ASN.1 structure with Uint8Array content', () => {
+    it('should convert to ASN.1 structure with Uint8Array<ArrayBuffer> content', () => {
         const content = new Uint8Array([1, 2, 3, 4])
         const contentInfo = new EncapsulatedContentInfo({
             eContentType: OIDs.PKCS7.DATA,
@@ -63,7 +63,7 @@ describe('EncapsulatedContentInfo', () => {
 
     it('should convert to ASN.1 structure with ASN.1 content', () => {
         // Use a content that's compatible with anyToAsn1
-        const content = new Uint8Array([1, 2, 3, 4, 5]) // Use Uint8Array instead of asn1js.Integer
+        const content = new Uint8Array([1, 2, 3, 4, 5]) // Use Uint8Array<ArrayBuffer> instead of asn1js.Integer
         const contentInfo = new EncapsulatedContentInfo({
             eContentType: OIDs.PKCS7.DATA,
             eContent: content,
@@ -92,7 +92,7 @@ describe('EncapsulatedContentInfo', () => {
         })
         const str = contentInfo.toString()
 
-        expect(typeof str).toBe('string')
+        expect(typeof str).toEqual('string')
         expect(str.length).toBeGreaterThan(0)
     })
 
@@ -111,11 +111,11 @@ describe('EncapsulatedContentInfo', () => {
     })
 
     it('should have correct PKCS#7 content type constants', () => {
-        expect(OIDs.PKCS7.DATA).toBe('1.2.840.113549.1.7.1')
-        expect(OIDs.PKCS7.SIGNED_DATA).toBe('1.2.840.113549.1.7.2')
-        expect(OIDs.PKCS7.ENVELOPED_DATA).toBe('1.2.840.113549.1.7.3')
-        expect(OIDs.PKCS7.DIGESTED_DATA).toBe('1.2.840.113549.1.7.5')
-        expect(OIDs.PKCS7.ENCRYPTED_DATA).toBe('1.2.840.113549.1.7.6')
+        expect(OIDs.PKCS7.DATA).toEqual('1.2.840.113549.1.7.1')
+        expect(OIDs.PKCS7.SIGNED_DATA).toEqual('1.2.840.113549.1.7.2')
+        expect(OIDs.PKCS7.ENVELOPED_DATA).toEqual('1.2.840.113549.1.7.3')
+        expect(OIDs.PKCS7.DIGESTED_DATA).toEqual('1.2.840.113549.1.7.5')
+        expect(OIDs.PKCS7.ENCRYPTED_DATA).toEqual('1.2.840.113549.1.7.6')
     })
 
     it('should parse from ASN.1 structure without content', () => {
@@ -132,7 +132,7 @@ describe('EncapsulatedContentInfo', () => {
         expect(parsedContentInfo.eContent).toBeUndefined()
     })
 
-    it('should parse from ASN.1 structure with Uint8Array content', () => {
+    it('should parse from ASN.1 structure with Uint8Array<ArrayBuffer> content', () => {
         const content = new Uint8Array([1, 2, 3, 4, 5])
         const originalContentInfo = new EncapsulatedContentInfo({
             eContentType: OIDs.PKCS7.DATA,
@@ -147,15 +147,15 @@ describe('EncapsulatedContentInfo', () => {
         )
         expect(parsedContentInfo.eContent).not.toBeUndefined()
 
-        // When Uint8Array is converted to ASN.1 and back, we need to verify
+        // When Uint8Array<ArrayBuffer> is converted to ASN.1 and back, we need to verify
         // we're getting binary data back, but the exact format might differ
         // depending on how anyToAsn1 and fromAsn1 are implemented
         const parsedContent = parsedContentInfo.eContent
         expect(parsedContent).toBeDefined()
 
-        // If we get a Uint8Array back directly, test that
+        // If we get a Uint8Array<ArrayBuffer> back directly, test that
         if (parsedContent instanceof Uint8Array) {
-            // Convert both to arrays for comparison since the actual Uint8Array instances may be different
+            // Convert both to arrays for comparison since the actual Uint8Array<ArrayBuffer> instances may be different
             expect(Array.from(parsedContent)).toEqual(Array.from(content))
         } else if (
             typeof parsedContent === 'object' &&

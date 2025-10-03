@@ -27,9 +27,9 @@ Implementations must provide:
 ```typescript
 class CustomCryptoProvider implements CryptoProvider {
     async digest(
-        data: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
         algorithm: HashAlgorithm,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         // Custom hash implementation
         return customHash(data, algorithm)
     }
@@ -67,7 +67,7 @@ Content encryption algorithm as an AlgorithmIdentifier
 
 ### decrypt()
 
-> **decrypt**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **decrypt**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Decrypts the given data using the specified private key and asymmetric algorithm.
 
@@ -75,7 +75,7 @@ Decrypts the given data using the specified private key and asymmetric algorithm
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to decrypt
 
@@ -93,15 +93,15 @@ The decryption algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the decrypted data as a Uint8Array
+Promise resolving to the decrypted data as a Uint8Array<ArrayBuffer>
 
 ---
 
 ### decryptSymmetric()
 
-> **decryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **decryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Decrypts the given data using the specified symmetric key and algorithm.
 
@@ -109,13 +109,13 @@ Decrypts the given data using the specified symmetric key and algorithm.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to decrypt
 
 ##### key
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The symmetric key to use for decryption
 
@@ -123,19 +123,19 @@ The symmetric key to use for decryption
 
 The decryption algorithm to use
 
-[`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
+[`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the decrypted data as a Uint8Array
+Promise resolving to the decrypted data as a Uint8Array<ArrayBuffer>
 
 ---
 
 ### deriveKey()
 
-> **deriveKey**(`password`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **deriveKey**(`password`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Derives a cryptographic key from a password using the specified algorithm.
 
@@ -145,7 +145,7 @@ Derives a cryptographic key from a password using the specified algorithm.
 
 The password or key material to derive from
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ##### algorithm
 
@@ -153,17 +153,17 @@ The key derivation algorithm parameters
 
 ###### params
 
-\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
+\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
 
 ###### params.derivationAlgorithm
 
-\{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}; `type`: `"PBKDF2"`; \}
+\{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}
 
 Key derivation algorithm and parameters
 
 ###### params.derivationAlgorithm.params
 
-\{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}
+\{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}
 
 ###### params.derivationAlgorithm.params.hash
 
@@ -185,7 +185,7 @@ Desired key length in bytes (optional)
 
 ###### params.derivationAlgorithm.params.salt
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 Salt value for key derivation
 
@@ -205,15 +205,15 @@ Symmetric encryption algorithm and parameters
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the derived key as a Uint8Array
+Promise resolving to the derived key as a Uint8Array<ArrayBuffer>
 
 ---
 
 ### digest()
 
-> **digest**(`data`, `hash`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **digest**(`data`, `hash`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Computes the cryptographic hash digest of the given data.
 
@@ -221,7 +221,7 @@ Computes the cryptographic hash digest of the given data.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to hash
 
@@ -231,7 +231,7 @@ The data to hash
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Promise resolving to the hash digest bytes
 
@@ -239,7 +239,7 @@ Promise resolving to the hash digest bytes
 
 ### digestAlgorithm()
 
-> **digestAlgorithm**(`algorithm`): `Uint8Array`\<`ArrayBufferLike`\> \| [`AlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
+> **digestAlgorithm**(`algorithm`): `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`AlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
 
 Converts a hash algorithm to a digest algorithm identifier.
 
@@ -253,15 +253,15 @@ The hash algorithm
 
 #### Returns
 
-`Uint8Array`\<`ArrayBufferLike`\> \| [`AlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`AlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
 
-Digest algorithm as a Uint8Array or AlgorithmIdentifier
+Digest algorithm as a Uint8Array<ArrayBuffer> or AlgorithmIdentifier
 
 ---
 
 ### encrypt()
 
-> **encrypt**(`data`, `publicKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **encrypt**(`data`, `publicKeyInfo`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Encrypts data using asymmetric (public key) cryptography.
 
@@ -269,7 +269,7 @@ Encrypts data using asymmetric (public key) cryptography.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to encrypt
 
@@ -287,15 +287,15 @@ The encryption algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the encrypted data as a Uint8Array
+Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
 ---
 
 ### encryptSymmetric()
 
-> **encryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **encryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Encrypts the given data using the specified symmetric key and algorithm.
 
@@ -303,13 +303,13 @@ Encrypts the given data using the specified symmetric key and algorithm.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to encrypt
 
 ##### key
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The symmetric key to use for encryption
 
@@ -317,13 +317,13 @@ The symmetric key to use for encryption
 
 The encryption algorithm to use
 
-[`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
+[`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the encrypted data as a Uint8Array
+Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
 ---
 
@@ -351,7 +351,7 @@ A Promise that resolves to an object containing the public and private keys
 
 ### generateSymmetricKey()
 
-> **generateSymmetricKey**(`algorithm`): `Uint8Array`
+> **generateSymmetricKey**(`algorithm`): `Uint8Array<ArrayBuffer>`
 
 Generates a symmetric key for the specified encryption algorithm.
 
@@ -365,15 +365,15 @@ The encryption algorithm to use
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
-The generated symmetric key as a Uint8Array
+The generated symmetric key as a Uint8Array<ArrayBuffer>
 
 ---
 
 ### getEcCurveParameters()
 
-> **getEcCurveParameters**(`algorithm`): `Uint8Array`\<`ArrayBufferLike`\> \| [`ObjectIdentifier`](../../../../asn1/ObjectIdentifier/classes/ObjectIdentifier.md)
+> **getEcCurveParameters**(`algorithm`): `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`ObjectIdentifier`](../../../../asn1/ObjectIdentifier/classes/ObjectIdentifier.md)
 
 Gets the EC curve parameters for a given asymmetric encryption algorithm.
 
@@ -387,9 +387,9 @@ The asymmetric encryption algorithm parameters
 
 #### Returns
 
-`Uint8Array`\<`ArrayBufferLike`\> \| [`ObjectIdentifier`](../../../../asn1/ObjectIdentifier/classes/ObjectIdentifier.md)
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`ObjectIdentifier`](../../../../asn1/ObjectIdentifier/classes/ObjectIdentifier.md)
 
-EC curve parameters as a Uint8Array or ObjectIdentifier
+EC curve parameters as a Uint8Array<ArrayBuffer> or ObjectIdentifier
 
 ---
 
@@ -423,7 +423,7 @@ The EC named curve identifier
 
 ### getRandomValues()
 
-> **getRandomValues**(`length`): `Uint8Array`
+> **getRandomValues**(`length`): `Uint8Array<ArrayBuffer>`
 
 Generates cryptographically secure random bytes.
 
@@ -437,7 +437,7 @@ The number of random bytes to generate
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 Array containing the random bytes
 
@@ -467,7 +467,7 @@ Key encryption algorithm as an AlgorithmIdentifier
 
 ### sign()
 
-> **sign**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **sign**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Creates a digital signature for the given data.
 
@@ -475,7 +475,7 @@ Creates a digital signature for the given data.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to sign
 
@@ -493,7 +493,7 @@ The signature algorithm and parameters
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Promise resolving to the signature bytes
 
@@ -501,7 +501,7 @@ Promise resolving to the signature bytes
 
 ### signatureAlgorithm()
 
-> **signatureAlgorithm**(`algorithm`): `Uint8Array`\<`ArrayBufferLike`\> \| [`AlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
+> **signatureAlgorithm**(`algorithm`): `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`AlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
 
 Converts asymmetric encryption algorithm parameters to a signature algorithm identifier.
 
@@ -515,9 +515,9 @@ The asymmetric encryption algorithm parameters
 
 #### Returns
 
-`Uint8Array`\<`ArrayBufferLike`\> \| [`AlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`AlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
 
-Signature algorithm as a Uint8Array or AlgorithmIdentifier
+Signature algorithm as a Uint8Array<ArrayBuffer> or AlgorithmIdentifier
 
 ---
 
@@ -603,7 +603,7 @@ Verifies a digital signature against the original data.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The original data that was signed
 
@@ -615,7 +615,7 @@ The signer's public key
 
 ##### signature
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The signature to verify
 

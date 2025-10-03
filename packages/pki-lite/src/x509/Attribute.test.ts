@@ -12,9 +12,9 @@ describe('Attribute', () => {
         })
 
         expect(contentType).toBeInstanceOf(Attribute)
-        expect(contentType.type.toString()).toBe('1.2.840.113549.1.9.3')
+        expect(contentType.type.toString()).toEqual('1.2.840.113549.1.9.3')
         expect(contentType.values).toHaveLength(1)
-        expect(contentType.values[0].asString()).toBe('text/plain')
+        expect(contentType.values[0].asString()).toEqual('text/plain')
     })
 
     it('should create an Attribute with multiple values', () => {
@@ -27,10 +27,10 @@ describe('Attribute', () => {
         })
 
         expect(keyUsage).toBeInstanceOf(Attribute)
-        expect(keyUsage.type.toString()).toBe('2.5.29.15')
+        expect(keyUsage.type.toString()).toEqual('2.5.29.15')
         expect(keyUsage.values).toHaveLength(2)
         expect(keyUsage.values[0]).toBeInstanceOf(Any)
-        expect(keyUsage.values[1].asString()).toBe(
+        expect(keyUsage.values[1].asString()).toEqual(
             'Digital Signature, Non-Repudiation, Key Encipherment',
         )
     })
@@ -44,7 +44,7 @@ describe('Attribute', () => {
         const asn1 = contentType.toAsn1()
 
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect((asn1 as any).valueBlock.value.length).toBe(2)
+        expect((asn1 as any).valueBlock.value.length).toEqual(2)
 
         // First element should be ObjectIdentifier
         expect((asn1 as any).valueBlock.value[0]).toBeInstanceOf(
@@ -54,15 +54,15 @@ describe('Attribute', () => {
             (asn1 as any).valueBlock.value[0] instanceof
                 asn1js.ObjectIdentifier,
         )
-        expect((asn1 as any).valueBlock.value[0].toString()).toBe(
+        expect((asn1 as any).valueBlock.value[0].toString()).toEqual(
             'OBJECT IDENTIFIER : 1.2.840.113549.1.9.3',
         )
 
         // Second element should be Set containing the values
         expect((asn1 as any).valueBlock.value[1]).toBeInstanceOf(asn1js.Set)
-        expect((asn1 as any).valueBlock.value[1].valueBlock.value.length).toBe(
-            1,
-        )
+        expect(
+            (asn1 as any).valueBlock.value[1].valueBlock.value.length,
+        ).toEqual(1)
         // We're not checking the exact type here since the string handling may vary
     })
 
@@ -79,9 +79,9 @@ describe('Attribute', () => {
         const asn1 = mixedAttribute.toAsn1()
 
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect((asn1 as any).valueBlock.value[1].valueBlock.value.length).toBe(
-            3,
-        )
+        expect(
+            (asn1 as any).valueBlock.value[1].valueBlock.value.length,
+        ).toEqual(3)
 
         // We're checking the value conversion happened but not enforcing specific ASN.1 types
         // as that implementation detail might change

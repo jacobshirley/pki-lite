@@ -19,13 +19,13 @@ export class DigestedData extends PkiBase<DigestedData> {
     version: number
     digestAlgorithm: AlgorithmIdentifier
     encapContentInfo: EncapsulatedContentInfo
-    digest: Uint8Array
+    digest: Uint8Array<ArrayBuffer>
 
     constructor(options: {
         version: number
         digestAlgorithm: AlgorithmIdentifier
         encapContentInfo: EncapsulatedContentInfo
-        digest: Uint8Array
+        digest: Uint8Array<ArrayBuffer>
     }) {
         super()
         const { version, digestAlgorithm, encapContentInfo, digest } = options

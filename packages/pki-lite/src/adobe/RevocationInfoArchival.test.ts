@@ -95,7 +95,7 @@ describe('RevocationInfoArchival', () => {
         })
         const asn1 = ria.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3)
+        expect(asn1.valueBlock.value.length).toEqual(3)
         expect(ria.toString()).toMatchInlineSnapshot(`
           "[RevocationInfoArchival] SEQUENCE :
             [0] :

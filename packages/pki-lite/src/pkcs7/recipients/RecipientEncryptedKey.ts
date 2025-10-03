@@ -68,11 +68,11 @@ export class RecipientEncryptedKey extends PkiBase<RecipientEncryptedKey> {
     static KeyAgreeRecipientIdentifier = KeyAgreeRecipientIdentifier
 
     rid: KeyAgreeRecipientIdentifier
-    encryptedKey: Uint8Array
+    encryptedKey: Uint8Array<ArrayBuffer>
 
     constructor(options: {
         rid: KeyAgreeRecipientIdentifier
-        encryptedKey: Uint8Array
+        encryptedKey: Uint8Array<ArrayBuffer>
     }) {
         super()
         const { rid, encryptedKey } = options

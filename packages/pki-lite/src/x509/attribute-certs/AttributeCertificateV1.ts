@@ -29,7 +29,7 @@ export class AttributeCertificateV1 extends PkiBase<AttributeCertificateV1> {
     constructor(options: {
         acInfo: AttributeCertificateInfoV1
         signatureAlgorithm: AlgorithmIdentifier
-        signature: Uint8Array | BitString
+        signature: Uint8Array<ArrayBuffer> | BitString
     }) {
         super()
         const { acInfo, signatureAlgorithm, signature } = options

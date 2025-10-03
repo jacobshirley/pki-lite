@@ -24,7 +24,7 @@ export class MessageImprint extends PkiBase<MessageImprint> {
     hashAlgorithm: AlgorithmIdentifier
 
     /** The hash value of the message to be timestamped */
-    hashedMessage: Uint8Array
+    hashedMessage: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new MessageImprint instance.
@@ -43,7 +43,7 @@ export class MessageImprint extends PkiBase<MessageImprint> {
      */
     constructor(options: {
         hashAlgorithm: AlgorithmIdentifier
-        hashedMessage: Uint8Array
+        hashedMessage: Uint8Array<ArrayBuffer>
     }) {
         super()
 

@@ -10,9 +10,11 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class UniversalString extends PkiBase<UniversalString> {
-    bytes: Uint8Array
+    bytes: Uint8Array<ArrayBuffer>
 
-    constructor(options: { value: string | Uint8Array | UniversalString }) {
+    constructor(options: {
+        value: string | Uint8Array<ArrayBuffer> | UniversalString
+    }) {
         super()
         const { value } = options
 

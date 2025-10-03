@@ -83,7 +83,7 @@ Certificate Revocation Lists to include
 
 ### data?
 
-> `optional` **data**: `Uint8Array`\<`ArrayBufferLike`\>
+> `optional` **data**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 The data to be encrypted
 
@@ -335,7 +335,7 @@ Sets the data to be encrypted and optionally the content type.
 
 The data to encrypt, either as bytes or string
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ##### contentType?
 

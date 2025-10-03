@@ -52,8 +52,8 @@ describe('BasicOCSPResponse', () => {
             signature: signatureValue,
         })
 
-        expect(basicResponse.tbsResponseData).toBe(responseData)
-        expect(basicResponse.signatureAlgorithm).toBe(signatureAlgorithm)
+        expect(basicResponse.tbsResponseData).toEqual(responseData)
+        expect(basicResponse.signatureAlgorithm).toEqual(signatureAlgorithm)
         expect(basicResponse.signature.bytes).toEqual(signatureValue)
         expect(basicResponse.certs).toBeUndefined()
     })
@@ -109,7 +109,7 @@ describe('BasicOCSPResponse', () => {
         const asn1 = original.toAsn1()
         const parsed = BasicOCSPResponse.fromAsn1(asn1)
 
-        expect(parsed.tbsResponseData.version).toBe(0) // v1
+        expect(parsed.tbsResponseData.version).toEqual(0) // v1
         expect(parsed.tbsResponseData.responderID).toBeInstanceOf(
             ResponderID.byKey,
         )

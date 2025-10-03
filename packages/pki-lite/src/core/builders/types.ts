@@ -48,10 +48,10 @@ export interface Builder<T> {
  * @example
  * ```typescript
  * class SignedDataBuilder implements AsyncBuilder<SignedData> {
- *     private data: Uint8Array
+ *     private data: Uint8Array<ArrayBuffer>
  *     private signers: Signer[] = []
  *
- *     setData(data: Uint8Array): this {
+ *     setData(data: Uint8Array<ArrayBuffer>): this {
  *         this.data = data
  *         return this
  *     }

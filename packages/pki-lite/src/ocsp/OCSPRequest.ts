@@ -145,7 +145,7 @@ export class OCSPRequest extends PkiBase<OCSPRequest> {
         })
     }
 
-    static fromDer(der: Uint8Array): OCSPRequest {
+    static fromDer(der: Uint8Array<ArrayBuffer>): OCSPRequest {
         return OCSPRequest.fromAsn1(derToAsn1(der))
     }
 

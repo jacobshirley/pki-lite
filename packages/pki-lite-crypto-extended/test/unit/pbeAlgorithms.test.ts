@@ -9,7 +9,7 @@ const algs: (keyof PbeAlgorithmMap)[] = [
     'SHA1_RC2_128_CBC',
 ]
 
-function hexToBytes(hex: string): Uint8Array {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
     return new Uint8Array(hex.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)))
 }
 
@@ -22,14 +22,14 @@ describe('PBE Algorithms', () => {
                 const salt = hexToBytes('1234567890abcdef')
                 const iterationCount = 1000
                 const plaintext = new Uint8Array([0x01, 0x02, 0x03, 0x04])
-                // No official test vector, but should not throw and output should be Uint8Array
+                // No official test vector, but should not throw and output should be Uint8Array<ArrayBuffer>
                 const encrypted = algo.encrypt(
                     plaintext,
                     password,
                     salt,
                     iterationCount,
                 )
-                expect(encrypted).toBeInstanceOf(Uint8Array)
+                expect(encrypted).toBeInstanceOf(Uint8Array<ArrayBuffer>)
                 expect(encrypted.length).toBeGreaterThan(0)
 
                 const decrypted = algo.decrypt(
@@ -38,7 +38,7 @@ describe('PBE Algorithms', () => {
                     salt,
                     iterationCount,
                 )
-                expect(decrypted).toBeInstanceOf(Uint8Array)
+                expect(decrypted).toBeInstanceOf(Uint8Array<ArrayBuffer>)
                 expect(decrypted).toEqual(plaintext)
             })
         })

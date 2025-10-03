@@ -41,7 +41,7 @@ describe('SafeContents', () => {
             value: [safeBagAsn1_1, safeBagAsn1_2],
         })
         const safeContents = SafeContents.fromAsn1(seq)
-        expect(safeContents.length).toBe(2)
+        expect(safeContents.length).toEqual(2)
         expect(safeContents[0]).toBeInstanceOf(SafeBag)
         expect(safeContents[1]).toBeInstanceOf(SafeBag)
     })
@@ -68,7 +68,7 @@ describe('SafeContents', () => {
         const der = seq.toBER(false)
 
         const safeContents = SafeContents.fromDer(new Uint8Array(der))
-        expect(safeContents.length).toBe(1)
+        expect(safeContents.length).toEqual(1)
         expect(safeContents[0]).toBeInstanceOf(SafeBag)
     })
 })

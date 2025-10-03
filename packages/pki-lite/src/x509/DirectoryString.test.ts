@@ -18,35 +18,35 @@ describe('DirectoryString', () => {
         const asn1 = makeAsn1String(asn1js.TeletexString, 'abc')
         const result = DirectoryString.fromAsn1(asn1)
         expect(result).toBeInstanceOf(TeletexString)
-        expect(result.toString()).toBe('abc')
+        expect(result.toString()).toEqual('abc')
     })
 
     it('should parse PrintableString', () => {
         const asn1 = makeAsn1String(asn1js.PrintableString, 'def')
         const result = DirectoryString.fromAsn1(asn1)
         expect(result).toBeInstanceOf(PrintableString)
-        expect(result.toString()).toBe('def')
+        expect(result.toString()).toEqual('def')
     })
 
     it('should parse UniversalString', () => {
         const asn1 = makeAsn1String(asn1js.UniversalString, 'ghi')
         const result = DirectoryString.fromAsn1(asn1)
         expect(result).toBeInstanceOf(UniversalString)
-        expect(result.toString()).toBe('ghi')
+        expect(result.toString()).toEqual('ghi')
     })
 
     it('should parse Utf8String', () => {
         const asn1 = makeAsn1String(asn1js.Utf8String, 'jkl')
         const result = DirectoryString.fromAsn1(asn1)
         expect(result).toBeInstanceOf(UTF8String)
-        expect(result.toString()).toBe('jkl')
+        expect(result.toString()).toEqual('jkl')
     })
 
     it('should parse BmpString', () => {
         const asn1 = makeAsn1String(asn1js.BmpString, 'mno')
         const result = DirectoryString.fromAsn1(asn1)
         expect(result).toBeInstanceOf(BMPString)
-        expect(result.toString()).toBe('mno')
+        expect(result.toString()).toEqual('mno')
     })
 
     it('should throw on invalid ASN.1 type', () => {
@@ -58,6 +58,6 @@ describe('DirectoryString', () => {
 
     it('should call toAsn1 on value', () => {
         const value = { toAsn1: () => 'asn1-value' } as any
-        expect(DirectoryString.toAsn1(value)).toBe('asn1-value')
+        expect(DirectoryString.toAsn1(value)).toEqual('asn1-value')
     })
 })

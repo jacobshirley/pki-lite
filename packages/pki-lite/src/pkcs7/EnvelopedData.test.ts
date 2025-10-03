@@ -23,7 +23,7 @@ describe('EnvelopedData', () => {
         })
 
         expect(envelopedData).toBeInstanceOf(EnvelopedData)
-        expect(envelopedData.version).toBe(0)
+        expect(envelopedData.version).toEqual(0)
         expect(envelopedData.recipientInfos).toBeDefined()
         expect(envelopedData.encryptedContentInfo).toEqual(encryptedContentInfo)
     })
@@ -68,7 +68,7 @@ describe('EnvelopedData', () => {
         })
         const str = envelopedData.toString()
 
-        expect(typeof str).toBe('string')
+        expect(typeof str).toEqual('string')
         expect(str).toContain('[EnvelopedData] SEQUENCE')
     })
 
@@ -91,8 +91,10 @@ describe('EnvelopedData', () => {
         const asn1 = originalEnvelopedData.toAsn1()
         const parsedEnvelopedData = EnvelopedData.fromAsn1(asn1)
 
-        expect(parsedEnvelopedData.version).toBe(originalEnvelopedData.version)
-        expect(parsedEnvelopedData.recipientInfos.length).toBe(
+        expect(parsedEnvelopedData.version).toEqual(
+            originalEnvelopedData.version,
+        )
+        expect(parsedEnvelopedData.recipientInfos.length).toEqual(
             originalEnvelopedData.recipientInfos.length,
         )
         expect(parsedEnvelopedData.encryptedContentInfo.contentType).toEqual(

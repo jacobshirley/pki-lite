@@ -25,7 +25,7 @@ export type ToJson<T> = {
  */
 export type ParseableAsn1<T> = {
     fromAsn1?(asn1: Asn1BaseBlock): T
-    fromDer?(der: Uint8Array): T
+    fromDer?(der: Uint8Array<ArrayBuffer>): T
 }
 
 /**
@@ -402,24 +402,24 @@ export function derToAsn1(der: Uint8Array | ArrayBuffer): Asn1BaseBlock {
 }
 
 /**
- * Converts a Uint8Array to a base64 string in a browser-compatible way.
+ * Converts a Uint8Array<ArrayBuffer> to a base64 string in a browser-compatible way.
  * Uses the btoa() function available in both browsers and Node.js.
  *
  * @param bytes The bytes to encode
  * @returns The base64-encoded string
  */
-export function arrayToBase64(bytes: Uint8Array): string {
+export function arrayToBase64(bytes: Uint8Array<ArrayBuffer>): string {
     return btoa(String.fromCharCode.apply(null, Array.from(bytes)))
 }
 
 /**
- * Converts a base64 string to a Uint8Array in a browser-compatible way.
+ * Converts a base64 string to a Uint8Array<ArrayBuffer> in a browser-compatible way.
  * Uses the atob() function available in both browsers and Node.js.
  *
  * @param base64 The base64 string to decode
  * @returns The decoded bytes
  */
-export function base64ToArray(base64: string): Uint8Array {
+export function base64ToArray(base64: string): Uint8Array<ArrayBuffer> {
     const binary = atob(base64)
     const bytes = new Uint8Array(binary.length)
     for (let i = 0; i < binary.length; i++) {
@@ -437,7 +437,9 @@ const hexChars = '0123456789ABCDEF'
  * @param bytes The bytes to convert
  * @returns Hex representation as bytes (each hex digit as a byte)
  */
-export function bytesToHexBytes(bytes: Uint8Array): Uint8Array {
+export function bytesToHexBytes(
+    bytes: Uint8Array<ArrayBuffer>,
+): Uint8Array<ArrayBuffer> {
     const result = new Uint8Array(bytes.length * 2)
 
     for (let i = 0; i < bytes.length; i++) {
@@ -455,7 +457,7 @@ export function bytesToHexBytes(bytes: Uint8Array): Uint8Array {
  * @param bytes The bytes to convert
  * @returns Uppercase hexadecimal string (e.g., "DEADBEEF")
  */
-export function bytesToHexString(bytes: Uint8Array): string {
+export function bytesToHexString(bytes: Uint8Array<ArrayBuffer>): string {
     let hex = ''
     for (let i = 0; i < bytes.length; i++) {
         const byte = bytes[i]
@@ -472,7 +474,9 @@ export function bytesToHexString(bytes: Uint8Array): string {
  * @param hex The hex bytes to convert (each pair of bytes = one output byte)
  * @returns The decoded bytes
  */
-export function hexBytesToBytes(hex: Uint8Array): Uint8Array {
+export function hexBytesToBytes(
+    hex: Uint8Array<ArrayBuffer>,
+): Uint8Array<ArrayBuffer> {
     const bytes = new Uint8Array(hex.length / 2)
     for (let i = 0; i < hex.length; i += 2) {
         bytes[i / 2] = parseInt(String.fromCharCode(hex[i], hex[i + 1]), 16)
@@ -489,7 +493,10 @@ export function hexBytesToBytes(hex: Uint8Array): Uint8Array {
  * @returns The DER-encoded bytes
  * @throws Error if multiple PEM blocks are found or format is invalid
  */
-export function pemToDer(pem: string, name: string | string[]): Uint8Array {
+export function pemToDer(
+    pem: string,
+    name: string | string[],
+): Uint8Array<ArrayBuffer> {
     const names = Array.isArray(name) ? name : [name]
 
     for (const n of names) {
@@ -538,7 +545,7 @@ export type ObjectIdentifierString = string | { toString(): string }
  * Covers all the basic types that the library can work with.
  */
 export type Asn1Any =
-    | Uint8Array
+    | Uint8Array<ArrayBuffer>
     | Asn1BaseBlock
     | null
     | string

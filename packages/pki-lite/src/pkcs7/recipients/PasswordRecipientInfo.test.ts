@@ -21,7 +21,7 @@ describe('PasswordRecipientInfo', () => {
         const restored = PasswordRecipientInfo.fromAsn1(asn1)
 
         expect(restored).toBeInstanceOf(PasswordRecipientInfo)
-        expect(restored.version).toBe(original.version)
+        expect(restored.version).toEqual(original.version)
         expect(restored.keyDerivationAlgorithm).toEqual(
             original.keyDerivationAlgorithm,
         )

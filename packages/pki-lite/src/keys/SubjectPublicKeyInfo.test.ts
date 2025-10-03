@@ -50,7 +50,7 @@ describe('SubjectPublicKeyInfo', () => {
         const asn1 = spki.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2) // algorithm, subjectPublicKey
+        expect(asn1.valueBlock.value.length).toEqual(2) // algorithm, subjectPublicKey
 
         const [algorithmBlock, keyBlock] = asn1.valueBlock.value
 

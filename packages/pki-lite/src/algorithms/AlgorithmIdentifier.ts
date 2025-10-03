@@ -165,7 +165,7 @@ export class AlgorithmIdentifier extends PkiBase<AlgorithmIdentifier> {
         return AlgorithmIdentifier.fromAsn1(derToAsn1(bytes))
     }
 
-    static randomBytes(length: number): Uint8Array {
+    static randomBytes(length: number): Uint8Array<ArrayBuffer> {
         return getCryptoProvider().getRandomValues(length)
     }
 
@@ -258,7 +258,9 @@ export class AlgorithmIdentifier extends PkiBase<AlgorithmIdentifier> {
  * ```
  */
 export class DigestAlgorithmIdentifier extends AlgorithmIdentifier {
-    async digest(data: Uint8Array | PkiBase): Promise<Uint8Array> {
+    async digest(
+        data: Uint8Array<ArrayBuffer> | PkiBase,
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const crypto = getCryptoProvider()
         return await crypto.digest(
             data instanceof Uint8Array ? data : data.toDer(),
@@ -274,7 +276,7 @@ export class DigestAlgorithmIdentifier extends AlgorithmIdentifier {
         })
     }
 
-    static fromDer(bytes: Uint8Array): DigestAlgorithmIdentifier {
+    static fromDer(bytes: Uint8Array<ArrayBuffer>): DigestAlgorithmIdentifier {
         return new DigestAlgorithmIdentifier(AlgorithmIdentifier.fromDer(bytes))
     }
 
@@ -302,9 +304,9 @@ export class SignatureAlgorithmIdentifier extends AlgorithmIdentifier {
     }
 
     async sign(
-        data: Uint8Array | PkiBase,
+        data: Uint8Array<ArrayBuffer> | PkiBase,
         privateKeyInfo: PrivateKeyInfo,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const crypto = getCryptoProvider()
         const signature = await crypto.sign(
             data instanceof Uint8Array ? data : data.toDer(),
@@ -320,8 +322,8 @@ export class SignatureAlgorithmIdentifier extends AlgorithmIdentifier {
     }
 
     async verify(
-        data: Uint8Array | PkiBase,
-        signature: Uint8Array | PkiBase,
+        data: Uint8Array<ArrayBuffer> | PkiBase,
+        signature: Uint8Array<ArrayBuffer> | PkiBase,
         publicKeyInfo: SubjectPublicKeyInfo,
     ): Promise<boolean> {
         const crypto = getCryptoProvider()
@@ -354,7 +356,9 @@ export class SignatureAlgorithmIdentifier extends AlgorithmIdentifier {
         })
     }
 
-    static fromDer(bytes: Uint8Array): SignatureAlgorithmIdentifier {
+    static fromDer(
+        bytes: Uint8Array<ArrayBuffer>,
+    ): SignatureAlgorithmIdentifier {
         return new SignatureAlgorithmIdentifier(
             AlgorithmIdentifier.fromDer(bytes),
         )
@@ -380,9 +384,9 @@ export class KeyEncryptionAlgorithmIdentifier extends AlgorithmIdentifier {
     }
 
     async encrypt(
-        data: Uint8Array | PkiBase,
+        data: Uint8Array<ArrayBuffer> | PkiBase,
         publicKeyInfo: SubjectPublicKeyInfo,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const crypto = getCryptoProvider()
         return await crypto.encrypt(
             data instanceof Uint8Array ? data : data.toDer(),
@@ -392,9 +396,9 @@ export class KeyEncryptionAlgorithmIdentifier extends AlgorithmIdentifier {
     }
 
     async decrypt(
-        data: Uint8Array | PkiBase,
+        data: Uint8Array<ArrayBuffer> | PkiBase,
         privateKeyInfo: PrivateKeyInfo,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const crypto = getCryptoProvider()
         return await crypto.decrypt(
             data instanceof Uint8Array ? data : data.toDer(),
@@ -411,7 +415,9 @@ export class KeyEncryptionAlgorithmIdentifier extends AlgorithmIdentifier {
         })
     }
 
-    static fromDer(bytes: Uint8Array): KeyEncryptionAlgorithmIdentifier {
+    static fromDer(
+        bytes: Uint8Array<ArrayBuffer>,
+    ): KeyEncryptionAlgorithmIdentifier {
         return new KeyEncryptionAlgorithmIdentifier(
             AlgorithmIdentifier.fromDer(bytes),
         )
@@ -438,7 +444,7 @@ export class ContentEncryptionAlgorithmIdentifier extends AlgorithmIdentifier {
         return params
     }
 
-    generateKey(): Uint8Array {
+    generateKey(): Uint8Array<ArrayBuffer> {
         const crypto = getCryptoProvider()
         return crypto.generateSymmetricKey(
             this.toSymmetricEncryptionAlgorithmParams(),
@@ -446,9 +452,9 @@ export class ContentEncryptionAlgorithmIdentifier extends AlgorithmIdentifier {
     }
 
     async encrypt(
-        data: Uint8Array | PkiBase,
-        key: Uint8Array | string,
-    ): Promise<Uint8Array> {
+        data: Uint8Array<ArrayBuffer> | PkiBase,
+        key: Uint8Array<ArrayBuffer> | string,
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const crypto = getCryptoProvider()
         return await crypto.encryptSymmetric(
             data instanceof Uint8Array ? data : data.toDer(),
@@ -458,9 +464,9 @@ export class ContentEncryptionAlgorithmIdentifier extends AlgorithmIdentifier {
     }
 
     async decrypt(
-        data: Uint8Array | PkiBase,
-        key: Uint8Array | string,
-    ): Promise<Uint8Array> {
+        data: Uint8Array<ArrayBuffer> | PkiBase,
+        key: Uint8Array<ArrayBuffer> | string,
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const crypto = getCryptoProvider()
         return await crypto.decryptSymmetric(
             data instanceof Uint8Array ? data : data.toDer(),
@@ -528,7 +534,7 @@ export class PSourceAlgorithm extends AlgorithmIdentifier {
         return new TextDecoder().decode(this.getLabelBytes())
     }
 
-    getLabelBytes(): Uint8Array {
+    getLabelBytes(): Uint8Array<ArrayBuffer> {
         if (!this.parameters) {
             return new Uint8Array(0)
         }

@@ -23,7 +23,7 @@ export class DigestInfo extends PkiBase<DigestInfo> {
 
     constructor(options: {
         digestAlgorithm: AlgorithmIdentifier
-        digest: OctetString | Uint8Array
+        digest: OctetString | Uint8Array<ArrayBuffer>
     }) {
         super()
         this.digestAlgorithm = new DigestAlgorithmIdentifier(
@@ -52,7 +52,7 @@ export class DigestInfo extends PkiBase<DigestInfo> {
         })
     }
 
-    static fromDer(der: Uint8Array): DigestInfo {
+    static fromDer(der: Uint8Array<ArrayBuffer>): DigestInfo {
         return DigestInfo.fromAsn1(derToAsn1(der))
     }
 }

@@ -30,7 +30,7 @@ describe('Request', () => {
         const certID = createTestCertID()
         const request = new Request({ reqCert: certID })
 
-        expect(request.reqCert).toBe(certID)
+        expect(request.reqCert).toEqual(certID)
         expect(request.singleRequestExtensions).toBeUndefined()
     })
 
@@ -47,9 +47,9 @@ describe('Request', () => {
             singleRequestExtensions: [extension],
         })
 
-        expect(request.reqCert).toBe(certID)
+        expect(request.reqCert).toEqual(certID)
         expect(request.singleRequestExtensions).toHaveLength(1)
-        expect(request.singleRequestExtensions?.[0]).toBe(extension)
+        expect(request.singleRequestExtensions?.[0]).toEqual(extension)
     })
 
     it('should create a Request with multiple extensions', () => {
@@ -69,10 +69,10 @@ describe('Request', () => {
             singleRequestExtensions: [extension1, extension2],
         })
 
-        expect(request.reqCert).toBe(certID)
+        expect(request.reqCert).toEqual(certID)
         expect(request.singleRequestExtensions).toHaveLength(2)
-        expect(request.singleRequestExtensions?.[0]).toBe(extension1)
-        expect(request.singleRequestExtensions?.[1]).toBe(extension2)
+        expect(request.singleRequestExtensions?.[0]).toEqual(extension1)
+        expect(request.singleRequestExtensions?.[1]).toEqual(extension2)
     })
 
     it('should convert to ASN.1 and back without extensions', () => {
@@ -106,7 +106,7 @@ describe('Request', () => {
             certID.hashAlgorithm.algorithm,
         )
         expect(parsed.singleRequestExtensions).toHaveLength(1)
-        expect(parsed.singleRequestExtensions?.[0].extnID.toString()).toBe(
+        expect(parsed.singleRequestExtensions?.[0].extnID.toString()).toEqual(
             '1.2.3.4',
         )
     })
@@ -130,7 +130,7 @@ describe('Request', () => {
             certID.hashAlgorithm.algorithm,
         )
         expect(parsed.singleRequestExtensions).toHaveLength(1)
-        expect(parsed.singleRequestExtensions?.[0].extnID.toString()).toBe(
+        expect(parsed.singleRequestExtensions?.[0].extnID.toString()).toEqual(
             '1.2.3.4',
         )
     })
@@ -185,7 +185,7 @@ describe('Request', () => {
             singleRequestExtensions: [],
         })
 
-        expect(request.reqCert).toBe(certID)
+        expect(request.reqCert).toEqual(certID)
         expect(request.singleRequestExtensions).toEqual([])
 
         // When converting to ASN.1, empty extensions should not be included

@@ -28,7 +28,7 @@ export class ESSCertIDv2 extends PkiBase<ESSCertIDv2> {
 
     constructor(options: {
         hashAlgorithm?: AlgorithmIdentifier
-        certHash: Uint8Array | OctetString
+        certHash: Uint8Array<ArrayBuffer> | OctetString
         issuerSerial?: IssuerSerial
     }) {
         super()

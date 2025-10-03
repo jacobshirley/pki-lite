@@ -50,7 +50,7 @@ Desired key length in bytes (optional)
 
 ##### derivationAlgorithm.params.salt
 
-> **salt**: `Uint8Array`
+> **salt**: `Uint8Array<ArrayBuffer>`
 
 Salt value for key derivation
 

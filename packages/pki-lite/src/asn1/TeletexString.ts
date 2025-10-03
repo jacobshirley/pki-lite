@@ -10,9 +10,11 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class TeletexString extends PkiBase<TeletexString> {
-    bytes: Uint8Array
+    bytes: Uint8Array<ArrayBuffer>
 
-    constructor(options: { value: string | Uint8Array | TeletexString }) {
+    constructor(options: {
+        value: string | Uint8Array<ArrayBuffer> | TeletexString
+    }) {
         super()
         const { value } = options
 

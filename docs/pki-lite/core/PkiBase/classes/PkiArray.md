@@ -1541,13 +1541,13 @@ The ASN.1 representation of this array
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this array to DER format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this array
 

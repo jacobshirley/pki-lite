@@ -11,7 +11,7 @@ describe('PBEParameter', () => {
         const param = new PBEParameter({ salt, iterationCount })
         expect(param.salt).toBeInstanceOf(OctetString)
         expect(param.salt.bytes).toEqual(salt)
-        expect(param.iterationCount).toBe(iterationCount)
+        expect(param.iterationCount).toEqual(iterationCount)
     })
 
     it('should encode to ASN.1 Sequence', () => {
@@ -21,7 +21,7 @@ describe('PBEParameter', () => {
         assert(asn1.valueBlock.value[0] instanceof asn1js.OctetString)
         assert(asn1.valueBlock.value[1] instanceof asn1js.Integer)
         expect(asn1.valueBlock.value[0].valueBlock.valueHexView).toEqual(salt)
-        expect(asn1.valueBlock.value[1].valueBlock.valueDec).toBe(
+        expect(asn1.valueBlock.value[1].valueBlock.valueDec).toEqual(
             iterationCount,
         )
     })
@@ -31,7 +31,7 @@ describe('PBEParameter', () => {
         const asn1 = param.toAsn1()
         const decoded = PBEParameter.fromAsn1(asn1)
         expect(decoded.salt.bytes).toEqual(salt)
-        expect(decoded.iterationCount).toBe(iterationCount)
+        expect(decoded.iterationCount).toEqual(iterationCount)
     })
 
     it('should throw on invalid ASN.1 structure', () => {

@@ -164,7 +164,7 @@ export class SafeBag extends PkiBase<SafeBag> {
         })
     }
 
-    static fromDer(der: Uint8Array): SafeBag {
+    static fromDer(der: Uint8Array<ArrayBuffer>): SafeBag {
         return SafeBag.fromAsn1(derToAsn1(der))
     }
 

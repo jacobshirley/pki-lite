@@ -11,7 +11,7 @@ import {
     AlgorithmIdentifier,
 } from '../algorithms/AlgorithmIdentifier.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
-
+import { MessageAuthenticationCode } from './MessageAuthenticationCode.js'
 /**
  * Represents a set of authenticated attributes.
  *
@@ -81,32 +81,6 @@ class RecipientInfos extends PkiSet<RecipientInfo> {
         )
 
         return new RecipientInfos(...recipients)
-    }
-}
-
-/**
- * Message Authentication Code
- *
- * @asn
- * ```asn
- * MessageAuthenticationCode ::= OCTET STRING
- * ```
- */
-class MessageAuthenticationCode extends Uint8Array {
-    static fromAsn1(asn1: Asn1BaseBlock): MessageAuthenticationCode {
-        if (!(asn1 instanceof asn1js.OctetString)) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected OctetString for MessageAuthenticationCode',
-            )
-        }
-
-        return new MessageAuthenticationCode(asn1.valueBlock.valueHexView)
-    }
-
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.OctetString({
-            valueHex: this,
-        })
     }
 }
 
@@ -204,7 +178,7 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
         recipientInfos: RecipientInfo[]
         macAlgorithm: AlgorithmIdentifier
         encapContentInfo: EncapsulatedContentInfo
-        mac: Uint8Array
+        mac: Uint8Array<ArrayBuffer> | MessageAuthenticationCode
         originatorInfo?: OriginatorInfo
         digestAlgorithm?: DigestAlgorithmIdentifier
         authAttrs?: Attribute[]
@@ -228,7 +202,7 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
         this.recipientInfos = new RecipientInfos(...recipientInfos)
         this.macAlgorithm = macAlgorithm
         this.encapContentInfo = encapContentInfo
-        this.mac = new MessageAuthenticationCode(mac)
+        this.mac = new MessageAuthenticationCode({ bytes: mac })
         this.originatorInfo = originatorInfo
         this.digestAlgorithm = digestAlgorithm
         this.authAttrs =

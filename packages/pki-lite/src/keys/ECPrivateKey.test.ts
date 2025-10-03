@@ -86,9 +86,9 @@ describe('ECPrivateKey', () => {
             publicKey: publicKeyBytes,
         })
 
-        expect(ecPrivKey.version).toBe(1)
+        expect(ecPrivKey.version).toEqual(1)
         expect(ecPrivKey.privateKey).toEqual(privateKeyBytes)
-        expect(ecPrivKey.namedCurve).toBe(OIDs.CURVES.SECP256R1)
+        expect(ecPrivKey.namedCurve).toEqual(OIDs.CURVES.SECP256R1)
         expect(ecPrivKey.publicKey).toEqual(publicKeyBytes)
     })
 
@@ -107,11 +107,11 @@ describe('ECPrivateKey', () => {
         const values = (asn1 as asn1js.Sequence).valueBlock.value
 
         // Should have 4 elements: version, privateKey, [0] parameters, [1] publicKey
-        expect(values.length).toBe(4)
+        expect(values.length).toEqual(4)
 
         // Version
         expect(values[0]).toBeInstanceOf(asn1js.Integer)
-        expect((values[0] as asn1js.Integer).valueBlock.valueDec).toBe(1)
+        expect((values[0] as asn1js.Integer).valueBlock.valueDec).toEqual(1)
 
         // PrivateKey
         expect(values[1]).toBeInstanceOf(asn1js.OctetString)
@@ -123,25 +123,25 @@ describe('ECPrivateKey', () => {
 
         // Parameters [0]
         expect(values[2]).toBeInstanceOf(asn1js.Constructed)
-        expect((values[2] as asn1js.Constructed).idBlock.tagNumber).toBe(0)
+        expect((values[2] as asn1js.Constructed).idBlock.tagNumber).toEqual(0)
 
         const parametersValue = (values[2] as asn1js.Constructed).valueBlock
             .value
-        expect(parametersValue.length).toBe(1)
+        expect(parametersValue.length).toEqual(1)
         expect(parametersValue[0]).toBeInstanceOf(asn1js.ObjectIdentifier)
         expect(
             (
                 parametersValue[0] as asn1js.ObjectIdentifier
             ).valueBlock.toString(),
-        ).toBe(OIDs.CURVES.SECP256R1)
+        ).toEqual(OIDs.CURVES.SECP256R1)
 
         // PublicKey [1]
         expect(values[3]).toBeInstanceOf(asn1js.Constructed)
-        expect((values[3] as asn1js.Constructed).idBlock.tagNumber).toBe(1)
+        expect((values[3] as asn1js.Constructed).idBlock.tagNumber).toEqual(1)
 
         const publicKeyValue = (values[3] as asn1js.Constructed).valueBlock
             .value
-        expect(publicKeyValue.length).toBe(1)
+        expect(publicKeyValue.length).toEqual(1)
         expect(publicKeyValue[0]).toBeInstanceOf(asn1js.BitString)
     })
 
@@ -158,11 +158,11 @@ describe('ECPrivateKey', () => {
         const values = (asn1 as asn1js.Sequence).valueBlock.value
 
         // Should have only 2 elements: version, privateKey
-        expect(values.length).toBe(2)
+        expect(values.length).toEqual(2)
 
         // Version
         expect(values[0]).toBeInstanceOf(asn1js.Integer)
-        expect((values[0] as asn1js.Integer).valueBlock.valueDec).toBe(1)
+        expect((values[0] as asn1js.Integer).valueBlock.valueDec).toEqual(1)
 
         // PrivateKey
         expect(values[1]).toBeInstanceOf(asn1js.OctetString)
@@ -202,9 +202,9 @@ describe('ECPrivateKey', () => {
 
         const ecPrivKey = ECPrivateKey.fromAsn1(asn1)
 
-        expect(ecPrivKey.version).toBe(1)
+        expect(ecPrivKey.version).toEqual(1)
         expect(ecPrivKey.privateKey).toEqual(privateKeyBytes)
-        expect(ecPrivKey.namedCurve).toBe(OIDs.CURVES.SECP256R1)
+        expect(ecPrivKey.namedCurve).toEqual(OIDs.CURVES.SECP256R1)
         expect(ecPrivKey.publicKey).toEqual(publicKeyBytes)
     })
 
@@ -219,7 +219,7 @@ describe('ECPrivateKey', () => {
 
         const ecPrivKey = ECPrivateKey.fromAsn1(asn1)
 
-        expect(ecPrivKey.version).toBe(1)
+        expect(ecPrivKey.version).toEqual(1)
         expect(ecPrivKey.privateKey).toEqual(privateKeyBytes)
         expect(ecPrivKey.namedCurve).toBeUndefined()
         expect(ecPrivKey.publicKey).toBeUndefined()
@@ -235,9 +235,9 @@ describe('ECPrivateKey', () => {
         const asn1 = original.toAsn1()
         const decoded = ECPrivateKey.fromAsn1(asn1)
 
-        expect(decoded.version).toBe(original.version)
+        expect(decoded.version).toEqual(original.version)
         expect(decoded.privateKey).toEqual(original.privateKey)
-        expect(decoded.namedCurve).toBe(original.namedCurve)
+        expect(decoded.namedCurve).toEqual(original.namedCurve)
         expect(decoded.publicKey).toEqual(original.publicKey)
     })
 
@@ -248,9 +248,9 @@ describe('ECPrivateKey', () => {
             publicKeyBytes,
         )
 
-        expect(ecPrivKey.version).toBe(1)
+        expect(ecPrivKey.version).toEqual(1)
         expect(ecPrivKey.privateKey).toEqual(privateKeyBytes)
-        expect(ecPrivKey.namedCurve).toBe(OIDs.CURVES.SECP256K1)
+        expect(ecPrivKey.namedCurve).toEqual(OIDs.CURVES.SECP256K1)
         expect(ecPrivKey.publicKey).toEqual(publicKeyBytes)
     })
 

@@ -19,7 +19,7 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class OctetString extends PkiBase<OctetString> {
-    bytes: Uint8Array
+    bytes: Uint8Array<ArrayBuffer>
 
     constructor(options: {
         bytes:
@@ -43,7 +43,7 @@ export class OctetString extends PkiBase<OctetString> {
         ) {
             this.bytes = bytes.toDer()
         } else {
-            this.bytes = bytes
+            this.bytes = new Uint8Array(bytes)
         }
     }
 
@@ -51,7 +51,7 @@ export class OctetString extends PkiBase<OctetString> {
         return new asn1js.OctetString({ valueHex: this.bytes })
     }
 
-    toUint8Array(): Uint8Array {
+    toUint8Array(): Uint8Array<ArrayBuffer> {
         return this.bytes
     }
 
@@ -66,7 +66,7 @@ export class OctetString extends PkiBase<OctetString> {
         return new OctetString({ bytes: asn1.valueBlock.valueHexView })
     }
 
-    static fromDer(der: Uint8Array): OctetString {
+    static fromDer(der: Uint8Array<ArrayBuffer>): OctetString {
         return OctetString.fromAsn1(derToAsn1(der))
     }
 

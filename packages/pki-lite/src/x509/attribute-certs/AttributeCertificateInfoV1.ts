@@ -30,16 +30,16 @@ import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
  */
 export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfoV1> {
     version: number
-    subject: Uint8Array // Simplified representation for the subject choice
-    issuer: Uint8Array // Simplified representation for GeneralNames
+    subject: Uint8Array<ArrayBuffer> // Simplified representation for the subject choice
+    issuer: Uint8Array<ArrayBuffer> // Simplified representation for GeneralNames
     signature: AlgorithmIdentifier
-    serialNumber: Uint8Array
+    serialNumber: Uint8Array<ArrayBuffer>
     validityPeriod: {
         notBefore: Date
         notAfter: Date
     }
     attributes: Attribute[]
-    issuerUniqueID?: Uint8Array
+    issuerUniqueID?: Uint8Array<ArrayBuffer>
     extensions?: Extension[]
 
     /**
@@ -49,16 +49,16 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
      */
     constructor(options: {
         version: number
-        subject: Uint8Array
-        issuer: Uint8Array
+        subject: Uint8Array<ArrayBuffer>
+        issuer: Uint8Array<ArrayBuffer>
         signature: AlgorithmIdentifier
-        serialNumber: Uint8Array
+        serialNumber: Uint8Array<ArrayBuffer>
         validityPeriod: {
             notBefore: Date
             notAfter: Date
         }
         attributes: Attribute[]
-        issuerUniqueID?: Uint8Array
+        issuerUniqueID?: Uint8Array<ArrayBuffer>
         extensions?: Extension[]
     }) {
         super()
@@ -227,7 +227,7 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
         )
 
         // Extract optional issuerUniqueID if present
-        let issuerUniqueID: Uint8Array | undefined
+        let issuerUniqueID: Uint8Array<ArrayBuffer> | undefined
         let extensions: Extension[] | undefined
 
         if (values.length > 7) {

@@ -8,19 +8,19 @@ describe('IA5String', () => {
         const ia5String = new IA5String({ value: testString })
 
         expect(ia5String).toBeInstanceOf(IA5String)
-        expect(ia5String.toString()).toBe(testString)
+        expect(ia5String.toString()).toEqual(testString)
 
         // Should encode as ASCII bytes
         const expectedBytes = new TextEncoder().encode(testString)
         expect(ia5String.bytes).toEqual(expectedBytes)
     })
 
-    test('should create IA5String from Uint8Array', () => {
+    test('should create IA5String from Uint8Array<ArrayBuffer>', () => {
         const bytes = new Uint8Array([0x74, 0x65, 0x73, 0x74]) // "test"
         const ia5String = new IA5String({ value: bytes })
 
         expect(ia5String.bytes).toEqual(bytes)
-        expect(ia5String.toString()).toBe('test')
+        expect(ia5String.toString()).toEqual('test')
     })
 
     test('should create IA5String from another IA5String', () => {
@@ -28,14 +28,14 @@ describe('IA5String', () => {
         const copy = new IA5String({ value: original })
 
         expect(copy.bytes).toEqual(original.bytes)
-        expect(copy.toString()).toBe(original.toString())
+        expect(copy.toString()).toEqual(original.toString())
     })
 
     test('should handle ASCII characters', () => {
         const asciiString = 'ABC123!@#$%'
         const ia5String = new IA5String({ value: asciiString })
 
-        expect(ia5String.toString()).toBe(asciiString)
+        expect(ia5String.toString()).toEqual(asciiString)
 
         // Verify ASCII encoding
         const expectedBytes = new TextEncoder().encode(asciiString)
@@ -46,14 +46,14 @@ describe('IA5String', () => {
         const emailString = 'user.name+tag@example.com'
         const ia5String = new IA5String({ value: emailString })
 
-        expect(ia5String.toString()).toBe(emailString)
+        expect(ia5String.toString()).toEqual(emailString)
     })
 
     test('should handle empty string', () => {
         const ia5String = new IA5String({ value: '' })
 
-        expect(ia5String.bytes.length).toBe(0)
-        expect(ia5String.toString()).toBe('')
+        expect(ia5String.bytes.length).toEqual(0)
+        expect(ia5String.toString()).toEqual('')
     })
 
     test('should convert to ASN.1 structure correctly', () => {
@@ -76,7 +76,7 @@ describe('IA5String', () => {
         const ia5String = IA5String.fromAsn1(asn1)
 
         expect(ia5String).toBeInstanceOf(IA5String)
-        expect(ia5String.toString()).toBe(testString)
+        expect(ia5String.toString()).toEqual(testString)
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -99,7 +99,7 @@ describe('IA5String', () => {
 
         for (const { input, expected } of testCases) {
             const ia5String = new IA5String({ value: input })
-            expect(ia5String.toHexString().toLowerCase()).toBe(expected)
+            expect(ia5String.toHexString().toLowerCase()).toEqual(expected)
         }
     })
 
@@ -118,7 +118,7 @@ describe('IA5String', () => {
             const asn1 = original.toAsn1()
             const decoded = IA5String.fromAsn1(asn1)
 
-            expect(decoded.toString()).toBe(testString)
+            expect(decoded.toString()).toEqual(testString)
             expect(decoded.bytes).toEqual(original.bytes)
         }
     })
@@ -132,11 +132,11 @@ describe('IA5String', () => {
         const testString = printableChars.join('')
 
         const ia5String = new IA5String({ value: testString })
-        expect(ia5String.toString()).toBe(testString)
+        expect(ia5String.toString()).toEqual(testString)
 
         // Test round-trip
         const asn1 = ia5String.toAsn1()
         const decoded = IA5String.fromAsn1(asn1)
-        expect(decoded.toString()).toBe(testString)
+        expect(decoded.toString()).toEqual(testString)
     })
 })

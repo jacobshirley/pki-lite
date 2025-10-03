@@ -16,7 +16,7 @@ describe('PBKDF2Params', () => {
         algorithm: OIDs.HASH.HMAC_SHA256,
     })
 
-    test('constructor should set properties with Uint8Array salt', () => {
+    test('constructor should set properties with Uint8Array<ArrayBuffer> salt', () => {
         const params = new PBKDF2Params({
             salt,
             iterationCount,
@@ -25,9 +25,9 @@ describe('PBKDF2Params', () => {
         })
 
         expect(params.salt).toBeInstanceOf(OctetString)
-        expect(params.iterationCount).toBe(iterationCount)
-        expect(params.keyLength).toBe(keyLength)
-        expect(params.prf.algorithm.value).toBe(OIDs.HASH.HMAC_SHA256)
+        expect(params.iterationCount).toEqual(iterationCount)
+        expect(params.keyLength).toEqual(keyLength)
+        expect(params.prf.algorithm.value).toEqual(OIDs.HASH.HMAC_SHA256)
     })
 
     test('constructor should set properties with OctetString salt', () => {
@@ -39,10 +39,10 @@ describe('PBKDF2Params', () => {
             prf,
         })
 
-        expect(params.salt).toBe(octetStringSalt)
-        expect(params.iterationCount).toBe(iterationCount)
-        expect(params.keyLength).toBe(keyLength)
-        expect(params.prf.algorithm.value).toBe(OIDs.HASH.HMAC_SHA256)
+        expect(params.salt).toEqual(octetStringSalt)
+        expect(params.iterationCount).toEqual(iterationCount)
+        expect(params.keyLength).toEqual(keyLength)
+        expect(params.prf.algorithm.value).toEqual(OIDs.HASH.HMAC_SHA256)
     })
 
     test('constructor should set properties with AlgorithmIdentifier salt', () => {
@@ -57,10 +57,10 @@ describe('PBKDF2Params', () => {
             prf,
         })
 
-        expect(params.salt).toBe(algIdSalt)
-        expect(params.iterationCount).toBe(iterationCount)
-        expect(params.keyLength).toBe(keyLength)
-        expect(params.prf.algorithm.value).toBe(OIDs.HASH.HMAC_SHA256)
+        expect(params.salt).toEqual(algIdSalt)
+        expect(params.iterationCount).toEqual(iterationCount)
+        expect(params.keyLength).toEqual(keyLength)
+        expect(params.prf.algorithm.value).toEqual(OIDs.HASH.HMAC_SHA256)
     })
 
     test('constructor should use default prf if not provided', () => {
@@ -69,7 +69,7 @@ describe('PBKDF2Params', () => {
             iterationCount,
         })
 
-        expect(params.prf.algorithm.value).toBe(OIDs.HASH.HMAC_SHA1)
+        expect(params.prf.algorithm.value).toEqual(OIDs.HASH.HMAC_SHA1)
     })
 
     test('toAsn1 should return correct ASN.1 structure with all parameters', () => {
@@ -83,7 +83,7 @@ describe('PBKDF2Params', () => {
         const asn1 = params.toAsn1()
 
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3) // salt, iterationCount, keyLength
+        expect(asn1.valueBlock.value.length).toEqual(3) // salt, iterationCount, keyLength
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.OctetString)
         expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Integer)
         expect(asn1.valueBlock.value[2]).toBeInstanceOf(asn1js.Integer)
@@ -99,7 +99,7 @@ describe('PBKDF2Params', () => {
         const asn1 = params.toAsn1()
 
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2) // salt, iterationCount
+        expect(asn1.valueBlock.value.length).toEqual(2) // salt, iterationCount
     })
 
     test('fromAsn1 should parse ASN.1 structure with OctetString salt', () => {
@@ -116,9 +116,9 @@ describe('PBKDF2Params', () => {
 
         expect(parsed).toBeInstanceOf(PBKDF2Params)
         expect(parsed.salt).toBeInstanceOf(OctetString)
-        expect(parsed.iterationCount).toBe(iterationCount)
-        expect(parsed.keyLength).toBe(keyLength)
-        expect(parsed.prf.algorithm.value).toBe(OIDs.HASH.HMAC_SHA256)
+        expect(parsed.iterationCount).toEqual(iterationCount)
+        expect(parsed.keyLength).toEqual(keyLength)
+        expect(parsed.prf.algorithm.value).toEqual(OIDs.HASH.HMAC_SHA256)
     })
 
     test('fromAsn1 should parse ASN.1 structure with AlgorithmIdentifier salt', () => {
@@ -137,7 +137,7 @@ describe('PBKDF2Params', () => {
 
         expect(parsed).toBeInstanceOf(PBKDF2Params)
         expect(parsed.salt).toBeInstanceOf(AlgorithmIdentifier)
-        expect(parsed.iterationCount).toBe(iterationCount)
+        expect(parsed.iterationCount).toEqual(iterationCount)
     })
 
     test('fromAsn1 should throw if not a Sequence', () => {

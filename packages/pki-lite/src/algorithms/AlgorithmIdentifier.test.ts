@@ -10,7 +10,7 @@ describe('AlgorithmIdentifier', () => {
             algorithm: '1.2.840.113549.1.1.11',
         }) // SHA256 with RSA
         expect(algId).toBeInstanceOf(AlgorithmIdentifier)
-        expect(algId.algorithm.toString()).toBe('1.2.840.113549.1.1.11')
+        expect(algId.algorithm.toString()).toEqual('1.2.840.113549.1.1.11')
         expect(algId.parameters).toBeUndefined()
     })
 
@@ -22,7 +22,7 @@ describe('AlgorithmIdentifier', () => {
         })
 
         expect(algId).toBeInstanceOf(AlgorithmIdentifier)
-        expect(algId.algorithm.toString()).toBe('1.2.840.113549.1.1.11')
+        expect(algId.algorithm.toString()).toEqual('1.2.840.113549.1.1.11')
         expect(algId.parameters).toEqual({
             derBytes: null,
         })
@@ -35,12 +35,12 @@ describe('AlgorithmIdentifier', () => {
         const asn1 = algId.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(1)
+        expect(asn1.valueBlock.value.length).toEqual(1)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.ObjectIdentifier)
 
         assert(asn1.valueBlock.value[0] instanceof asn1js.ObjectIdentifier)
         // The toString() method includes "OBJECT IDENTIFIER : " prefix
-        expect(asn1.valueBlock.value[0].toString()).toBe(
+        expect(asn1.valueBlock.value[0].toString()).toEqual(
             'OBJECT IDENTIFIER : 1.2.840.113549.1.1.11',
         )
     })
@@ -55,11 +55,11 @@ describe('AlgorithmIdentifier', () => {
         const asn1 = algId.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.ObjectIdentifier)
         assert(asn1.valueBlock.value[0] instanceof asn1js.ObjectIdentifier)
         // The toString() method includes "OBJECT IDENTIFIER : " prefix
-        expect(asn1.valueBlock.value[0].toString()).toBe(
+        expect(asn1.valueBlock.value[0].toString()).toEqual(
             'OBJECT IDENTIFIER : 1.2.840.113549.1.1.11',
         )
         // Check that the second value exists but don't check its exact type
@@ -76,7 +76,7 @@ describe('AlgorithmIdentifier', () => {
 
         const algId = AlgorithmIdentifier.fromAsn1(asn1)
         expect(algId).toBeInstanceOf(AlgorithmIdentifier)
-        expect(algId.algorithm.toString()).toBe('1.2.840.113549.1.1.11')
+        expect(algId.algorithm.toString()).toEqual('1.2.840.113549.1.1.11')
         expect(algId.parameters).toBeUndefined()
     })
 
@@ -92,7 +92,7 @@ describe('AlgorithmIdentifier', () => {
 
         const algId = AlgorithmIdentifier.fromAsn1(asn1)
         expect(algId).toBeInstanceOf(AlgorithmIdentifier)
-        expect(algId.algorithm.toString()).toBe('1.2.840.113549.1.1.11')
+        expect(algId.algorithm.toString()).toEqual('1.2.840.113549.1.1.11')
         expect(algId.parameters).toBeDefined()
     })
 
@@ -134,7 +134,7 @@ describe('AlgorithmIdentifier', () => {
 
         for (const { oid, expected } of testCases) {
             const algId = new AlgorithmIdentifier({ algorithm: oid })
-            expect(algId.friendlyName).toBe(expected)
+            expect(algId.friendlyName).toEqual(expected)
         }
     })
 
@@ -149,7 +149,7 @@ describe('AlgorithmIdentifier', () => {
 
         for (const { oid, expected } of testCases) {
             const algId = new AlgorithmIdentifier({ algorithm: oid })
-            expect(algId.friendlyName).toBe(expected)
+            expect(algId.friendlyName).toEqual(expected)
         }
     })
 
@@ -163,7 +163,7 @@ describe('AlgorithmIdentifier', () => {
 
         for (const { oid, expected } of testCases) {
             const algId = new AlgorithmIdentifier({ algorithm: oid })
-            expect(algId.friendlyName).toBe(expected)
+            expect(algId.friendlyName).toEqual(expected)
         }
     })
 
@@ -178,7 +178,7 @@ describe('AlgorithmIdentifier', () => {
 
         for (const { oid, expected } of testCases) {
             const algId = new AlgorithmIdentifier({ algorithm: oid })
-            expect(algId.friendlyName).toBe(expected)
+            expect(algId.friendlyName).toEqual(expected)
         }
     })
 
@@ -199,14 +199,14 @@ describe('AlgorithmIdentifier', () => {
 
         for (const { oid, expected } of testCases) {
             const algId = new AlgorithmIdentifier({ algorithm: oid })
-            expect(algId.friendlyName).toBe(expected)
+            expect(algId.friendlyName).toEqual(expected)
         }
     })
 
     test('unknown OIDs return the OID itself', () => {
         const unknownOid = '1.2.3.4.5.6.7.8.9'
         const algId = new AlgorithmIdentifier({ algorithm: unknownOid })
-        expect(algId.friendlyName).toBe(unknownOid)
+        expect(algId.friendlyName).toEqual(unknownOid)
     })
 
     test('toString snapshot', () => {

@@ -22,8 +22,8 @@ describe('IssuerAndSerialNumber', () => {
             serialNumber: 12345,
         })
 
-        expect(issuerAndSerial.issuer).toBe(issuer)
-        expect(issuerAndSerial.serialNumber.toInteger()).toBe(12345)
+        expect(issuerAndSerial.issuer).toEqual(issuer)
+        expect(issuerAndSerial.serialNumber.toInteger()).toEqual(12345)
     })
 
     it('should create IssuerAndSerialNumber with string serial', () => {
@@ -41,8 +41,8 @@ describe('IssuerAndSerialNumber', () => {
             serialNumber: '67890',
         })
 
-        expect(issuerAndSerial.issuer).toBe(issuer)
-        expect(issuerAndSerial.serialNumber.toString()).toBe('67890')
+        expect(issuerAndSerial.issuer).toEqual(issuer)
+        expect(issuerAndSerial.serialNumber.toString()).toEqual('67890')
     })
 
     it('should convert to ASN.1 structure', () => {
@@ -81,7 +81,7 @@ describe('IssuerAndSerialNumber', () => {
         })
 
         expect(issuerAndSerial).toHaveProperty('issuer')
-        expect(issuerAndSerial.serialNumber.toInteger()).toBe(12345)
+        expect(issuerAndSerial.serialNumber.toInteger()).toEqual(12345)
     })
 
     it('should convert to string', () => {
@@ -100,7 +100,7 @@ describe('IssuerAndSerialNumber', () => {
         })
         const str = issuerAndSerial.toString()
 
-        expect(typeof str).toBe('string')
+        expect(typeof str).toEqual('string')
         expect(str.length).toBeGreaterThan(0)
     })
 
@@ -135,13 +135,13 @@ describe('IssuerAndSerialNumber', () => {
 
         const issuerAndSerial = IssuerAndSerialNumber.fromAsn1(asn1)
         expect(issuerAndSerial).toBeInstanceOf(IssuerAndSerialNumber)
-        expect(issuerAndSerial.serialNumber.toInteger()).toBe(serialNumber)
+        expect(issuerAndSerial.serialNumber.toInteger()).toEqual(serialNumber)
 
         // Check issuer
         expect(issuerAndSerial.issuer).toBeInstanceOf(RDNSequence)
-        expect(issuerAndSerial.issuer.length).toBe(1)
-        expect(issuerAndSerial.issuer[0][0].type.toString()).toBe('2.5.4.3')
-        expect(issuerAndSerial.issuer[0][0].shortName).toBe('CN')
+        expect(issuerAndSerial.issuer.length).toEqual(1)
+        expect(issuerAndSerial.issuer[0][0].type.toString()).toEqual('2.5.4.3')
+        expect(issuerAndSerial.issuer[0][0].shortName).toEqual('CN')
     })
 
     it('should throw error when parsing invalid ASN.1', () => {

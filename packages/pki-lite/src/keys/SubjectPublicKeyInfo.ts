@@ -29,7 +29,11 @@ export class SubjectPublicKeyInfo extends PkiBase<SubjectPublicKeyInfo> {
 
     constructor(options: {
         algorithm: AlgorithmIdentifier
-        subjectPublicKey: Uint8Array | RSAPublicKey | ECPublicKey | BitString
+        subjectPublicKey:
+            | Uint8Array<ArrayBuffer>
+            | RSAPublicKey
+            | ECPublicKey
+            | BitString
     }) {
         super()
         this.algorithm = options.algorithm
@@ -80,7 +84,7 @@ export class SubjectPublicKeyInfo extends PkiBase<SubjectPublicKeyInfo> {
         return new SubjectPublicKeyInfo({ algorithm, subjectPublicKey })
     }
 
-    static fromDer(der: Uint8Array): SubjectPublicKeyInfo {
+    static fromDer(der: Uint8Array<ArrayBuffer>): SubjectPublicKeyInfo {
         return this.fromAsn1(derToAsn1(der))
     }
 

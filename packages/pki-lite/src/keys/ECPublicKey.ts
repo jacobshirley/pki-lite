@@ -26,9 +26,9 @@ export class ECPublicKey extends BitString {
     /**
      * Creates a new ECPublicKey
      *
-     * @param options.value The key as a Uint8Array in uncompressed format (0x04 || x || y)
+     * @param options.value The key as a Uint8Array<ArrayBuffer> in uncompressed format (0x04 || x || y)
      */
-    constructor(options: { value: Uint8Array }) {
+    constructor(options: { value: Uint8Array<ArrayBuffer> }) {
         super(options)
         // Validate the raw input
         if (this.bytes.length < 2 || this.bytes[0] !== 0x04) {
@@ -39,11 +39,11 @@ export class ECPublicKey extends BitString {
         this.bytes = options.value
     }
 
-    toRaw(): Uint8Array {
+    toRaw(): Uint8Array<ArrayBuffer> {
         return this.bytes
     }
 
-    static fromRaw(raw: Uint8Array): ECPublicKey {
+    static fromRaw(raw: Uint8Array<ArrayBuffer>): ECPublicKey {
         return new ECPublicKey({ value: raw })
     }
 
@@ -54,7 +54,10 @@ export class ECPublicKey extends BitString {
      * @param y The Y coordinate of the point
      * @returns An ECPublicKey object
      */
-    static fromCoordinates(x: Uint8Array, y: Uint8Array): ECPublicKey {
+    static fromCoordinates(
+        x: Uint8Array<ArrayBuffer>,
+        y: Uint8Array<ArrayBuffer>,
+    ): ECPublicKey {
         // Create an uncompressed point: 0x04 || x || y
         const value = new Uint8Array(1 + x.length + y.length)
         value[0] = 0x04 // Uncompressed point format
@@ -69,7 +72,10 @@ export class ECPublicKey extends BitString {
      *
      * @returns An object containing the X and Y coordinates
      */
-    getCoordinates(): { x: Uint8Array; y: Uint8Array } {
+    getCoordinates(): {
+        x: Uint8Array<ArrayBuffer>
+        y: Uint8Array<ArrayBuffer>
+    } {
         // The X and Y coordinates have equal length
         const coordLength = (this.bytes.length - 1) / 2
 

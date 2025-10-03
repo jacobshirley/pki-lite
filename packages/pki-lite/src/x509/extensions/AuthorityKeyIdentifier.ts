@@ -23,7 +23,11 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
     constructor(params: {
         keyIdentifier?: KeyIdentifier
         authorityCertIssuer?: GeneralNames
-        authorityCertSerialNumber?: bigint | Integer | number | Uint8Array
+        authorityCertSerialNumber?:
+            | bigint
+            | Integer
+            | number
+            | Uint8Array<ArrayBuffer>
     }) {
         super()
         this.keyIdentifier = params.keyIdentifier

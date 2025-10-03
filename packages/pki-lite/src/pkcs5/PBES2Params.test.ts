@@ -19,8 +19,8 @@ describe('PBES2Params', () => {
             encryptionScheme,
         })
 
-        expect(pbes2Params.keyDerivationFunc).toBe(keyDerivationFunc)
-        expect(pbes2Params.encryptionScheme).toBe(encryptionScheme)
+        expect(pbes2Params.keyDerivationFunc).toEqual(keyDerivationFunc)
+        expect(pbes2Params.encryptionScheme).toEqual(encryptionScheme)
     })
 
     test('toAsn1 should return correct ASN.1 structure', () => {
@@ -32,7 +32,7 @@ describe('PBES2Params', () => {
         const asn1 = pbes2Params.toAsn1()
 
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
         // Just check that the results look like algorithm identifiers
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
         expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Sequence)
@@ -48,8 +48,10 @@ describe('PBES2Params', () => {
         const parsed = PBES2Params.fromAsn1(asn1)
 
         expect(parsed).toBeInstanceOf(PBES2Params)
-        expect(parsed.keyDerivationFunc.algorithm.value).toBe(OIDs.PKCS5.PBKDF2)
-        expect(parsed.encryptionScheme.algorithm.value).toBe(
+        expect(parsed.keyDerivationFunc.algorithm.value).toEqual(
+            OIDs.PKCS5.PBKDF2,
+        )
+        expect(parsed.encryptionScheme.algorithm.value).toEqual(
             OIDs.ENCRYPTION.AES_256_CBC,
         )
     })
@@ -65,8 +67,10 @@ describe('PBES2Params', () => {
         const parsed = PBES2Params.fromDer(new Uint8Array(der))
 
         expect(parsed).toBeInstanceOf(PBES2Params)
-        expect(parsed.keyDerivationFunc.algorithm.value).toBe(OIDs.PKCS5.PBKDF2)
-        expect(parsed.encryptionScheme.algorithm.value).toBe(
+        expect(parsed.keyDerivationFunc.algorithm.value).toEqual(
+            OIDs.PKCS5.PBKDF2,
+        )
+        expect(parsed.encryptionScheme.algorithm.value).toEqual(
             OIDs.ENCRYPTION.AES_256_CBC,
         )
     })

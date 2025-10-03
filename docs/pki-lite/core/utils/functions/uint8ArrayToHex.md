@@ -8,15 +8,15 @@
 
 > **uint8ArrayToHex**(`bytes`, `prefix`): `string`
 
-Converts a Uint8Array to a hex string
+Converts a Uint8Array<ArrayBuffer> to a hex string
 
 ## Parameters
 
 ### bytes
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
-The Uint8Array to convert
+The Uint8Array<ArrayBuffer> to convert
 
 ### prefix
 
@@ -28,4 +28,4 @@ Whether to include the '0x' prefix (default: false)
 
 `string`
 
-A hex string representation of the Uint8Array
+A hex string representation of the Uint8Array<ArrayBuffer>

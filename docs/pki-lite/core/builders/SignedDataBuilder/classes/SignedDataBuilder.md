@@ -94,7 +94,7 @@ Certificate Revocation Lists to include.
 
 ### data?
 
-> `optional` **data**: `Uint8Array`\<`ArrayBufferLike`\>
+> `optional` **data**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 The data to be signed (optional for detached signatures).
 
@@ -296,7 +296,7 @@ Sets the data to be signed and optionally the content type.
 
 The data as bytes or string
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ##### contentType?
 

@@ -15,8 +15,8 @@ describe('OtherRevocationInfoFormat', () => {
         })
 
         expect(otherRevInfo).toBeInstanceOf(OtherRevocationInfoFormat)
-        expect(otherRevInfo.otherRevInfoFormat.toString()).toBe(format)
-        expect(otherRevInfo.otherRevInfo.asString()).toBe(info)
+        expect(otherRevInfo.otherRevInfoFormat.toString()).toEqual(format)
+        expect(otherRevInfo.otherRevInfo.asString()).toEqual(info)
     })
 
     test('can be created with number info', () => {
@@ -29,8 +29,8 @@ describe('OtherRevocationInfoFormat', () => {
         })
 
         expect(otherRevInfo).toBeInstanceOf(OtherRevocationInfoFormat)
-        expect(otherRevInfo.otherRevInfoFormat.toString()).toBe(format)
-        expect(otherRevInfo.otherRevInfo.asInteger()).toBe(info)
+        expect(otherRevInfo.otherRevInfoFormat.toString()).toEqual(format)
+        expect(otherRevInfo.otherRevInfo.asInteger()).toEqual(info)
     })
 
     test('can be converted to ASN.1 with string info', () => {
@@ -44,7 +44,7 @@ describe('OtherRevocationInfoFormat', () => {
         const asn1 = otherRevInfo.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         const [formatAsn1, infoAsn1] = asn1.valueBlock.value
 
@@ -54,10 +54,10 @@ describe('OtherRevocationInfoFormat', () => {
         // For string values, anyToAsn1 creates a PrintableString
         expect(infoAsn1).toBeInstanceOf(asn1js.PrintableString)
         // Casting to access valueBlock.value which exists at runtime
-        expect((infoAsn1 as any).valueBlock.value).toBe(info)
+        expect((infoAsn1 as any).valueBlock.value).toEqual(info)
     })
 
-    test('can be converted to ASN.1 with Uint8Array info', () => {
+    test('can be converted to ASN.1 with Uint8Array<ArrayBuffer> info', () => {
         const format = '2.5.29.60' // OCSP Basic Response OID
         const info = new Uint8Array([1, 2, 3, 4, 5])
 
@@ -68,7 +68,7 @@ describe('OtherRevocationInfoFormat', () => {
         const asn1 = otherRevInfo.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         const [formatAsn1, infoAsn1] = asn1.valueBlock.value
 
@@ -76,7 +76,7 @@ describe('OtherRevocationInfoFormat', () => {
         expect(formatAsn1.valueBlock.toString()).toContain(format)
 
         // For binary data, we get the ASN.1 structure from the BER encoding
-        // Since our test Uint8Array is small, it might be interpreted as a different ASN.1 type
+        // Since our test Uint8Array<ArrayBuffer> is small, it might be interpreted as a different ASN.1 type
         // Let's just verify it's some kind of ASN.1 block
         expect(infoAsn1).toBeInstanceOf(asn1js.BaseBlock)
     })
@@ -95,7 +95,7 @@ describe('OtherRevocationInfoFormat', () => {
 
         const otherRevInfo = OtherRevocationInfoFormat.fromAsn1(asn1)
         expect(otherRevInfo).toBeInstanceOf(OtherRevocationInfoFormat)
-        expect(otherRevInfo.otherRevInfoFormat.toString()).toBe(format)
+        expect(otherRevInfo.otherRevInfoFormat.toString()).toEqual(format)
         expect(otherRevInfo.otherRevInfo.parseAs(OctetString)).toEqual(
             new OctetString({ bytes: info }),
         )

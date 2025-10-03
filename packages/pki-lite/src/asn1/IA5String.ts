@@ -10,7 +10,7 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class IA5String extends PkiBase<IA5String> {
-    bytes: Uint8Array
+    bytes: Uint8Array<ArrayBuffer>
 
     constructor(options: { value: string | Uint8Array | IA5String }) {
         super()
@@ -19,7 +19,7 @@ export class IA5String extends PkiBase<IA5String> {
         if (value instanceof IA5String) {
             this.bytes = value.bytes
         } else if (value instanceof Uint8Array) {
-            this.bytes = value
+            this.bytes = new Uint8Array(value)
         } else {
             this.bytes = new TextEncoder().encode(value)
         }

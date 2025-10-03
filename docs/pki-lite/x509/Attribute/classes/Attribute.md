@@ -183,13 +183,13 @@ Converts the attribute to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 
@@ -352,7 +352,7 @@ The attribute
 
 ##### der
 
-`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
@@ -368,7 +368,7 @@ The attribute
 
 ##### digest
 
-`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 

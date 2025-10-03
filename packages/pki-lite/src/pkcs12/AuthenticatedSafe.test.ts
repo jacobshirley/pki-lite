@@ -40,7 +40,7 @@ describe('AuthenticatedSafe', () => {
             value: [contentInfoAsn1_1, contentInfoAsn1_2],
         })
         const authenticatedSafe = AuthenticatedSafe.fromAsn1(seq)
-        expect(authenticatedSafe.length).toBe(2)
+        expect(authenticatedSafe.length).toEqual(2)
         expect(authenticatedSafe[0]).toBeInstanceOf(ContentInfo)
         expect(authenticatedSafe[1]).toBeInstanceOf(ContentInfo)
     })
@@ -65,7 +65,7 @@ describe('AuthenticatedSafe', () => {
         const der = seq.toBER(false)
 
         const authenticatedSafe = AuthenticatedSafe.fromDer(new Uint8Array(der))
-        expect(authenticatedSafe.length).toBe(1)
+        expect(authenticatedSafe.length).toEqual(1)
         expect(authenticatedSafe[0]).toBeInstanceOf(ContentInfo)
     })
 })

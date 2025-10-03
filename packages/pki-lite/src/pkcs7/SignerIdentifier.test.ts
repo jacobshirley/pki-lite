@@ -20,7 +20,7 @@ describe('SignerIdentifier', () => {
                 }),
             ),
         )
-        // IssuerAndSerialNumber requires a number or string, not a Uint8Array
+        // IssuerAndSerialNumber requires a number or string, not a Uint8Array<ArrayBuffer>
         const serialNumber = 12345
         issuerAndSerialNumber = new IssuerAndSerialNumber({
             issuer,
@@ -38,7 +38,7 @@ describe('SignerIdentifier', () => {
         const signerIdentifier: SignerIdentifier = issuerAndSerialNumber
 
         // Simply checking that we can assign it without TypeScript errors
-        expect(signerIdentifier).toBe(issuerAndSerialNumber)
+        expect(signerIdentifier).toEqual(issuerAndSerialNumber)
     })
 
     it('should recognize SubjectKeyIdentifier as a valid SignerIdentifier', () => {
@@ -46,7 +46,7 @@ describe('SignerIdentifier', () => {
         const signerIdentifier: SignerIdentifier = subjectKeyIdentifier
 
         // Simply checking that we can assign it without TypeScript errors
-        expect(signerIdentifier).toBe(subjectKeyIdentifier)
+        expect(signerIdentifier).toEqual(subjectKeyIdentifier)
     })
 
     it('should parse IssuerAndSerialNumber ASN.1 structure correctly', () => {
@@ -78,7 +78,7 @@ describe('SignerIdentifier', () => {
         const parsedSubjectKeyId =
             parsedSignerIdentifier as SubjectKeyIdentifier
         expect(parsedSubjectKeyId.bytes).toBeDefined()
-        expect(parsedSubjectKeyId.bytes instanceof Uint8Array).toBe(true)
+        expect(parsedSubjectKeyId.bytes instanceof Uint8Array).toEqual(true)
     })
 
     it('should default to IssuerAndSerialNumber for unknown ASN.1 structures', () => {

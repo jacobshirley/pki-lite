@@ -8,19 +8,19 @@ describe('UTF8String', () => {
         const utf8String = new UTF8String({ value: testString })
 
         expect(utf8String).toBeInstanceOf(UTF8String)
-        expect(utf8String.toString()).toBe(testString)
+        expect(utf8String.toString()).toEqual(testString)
 
         // Should encode as UTF-8 bytes
         const expectedBytes = new TextEncoder().encode(testString)
         expect(utf8String.bytes).toEqual(expectedBytes)
     })
 
-    test('should create UTF8String from Uint8Array', () => {
+    test('should create UTF8String from Uint8Array<ArrayBuffer>', () => {
         const bytes = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]) // "Hello"
         const utf8String = new UTF8String({ value: bytes })
 
         expect(utf8String.bytes).toEqual(bytes)
-        expect(utf8String.toString()).toBe('Hello')
+        expect(utf8String.toString()).toEqual('Hello')
     })
 
     test('should create UTF8String from another UTF8String', () => {
@@ -28,14 +28,14 @@ describe('UTF8String', () => {
         const copy = new UTF8String({ value: original })
 
         expect(copy.bytes).toEqual(original.bytes)
-        expect(copy.toString()).toBe(original.toString())
+        expect(copy.toString()).toEqual(original.toString())
     })
 
     test('should handle Unicode characters', () => {
         const unicodeString = '你好世界! 🌍 éñüçáóú'
         const utf8String = new UTF8String({ value: unicodeString })
 
-        expect(utf8String.toString()).toBe(unicodeString)
+        expect(utf8String.toString()).toEqual(unicodeString)
 
         // Verify UTF-8 encoding
         const expectedBytes = new TextEncoder().encode(unicodeString)
@@ -45,8 +45,8 @@ describe('UTF8String', () => {
     test('should handle empty string', () => {
         const utf8String = new UTF8String({ value: '' })
 
-        expect(utf8String.bytes.length).toBe(0)
-        expect(utf8String.toString()).toBe('')
+        expect(utf8String.bytes.length).toEqual(0)
+        expect(utf8String.toString()).toEqual('')
     })
 
     test('should convert to ASN.1 structure correctly', () => {
@@ -69,7 +69,7 @@ describe('UTF8String', () => {
         const utf8String = UTF8String.fromAsn1(asn1)
 
         expect(utf8String).toBeInstanceOf(UTF8String)
-        expect(utf8String.toString()).toBe(testString)
+        expect(utf8String.toString()).toEqual(testString)
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -92,7 +92,7 @@ describe('UTF8String', () => {
 
         for (const { input, expected } of testCases) {
             const utf8String = new UTF8String({ value: input })
-            expect(utf8String.toHexString().toLowerCase()).toBe(expected)
+            expect(utf8String.toHexString().toLowerCase()).toEqual(expected)
         }
     })
 
@@ -110,7 +110,7 @@ describe('UTF8String', () => {
             const asn1 = original.toAsn1()
             const decoded = UTF8String.fromAsn1(asn1)
 
-            expect(decoded.toString()).toBe(testString)
+            expect(decoded.toString()).toEqual(testString)
             expect(decoded.bytes).toEqual(original.bytes)
         }
     })

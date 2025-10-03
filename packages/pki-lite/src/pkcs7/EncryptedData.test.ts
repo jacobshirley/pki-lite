@@ -20,8 +20,8 @@ describe('EncryptedData', () => {
             encryptedContentInfo,
         })
 
-        expect(encryptedData.version).toBe(1)
-        expect(encryptedData.encryptedContentInfo).toBe(encryptedContentInfo)
+        expect(encryptedData.version).toEqual(1)
+        expect(encryptedData.encryptedContentInfo).toEqual(encryptedContentInfo)
     })
 
     it('should convert to ASN.1 structure', () => {
@@ -57,7 +57,7 @@ describe('EncryptedData', () => {
         })
         const str = encryptedData.toString()
 
-        expect(typeof str).toBe('string')
+        expect(typeof str).toEqual('string')
         expect(str.length).toBeGreaterThan(0)
     })
 
@@ -78,7 +78,9 @@ describe('EncryptedData', () => {
 
         const parsedEncryptedData = EncryptedData.fromAsn1(asn1)
 
-        expect(parsedEncryptedData.version).toBe(originalEncryptedData.version)
+        expect(parsedEncryptedData.version).toEqual(
+            originalEncryptedData.version,
+        )
         expect(parsedEncryptedData.encryptedContentInfo.contentType).toEqual(
             originalEncryptedData.encryptedContentInfo.contentType,
         )

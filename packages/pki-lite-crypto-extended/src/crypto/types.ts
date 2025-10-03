@@ -3,19 +3,19 @@
  */
 export type PbeAlgorithmMap = {
     SHA1_3DES_2KEY_CBC: {
-        salt: Uint8Array
+        salt: Uint8Array<ArrayBuffer>
         iterationCount: number
     }
     SHA1_3DES_3KEY_CBC: {
-        salt: Uint8Array
+        salt: Uint8Array<ArrayBuffer>
         iterationCount: number
     }
     SHA1_RC2_40_CBC: {
-        salt: Uint8Array
+        salt: Uint8Array<ArrayBuffer>
         iterationCount: number
     }
     SHA1_RC2_128_CBC: {
-        salt: Uint8Array
+        salt: Uint8Array<ArrayBuffer>
         iterationCount: number
     }
 }

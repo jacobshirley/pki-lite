@@ -109,7 +109,7 @@ export class ObjectIdentifier extends PkiBase<ObjectIdentifier> {
      * @param bytes The DER-encoded OBJECT IDENTIFIER bytes
      * @returns A new ObjectIdentifier instance
      */
-    static fromDer(bytes: Uint8Array): ObjectIdentifier {
+    static fromDer(bytes: Uint8Array<ArrayBuffer>): ObjectIdentifier {
         return ObjectIdentifier.fromAsn1(derToAsn1(bytes))
     }
 

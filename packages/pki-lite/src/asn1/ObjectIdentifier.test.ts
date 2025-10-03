@@ -8,16 +8,16 @@ describe('ObjectIdentifier', () => {
         const oid = new ObjectIdentifier({ value: oidString })
 
         expect(oid).toBeInstanceOf(ObjectIdentifier)
-        expect(oid.value).toBe(oidString)
-        expect(oid.toString()).toBe(oidString)
+        expect(oid.value).toEqual(oidString)
+        expect(oid.toString()).toEqual(oidString)
     })
 
     test('should create ObjectIdentifier from another ObjectIdentifier', () => {
         const original = new ObjectIdentifier({ value: '1.2.840.113549.1.1.1' })
         const copy = new ObjectIdentifier({ value: original })
 
-        expect(copy.value).toBe(original.value)
-        expect(copy.toString()).toBe(original.toString())
+        expect(copy.value).toEqual(original.value)
+        expect(copy.toString()).toEqual(original.toString())
     })
 
     test('should handle common OID values', () => {
@@ -32,8 +32,8 @@ describe('ObjectIdentifier', () => {
 
         for (const oidString of testOids) {
             const oid = new ObjectIdentifier({ value: oidString })
-            expect(oid.value).toBe(oidString)
-            expect(oid.toString()).toBe(oidString)
+            expect(oid.value).toEqual(oidString)
+            expect(oid.toString()).toEqual(oidString)
         }
     })
 
@@ -52,8 +52,8 @@ describe('ObjectIdentifier', () => {
         }
         const oid = new ObjectIdentifier({ value: objectWithToString as any })
 
-        expect(oid.value).toBe('1.2.3.4.5.6')
-        expect(oid.toString()).toBe('1.2.3.4.5.6')
+        expect(oid.value).toEqual('1.2.3.4.5.6')
+        expect(oid.toString()).toEqual('1.2.3.4.5.6')
     })
 
     test('should handle objects with toString method correctly', () => {
@@ -67,7 +67,7 @@ describe('ObjectIdentifier', () => {
 
         for (const validValue of validValues) {
             const oid = new ObjectIdentifier({ value: validValue as any })
-            expect(oid.value).toBe(validValue.toString())
+            expect(oid.value).toEqual(validValue.toString())
         }
     })
 
@@ -80,7 +80,7 @@ describe('ObjectIdentifier', () => {
 
         // Verify the value is preserved in ASN.1
         const asn1Oid = asn1 as asn1js.ObjectIdentifier
-        expect(asn1Oid.valueBlock.toString()).toBe(oidString)
+        expect(asn1Oid.valueBlock.toString()).toEqual(oidString)
     })
 
     test('should parse from ASN.1 structure correctly', () => {
@@ -90,8 +90,8 @@ describe('ObjectIdentifier', () => {
         const oid = ObjectIdentifier.fromAsn1(asn1)
 
         expect(oid).toBeInstanceOf(ObjectIdentifier)
-        expect(oid.value).toBe(oidString)
-        expect(oid.toString()).toBe(oidString)
+        expect(oid.value).toEqual(oidString)
+        expect(oid.toString()).toEqual(oidString)
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -129,8 +129,8 @@ describe('ObjectIdentifier', () => {
             const asn1 = original.toAsn1()
             const decoded = ObjectIdentifier.fromAsn1(asn1)
 
-            expect(decoded.value).toBe(oidString)
-            expect(decoded.toString()).toBe(oidString)
+            expect(decoded.value).toEqual(oidString)
+            expect(decoded.toString()).toEqual(oidString)
         }
     })
 
@@ -145,12 +145,12 @@ describe('ObjectIdentifier', () => {
 
         for (const [name, oidString] of Object.entries(algorithmOids)) {
             const oid = new ObjectIdentifier({ value: oidString })
-            expect(oid.value).toBe(oidString)
+            expect(oid.value).toEqual(oidString)
 
             // Test round-trip
             const asn1 = oid.toAsn1()
             const decoded = ObjectIdentifier.fromAsn1(asn1)
-            expect(decoded.value).toBe(oidString)
+            expect(decoded.value).toEqual(oidString)
         }
     })
 
@@ -166,12 +166,12 @@ describe('ObjectIdentifier', () => {
 
         for (const [name, oidString] of Object.entries(x500Oids)) {
             const oid = new ObjectIdentifier({ value: oidString })
-            expect(oid.value).toBe(oidString)
+            expect(oid.value).toEqual(oidString)
 
             // Test round-trip
             const asn1 = oid.toAsn1()
             const decoded = ObjectIdentifier.fromAsn1(asn1)
-            expect(decoded.value).toBe(oidString)
+            expect(decoded.value).toEqual(oidString)
         }
     })
 })

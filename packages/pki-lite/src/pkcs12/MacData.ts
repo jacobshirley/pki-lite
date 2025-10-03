@@ -22,7 +22,7 @@ export class MacData extends PkiBase<MacData> {
 
     constructor(options: {
         mac: DigestInfo
-        macSalt: OctetString | Uint8Array
+        macSalt: OctetString | Uint8Array<ArrayBuffer>
         iterations?: number
     }) {
         super()
@@ -66,7 +66,7 @@ export class MacData extends PkiBase<MacData> {
         return new MacData({ mac, macSalt, iterations })
     }
 
-    static fromDer(der: Uint8Array): MacData {
+    static fromDer(der: Uint8Array<ArrayBuffer>): MacData {
         return MacData.fromAsn1(derToAsn1(der))
     }
 }

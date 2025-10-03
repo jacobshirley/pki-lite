@@ -8,21 +8,21 @@ describe('UTCTime', () => {
         const utcDate = new UTCTime({ time: testDate })
 
         expect(utcDate.time).toEqual(testDate)
-        expect(utcDate.time.getTime()).toBe(testDate.getTime())
+        expect(utcDate.time.getTime()).toEqual(testDate.getTime())
     })
 
     test('should create UTCTime from ISO string', () => {
         const isoString = '2023-01-15T10:30:00.000Z'
         const utcDate = new UTCTime({ time: isoString })
 
-        expect(utcDate.time.toISOString()).toBe(isoString)
+        expect(utcDate.time.toISOString()).toEqual(isoString)
     })
 
     test('should create UTCTime from timestamp number', () => {
         const timestamp = 1673781000000 // 2023-01-15T10:30:00.000Z
         const utcDate = new UTCTime({ time: timestamp })
 
-        expect(utcDate.time.getTime()).toBe(timestamp)
+        expect(utcDate.time.getTime()).toEqual(timestamp)
     })
 
     test('should convert to ASN.1 UTCTime correctly', () => {
@@ -34,7 +34,7 @@ describe('UTCTime', () => {
 
         // Verify the date is preserved
         const asn1UtcTime = asn1 as asn1js.UTCTime
-        expect(asn1UtcTime.toDate().getTime()).toBe(testDate.getTime())
+        expect(asn1UtcTime.toDate().getTime()).toEqual(testDate.getTime())
     })
 
     test('should parse from ASN.1 UTCTime correctly', () => {
@@ -44,7 +44,7 @@ describe('UTCTime', () => {
         const utcDate = UTCTime.fromAsn1(asn1)
 
         expect(utcDate).toBeInstanceOf(UTCTime)
-        expect(utcDate.time.getTime()).toBe(testDate.getTime())
+        expect(utcDate.time.getTime()).toEqual(testDate.getTime())
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -69,7 +69,7 @@ describe('UTCTime', () => {
             const asn1 = original.toAsn1()
             const decoded = UTCTime.fromAsn1(asn1)
 
-            expect(decoded.time.getTime()).toBe(testDate.getTime())
+            expect(decoded.time.getTime()).toEqual(testDate.getTime())
         }
     })
 })

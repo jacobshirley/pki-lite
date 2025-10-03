@@ -14,8 +14,8 @@ describe('RevokedCertificate', () => {
         })
 
         expect(revoked).toBeInstanceOf(RevokedCertificate)
-        expect(revoked.userCertificate).toBe(serialNumber)
-        expect(revoked.revocationDate).toBe(revocationDate)
+        expect(revoked.userCertificate).toEqual(serialNumber)
+        expect(revoked.revocationDate).toEqual(revocationDate)
         expect(revoked.crlEntryExtensions).toBeUndefined()
     })
 
@@ -37,10 +37,10 @@ describe('RevokedCertificate', () => {
         })
 
         expect(revoked).toBeInstanceOf(RevokedCertificate)
-        expect(revoked.userCertificate).toBe(serialNumber)
-        expect(revoked.revocationDate).toBe(revocationDate)
+        expect(revoked.userCertificate).toEqual(serialNumber)
+        expect(revoked.revocationDate).toEqual(revocationDate)
         expect(revoked.crlEntryExtensions).toHaveLength(1)
-        expect(revoked.crlEntryExtensions?.[0]).toBe(reasonExt)
+        expect(revoked.crlEntryExtensions?.[0]).toEqual(reasonExt)
     })
 
     test('can be created with string serial number', () => {
@@ -53,8 +53,8 @@ describe('RevokedCertificate', () => {
         })
 
         expect(revoked).toBeInstanceOf(RevokedCertificate)
-        expect(revoked.userCertificate).toBe(serialNumber)
-        expect(revoked.revocationDate).toBe(revocationDate)
+        expect(revoked.userCertificate).toEqual(serialNumber)
+        expect(revoked.revocationDate).toEqual(revocationDate)
     })
 
     test('can be converted to ASN.1', () => {
@@ -68,12 +68,12 @@ describe('RevokedCertificate', () => {
         const asn1 = revoked.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2) // userCertificate, revocationDate
+        expect(asn1.valueBlock.value.length).toEqual(2) // userCertificate, revocationDate
 
         const [serialBlock, dateBlock] = asn1.valueBlock.value
 
         expect(serialBlock).toBeInstanceOf(asn1js.Integer)
-        expect((serialBlock as asn1js.Integer).valueBlock.valueDec).toBe(
+        expect((serialBlock as asn1js.Integer).valueBlock.valueDec).toEqual(
             serialNumber,
         )
 
@@ -101,14 +101,14 @@ describe('RevokedCertificate', () => {
         const asn1 = revoked.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3) // userCertificate, revocationDate, extensions
+        expect(asn1.valueBlock.value.length).toEqual(3) // userCertificate, revocationDate, extensions
 
         // Check that the third element is a sequence (extensions)
         const extensionsBlock = asn1.valueBlock.value[2]
         expect(extensionsBlock).toBeInstanceOf(asn1js.Sequence)
         expect(
             (extensionsBlock as asn1js.Sequence).valueBlock.value.length,
-        ).toBe(1) // one extension
+        ).toEqual(1) // one extension
     })
 
     test('can be parsed from ASN.1 without extensions', () => {
@@ -125,7 +125,7 @@ describe('RevokedCertificate', () => {
 
         const revoked = RevokedCertificate.fromAsn1(asn1)
         expect(revoked).toBeInstanceOf(RevokedCertificate)
-        expect(revoked.userCertificate).toBe(serialNumber)
+        expect(revoked.userCertificate).toEqual(serialNumber)
 
         // Date comparison is tricky due to potential timezone issues,
         // so just check the date is a Date object
@@ -166,11 +166,11 @@ describe('RevokedCertificate', () => {
 
             const revoked = RevokedCertificate.fromAsn1(asn1)
             expect(revoked).toBeInstanceOf(RevokedCertificate)
-            expect(revoked.userCertificate).toBe(serialNumber)
+            expect(revoked.userCertificate).toEqual(serialNumber)
             expect(revoked.revocationDate).toBeInstanceOf(Date)
             expect(revoked.crlEntryExtensions).toBeDefined()
-            expect(revoked.crlEntryExtensions?.length).toBe(1)
-            expect(revoked.crlEntryExtensions?.[0]).toBe(mockExtension)
+            expect(revoked.crlEntryExtensions?.length).toEqual(1)
+            expect(revoked.crlEntryExtensions?.[0]).toEqual(mockExtension)
         } finally {
             // Restore the original method
             Extension.fromAsn1 = originalFromAsn1

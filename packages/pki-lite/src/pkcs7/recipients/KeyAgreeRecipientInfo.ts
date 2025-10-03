@@ -48,7 +48,7 @@ export class RecipientEncryptedKeys extends PkiSet<RecipientEncryptedKey> {
 export class KeyAgreeRecipientInfo extends PkiBase<KeyAgreeRecipientInfo> {
     version: CMSVersion
     originator: OriginatorIdentifierOrKey
-    ukm?: Uint8Array
+    ukm?: Uint8Array<ArrayBuffer>
     keyEncryptionAlgorithm: AlgorithmIdentifier
     recipientEncryptedKeys: RecipientEncryptedKeys
 
@@ -60,7 +60,7 @@ export class KeyAgreeRecipientInfo extends PkiBase<KeyAgreeRecipientInfo> {
         originator: OriginatorIdentifierOrKey
         keyEncryptionAlgorithm: AlgorithmIdentifier
         recipientEncryptedKeys: RecipientEncryptedKeys
-        ukm?: Uint8Array
+        ukm?: Uint8Array<ArrayBuffer>
     }) {
         super()
         const {
@@ -159,7 +159,7 @@ export class KeyAgreeRecipientInfo extends PkiBase<KeyAgreeRecipientInfo> {
         const originator = OriginatorIdentifierOrKey.fromAsn1(originatorAsn1)
 
         // Check for ukm (optional)
-        let ukm: Uint8Array | undefined = undefined
+        let ukm: Uint8Array<ArrayBuffer> | undefined = undefined
         let currentIndex = 2
 
         if (

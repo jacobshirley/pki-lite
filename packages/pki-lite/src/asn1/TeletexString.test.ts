@@ -8,19 +8,19 @@ describe('TeletexString', () => {
         const teletexString = new TeletexString({ value: testString })
 
         expect(teletexString).toBeInstanceOf(TeletexString)
-        expect(teletexString.toString()).toBe(testString)
+        expect(teletexString.toString()).toEqual(testString)
 
         // Should encode as UTF-8 bytes
         const expectedBytes = new TextEncoder().encode(testString)
         expect(teletexString.bytes).toEqual(expectedBytes)
     })
 
-    test('should create TeletexString from Uint8Array', () => {
+    test('should create TeletexString from Uint8Array<ArrayBuffer>', () => {
         const bytes = new Uint8Array([0x54, 0x65, 0x6c, 0x65, 0x78]) // "Telex"
         const teletexString = new TeletexString({ value: bytes })
 
         expect(teletexString.bytes).toEqual(bytes)
-        expect(teletexString.toString()).toBe('Telex')
+        expect(teletexString.toString()).toEqual('Telex')
     })
 
     test('should create TeletexString from another TeletexString', () => {
@@ -28,14 +28,14 @@ describe('TeletexString', () => {
         const copy = new TeletexString({ value: original })
 
         expect(copy.bytes).toEqual(original.bytes)
-        expect(copy.toString()).toBe(original.toString())
+        expect(copy.toString()).toEqual(original.toString())
     })
 
     test('should handle ASCII characters', () => {
         const asciiString = 'ASCII Telex Message 123'
         const teletexString = new TeletexString({ value: asciiString })
 
-        expect(teletexString.toString()).toBe(asciiString)
+        expect(teletexString.toString()).toEqual(asciiString)
 
         // Verify UTF-8 encoding
         const expectedBytes = new TextEncoder().encode(asciiString)
@@ -45,8 +45,8 @@ describe('TeletexString', () => {
     test('should handle empty string', () => {
         const teletexString = new TeletexString({ value: '' })
 
-        expect(teletexString.bytes.length).toBe(0)
-        expect(teletexString.toString()).toBe('')
+        expect(teletexString.bytes.length).toEqual(0)
+        expect(teletexString.toString()).toEqual('')
     })
 
     test('should convert to ASN.1 structure correctly', () => {
@@ -69,7 +69,7 @@ describe('TeletexString', () => {
         const teletexString = TeletexString.fromAsn1(asn1)
 
         expect(teletexString).toBeInstanceOf(TeletexString)
-        expect(teletexString.toString()).toBe(testString)
+        expect(teletexString.toString()).toEqual(testString)
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -92,7 +92,7 @@ describe('TeletexString', () => {
 
         for (const { input, expected } of testCases) {
             const teletexString = new TeletexString({ value: input })
-            expect(teletexString.toHexString().toLowerCase()).toBe(expected)
+            expect(teletexString.toHexString().toLowerCase()).toEqual(expected)
         }
     })
 
@@ -111,7 +111,7 @@ describe('TeletexString', () => {
             const asn1 = original.toAsn1()
             const decoded = TeletexString.fromAsn1(asn1)
 
-            expect(decoded.toString()).toBe(testString)
+            expect(decoded.toString()).toEqual(testString)
             expect(decoded.bytes).toEqual(original.bytes)
         }
     })
@@ -122,23 +122,23 @@ describe('TeletexString', () => {
             'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789'
         const teletexString = new TeletexString({ value: teletexChars })
 
-        expect(teletexString.toString()).toBe(teletexChars)
+        expect(teletexString.toString()).toEqual(teletexChars)
 
         // Test round-trip
         const asn1 = teletexString.toAsn1()
         const decoded = TeletexString.fromAsn1(asn1)
-        expect(decoded.toString()).toBe(teletexChars)
+        expect(decoded.toString()).toEqual(teletexChars)
     })
 
     test('should handle basic punctuation', () => {
         const punctuationString = 'Hello, World! How are you?'
         const teletexString = new TeletexString({ value: punctuationString })
 
-        expect(teletexString.toString()).toBe(punctuationString)
+        expect(teletexString.toString()).toEqual(punctuationString)
 
         // Test round-trip
         const asn1 = teletexString.toAsn1()
         const decoded = TeletexString.fromAsn1(asn1)
-        expect(decoded.toString()).toBe(punctuationString)
+        expect(decoded.toString()).toEqual(punctuationString)
     })
 })

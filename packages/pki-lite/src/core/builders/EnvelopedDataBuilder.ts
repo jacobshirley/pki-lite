@@ -121,7 +121,7 @@ export class EnvelopedDataBuilder implements AsyncBuilder<EnvelopedData> {
         })
 
     /** The data to be encrypted */
-    data?: Uint8Array
+    data?: Uint8Array<ArrayBuffer>
 
     /** Content type identifier, defaults to PKCS#7 data */
     contentType: ObjectIdentifier = new ObjectIdentifier({
@@ -154,7 +154,7 @@ export class EnvelopedDataBuilder implements AsyncBuilder<EnvelopedData> {
      * ```
      */
     setData(
-        data: Uint8Array | string,
+        data: Uint8Array<ArrayBuffer> | string,
         contentType?: ObjectIdentifierString,
     ): this {
         this.data =

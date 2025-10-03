@@ -10,9 +10,11 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class PrintableString extends PkiBase<PrintableString> {
-    bytes: Uint8Array
+    bytes: Uint8Array<ArrayBuffer>
 
-    constructor(options: { value: string | Uint8Array | PrintableString }) {
+    constructor(options: {
+        value: string | Uint8Array<ArrayBuffer> | PrintableString
+    }) {
         super()
         const { value } = options
 

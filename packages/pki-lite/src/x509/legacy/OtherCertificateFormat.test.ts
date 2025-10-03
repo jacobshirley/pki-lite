@@ -13,8 +13,8 @@ describe('OtherCertificateFormat', () => {
             otherCert: cert,
         })
 
-        expect(otherCertFormat.otherCertFormat.toString()).toBe(format)
-        expect(otherCertFormat.otherCert.asString()).toBe(cert)
+        expect(otherCertFormat.otherCertFormat.toString()).toEqual(format)
+        expect(otherCertFormat.otherCert.asString()).toEqual(cert)
     })
 
     test('toAsn1 creates the correct ASN.1 structure', () => {
@@ -31,7 +31,7 @@ describe('OtherCertificateFormat', () => {
 
         const seq = asn1 as asn1js.Sequence
         const value = seq.valueBlock.value
-        expect(value.length).toBe(2)
+        expect(value.length).toEqual(2)
 
         const formatAsn1 = value[0] as asn1js.ObjectIdentifier
         expect(formatAsn1).toBeInstanceOf(asn1js.ObjectIdentifier)
@@ -39,7 +39,7 @@ describe('OtherCertificateFormat', () => {
 
         const certAsn1 = value[1] as asn1js.PrintableString
         expect(certAsn1).toBeInstanceOf(asn1js.PrintableString)
-        expect((certAsn1.valueBlock as any).value).toBe(cert)
+        expect((certAsn1.valueBlock as any).value).toEqual(cert)
     })
 
     test('fromAsn1 parses the ASN.1 structure correctly', () => {
@@ -57,8 +57,8 @@ describe('OtherCertificateFormat', () => {
         const otherCertFormat = OtherCertificateFormat.fromAsn1(asn1)
 
         expect(otherCertFormat).toBeInstanceOf(OtherCertificateFormat)
-        expect(otherCertFormat.otherCertFormat.toString()).toBe(format)
-        expect(otherCertFormat.otherCert.asString()).toBe(cert)
+        expect(otherCertFormat.otherCertFormat.toString()).toEqual(format)
+        expect(otherCertFormat.otherCert.asString()).toEqual(cert)
     })
 
     test('fromAsn1 handles binary data correctly', () => {
@@ -76,7 +76,7 @@ describe('OtherCertificateFormat', () => {
         const otherCertFormat = OtherCertificateFormat.fromAsn1(asn1)
 
         expect(otherCertFormat).toBeInstanceOf(OtherCertificateFormat)
-        expect(otherCertFormat.otherCertFormat.toString()).toBe(format)
+        expect(otherCertFormat.otherCertFormat.toString()).toEqual(format)
         expect(otherCertFormat.otherCert).toBeInstanceOf(Any)
     })
 

@@ -15,8 +15,8 @@ describe('OriginatorInfo', () => {
 
         // Check that the ASN.1 encoding produces a SEQUENCE
         const asn1 = originatorInfo.toAsn1()
-        expect(asn1 instanceof asn1js.Sequence).toBe(true)
-        expect((asn1 as any).valueBlock.value.length).toBe(0)
+        expect(asn1 instanceof asn1js.Sequence).toEqual(true)
+        expect((asn1 as any).valueBlock.value.length).toEqual(0)
     })
 
     it('should create an OriginatorInfo with certificates', () => {
@@ -31,19 +31,19 @@ describe('OriginatorInfo', () => {
 
         // Check that the certificates field is populated
         expect(originatorInfo.certs).toBeDefined()
-        expect(originatorInfo.certs?.length).toBe(1)
+        expect(originatorInfo.certs?.length).toEqual(1)
         expect(originatorInfo.crls).toBeUndefined()
 
         // Check that the ASN.1 encoding is correct
         const asn1 = originatorInfo.toAsn1()
-        expect(asn1 instanceof asn1js.Sequence).toBe(true)
-        expect((asn1 as any).valueBlock.value.length).toBe(1)
+        expect(asn1 instanceof asn1js.Sequence).toEqual(true)
+        expect((asn1 as any).valueBlock.value.length).toEqual(1)
 
         // Check that the first element is the certificates with correct tagging
         const certsAsn1 = (asn1 as any).valueBlock.value[0]
-        expect(certsAsn1 instanceof asn1js.Constructed).toBe(true)
-        expect(certsAsn1.idBlock.tagClass).toBe(3) // CONTEXT_SPECIFIC
-        expect(certsAsn1.idBlock.tagNumber).toBe(0) // [0]
+        expect(certsAsn1 instanceof asn1js.Constructed).toEqual(true)
+        expect(certsAsn1.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
+        expect(certsAsn1.idBlock.tagNumber).toEqual(0) // [0]
     })
 
     it('should decode an OriginatorInfo from ASN.1', () => {
@@ -64,7 +64,7 @@ describe('OriginatorInfo', () => {
 
         // Check that the decoded info has the certificates
         expect(decodedInfo.certs).toBeDefined()
-        expect(decodedInfo.certs?.length).toBe(1)
+        expect(decodedInfo.certs?.length).toEqual(1)
         expect(decodedInfo.crls).toBeUndefined()
     })
 

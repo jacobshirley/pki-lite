@@ -6,7 +6,7 @@ describe('Data', () => {
         const data = new Uint8Array([1, 2, 3, 4, 5])
         const dataObject = new Data({ data })
 
-        expect(dataObject.data).toBe(data)
+        expect(dataObject.data).toEqual(data)
     })
 
     it('should convert to ASN.1 structure', () => {
@@ -14,7 +14,7 @@ describe('Data', () => {
         const dataObject = new Data({ data })
         const asn1 = dataObject.toAsn1()
 
-        expect(asn1.constructor.name).toBe('OctetString')
+        expect(asn1.constructor.name).toEqual('OctetString')
     })
 
     it('should convert to string', () => {
@@ -22,7 +22,7 @@ describe('Data', () => {
         const dataObject = new Data({ data })
         const str = dataObject.toString()
 
-        expect(typeof str).toBe('string')
+        expect(typeof str).toEqual('string')
         expect(str.length).toBeGreaterThan(0)
     })
 
@@ -30,11 +30,11 @@ describe('Data', () => {
         const data = new Uint8Array([])
         const dataObject = new Data({ data })
 
-        expect(dataObject.data).toBe(data)
-        expect(dataObject.data.length).toBe(0)
+        expect(dataObject.data).toEqual(data)
+        expect(dataObject.data.length).toEqual(0)
 
         const asn1 = dataObject.toAsn1()
-        expect(asn1.constructor.name).toBe('OctetString')
+        expect(asn1.constructor.name).toEqual('OctetString')
     })
 
     it('Data toString snapshot', () => {

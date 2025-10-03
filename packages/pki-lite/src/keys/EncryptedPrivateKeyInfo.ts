@@ -23,7 +23,7 @@ export class EncryptedPrivateKeyInfo extends PkiBase<EncryptedPrivateKeyInfo> {
 
     constructor(options: {
         encryptionAlgorithm: ContentEncryptionAlgorithmIdentifier
-        encryptedData: OctetString | Uint8Array
+        encryptedData: OctetString | Uint8Array<ArrayBuffer>
     }) {
         super()
         this.encryptionAlgorithm = options.encryptionAlgorithm
@@ -54,11 +54,13 @@ export class EncryptedPrivateKeyInfo extends PkiBase<EncryptedPrivateKeyInfo> {
         })
     }
 
-    static fromDer(der: Uint8Array): EncryptedPrivateKeyInfo {
+    static fromDer(der: Uint8Array<ArrayBuffer>): EncryptedPrivateKeyInfo {
         return EncryptedPrivateKeyInfo.fromAsn1(asn1js.fromBER(der).result)
     }
 
-    async decrypt(key: Uint8Array | string): Promise<PrivateKeyInfo> {
+    async decrypt(
+        key: Uint8Array<ArrayBuffer> | string,
+    ): Promise<PrivateKeyInfo> {
         if (typeof key === 'string') {
             key = new TextEncoder().encode(key)
         }

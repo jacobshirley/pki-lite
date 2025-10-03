@@ -397,7 +397,7 @@ export class TimeStampResp extends PkiBase<TimeStampResp> {
     /**
      * Get the timestamp token as DER bytes
      */
-    getTimeStampTokenDer(): Uint8Array {
+    getTimeStampTokenDer(): Uint8Array<ArrayBuffer> {
         if (!this.timeStampToken) {
             throw new Error('No timestamp token available')
         }

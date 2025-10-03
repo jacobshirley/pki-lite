@@ -24,7 +24,7 @@ export class CertificateRequest extends PkiBase<CertificateRequest> {
     constructor(options: {
         requestInfo: CertificateRequestInfo
         signatureAlgorithm: AlgorithmIdentifier
-        signature: string | Uint8Array | BitString
+        signature: string | Uint8Array<ArrayBuffer> | BitString
     }) {
         super()
 

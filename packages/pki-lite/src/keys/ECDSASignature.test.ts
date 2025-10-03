@@ -48,7 +48,7 @@ describe('ECDSASignature', () => {
 
         // Need to cast to 'any' due to type limitations in asn1js
         const values = (asn1 as any).valueBlock.value
-        expect(values.length).toBe(2)
+        expect(values.length).toEqual(2)
 
         // Check r
         expect(values[0]).toBeInstanceOf(asn1js.Integer)
@@ -80,8 +80,8 @@ describe('ECDSASignature', () => {
         )
 
         // First byte should be 0x00 (padding) since rHighBit has high bit set
-        expect(rValue[0]).toBe(0x00) // Padding byte
-        expect(rValue[1]).toBe(0x81) // Original first byte
+        expect(rValue[0]).toEqual(0x00) // Padding byte
+        expect(rValue[1]).toEqual(0x81) // Original first byte
 
         // The s value should also be padded since its high bit is set
         const sBlock = (values[1] as any).valueBlock
@@ -89,8 +89,8 @@ describe('ECDSASignature', () => {
             sBlock.valueHexView || sBlock.valueBeforeDecodeView,
         )
 
-        expect(sValue[0]).toBe(0x00) // Padding byte
-        expect(sValue[1]).toBe(0xfe) // Original first byte
+        expect(sValue[0]).toEqual(0x00) // Padding byte
+        expect(sValue[1]).toEqual(0xfe) // Original first byte
     })
 
     test('fromAsn1 parses ASN.1 structure correctly', () => {
@@ -133,7 +133,7 @@ describe('ECDSASignature', () => {
         const raw = signature.toRaw()
 
         // Raw should be r concatenated with s
-        expect(raw.length).toBe(r.length + s.length)
+        expect(raw.length).toEqual(r.length + s.length)
         expect(raw.slice(0, r.length)).toEqual(r)
         expect(raw.slice(r.length)).toEqual(s)
     })

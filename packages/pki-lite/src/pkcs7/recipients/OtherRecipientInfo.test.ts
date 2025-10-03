@@ -19,6 +19,6 @@ describe('OtherRecipientInfo', () => {
 
         expect(restored).toBeInstanceOf(OtherRecipientInfo)
         expect(restored.oriType).toEqual(original.oriType)
-        expect(restored.oriValue.isEqual(original.oriValue)).toBe(true)
+        expect(restored.oriValue.isEqual(original.oriValue)).toEqual(true)
     })
 })

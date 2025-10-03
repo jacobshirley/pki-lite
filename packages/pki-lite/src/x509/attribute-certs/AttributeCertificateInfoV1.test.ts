@@ -45,13 +45,13 @@ describe('AttributeCertificateInfoV1', () => {
             attributes: mockAttributes,
         })
 
-        expect(info.version).toBe(version)
-        expect(info.subject).toBe(subject)
-        expect(info.issuer).toBe(issuer)
-        expect(info.signature).toBe(mockSignature)
-        expect(info.serialNumber).toBe(serialNumber)
-        expect(info.validityPeriod).toBe(validityPeriod)
-        expect(info.attributes).toBe(mockAttributes)
+        expect(info.version).toEqual(version)
+        expect(info.subject).toEqual(subject)
+        expect(info.issuer).toEqual(issuer)
+        expect(info.signature).toEqual(mockSignature)
+        expect(info.serialNumber).toEqual(serialNumber)
+        expect(info.validityPeriod).toEqual(validityPeriod)
+        expect(info.attributes).toEqual(mockAttributes)
         expect(info.issuerUniqueID).toBeUndefined()
         expect(info.extensions).toBeUndefined()
     })
@@ -82,20 +82,20 @@ describe('AttributeCertificateInfoV1', () => {
 
         // Check the structure has the correct elements
         const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-        expect(valueBlock.value.length).toBe(7) // No optional fields
+        expect(valueBlock.value.length).toEqual(7) // No optional fields
         expect(valueBlock.value[0]).toBeInstanceOf(asn1js.Integer) // version
         expect(valueBlock.value[1]).toBeInstanceOf(asn1js.OctetString) // subject
         expect(valueBlock.value[2]).toBeInstanceOf(asn1js.OctetString) // issuer
 
         // Check version value
         const versionAsn1 = valueBlock.value[0] as asn1js.Integer
-        expect(versionAsn1.valueBlock.valueDec).toBe(version)
+        expect(versionAsn1.valueBlock.valueDec).toEqual(version)
 
         // Check validity period
         expect(valueBlock.value[5]).toBeInstanceOf(asn1js.Sequence)
         const validityBlock = (valueBlock.value[5] as asn1js.Sequence)
             .valueBlock
-        expect(validityBlock.value.length).toBe(2)
+        expect(validityBlock.value.length).toEqual(2)
         expect(validityBlock.value[0]).toBeInstanceOf(asn1js.GeneralizedTime)
         expect(validityBlock.value[1]).toBeInstanceOf(asn1js.GeneralizedTime)
     })

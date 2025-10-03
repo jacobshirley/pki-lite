@@ -33,15 +33,15 @@ serialNumber CertificateSerialNumber
 
 ###### issuerKeyHash
 
-`string` \| `Uint8Array`\<`ArrayBufferLike`\> \| [`OctetString`](../../../asn1/OctetString/classes/OctetString.md)
+`string` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`OctetString`](../../../asn1/OctetString/classes/OctetString.md)
 
 ###### issuerNameHash
 
-`string` \| `Uint8Array`\<`ArrayBufferLike`\> \| [`OctetString`](../../../asn1/OctetString/classes/OctetString.md)
+`string` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`OctetString`](../../../asn1/OctetString/classes/OctetString.md)
 
 ###### serialNumber
 
-`string` \| `number` \| `bigint` \| `Uint8Array`\<`ArrayBufferLike`\> \| [`Integer`](../../../asn1/Integer/classes/Integer.md)
+`string` \| `number` \| `bigint` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`Integer`](../../../asn1/Integer/classes/Integer.md)
 
 #### Returns
 
@@ -197,13 +197,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 
@@ -312,7 +312,7 @@ A string representation for debugging
 
 ##### der
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 #### Returns
 

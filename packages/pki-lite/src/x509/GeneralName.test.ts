@@ -29,7 +29,7 @@ describe('AnotherName', () => {
         })
 
         expect(anotherName.typeID).toBeInstanceOf(ObjectIdentifier)
-        expect(anotherName.typeID.value).toBe('1.2.3.4.5')
+        expect(anotherName.typeID.value).toEqual('1.2.3.4.5')
         expect(anotherName.value).toBeDefined()
     })
 
@@ -40,7 +40,7 @@ describe('AnotherName', () => {
             value: new UTF8String({ value: 'test value' }),
         })
 
-        expect(anotherName.typeID.value).toBe(oid.value)
+        expect(anotherName.typeID.value).toEqual(oid.value)
     })
 
     test('should convert to ASN.1 structure', () => {
@@ -51,7 +51,7 @@ describe('AnotherName', () => {
 
         const asn1 = anotherName.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
     })
 
     test('should parse from ASN.1 structure', () => {
@@ -63,7 +63,7 @@ describe('AnotherName', () => {
         })
 
         const anotherName = AnotherName.fromAsn1(asn1)
-        expect(anotherName.typeID.value).toBe('1.2.3.4.5')
+        expect(anotherName.typeID.value).toEqual('1.2.3.4.5')
     })
 
     test('fromAsn1 should throw error for invalid structure', () => {
@@ -97,7 +97,7 @@ describe('DirectoryString', () => {
         const directoryString = DirectoryString.fromAsn1(asn1)
 
         expect(directoryString).toBeInstanceOf(UTF8String)
-        expect(directoryString.toString()).toBe('Test String')
+        expect(directoryString.toString()).toEqual('Test String')
     })
 
     test('fromAsn1 should throw error for invalid ASN.1', () => {
@@ -116,7 +116,7 @@ describe('EDIPartyName', () => {
         })
 
         expect(ediPartyName.partyName).toBeInstanceOf(UTF8String)
-        expect(ediPartyName.partyName.toString()).toBe('Test Party')
+        expect(ediPartyName.partyName.toString()).toEqual('Test Party')
         expect(ediPartyName.nameAssigner).toBeUndefined()
     })
 
@@ -127,8 +127,8 @@ describe('EDIPartyName', () => {
         })
 
         expect(ediPartyName.nameAssigner).toBeInstanceOf(UTF8String)
-        expect(ediPartyName.nameAssigner!.toString()).toBe('Test Assigner')
-        expect(ediPartyName.partyName.toString()).toBe('Test Party')
+        expect(ediPartyName.nameAssigner!.toString()).toEqual('Test Assigner')
+        expect(ediPartyName.partyName.toString()).toEqual('Test Party')
     })
 
     test('should convert to ASN.1 structure', () => {
@@ -139,7 +139,7 @@ describe('EDIPartyName', () => {
 
         const asn1 = ediPartyName.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2) // nameAssigner + partyName
+        expect(asn1.valueBlock.value.length).toEqual(2) // nameAssigner + partyName
     })
 })
 
@@ -147,23 +147,23 @@ describe('GeneralName types', () => {
     test('dNSName should work correctly', () => {
         const dnsName = new dNSName({ value: 'example.com' })
 
-        expect(dnsName.toString()).toBe('example.com')
+        expect(dnsName.toString()).toEqual('example.com')
 
         const asn1 = dnsName.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(2) // [2]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(2) // [2]
     })
 
     test('rfc822Name should work correctly', () => {
         const emailName = new rfc822Name({ value: 'test@example.com' })
 
-        expect(emailName.toString()).toBe('test@example.com')
+        expect(emailName.toString()).toEqual('test@example.com')
 
         const asn1 = emailName.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(1) // [1]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(1) // [1]
     })
 
     test('uniformResourceIdentifier should work correctly', () => {
@@ -171,12 +171,12 @@ describe('GeneralName types', () => {
             value: 'https://example.com',
         })
 
-        expect(uri.toString()).toBe('https://example.com')
+        expect(uri.toString()).toEqual('https://example.com')
 
         const asn1 = uri.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(6) // [6]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(6) // [6]
     })
 
     test('iPAddress should work correctly', () => {
@@ -188,19 +188,19 @@ describe('GeneralName types', () => {
 
         const asn1 = ipAddress.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(7) // [7]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(7) // [7]
     })
 
     test('registeredID should work correctly', () => {
         const regId = new registeredID({ value: '1.2.3.4.5.6' })
 
-        expect(regId.value).toBe('1.2.3.4.5.6')
+        expect(regId.value).toEqual('1.2.3.4.5.6')
 
         const asn1 = regId.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(8) // [8]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(8) // [8]
     })
 
     test('directoryName should work correctly', () => {
@@ -215,12 +215,12 @@ describe('GeneralName types', () => {
 
         const dirName = new directoryName(...rdnSeq)
 
-        expect(dirName.length).toBe(1)
+        expect(dirName.length).toEqual(1)
 
         const asn1 = dirName.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(4) // [4]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(4) // [4]
     })
 })
 
@@ -230,7 +230,7 @@ describe('GeneralName Choice', () => {
         const asn1 = GeneralName.toAsn1(dnsName)
 
         expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagNumber).toBe(2) // dNSName tag
+        expect(asn1.idBlock.tagNumber).toEqual(2) // dNSName tag
     })
 
     test('should parse GeneralName from ASN.1 dNSName', () => {
@@ -241,7 +241,7 @@ describe('GeneralName Choice', () => {
 
         const generalName = GeneralName.fromAsn1(asn1)
         expect(generalName).toBeInstanceOf(dNSName)
-        expect(generalName.toString()).toBe('example.com')
+        expect(generalName.toString()).toEqual('example.com')
     })
 
     test('should parse GeneralName from ASN.1 rfc822Name', () => {
@@ -252,7 +252,7 @@ describe('GeneralName Choice', () => {
 
         const generalName = GeneralName.fromAsn1(asn1)
         expect(generalName).toBeInstanceOf(rfc822Name)
-        expect(generalName.toString()).toBe('test@example.com')
+        expect(generalName.toString()).toEqual('test@example.com')
     })
 
     test('fromAsn1 should throw error for unknown tag number', () => {
@@ -279,7 +279,7 @@ describe('GeneralNames', () => {
     test('should create empty GeneralNames', () => {
         const generalNames = new GeneralNames()
 
-        expect(generalNames.length).toBe(0)
+        expect(generalNames.length).toEqual(0)
     })
 
     test('should create GeneralNames with multiple names', () => {
@@ -288,9 +288,9 @@ describe('GeneralNames', () => {
 
         const generalNames = new GeneralNames(dnsName, emailName)
 
-        expect(generalNames.length).toBe(2)
-        expect(generalNames[0]).toBe(dnsName)
-        expect(generalNames[1]).toBe(emailName)
+        expect(generalNames.length).toEqual(2)
+        expect(generalNames[0]).toEqual(dnsName)
+        expect(generalNames[1]).toEqual(emailName)
     })
 
     test('should convert to ASN.1 sequence', () => {
@@ -300,7 +300,7 @@ describe('GeneralNames', () => {
 
         const asn1 = generalNames.toAsn1()
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
     })
 
     test('should parse from ASN.1 sequence', () => {
@@ -320,7 +320,7 @@ describe('GeneralNames', () => {
         })
 
         const generalNames = GeneralNames.fromAsn1(asn1)
-        expect(generalNames.length).toBe(2)
+        expect(generalNames.length).toEqual(2)
         expect(generalNames[0]).toBeInstanceOf(dNSName)
         expect(generalNames[1]).toBeInstanceOf(rfc822Name)
     })

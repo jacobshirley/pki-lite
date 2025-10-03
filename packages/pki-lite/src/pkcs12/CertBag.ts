@@ -122,7 +122,7 @@ export class CertBag extends PkiBase<CertBag> {
         })
     }
 
-    static fromDer(der: Uint8Array): CertBag {
+    static fromDer(der: Uint8Array<ArrayBuffer>): CertBag {
         return CertBag.fromAsn1(derToAsn1(der))
     }
 }

@@ -7,12 +7,12 @@ import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.
 describe('CertificateSet', () => {
     it('should create an empty CertificateSet', () => {
         const certSet = new CertificateSet()
-        expect(certSet.length).toBe(0)
+        expect(certSet.length).toEqual(0)
 
         // Check that the ASN.1 encoding produces a SET
         const asn1 = certSet.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toBe(true)
-        expect((asn1 as any).valueBlock.value.length).toBe(0)
+        expect(asn1 instanceof asn1js.Set).toEqual(true)
+        expect((asn1 as any).valueBlock.value.length).toEqual(0)
     })
 
     it('should create a CertificateSet with certificates', () => {
@@ -21,12 +21,12 @@ describe('CertificateSet', () => {
 
         // Create a certificate set with one certificate
         const certSet = new CertificateSet(cert)
-        expect(certSet.length).toBe(1)
+        expect(certSet.length).toEqual(1)
 
         // Check that the ASN.1 encoding is correct
         const asn1 = certSet.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toBe(true)
-        expect((asn1 as any).valueBlock.value.length).toBe(1)
+        expect(asn1 instanceof asn1js.Set).toEqual(true)
+        expect((asn1 as any).valueBlock.value.length).toEqual(1)
     })
 
     it('should decode a CertificateSet from ASN.1', () => {
@@ -41,11 +41,11 @@ describe('CertificateSet', () => {
         const decodedSet = CertificateSet.fromAsn1(asn1)
 
         // Check that the decoded set has the same number of certificates
-        expect(decodedSet.length).toBe(originalSet.length)
+        expect(decodedSet.length).toEqual(originalSet.length)
 
         // Check that both sets contain certificates
         for (const item of decodedSet) {
-            expect(item instanceof Certificate).toBe(true)
+            expect(item instanceof Certificate).toEqual(true)
         }
     })
 
@@ -58,16 +58,16 @@ describe('CertificateSet', () => {
 
         // Create a certificate set with multiple certificates
         const certSet = new CertificateSet(cert1, cert2)
-        expect(certSet.length).toBe(2)
+        expect(certSet.length).toEqual(2)
 
         // Check that the ASN.1 encoding is correct
         const asn1 = certSet.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toBe(true)
-        expect((asn1 as any).valueBlock.value.length).toBe(2)
+        expect(asn1 instanceof asn1js.Set).toEqual(true)
+        expect((asn1 as any).valueBlock.value.length).toEqual(2)
 
         // Decode it back
         const decodedSet = CertificateSet.fromAsn1(asn1)
-        expect(decodedSet.length).toBe(2)
+        expect(decodedSet.length).toEqual(2)
     })
 
     it('should throw when trying to decode from an invalid ASN.1 structure', () => {

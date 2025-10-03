@@ -40,9 +40,11 @@ describe('PKIFreeText', () => {
         const asn1 = freeText.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(1)
+        expect(asn1.valueBlock.value.length).toEqual(1)
         assert(asn1.valueBlock.value[0] instanceof asn1js.Utf8String)
-        expect(asn1.valueBlock.value[0].valueBlock.value).toBe('Test message')
+        expect(asn1.valueBlock.value[0].valueBlock.value).toEqual(
+            'Test message',
+        )
     })
 
     test('roundtrip conversion preserves data', () => {
@@ -58,7 +60,7 @@ describe('PKIFreeText', () => {
 describe('PKIStatusInfo', () => {
     test('can be created with status only', () => {
         const statusInfo = new PKIStatusInfo({ status: PKIStatus.GRANTED })
-        expect(statusInfo.status).toBe(PKIStatus.GRANTED)
+        expect(statusInfo.status).toEqual(PKIStatus.GRANTED)
         expect(statusInfo.statusString).toBeUndefined()
         expect(statusInfo.failInfo).toBeUndefined()
     })
@@ -71,8 +73,8 @@ describe('PKIStatusInfo', () => {
             failInfo: undefined,
         })
 
-        expect(statusInfo.status).toBe(PKIStatus.GRANTED)
-        expect(statusInfo.statusString).toBe(statusString)
+        expect(statusInfo.status).toEqual(PKIStatus.GRANTED)
+        expect(statusInfo.statusString).toEqual(statusString)
         expect(statusInfo.failInfo).toBeUndefined()
     })
 
@@ -84,25 +86,25 @@ describe('PKIStatusInfo', () => {
             failInfo: PKIFailureInfo.BAD_DATA_FORMAT,
         })
 
-        expect(statusInfo.status).toBe(PKIStatus.REJECTION)
-        expect(statusInfo.failInfo).toBe(PKIFailureInfo.BAD_DATA_FORMAT)
+        expect(statusInfo.status).toEqual(PKIStatus.REJECTION)
+        expect(statusInfo.failInfo).toEqual(PKIFailureInfo.BAD_DATA_FORMAT)
     })
 
     test('isSuccess returns correct values', () => {
         expect(
             new PKIStatusInfo({ status: PKIStatus.GRANTED }).isSuccess(),
-        ).toBe(true)
+        ).toEqual(true)
         expect(
             new PKIStatusInfo({
                 status: PKIStatus.GRANTED_WITH_MODS,
             }).isSuccess(),
-        ).toBe(true)
+        ).toEqual(true)
         expect(
             new PKIStatusInfo({ status: PKIStatus.REJECTION }).isSuccess(),
-        ).toBe(false)
+        ).toEqual(false)
         expect(
             new PKIStatusInfo({ status: PKIStatus.WAITING }).isSuccess(),
-        ).toBe(false)
+        ).toEqual(false)
     })
 
     test('getStatusDescription returns correct descriptions', () => {
@@ -110,32 +112,32 @@ describe('PKIStatusInfo', () => {
             new PKIStatusInfo({
                 status: PKIStatus.GRANTED,
             }).getStatusDescription(),
-        ).toBe('granted')
+        ).toEqual('granted')
         expect(
             new PKIStatusInfo({
                 status: PKIStatus.GRANTED_WITH_MODS,
             }).getStatusDescription(),
-        ).toBe('granted with modifications')
+        ).toEqual('granted with modifications')
         expect(
             new PKIStatusInfo({
                 status: PKIStatus.REJECTION,
             }).getStatusDescription(),
-        ).toBe('rejection')
+        ).toEqual('rejection')
         expect(
             new PKIStatusInfo({
                 status: PKIStatus.WAITING,
             }).getStatusDescription(),
-        ).toBe('waiting')
+        ).toEqual('waiting')
         expect(
             new PKIStatusInfo({
                 status: PKIStatus.REVOCATION_WARNING,
             }).getStatusDescription(),
-        ).toBe('revocation warning')
+        ).toEqual('revocation warning')
         expect(
             new PKIStatusInfo({
                 status: PKIStatus.REVOCATION_NOTIFICATION,
             }).getStatusDescription(),
-        ).toBe('revocation notification')
+        ).toEqual('revocation notification')
     })
 
     test('can be converted to ASN.1', () => {
@@ -147,11 +149,11 @@ describe('PKIStatusInfo', () => {
         const asn1 = statusInfo.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         // Status
         assert(asn1.valueBlock.value[0] instanceof asn1js.Integer)
-        expect(asn1.valueBlock.value[0].valueBlock.valueDec).toBe(
+        expect(asn1.valueBlock.value[0].valueBlock.valueDec).toEqual(
             PKIStatus.GRANTED,
         )
 
@@ -172,7 +174,7 @@ describe('PKIStatusInfo', () => {
         const asn1 = original.toAsn1()
         const recreated = PKIStatusInfo.fromAsn1(asn1)
 
-        expect(recreated.status).toBe(PKIStatus.GRANTED_WITH_MODS)
+        expect(recreated.status).toEqual(PKIStatus.GRANTED_WITH_MODS)
         expect(recreated.statusString?.texts).toEqual([
             'Request granted with modifications',
         ])
@@ -185,7 +187,7 @@ describe('TimeStampResp', () => {
         const status = new PKIStatusInfo({ status: PKIStatus.GRANTED })
         const resp = new TimeStampResp({ status })
 
-        expect(resp.status).toBe(status)
+        expect(resp.status).toEqual(status)
         expect(resp.timeStampToken).toBeUndefined()
     })
 
@@ -196,8 +198,8 @@ describe('TimeStampResp', () => {
         })
         const resp = new TimeStampResp({ status, timeStampToken })
 
-        expect(resp.status).toBe(status)
-        expect(resp.timeStampToken).toBe(timeStampToken)
+        expect(resp.status).toEqual(status)
+        expect(resp.timeStampToken).toEqual(timeStampToken)
     })
 
     test('can be converted to ASN.1 with status only', () => {
@@ -206,7 +208,7 @@ describe('TimeStampResp', () => {
         const asn1 = resp.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(1)
+        expect(asn1.valueBlock.value.length).toEqual(1)
 
         // Status
         assert(asn1.valueBlock.value[0] instanceof asn1js.Sequence)
@@ -221,7 +223,7 @@ describe('TimeStampResp', () => {
         const asn1 = resp.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         // Status
         assert(asn1.valueBlock.value[0] instanceof asn1js.Sequence)
@@ -240,8 +242,8 @@ describe('TimeStampResp', () => {
         const asn1 = original.toAsn1()
         const recreated = TimeStampResp.fromAsn1(asn1)
 
-        expect(recreated.status.status).toBe(PKIStatus.GRANTED)
-        expect(recreated.timeStampToken?.contentType.toString()).toBe(
+        expect(recreated.status.status).toEqual(PKIStatus.GRANTED)
+        expect(recreated.timeStampToken?.contentType.toString()).toEqual(
             OIDs.PKCS7.SIGNED_DATA,
         )
     })
@@ -293,8 +295,8 @@ describe('TimeStampResp', () => {
         const grantedResp = new TimeStampResp({ status: grantedStatus })
         const rejectedResp = new TimeStampResp({ status: rejectedStatus })
 
-        expect(grantedResp.isSuccess()).toBe(true)
-        expect(rejectedResp.isSuccess()).toBe(false)
+        expect(grantedResp.isSuccess()).toEqual(true)
+        expect(rejectedResp.isSuccess()).toEqual(false)
     })
 
     test('getTimeStampTokenDer returns correct data', () => {
@@ -312,7 +314,7 @@ describe('TimeStampResp', () => {
         const respWithToken = new TimeStampResp({ status, timeStampToken })
         const tokenDer = respWithToken.getTimeStampTokenDer()
 
-        expect(tokenDer).toBeInstanceOf(Uint8Array)
+        expect(tokenDer).toBeInstanceOf(Uint8Array<ArrayBuffer>)
         expect(tokenDer?.length).toBeGreaterThan(0)
         expect(tokenDer).toEqual(timeStampToken.toDer())
     })
@@ -328,8 +330,8 @@ describe('TimeStampResp', () => {
         })
         const resp = new TimeStampResp({ status }) // No token for rejection
 
-        expect(resp.isSuccess()).toBe(false)
-        expect(resp.status.getStatusDescription()).toBe('rejection')
+        expect(resp.isSuccess()).toEqual(false)
+        expect(resp.status.getStatusDescription()).toEqual('rejection')
         expect(resp.timeStampToken).toBeUndefined()
     })
 })

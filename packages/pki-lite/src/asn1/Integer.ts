@@ -12,7 +12,7 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class Integer extends PkiBase<Integer> {
-    bytes: Uint8Array
+    bytes: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new Integer instance
@@ -26,7 +26,7 @@ export class Integer extends PkiBase<Integer> {
         if (value instanceof Integer) {
             this.bytes = value.bytes
         } else if (value instanceof Uint8Array) {
-            this.bytes = value
+            this.bytes = new Uint8Array(value)
         } else if (typeof value === 'bigint') {
             this.bytes = this.bigIntToBytes(value)
         } else if (typeof value === 'string') {
@@ -49,9 +49,9 @@ export class Integer extends PkiBase<Integer> {
     }
 
     /**
-     * Converts a JavaScript Number to a Uint8Array in big-endian format
+     * Converts a JavaScript Number to a Uint8Array<ArrayBuffer> in big-endian format
      */
-    private numberToBytes(num: number): Uint8Array {
+    private numberToBytes(num: number): Uint8Array<ArrayBuffer> {
         // Handle small numbers efficiently
         if (num >= 0 && num < 128) {
             return new Uint8Array([num])
@@ -96,9 +96,9 @@ export class Integer extends PkiBase<Integer> {
     }
 
     /**
-     * Converts a BigInt to a Uint8Array in big-endian format
+     * Converts a BigInt to a Uint8Array<ArrayBuffer> in big-endian format
      */
-    private bigIntToBytes(bigNum: bigint): Uint8Array {
+    private bigIntToBytes(bigNum: bigint): Uint8Array<ArrayBuffer> {
         // Handle zero specially
         if (bigNum === 0n) {
             return new Uint8Array([0])
@@ -322,7 +322,7 @@ export class Integer extends PkiBase<Integer> {
             .join('')
     }
 
-    toUnsigned(): Uint8Array {
+    toUnsigned(): Uint8Array<ArrayBuffer> {
         // Strip leading 0x00 if present
         let result = this.bytes
         while (result.length > 1 && result[0] === 0x00) {

@@ -96,7 +96,7 @@ describe('EncryptedContentInfo', () => {
 
         const str = encryptedContentInfo.toString()
 
-        expect(typeof str).toBe('string')
+        expect(typeof str).toEqual('string')
         expect(str.length).toBeGreaterThan(0)
     })
 

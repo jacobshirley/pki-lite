@@ -8,7 +8,7 @@ describe('AttributeCertificateV1', () => {
     // Mock dependencies
     let mockAcInfo: AttributeCertificateInfoV1
     let mockSignatureAlgorithm: AlgorithmIdentifier
-    let mockSignature: Uint8Array
+    let mockSignature: Uint8Array<ArrayBuffer>
 
     beforeEach(() => {
         // Create simple stub objects without vitest mocks
@@ -42,9 +42,9 @@ describe('AttributeCertificateV1', () => {
             signature: mockSignature,
         })
 
-        expect(attrCertV1.acInfo).toBe(mockAcInfo)
-        expect(attrCertV1.signatureAlgorithm).toBe(mockSignatureAlgorithm)
-        expect(attrCertV1.signature.bytes).toBe(mockSignature)
+        expect(attrCertV1.acInfo).toEqual(mockAcInfo)
+        expect(attrCertV1.signatureAlgorithm).toEqual(mockSignatureAlgorithm)
+        expect(attrCertV1.signature.bytes).toEqual(mockSignature)
     })
 
     test('toAsn1 returns a correctly structured Sequence', () => {
@@ -60,7 +60,7 @@ describe('AttributeCertificateV1', () => {
 
         // Check the structure has the correct elements
         const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-        expect(valueBlock.value.length).toBe(3)
+        expect(valueBlock.value.length).toEqual(3)
         expect(valueBlock.value[2]).toBeInstanceOf(asn1js.BitString)
 
         // Check BitString value matches signature

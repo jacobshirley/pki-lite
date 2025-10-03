@@ -48,7 +48,7 @@ describe('RSAPrivateKey', () => {
             coefficient,
         })
 
-        expect(key.version).toBe(0)
+        expect(key.version).toEqual(0)
         expect(key.modulus).toEqual(modulus)
         expect(key.publicExponent).toEqual(publicExponent)
         expect(key.privateExponent).toEqual(privateExponent)
@@ -76,11 +76,11 @@ describe('RSAPrivateKey', () => {
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
 
         const values = (asn1 as any).valueBlock.value
-        expect(values.length).toBe(9)
+        expect(values.length).toEqual(9)
 
         // Check version
         expect(values[0]).toBeInstanceOf(asn1js.Integer)
-        expect((values[0] as any).valueBlock.valueDec).toBe(0)
+        expect((values[0] as any).valueBlock.valueDec).toEqual(0)
 
         // Check other components (using the same method as in the fromAsn1 method)
         const components = [
@@ -122,7 +122,7 @@ describe('RSAPrivateKey', () => {
 
         const key = RSAPrivateKey.fromAsn1(asn1)
 
-        expect(key.version).toBe(0)
+        expect(key.version).toEqual(0)
         expect(key.modulus).toEqual(modulus)
         expect(key.publicExponent).toEqual(publicExponent)
         expect(key.privateExponent).toEqual(privateExponent)
@@ -148,7 +148,7 @@ describe('RSAPrivateKey', () => {
         const der = key.toDer()
         const parsedKey = RSAPrivateKey.fromDer(der)
 
-        expect(parsedKey.version).toBe(key.version)
+        expect(parsedKey.version).toEqual(key.version)
         expect(parsedKey.modulus).toEqual(key.modulus)
         expect(parsedKey.publicExponent).toEqual(key.publicExponent)
         expect(parsedKey.privateExponent).toEqual(key.privateExponent)

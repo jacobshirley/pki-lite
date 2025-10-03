@@ -31,7 +31,7 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
     /**
      * The private key value as an octet string
      */
-    privateKey: Uint8Array
+    privateKey: Uint8Array<ArrayBuffer>
 
     /**
      * The named curve OID (if parameters are present)
@@ -42,19 +42,19 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
     /**
      * The key component (if included)
      */
-    publicKey?: Uint8Array
+    publicKey?: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new ECPrivateKey
      *
-     * @param privateKey The private key as a Uint8Array
+     * @param privateKey The private key as a Uint8Array<ArrayBuffer>
      * @param namedCurve The named curve OID (optional)
      * @param publicKey The key (optional)
      */
     constructor(options: {
-        privateKey: Uint8Array
+        privateKey: Uint8Array<ArrayBuffer>
         namedCurve?: string
-        publicKey?: Uint8Array
+        publicKey?: Uint8Array<ArrayBuffer>
     }) {
         super()
         const { privateKey, namedCurve, publicKey } = options
@@ -153,7 +153,7 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
         const privateKey = new Uint8Array(values[1].valueBlock.valueHexView)
 
         let namedCurve: string | undefined
-        let publicKey: Uint8Array | undefined
+        let publicKey: Uint8Array<ArrayBuffer> | undefined
 
         // Optional parameters and publicKey
         for (let i = 2; i < values.length; i++) {
@@ -217,7 +217,7 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
      * @param der The DER-encoded ECPrivateKey
      * @returns An ECPrivateKey object
      */
-    static fromDer(der: Uint8Array): ECPrivateKey {
+    static fromDer(der: Uint8Array<ArrayBuffer>): ECPrivateKey {
         const asn1 = derToAsn1(der)
         return ECPrivateKey.fromAsn1(asn1)
     }
@@ -242,8 +242,8 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
      */
     static forCurve(
         curve: string,
-        privateKey: Uint8Array,
-        publicKey?: Uint8Array,
+        privateKey: Uint8Array<ArrayBuffer>,
+        publicKey?: Uint8Array<ArrayBuffer>,
     ): ECPrivateKey {
         return new ECPrivateKey({ privateKey, namedCurve: curve, publicKey })
     }

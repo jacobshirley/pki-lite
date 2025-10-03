@@ -154,41 +154,41 @@ Used for PEM headers and debugging output.
 
 ### decrypt()
 
-> **decrypt**(`data`, `key`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **decrypt**(`data`, `key`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 #### Parameters
 
 ##### data
 
-`Uint8Array`\<`ArrayBufferLike`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
 
 ##### key
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 ---
 
 ### encrypt()
 
-> **encrypt**(`data`, `key`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **encrypt**(`data`, `key`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 #### Parameters
 
 ##### data
 
-`Uint8Array`\<`ArrayBufferLike`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
 
 ##### key
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 ---
 
@@ -221,11 +221,11 @@ true if the objects are equal, false otherwise
 
 ### generateKey()
 
-> **generateKey**(): `Uint8Array`
+> **generateKey**(): `Uint8Array<ArrayBuffer>`
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 ---
 
@@ -330,13 +330,13 @@ The ASN.1 SEQUENCE structure
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 
@@ -505,7 +505,7 @@ An AlgorithmIdentifier
 
 ##### bytes
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 #### Returns
 
@@ -559,7 +559,7 @@ An AlgorithmIdentifier
 
 ### randomBytes()
 
-> `static` **randomBytes**(`length`): `Uint8Array`
+> `static` **randomBytes**(`length`): `Uint8Array<ArrayBuffer>`
 
 #### Parameters
 
@@ -569,7 +569,7 @@ An AlgorithmIdentifier
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 #### Inherited from
 

@@ -27,8 +27,8 @@ describe('RSAESOAEPParams', () => {
             maskGenAlgorithm: mgfAlg,
             pSourceAlgorithm: pSourceAlg,
         })
-        expect(params.hashAlgorithm).toBe(hashAlg)
-        expect(params.maskGenAlgorithm).toBe(mgfAlg)
+        expect(params.hashAlgorithm).toEqual(hashAlg)
+        expect(params.maskGenAlgorithm).toEqual(mgfAlg)
         expect(params.pSourceAlgorithm).toEqual(pSourceAlg)
     })
 
@@ -59,17 +59,29 @@ describe('RSAESOAEPParams', () => {
 
         // Check that all three parameters are present
         const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value.length).toBe(3)
+        expect(sequence.valueBlock.value.length).toEqual(3)
 
         // Each parameter should be a context-specific tagged value
-        expect((sequence.valueBlock.value[0] as any).idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[0] as any).idBlock.tagNumber).toBe(0) // hashAlgorithm [0]
+        expect((sequence.valueBlock.value[0] as any).idBlock.tagClass).toEqual(
+            3,
+        ) // CONTEXT-SPECIFIC
+        expect((sequence.valueBlock.value[0] as any).idBlock.tagNumber).toEqual(
+            0,
+        ) // hashAlgorithm [0]
 
-        expect((sequence.valueBlock.value[1] as any).idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[1] as any).idBlock.tagNumber).toBe(1) // maskGenAlgorithm [1]
+        expect((sequence.valueBlock.value[1] as any).idBlock.tagClass).toEqual(
+            3,
+        ) // CONTEXT-SPECIFIC
+        expect((sequence.valueBlock.value[1] as any).idBlock.tagNumber).toEqual(
+            1,
+        ) // maskGenAlgorithm [1]
 
-        expect((sequence.valueBlock.value[2] as any).idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[2] as any).idBlock.tagNumber).toBe(2) // pSourceAlgorithm [2]
+        expect((sequence.valueBlock.value[2] as any).idBlock.tagClass).toEqual(
+            3,
+        ) // CONTEXT-SPECIFIC
+        expect((sequence.valueBlock.value[2] as any).idBlock.tagNumber).toEqual(
+            2,
+        ) // pSourceAlgorithm [2]
     })
 
     it('should convert to ASN.1 with no parameters (empty sequence)', () => {
@@ -80,7 +92,7 @@ describe('RSAESOAEPParams', () => {
 
         // No parameters should result in an empty sequence
         const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value.length).toBe(0)
+        expect(sequence.valueBlock.value.length).toEqual(0)
     })
 
     it('should parse from ASN.1 with all parameters', () => {
@@ -108,17 +120,17 @@ describe('RSAESOAEPParams', () => {
         const parsed = RSAESOAEPParams.fromAsn1(asn1)
 
         expect(parsed.hashAlgorithm).toBeDefined()
-        expect(parsed.hashAlgorithm?.algorithm.toString()).toBe(
+        expect(parsed.hashAlgorithm?.algorithm.toString()).toEqual(
             '2.16.840.1.101.3.4.2.1',
         )
 
         expect(parsed.maskGenAlgorithm).toBeDefined()
-        expect(parsed.maskGenAlgorithm?.algorithm.toString()).toBe(
+        expect(parsed.maskGenAlgorithm?.algorithm.toString()).toEqual(
             '1.2.840.113549.1.1.8',
         )
 
         expect(parsed.pSourceAlgorithm).toBeDefined()
-        expect(parsed.pSourceAlgorithm?.algorithm.toString()).toBe(
+        expect(parsed.pSourceAlgorithm?.algorithm.toString()).toEqual(
             '1.2.840.113549.1.1.9',
         )
     })
@@ -147,7 +159,7 @@ describe('RSAESOAEPParams', () => {
         const der = original.toDer()
 
         // Parse the DER encoding back
-        // Create a new ArrayBuffer from the Uint8Array to ensure we have a proper BufferSource
+        // Create a new ArrayBuffer from the Uint8Array<ArrayBuffer> to ensure we have a proper BufferSource
         const arrayBuffer = der.buffer.slice(
             der.byteOffset,
             der.byteOffset + der.byteLength,
@@ -156,17 +168,17 @@ describe('RSAESOAEPParams', () => {
         const parsed = RSAESOAEPParams.fromAsn1(asn1)
 
         expect(parsed.hashAlgorithm).toBeDefined()
-        expect(parsed.hashAlgorithm?.algorithm.toString()).toBe(
+        expect(parsed.hashAlgorithm?.algorithm.toString()).toEqual(
             '2.16.840.1.101.3.4.2.1',
         )
 
         expect(parsed.maskGenAlgorithm).toBeDefined()
-        expect(parsed.maskGenAlgorithm?.algorithm.toString()).toBe(
+        expect(parsed.maskGenAlgorithm?.algorithm.toString()).toEqual(
             '1.2.840.113549.1.1.8',
         )
 
         expect(parsed.pSourceAlgorithm).toBeDefined()
-        expect(parsed.pSourceAlgorithm?.algorithm.toString()).toBe(
+        expect(parsed.pSourceAlgorithm?.algorithm.toString()).toEqual(
             '1.2.840.113549.1.1.9',
         )
     })
@@ -176,15 +188,15 @@ describe('RSAESOAEPParams', () => {
 
         const hashAlg = params.getEffectiveHashAlgorithm()
         expect(hashAlg).toBeDefined()
-        expect(hashAlg.algorithm.toString()).toBe('1.3.14.3.2.26') // SHA-1
+        expect(hashAlg.algorithm.toString()).toEqual('1.3.14.3.2.26') // SHA-1
 
         const mgfAlg = params.getEffectiveMaskGenAlgorithm()
         expect(mgfAlg).toBeDefined()
-        expect(mgfAlg.algorithm.toString()).toBe('1.2.840.113549.1.1.8') // MGF1
+        expect(mgfAlg.algorithm.toString()).toEqual('1.2.840.113549.1.1.8') // MGF1
 
         const pSourceAlg = params.getEffectivePSourceAlgorithm()
         expect(pSourceAlg).toBeDefined()
-        expect(pSourceAlg.algorithm.toString()).toBe('1.2.840.113549.1.1.9') // pSpecified
+        expect(pSourceAlg.algorithm.toString()).toEqual('1.2.840.113549.1.1.9') // pSpecified
     })
 
     it('should create default instance', () => {

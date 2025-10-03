@@ -21,7 +21,7 @@ describe('RevokedInfo', () => {
         })
 
         expect(revokedInfo.revocationTime).toEqual(revocationTime)
-        expect(revokedInfo.revocationReason).toBe(revocationReason)
+        expect(revokedInfo.revocationReason).toEqual(revocationReason)
     })
 
     it('should create a RevokedInfo with different revocation reasons', () => {
@@ -43,7 +43,7 @@ describe('RevokedInfo', () => {
                 revocationTime,
                 revocationReason: reason,
             })
-            expect(revokedInfo.revocationReason).toBe(reason)
+            expect(revokedInfo.revocationReason).toEqual(reason)
         }
     })
 
@@ -57,7 +57,7 @@ describe('RevokedInfo', () => {
         expect(parsed.revocationTime).toBeDefined()
         expect(parsed.revocationReason).toBeUndefined()
         // Compare dates by converting to ISO strings (to avoid millisecond precision differences)
-        expect(parsed.revocationTime.toISOString().substring(0, 19)).toBe(
+        expect(parsed.revocationTime.toISOString().substring(0, 19)).toEqual(
             revocationTime.toISOString().substring(0, 19),
         )
     })
@@ -73,7 +73,7 @@ describe('RevokedInfo', () => {
         expect(parsed.revocationTime).toBeDefined()
         expect(parsed.revocationReason).toEqual(revocationReason)
         // Compare dates by converting to ISO strings (to avoid millisecond precision differences)
-        expect(parsed.revocationTime.toISOString().substring(0, 19)).toBe(
+        expect(parsed.revocationTime.toISOString().substring(0, 19)).toEqual(
             revocationTime.toISOString().substring(0, 19),
         )
     })
@@ -89,7 +89,7 @@ describe('RevokedInfo', () => {
         expect(parsed.revocationTime).toBeDefined()
         expect(parsed.revocationReason).toEqual(revocationReason)
         // Compare dates by converting to ISO strings (to avoid millisecond precision differences)
-        expect(parsed.revocationTime.toISOString().substring(0, 19)).toBe(
+        expect(parsed.revocationTime.toISOString().substring(0, 19)).toEqual(
             revocationTime.toISOString().substring(0, 19),
         )
     })
@@ -179,9 +179,9 @@ describe('RevokedInfo', () => {
 
             expect(parsed.revocationTime).toBeDefined()
             // Compare dates by converting to ISO strings (to avoid millisecond precision differences)
-            expect(parsed.revocationTime.toISOString().substring(0, 19)).toBe(
-                date.toISOString().substring(0, 19),
-            )
+            expect(
+                parsed.revocationTime.toISOString().substring(0, 19),
+            ).toEqual(date.toISOString().substring(0, 19))
         }
     })
 })

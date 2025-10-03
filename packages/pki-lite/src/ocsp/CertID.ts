@@ -81,7 +81,7 @@ export class CertID extends PkiBase<CertID> {
         })
     }
 
-    static fromDer(der: Uint8Array): CertID {
+    static fromDer(der: Uint8Array<ArrayBuffer>): CertID {
         return CertID.fromAsn1(derToAsn1(der))
     }
 }

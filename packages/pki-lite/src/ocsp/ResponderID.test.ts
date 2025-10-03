@@ -26,8 +26,8 @@ describe('ResponderID', () => {
         // Verify ASN.1 encoding
         const asn1 = ResponderID.toAsn1(responderIdByName)
         expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(1) // [1]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(1) // [1]
 
         // Verify decoding works
         const decoded = ResponderID.fromAsn1(asn1)
@@ -46,8 +46,8 @@ describe('ResponderID', () => {
         // Verify ASN.1 encoding
         const asn1 = ResponderID.toAsn1(keyHash)
         expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(2) // [2]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(2) // [2]
 
         // Verify decoding
         const decoded = ResponderID.fromAsn1(asn1)

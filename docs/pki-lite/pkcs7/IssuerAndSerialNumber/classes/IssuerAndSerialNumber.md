@@ -39,7 +39,7 @@ CertificateSerialNumber ::= INTEGER
 
 ###### serialNumber
 
-`string` \| `number` \| `Uint8Array`\<`ArrayBufferLike`\> \| [`Integer`](../../../asn1/Integer/classes/Integer.md)
+`string` \| `number` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`Integer`](../../../asn1/Integer/classes/Integer.md)
 
 #### Returns
 
@@ -197,13 +197,13 @@ Converts the IssuerAndSerialNumber to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 

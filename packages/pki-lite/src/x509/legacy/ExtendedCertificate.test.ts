@@ -93,8 +93,8 @@ describe('ExtendedCertificate', () => {
             signature,
         })
 
-        expect(extCert.extendedCertificateInfo).toBe(extendedCertificateInfo)
-        expect(extCert.signatureAlgorithm).toBe(signatureAlgorithm)
+        expect(extCert.extendedCertificateInfo).toEqual(extendedCertificateInfo)
+        expect(extCert.signatureAlgorithm).toEqual(signatureAlgorithm)
         expect(extCert.signature).toEqual(signature)
     })
 
@@ -117,7 +117,7 @@ describe('ExtendedCertificate', () => {
 
         // Check that structure has correct elements
         const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-        expect(valueBlock.value.length).toBe(3)
+        expect(valueBlock.value.length).toEqual(3)
         expect(valueBlock.value[2]).toBeInstanceOf(asn1js.BitString)
 
         // Check BitString value matches signature
@@ -151,7 +151,7 @@ describe('ExtendedCertificate', () => {
         expect(parsedExtCert.signatureAlgorithm).toBeInstanceOf(
             AlgorithmIdentifier,
         )
-        expect(parsedExtCert.signatureAlgorithm.algorithm.toString()).toBe(
+        expect(parsedExtCert.signatureAlgorithm.algorithm.toString()).toEqual(
             '1.2.840.113549.1.1.11',
         )
         expect(parsedExtCert.signature.bytes).toEqual(signature.bytes)

@@ -357,7 +357,7 @@ export class SignedData extends PkiBase<SignedData> {
      * @param der The DER-encoded SignedData
      * @returns The SignedData object
      */
-    static fromDer(der: Uint8Array): SignedData {
+    static fromDer(der: Uint8Array<ArrayBuffer>): SignedData {
         return SignedData.fromAsn1(derToAsn1(der))
     }
 
@@ -366,7 +366,7 @@ export class SignedData extends PkiBase<SignedData> {
      * @param cms The ContentInfo or DER bytes
      * @returns The SignedData object
      */
-    static fromCms(cms: ContentInfo | Uint8Array): SignedData {
+    static fromCms(cms: ContentInfo | Uint8Array<ArrayBuffer>): SignedData {
         if (cms instanceof Uint8Array) {
             cms = ContentInfo.fromDer(cms)
         }
@@ -412,7 +412,7 @@ export class SignedData extends PkiBase<SignedData> {
      * @returns
      */
     async verify(options: {
-        data?: Uint8Array
+        data?: Uint8Array<ArrayBuffer>
         certificateValidation?: CertificateValidationOptions | true
     }): Promise<
         | {

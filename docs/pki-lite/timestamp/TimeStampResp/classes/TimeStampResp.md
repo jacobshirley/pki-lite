@@ -130,13 +130,13 @@ true if the objects are equal, false otherwise
 
 ### getTimeStampTokenDer()
 
-> **getTimeStampTokenDer**(): `Uint8Array`
+> **getTimeStampTokenDer**(): `Uint8Array<ArrayBuffer>`
 
 Get the timestamp token as DER bytes
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 ---
 
@@ -205,13 +205,13 @@ Converts the TimeStampResp to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 

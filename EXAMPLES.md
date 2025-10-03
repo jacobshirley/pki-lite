@@ -189,12 +189,12 @@ console.log('Algorithm OID:', algorithm.algorithm.toString())
 const toBeEncrypted = new TextEncoder().encode('Hello, World!')
 const encrypted = await algorithm.encrypt(
     toBeEncrypted,
-    'password', // Can also be a Uint8Array
+    'password', // Can also be a Uint8Array<ArrayBuffer>
 )
 
 const decrypted = await algorithm.decrypt(
     encrypted,
-    'password', // Can also be a Uint8Array
+    'password', // Can also be a Uint8Array<ArrayBuffer>
 )
 console.log('Decrypted data:', new TextDecoder().decode(decrypted))
 ```

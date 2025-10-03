@@ -8,21 +8,21 @@ describe('UniversalString', () => {
         const universalString = new UniversalString({ value: testString })
 
         expect(universalString).toBeInstanceOf(UniversalString)
-        expect(universalString.toString()).toBe(testString)
+        expect(universalString.toString()).toEqual(testString)
 
         // Should encode as UTF-8 bytes
         const expectedBytes = new TextEncoder().encode(testString)
         expect(universalString.bytes).toEqual(expectedBytes)
     })
 
-    test('should create UniversalString from Uint8Array', () => {
+    test('should create UniversalString from Uint8Array<ArrayBuffer>', () => {
         const bytes = new Uint8Array([
             0x55, 0x6e, 0x69, 0x76, 0x65, 0x72, 0x73, 0x61, 0x6c,
         ]) // "Universal"
         const universalString = new UniversalString({ value: bytes })
 
         expect(universalString.bytes).toEqual(bytes)
-        expect(universalString.toString()).toBe('Universal')
+        expect(universalString.toString()).toEqual('Universal')
     })
 
     test('should create UniversalString from another UniversalString', () => {
@@ -30,14 +30,14 @@ describe('UniversalString', () => {
         const copy = new UniversalString({ value: original })
 
         expect(copy.bytes).toEqual(original.bytes)
-        expect(copy.toString()).toBe(original.toString())
+        expect(copy.toString()).toEqual(original.toString())
     })
 
     test('should handle Unicode characters', () => {
         const unicodeString = 'Universal: 世界 🌍 αβγ'
         const universalString = new UniversalString({ value: unicodeString })
 
-        expect(universalString.toString()).toBe(unicodeString)
+        expect(universalString.toString()).toEqual(unicodeString)
 
         // Verify UTF-8 encoding
         const expectedBytes = new TextEncoder().encode(unicodeString)
@@ -47,8 +47,8 @@ describe('UniversalString', () => {
     test('should handle empty string', () => {
         const universalString = new UniversalString({ value: '' })
 
-        expect(universalString.bytes.length).toBe(0)
-        expect(universalString.toString()).toBe('')
+        expect(universalString.bytes.length).toEqual(0)
+        expect(universalString.toString()).toEqual('')
     })
 
     test('should convert to ASN.1 structure correctly', () => {
@@ -95,7 +95,9 @@ describe('UniversalString', () => {
 
         for (const { input, expected } of testCases) {
             const universalString = new UniversalString({ value: input })
-            expect(universalString.toHexString().toLowerCase()).toBe(expected)
+            expect(universalString.toHexString().toLowerCase()).toEqual(
+                expected,
+            )
         }
     })
 
@@ -114,7 +116,7 @@ describe('UniversalString', () => {
             const asn1 = original.toAsn1()
             const decoded = UniversalString.fromAsn1(asn1)
 
-            expect(decoded.toString()).toBe(testString)
+            expect(decoded.toString()).toEqual(testString)
             expect(decoded.bytes).toEqual(original.bytes)
         }
     })
@@ -124,35 +126,35 @@ describe('UniversalString', () => {
         const unicodeChars = 'Unicode: αβγδε ñüç 中文 русский 🌟✨💫'
         const universalString = new UniversalString({ value: unicodeChars })
 
-        expect(universalString.toString()).toBe(unicodeChars)
+        expect(universalString.toString()).toEqual(unicodeChars)
 
         // Test round-trip
         const asn1 = universalString.toAsn1()
         const decoded = UniversalString.fromAsn1(asn1)
-        expect(decoded.toString()).toBe(unicodeChars)
+        expect(decoded.toString()).toEqual(unicodeChars)
     })
 
     test('should handle mathematical symbols', () => {
         const mathString = '∑∆∇∈∉∊∋∌∍∎∏∐∑−∓∔∕∖∗∘∙√∛∜∝∞∟∠∡∢∣∤∥∦∧∨∩∪'
         const universalString = new UniversalString({ value: mathString })
 
-        expect(universalString.toString()).toBe(mathString)
+        expect(universalString.toString()).toEqual(mathString)
 
         // Test round-trip
         const asn1 = universalString.toAsn1()
         const decoded = UniversalString.fromAsn1(asn1)
-        expect(decoded.toString()).toBe(mathString)
+        expect(decoded.toString()).toEqual(mathString)
     })
 
     test('should handle emoji and extended Unicode', () => {
         const emojiString = '👋🌍🚀🎉🔥💯⭐️🌟✨💫🎈🎁🎊'
         const universalString = new UniversalString({ value: emojiString })
 
-        expect(universalString.toString()).toBe(emojiString)
+        expect(universalString.toString()).toEqual(emojiString)
 
         // Test round-trip
         const asn1 = universalString.toAsn1()
         const decoded = UniversalString.fromAsn1(asn1)
-        expect(decoded.toString()).toBe(emojiString)
+        expect(decoded.toString()).toEqual(emojiString)
     })
 })

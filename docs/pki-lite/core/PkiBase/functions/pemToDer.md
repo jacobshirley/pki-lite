@@ -6,7 +6,7 @@
 
 # Function: pemToDer()
 
-> **pemToDer**(`pem`, `name`): `Uint8Array`
+> **pemToDer**(`pem`, `name`): `Uint8Array<ArrayBuffer>`
 
 Extracts DER-encoded data from a PEM-formatted string.
 Supports multiple possible PEM header names for flexibility.
@@ -27,7 +27,7 @@ The PEM header name(s) to look for (e.g., "CERTIFICATE")
 
 ## Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes
 

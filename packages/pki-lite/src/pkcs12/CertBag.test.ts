@@ -10,7 +10,7 @@ describe('CertBag', () => {
         const bag = new CertBag({ certId, certValue })
         const der = bag.toDer()
         const decoded = CertBag.fromDer(der)
-        expect(decoded.certId.value).toBe(certId)
+        expect(decoded.certId.value).toEqual(certId)
         expect(Array.from(decoded.certValue.derBytes ?? [])).toEqual([
             1, 2, 3, 4,
         ])

@@ -6,9 +6,9 @@
 
 # Function: hexToUint8Array()
 
-> **hexToUint8Array**(`hex`): `Uint8Array`
+> **hexToUint8Array**(`hex`): `Uint8Array<ArrayBuffer>`
 
-Converts a hex string to a Uint8Array
+Converts a hex string to a Uint8Array<ArrayBuffer>
 
 ## Parameters
 
@@ -20,6 +20,6 @@ The hex string to convert (can optionally start with '0x')
 
 ## Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
-A Uint8Array containing the bytes represented by the hex string
+A Uint8Array<ArrayBuffer> containing the bytes represented by the hex string

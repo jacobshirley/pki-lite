@@ -27,10 +27,10 @@ describe('KeyTransRecipientInfo', () => {
             encryptedKey,
         })
 
-        expect(ktri.version).toBe(0)
-        expect(ktri.rid).toBe(issuerAndSerialNumber)
+        expect(ktri.version).toEqual(0)
+        expect(ktri.rid).toEqual(issuerAndSerialNumber)
         expect(ktri.keyEncryptionAlgorithm).toEqual(keyEncryptionAlgorithm)
-        expect(ktri.encryptedKey).toBe(encryptedKey)
+        expect(ktri.encryptedKey).toEqual(encryptedKey)
     })
 
     it('should create with subjectKeyIdentifier and set version to 2', () => {
@@ -50,10 +50,10 @@ describe('KeyTransRecipientInfo', () => {
             encryptedKey,
         })
 
-        expect(ktri.version).toBe(2)
-        expect(ktri.rid).toBe(subjectKeyIdentifier)
+        expect(ktri.version).toEqual(2)
+        expect(ktri.rid).toEqual(subjectKeyIdentifier)
         expect(ktri.keyEncryptionAlgorithm).toEqual(keyEncryptionAlgorithm)
-        expect(ktri.encryptedKey).toBe(encryptedKey)
+        expect(ktri.encryptedKey).toEqual(encryptedKey)
     })
 
     it('should encode and decode with issuerAndSerialNumber', () => {
@@ -78,12 +78,12 @@ describe('KeyTransRecipientInfo', () => {
         const asn1 = original.toAsn1()
         const decoded = KeyTransRecipientInfo.fromAsn1(asn1)
 
-        expect(decoded.version).toBe(0)
-        expect(decoded.keyEncryptionAlgorithm.algorithm.toString()).toBe(
+        expect(decoded.version).toEqual(0)
+        expect(decoded.keyEncryptionAlgorithm.algorithm.toString()).toEqual(
             OIDs.RSA.RSAES_OAEP,
         )
         expect(decoded.encryptedKey).toEqual(encryptedKey)
-        expect(decoded.rid instanceof IssuerAndSerialNumber).toBe(true)
+        expect(decoded.rid instanceof IssuerAndSerialNumber).toEqual(true)
     })
 
     it('should encode and decode with subjectKeyIdentifier', () => {
@@ -106,12 +106,12 @@ describe('KeyTransRecipientInfo', () => {
         const asn1 = original.toAsn1()
         const decoded = KeyTransRecipientInfo.fromAsn1(asn1)
 
-        expect(decoded.version).toBe(1)
-        expect(decoded.keyEncryptionAlgorithm.algorithm.toString()).toBe(
+        expect(decoded.version).toEqual(1)
+        expect(decoded.keyEncryptionAlgorithm.algorithm.toString()).toEqual(
             OIDs.RSA.RSAES_OAEP,
         )
         expect(decoded.encryptedKey).toEqual(encryptedKey)
-        expect(decoded.rid instanceof SubjectKeyIdentifier).toBe(true)
+        expect(decoded.rid instanceof SubjectKeyIdentifier).toEqual(true)
 
         const skid = decoded.rid as SubjectKeyIdentifier
         expect(skid.bytes).toEqual(keyId)

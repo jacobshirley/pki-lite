@@ -11,9 +11,9 @@ import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
  * ```
  */
 export class Data extends PkiBase<Data> {
-    data: Uint8Array
+    data: Uint8Array<ArrayBuffer>
 
-    constructor(options: { data: Uint8Array }) {
+    constructor(options: { data: Uint8Array<ArrayBuffer> }) {
         super()
         const { data } = options
         this.data = data

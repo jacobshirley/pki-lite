@@ -7,7 +7,7 @@ describe('padUint8Array', () => {
         const result = padUint8Array(input, 5)
 
         expect(result).toEqual(new Uint8Array([0, 0, 1, 2, 3]))
-        expect(result.length).toBe(5)
+        expect(result.length).toEqual(5)
     })
 
     test('should return original array if already at target length', () => {
@@ -15,7 +15,7 @@ describe('padUint8Array', () => {
         const result = padUint8Array(input, 3)
 
         expect(result).toEqual(input)
-        expect(result.length).toBe(3)
+        expect(result.length).toEqual(3)
     })
 
     test('should return original array if longer than target length', () => {
@@ -23,7 +23,7 @@ describe('padUint8Array', () => {
         const result = padUint8Array(input, 3)
 
         expect(result).toEqual(input)
-        expect(result.length).toBe(5)
+        expect(result.length).toEqual(5)
     })
 
     test('should handle empty array', () => {
@@ -31,7 +31,7 @@ describe('padUint8Array', () => {
         const result = padUint8Array(input, 3)
 
         expect(result).toEqual(new Uint8Array([0, 0, 0]))
-        expect(result.length).toBe(3)
+        expect(result.length).toEqual(3)
     })
 
     test('should handle zero target length', () => {
@@ -39,7 +39,7 @@ describe('padUint8Array', () => {
         const result = padUint8Array(input, 0)
 
         expect(result).toEqual(input)
-        expect(result.length).toBe(3)
+        expect(result.length).toEqual(3)
     })
 
     test('should pad to larger lengths correctly', () => {
@@ -50,7 +50,7 @@ describe('padUint8Array', () => {
         expected[9] = 0xff // Last position should have the original value
 
         expect(result).toEqual(expected)
-        expect(result.length).toBe(10)
+        expect(result.length).toEqual(10)
     })
 
     test('should preserve original array bytes', () => {
@@ -63,7 +63,7 @@ describe('padUint8Array', () => {
 })
 
 describe('hexToUint8Array', () => {
-    test('should convert basic hex string to Uint8Array', () => {
+    test('should convert basic hex string to Uint8Array<ArrayBuffer>', () => {
         const hex = '123456'
         const result = hexToUint8Array(hex)
 
@@ -137,60 +137,60 @@ describe('hexToUint8Array', () => {
 })
 
 describe('uint8ArrayToHex', () => {
-    test('should convert Uint8Array to hex string without prefix', () => {
+    test('should convert Uint8Array<ArrayBuffer> to hex string without prefix', () => {
         const bytes = new Uint8Array([0x12, 0x34, 0x56])
         const result = uint8ArrayToHex(bytes)
 
-        expect(result).toBe('123456')
+        expect(result).toEqual('123456')
     })
 
-    test('should convert Uint8Array to hex string with prefix', () => {
+    test('should convert Uint8Array<ArrayBuffer> to hex string with prefix', () => {
         const bytes = new Uint8Array([0x12, 0x34, 0x56])
         const result = uint8ArrayToHex(bytes, true)
 
-        expect(result).toBe('0x123456')
+        expect(result).toEqual('0x123456')
     })
 
-    test('should handle empty Uint8Array', () => {
+    test('should handle empty Uint8Array<ArrayBuffer>', () => {
         const bytes = new Uint8Array([])
         const result = uint8ArrayToHex(bytes)
 
-        expect(result).toBe('')
+        expect(result).toEqual('')
     })
 
-    test('should handle empty Uint8Array with prefix', () => {
+    test('should handle empty Uint8Array<ArrayBuffer> with prefix', () => {
         const bytes = new Uint8Array([])
         const result = uint8ArrayToHex(bytes, true)
 
-        expect(result).toBe('0x')
+        expect(result).toEqual('0x')
     })
 
     test('should handle single byte', () => {
         const bytes = new Uint8Array([0xab])
         const result = uint8ArrayToHex(bytes)
 
-        expect(result).toBe('ab')
+        expect(result).toEqual('ab')
     })
 
     test('should pad single digit hex values with zero', () => {
         const bytes = new Uint8Array([0x01, 0x02, 0x0f])
         const result = uint8ArrayToHex(bytes)
 
-        expect(result).toBe('01020f')
+        expect(result).toEqual('01020f')
     })
 
     test('should handle all zero bytes', () => {
         const bytes = new Uint8Array([0x00, 0x00, 0x00])
         const result = uint8ArrayToHex(bytes)
 
-        expect(result).toBe('000000')
+        expect(result).toEqual('000000')
     })
 
     test('should handle all ff bytes', () => {
         const bytes = new Uint8Array([0xff, 0xff, 0xff])
         const result = uint8ArrayToHex(bytes)
 
-        expect(result).toBe('ffffff')
+        expect(result).toEqual('ffffff')
     })
 
     test('should handle large arrays', () => {
@@ -200,14 +200,14 @@ describe('uint8ArrayToHex', () => {
         }
         const result = uint8ArrayToHex(bytes)
 
-        expect(result.length).toBe(512) // 256 bytes * 2 hex chars per byte
-        expect(result.startsWith('000102')).toBe(true)
-        expect(result.endsWith('fdfeff')).toBe(true)
+        expect(result.length).toEqual(512) // 256 bytes * 2 hex chars per byte
+        expect(result.startsWith('000102')).toEqual(true)
+        expect(result.endsWith('fdfeff')).toEqual(true)
     })
 })
 
 describe('round-trip conversion', () => {
-    test('hex -> Uint8Array -> hex should preserve data', () => {
+    test('hex -> Uint8Array<ArrayBuffer> -> hex should preserve data', () => {
         const testCases = [
             '123456',
             'abcdef',
@@ -229,11 +229,11 @@ describe('round-trip conversion', () => {
                 hex.length % 2 === 0
                     ? hex.toLowerCase()
                     : ('0' + hex).toLowerCase()
-            expect(backToHex).toBe(expectedHex)
+            expect(backToHex).toEqual(expectedHex)
         }
     })
 
-    test('Uint8Array -> hex -> Uint8Array should preserve data', () => {
+    test('Uint8Array<ArrayBuffer> -> hex -> Uint8Array<ArrayBuffer> should preserve data', () => {
         const testCases = [
             new Uint8Array([]),
             new Uint8Array([0x00]),

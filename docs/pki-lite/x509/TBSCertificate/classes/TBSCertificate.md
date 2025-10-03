@@ -51,11 +51,11 @@ CertificateSerialNumber ::= INTEGER
 
 ###### issuerUniqueID?
 
-`Uint8Array`\<`ArrayBufferLike`\>
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ###### serialNumber
 
-`string` \| `number` \| `Uint8Array`\<`ArrayBufferLike`\>
+`string` \| `number` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ###### signature
 
@@ -71,7 +71,7 @@ CertificateSerialNumber ::= INTEGER
 
 ###### subjectUniqueID?
 
-`Uint8Array`\<`ArrayBufferLike`\>
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ###### validity
 
@@ -105,7 +105,7 @@ CertificateSerialNumber ::= INTEGER
 
 ### issuerUniqueID?
 
-> `optional` **issuerUniqueID**: `Uint8Array`\<`ArrayBufferLike`\>
+> `optional` **issuerUniqueID**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ---
 
@@ -135,7 +135,7 @@ CertificateSerialNumber ::= INTEGER
 
 ### subjectUniqueID?
 
-> `optional` **subjectUniqueID**: `Uint8Array`\<`ArrayBufferLike`\>
+> `optional` **subjectUniqueID**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ---
 
@@ -343,13 +343,13 @@ Converts the TBSCertificate to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 

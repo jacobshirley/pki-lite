@@ -109,7 +109,7 @@ export class OCSPResponse extends PkiBase<OCSPResponse> {
         })
     }
 
-    static fromDer(der: Uint8Array): OCSPResponse {
+    static fromDer(der: Uint8Array<ArrayBuffer>): OCSPResponse {
         return OCSPResponse.fromAsn1(derToAsn1(der))
     }
 

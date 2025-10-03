@@ -30,7 +30,7 @@ PrintableString ::= <value>
 
 ###### value
 
-`string` \| `Uint8Array`\<`ArrayBufferLike`\> \| `PrintableString`
+`string` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| `PrintableString`
 
 #### Returns
 
@@ -44,7 +44,7 @@ PrintableString ::= <value>
 
 ### bytes
 
-> **bytes**: `Uint8Array`
+> **bytes**: `Uint8Array<ArrayBuffer>`
 
 ## Accessors
 
@@ -168,13 +168,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 

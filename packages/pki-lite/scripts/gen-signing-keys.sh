@@ -246,7 +246,7 @@ const ${CA_CRL_VAR} = \`${CA_CRL}\`
 
 const ${OCSP_RESPONSE_VAR} = \`${OCSP_RESPONSE}\`
 
-function pemToUint8Array(pem: string | Uint8Array): Uint8Array {
+function pemToUint8Array(pem: string | Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> {
     pem = typeof pem === 'string' ? pem : new TextDecoder().decode(pem)
 
     // Remove all headers, footers, and whitespace

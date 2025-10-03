@@ -16,8 +16,8 @@ describe('Extension', () => {
         })
 
         expect(extension).toBeInstanceOf(Extension)
-        expect(extension.extnID.toString()).toBe(extensionId)
-        expect(extension.critical).toBe(critical)
+        expect(extension.extnID.toString()).toEqual(extensionId)
+        expect(extension.critical).toEqual(critical)
         expect(extension.extnValue.parseAs(BitString)).toEqual(value)
     })
 
@@ -33,8 +33,8 @@ describe('Extension', () => {
         })
 
         expect(extension).toBeInstanceOf(Extension)
-        expect(extension.extnID.toString()).toBe(extensionId)
-        expect(extension.critical).toBe(critical)
+        expect(extension.extnID.toString()).toEqual(extensionId)
+        expect(extension.critical).toEqual(critical)
         expect(extension.extnValue.toDer()).toEqual(
             new Uint8Array(
                 new asn1js.OctetString({
@@ -57,7 +57,7 @@ describe('Extension', () => {
         const asn1 = extension.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3) // extnID, critical, extnValue
+        expect(asn1.valueBlock.value.length).toEqual(3) // extnID, critical, extnValue
 
         const [idBlock, criticalBlock, valueBlock] = asn1.valueBlock.value
 
@@ -65,7 +65,7 @@ describe('Extension', () => {
         // OID is represented as an array internally, so we just check it's an ObjectIdentifier
 
         expect(criticalBlock).toBeInstanceOf(asn1js.Boolean)
-        expect((criticalBlock as asn1js.Boolean).valueBlock.value).toBe(true)
+        expect((criticalBlock as asn1js.Boolean).valueBlock.value).toEqual(true)
 
         expect(valueBlock).toBeInstanceOf(asn1js.OctetString)
         expect(extension.toString()).toMatchInlineSnapshot(`
@@ -89,7 +89,7 @@ describe('Extension', () => {
         const asn1 = extension.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2) // extnID, extnValue (no critical flag)
+        expect(asn1.valueBlock.value.length).toEqual(2) // extnID, extnValue (no critical flag)
 
         const [idBlock, valueBlock] = asn1.valueBlock.value
 

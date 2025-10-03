@@ -137,7 +137,7 @@ export class PFX extends PkiBase<PFX> {
         return new PFX({ version, authSafe, macData })
     }
 
-    static fromDer(der: Uint8Array): PFX {
+    static fromDer(der: Uint8Array<ArrayBuffer>): PFX {
         return PFX.fromAsn1(derToAsn1(der))
     }
 
@@ -146,7 +146,9 @@ export class PFX extends PkiBase<PFX> {
         return PFX.fromDer(der)
     }
 
-    async getBags(password: string | Uint8Array): Promise<SafeBag[]> {
+    async getBags(
+        password: string | Uint8Array<ArrayBuffer>,
+    ): Promise<SafeBag[]> {
         if (this.authSafe.contentType.isNot(OIDs.PKCS7.DATA)) {
             throw new Error(
                 `Unsupported authSafe contentType: ${this.authSafe.contentType}`,
@@ -159,7 +161,7 @@ export class PFX extends PkiBase<PFX> {
 
     async getBagsByName(
         bagName: keyof typeof OIDs.PKCS12.BAGS,
-        password: string | Uint8Array,
+        password: string | Uint8Array<ArrayBuffer>,
     ): Promise<SafeBag[]> {
         const bagId = OIDs.PKCS12.BAGS[bagName]
         if (!bagId) {
@@ -177,7 +179,7 @@ export class PFX extends PkiBase<PFX> {
     }
 
     async getPrivateKeys(
-        password: string | Uint8Array,
+        password: string | Uint8Array<ArrayBuffer>,
     ): Promise<PrivateKeyInfo[]> {
         const bags = await this.getBagsByName(
             'PKCS8_SHROUDED_KEY_BAG',
@@ -191,7 +193,7 @@ export class PFX extends PkiBase<PFX> {
     }
 
     async getX509Certificates(
-        password: string | Uint8Array,
+        password: string | Uint8Array<ArrayBuffer>,
     ): Promise<Certificate[]> {
         const bags = await this.getBagsByName('CERT_BAG', password)
         const certs: Certificate[] = []
@@ -208,7 +210,7 @@ export class PFX extends PkiBase<PFX> {
         return certs
     }
 
-    async extractItems(password: string | Uint8Array): Promise<{
+    async extractItems(password: string | Uint8Array<ArrayBuffer>): Promise<{
         privateKeys: PrivateKeyInfo[]
         certificates: Certificate[]
     }> {
@@ -232,7 +234,7 @@ export class PFX extends PkiBase<PFX> {
     static async create(options: {
         certificates: Certificate[]
         privateKeys: PrivateKeyInfo[]
-        password: string | Uint8Array
+        password: string | Uint8Array<ArrayBuffer>
         friendlyName?: string
     }): Promise<PFX> {
         throw new Error('Not implemented yet')

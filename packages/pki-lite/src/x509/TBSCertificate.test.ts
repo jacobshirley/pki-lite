@@ -67,13 +67,13 @@ describe('TBSCertificate', () => {
         })
 
         expect(tbsCert).toBeInstanceOf(Certificate.TBSCertificate)
-        expect(tbsCert.version).toBe(version)
-        expect(tbsCert.serialNumber.toNumber()).toBe(serialNumber)
+        expect(tbsCert.version).toEqual(version)
+        expect(tbsCert.serialNumber.toNumber()).toEqual(serialNumber)
         expect(tbsCert.signature).toEqual(signature)
-        expect(tbsCert.issuer).toBe(issuer)
-        expect(tbsCert.validity).toBe(validity)
-        expect(tbsCert.subject).toBe(subject)
-        expect(tbsCert.subjectPublicKeyInfo).toBe(spki)
+        expect(tbsCert.issuer).toEqual(issuer)
+        expect(tbsCert.validity).toEqual(validity)
+        expect(tbsCert.subject).toEqual(subject)
+        expect(tbsCert.subjectPublicKeyInfo).toEqual(spki)
         expect(tbsCert.issuerUniqueID).toBeUndefined()
         expect(tbsCert.subjectUniqueID).toBeUndefined()
         expect(tbsCert.extensions).toBeUndefined()
@@ -132,18 +132,18 @@ describe('TBSCertificate', () => {
         })
 
         expect(tbsCert).toBeInstanceOf(Certificate.TBSCertificate)
-        expect(tbsCert.version).toBe(version)
-        expect(tbsCert.serialNumber.toInteger()).toBe(serialNumber)
+        expect(tbsCert.version).toEqual(version)
+        expect(tbsCert.serialNumber.toInteger()).toEqual(serialNumber)
         expect(tbsCert.signature).toEqual(signature)
-        expect(tbsCert.issuer).toBe(issuer)
-        expect(tbsCert.validity).toBe(validity)
-        expect(tbsCert.subject).toBe(subject)
-        expect(tbsCert.subjectPublicKeyInfo).toBe(spki)
-        expect(tbsCert.issuerUniqueID).toBe(issuerUniqueID)
-        expect(tbsCert.subjectUniqueID).toBe(subjectUniqueID)
+        expect(tbsCert.issuer).toEqual(issuer)
+        expect(tbsCert.validity).toEqual(validity)
+        expect(tbsCert.subject).toEqual(subject)
+        expect(tbsCert.subjectPublicKeyInfo).toEqual(spki)
+        expect(tbsCert.issuerUniqueID).toEqual(issuerUniqueID)
+        expect(tbsCert.subjectUniqueID).toEqual(subjectUniqueID)
         expect(tbsCert.extensions).toHaveLength(2)
-        expect(tbsCert.extensions?.[0]).toBe(keyUsageExt)
-        expect(tbsCert.extensions?.[1]).toBe(basicConstraintsExt)
+        expect(tbsCert.extensions?.[0]).toEqual(keyUsageExt)
+        expect(tbsCert.extensions?.[1]).toEqual(basicConstraintsExt)
     })
 
     test('can be created with string serial number', () => {
@@ -177,7 +177,7 @@ describe('TBSCertificate', () => {
         })
 
         expect(tbsCert).toBeInstanceOf(Certificate.TBSCertificate)
-        expect(tbsCert.serialNumber.toString()).toBe(serialNumber)
+        expect(tbsCert.serialNumber.toString()).toEqual(serialNumber)
     })
 
     test('can be converted to ASN.1 with required fields', () => {
@@ -213,13 +213,15 @@ describe('TBSCertificate', () => {
         const asn1 = tbsCert.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(7) // version, subjectUniqueID, serialNumber, extensions, signature, issuer, validity, subject, spki
+        expect(asn1.valueBlock.value.length).toEqual(7) // version, subjectUniqueID, serialNumber, extensions, signature, issuer, validity, subject, spki
 
         // First element should be version
         const versionBlock = asn1.valueBlock.value[0]
         expect(versionBlock).toBeInstanceOf(asn1js.Constructed)
-        expect((versionBlock as asn1js.Constructed).idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect((versionBlock as asn1js.Constructed).idBlock.tagNumber).toBe(0) // [0]
+        expect((versionBlock as asn1js.Constructed).idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect((versionBlock as asn1js.Constructed).idBlock.tagNumber).toEqual(
+            0,
+        ) // [0]
 
         // Second element should be serialNumber
         const serialNumberBlock = asn1.valueBlock.value[1]
@@ -283,15 +285,17 @@ describe('TBSCertificate', () => {
         const asn1 = tbsCert.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(10) // version, serialNumber, signature, issuer, validity, subject, spki, issuerUniqueID, subjectUniqueID, extensions
+        expect(asn1.valueBlock.value.length).toEqual(10) // version, serialNumber, signature, issuer, validity, subject, spki, issuerUniqueID, subjectUniqueID, extensions
 
         // Last element should be extensions
         const extensionsBlock = asn1.valueBlock.value[9]
         expect(extensionsBlock).toBeInstanceOf(asn1js.Constructed)
-        expect((extensionsBlock as asn1js.Constructed).idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect((extensionsBlock as asn1js.Constructed).idBlock.tagNumber).toBe(
-            3,
-        ) // [3]
+        expect(
+            (extensionsBlock as asn1js.Constructed).idBlock.tagClass,
+        ).toEqual(3) // CONTEXT-SPECIFIC
+        expect(
+            (extensionsBlock as asn1js.Constructed).idBlock.tagNumber,
+        ).toEqual(3) // [3]
     })
 
     test('TBSCertificate toString snapshot', () => {

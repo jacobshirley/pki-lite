@@ -12,7 +12,7 @@ describe('DigestInfo', () => {
         const di = new DigestInfo({ digestAlgorithm: alg, digest })
         const der = di.toDer()
         const decoded = DigestInfo.fromDer(der)
-        expect(decoded.digestAlgorithm.algorithm.value).toBe('1.3.14.3.2.26')
+        expect(decoded.digestAlgorithm.algorithm.value).toEqual('1.3.14.3.2.26')
         expect(Array.from(decoded.digest.bytes)).toEqual([1, 2, 3, 4])
     })
 })

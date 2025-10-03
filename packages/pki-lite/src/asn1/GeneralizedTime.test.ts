@@ -8,21 +8,21 @@ describe('GeneralizedDate', () => {
         const generalizedDate = new GeneralizedTime({ date: testDate })
 
         expect(generalizedDate.date).toEqual(testDate)
-        expect(generalizedDate.date.getTime()).toBe(testDate.getTime())
+        expect(generalizedDate.date.getTime()).toEqual(testDate.getTime())
     })
 
     test('should create GeneralizedDate from ISO string', () => {
         const isoString = '2023-01-15T10:30:00.000Z'
         const generalizedDate = new GeneralizedTime({ date: isoString })
 
-        expect(generalizedDate.date.toISOString()).toBe(isoString)
+        expect(generalizedDate.date.toISOString()).toEqual(isoString)
     })
 
     test('should create GeneralizedDate from timestamp number', () => {
         const timestamp = 1673781000000 // 2023-01-15T10:30:00.000Z
         const generalizedDate = new GeneralizedTime({ date: timestamp })
 
-        expect(generalizedDate.date.getTime()).toBe(timestamp)
+        expect(generalizedDate.date.getTime()).toEqual(timestamp)
     })
 
     test('should convert to ASN.1 GeneralizedTime correctly', () => {
@@ -34,7 +34,9 @@ describe('GeneralizedDate', () => {
 
         // Verify the date is preserved
         const asn1GeneralizedTime = asn1 as asn1js.GeneralizedTime
-        expect(asn1GeneralizedTime.toDate().getTime()).toBe(testDate.getTime())
+        expect(asn1GeneralizedTime.toDate().getTime()).toEqual(
+            testDate.getTime(),
+        )
     })
 
     test('should parse from ASN.1 GeneralizedTime correctly', () => {
@@ -44,7 +46,7 @@ describe('GeneralizedDate', () => {
         const generalizedDate = GeneralizedTime.fromAsn1(asn1)
 
         expect(generalizedDate).toBeInstanceOf(GeneralizedTime)
-        expect(generalizedDate.date.getTime()).toBe(testDate.getTime())
+        expect(generalizedDate.date.getTime()).toEqual(testDate.getTime())
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -66,7 +68,7 @@ describe('GeneralizedDate', () => {
 
         for (const testDate of futureDates) {
             const generalizedDate = new GeneralizedTime({ date: testDate })
-            expect(generalizedDate.date.getTime()).toBe(testDate.getTime())
+            expect(generalizedDate.date.getTime()).toEqual(testDate.getTime())
 
             // Should be able to convert to ASN.1
             const asn1 = generalizedDate.toAsn1()
@@ -87,7 +89,7 @@ describe('GeneralizedDate', () => {
             const asn1 = original.toAsn1()
             const decoded = GeneralizedTime.fromAsn1(asn1)
 
-            expect(decoded.date.getTime()).toBe(testDate.getTime())
+            expect(decoded.date.getTime()).toEqual(testDate.getTime())
         }
     })
 
@@ -96,11 +98,11 @@ describe('GeneralizedDate', () => {
         const testDate = new Date('2023-01-15T10:30:00.123Z')
         const generalizedDate = new GeneralizedTime({ date: testDate })
 
-        expect(generalizedDate.date.getTime()).toBe(testDate.getTime())
+        expect(generalizedDate.date.getTime()).toEqual(testDate.getTime())
 
         // Test round-trip
         const asn1 = generalizedDate.toAsn1()
         const decoded = GeneralizedTime.fromAsn1(asn1)
-        expect(decoded.date.getTime()).toBe(testDate.getTime())
+        expect(decoded.date.getTime()).toEqual(testDate.getTime())
     })
 })

@@ -3,13 +3,13 @@ import { SubjectKeyIdentifier } from './SubjectKeyIdentifier.js'
 import { asn1js } from '../core/PkiBase.js'
 
 describe('SubjectKeyIdentifier', () => {
-    it('should create a SubjectKeyIdentifier with a Uint8Array value', () => {
+    it('should create a SubjectKeyIdentifier with a Uint8Array<ArrayBuffer> value', () => {
         const keyIdentifier = new Uint8Array([1, 2, 3, 4, 5])
         const subjectKeyIdentifier = new SubjectKeyIdentifier({
             bytes: keyIdentifier,
         })
 
-        expect(subjectKeyIdentifier.bytes).toBe(keyIdentifier)
+        expect(subjectKeyIdentifier.bytes).toEqual(keyIdentifier)
     })
 
     it('should convert to ASN.1 structure correctly', () => {
@@ -60,7 +60,7 @@ describe('SubjectKeyIdentifier', () => {
 
         expect(decodedSubjectKeyIdentifier).toBeInstanceOf(SubjectKeyIdentifier)
         expect(decodedSubjectKeyIdentifier.bytes).toBeDefined()
-        expect(decodedSubjectKeyIdentifier.bytes.byteLength).toBe(
+        expect(decodedSubjectKeyIdentifier.bytes.byteLength).toEqual(
             keyIdentifier.length,
         )
 
@@ -78,14 +78,14 @@ describe('SubjectKeyIdentifier', () => {
 
         const der = subjectKeyIdentifier.toDer()
 
-        expect(der).toBeInstanceOf(Uint8Array)
+        expect(der).toBeInstanceOf(Uint8Array<ArrayBuffer>)
         expect(der.length).toBeGreaterThan(0)
 
         // The DER encoding of an OCTET STRING starts with tag 0x04
-        expect(der[0]).toBe(0x04)
+        expect(der[0]).toEqual(0x04)
 
         // Check length byte and content
-        expect(der[1]).toBe(keyIdentifier.length)
+        expect(der[1]).toEqual(keyIdentifier.length)
         expect(Array.from(der.slice(2, 2 + keyIdentifier.length))).toEqual(
             Array.from(keyIdentifier),
         )

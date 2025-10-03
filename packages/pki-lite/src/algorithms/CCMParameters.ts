@@ -24,7 +24,7 @@ export class CCMParameters extends PkiBase<CCMParameters> {
      * Creates a new instance of CCMParameters
      */
     constructor(options: {
-        aesNonce: OctetString | Uint8Array
+        aesNonce: OctetString | Uint8Array<ArrayBuffer>
         aesICVlen?: number
     }) {
         super()

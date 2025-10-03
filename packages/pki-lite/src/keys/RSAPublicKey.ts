@@ -20,15 +20,18 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  */
 export class RSAPublicKey extends PkiBase<RSAPublicKey> {
     /** The modulus (n) */
-    modulus: Uint8Array
+    modulus: Uint8Array<ArrayBuffer>
 
     /** The exponent (e) */
-    publicExponent: Uint8Array
+    publicExponent: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new RSAPublicKey instance.
      */
-    constructor(options: { modulus: Uint8Array; publicExponent: Uint8Array }) {
+    constructor(options: {
+        modulus: Uint8Array<ArrayBuffer>
+        publicExponent: Uint8Array<ArrayBuffer>
+    }) {
         super()
 
         const { modulus, publicExponent } = options
@@ -107,7 +110,7 @@ export class RSAPublicKey extends PkiBase<RSAPublicKey> {
      * @param der The DER encoded data
      * @returns A new RSAPublicKey instance
      */
-    static fromDer(der: Uint8Array): RSAPublicKey {
+    static fromDer(der: Uint8Array<ArrayBuffer>): RSAPublicKey {
         const asn1 = derToAsn1(der)
         return RSAPublicKey.fromAsn1(asn1)
     }

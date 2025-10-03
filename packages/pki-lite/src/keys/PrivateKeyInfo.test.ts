@@ -16,9 +16,9 @@ describe('PrivateKeyInfo', () => {
         })
 
         expect(privateKey).toBeInstanceOf(PrivateKeyInfo)
-        expect(privateKey.version).toBe(0)
+        expect(privateKey.version).toEqual(0)
         expect(privateKey.algorithm).toEqual(algorithm)
-        expect(privateKey.privateKey.bytes).toBe(keyData)
+        expect(privateKey.privateKey.bytes).toEqual(keyData)
         expect(privateKey.attributes).toBeUndefined()
     })
 
@@ -41,10 +41,10 @@ describe('PrivateKeyInfo', () => {
         })
 
         expect(privateKey).toBeInstanceOf(PrivateKeyInfo)
-        expect(privateKey.version).toBe(1)
-        expect(privateKey.algorithm).toBe(algorithm)
-        expect(privateKey.privateKey.bytes).toBe(keyData)
-        expect(privateKey.attributes).toBe(attributes)
+        expect(privateKey.version).toEqual(1)
+        expect(privateKey.algorithm).toEqual(algorithm)
+        expect(privateKey.privateKey.bytes).toEqual(keyData)
+        expect(privateKey.attributes).toEqual(attributes)
     })
 
     test('can be converted into ASN.1 without attributes', () => {
@@ -60,7 +60,7 @@ describe('PrivateKeyInfo', () => {
         const asn1 = privateKey.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3)
+        expect(asn1.valueBlock.value.length).toEqual(3)
 
         // First element should be the version (an Integer)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
@@ -93,7 +93,7 @@ describe('PrivateKeyInfo', () => {
         const asn1 = privateKey.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(4)
+        expect(asn1.valueBlock.value.length).toEqual(4)
 
         // First element should be the version (an Integer)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
@@ -106,8 +106,8 @@ describe('PrivateKeyInfo', () => {
 
         // Fourth element should be the attributes (a Primitive with context-specific tag)
         expect(asn1.valueBlock.value[3]).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.valueBlock.value[3].idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(asn1.valueBlock.value[3].idBlock.tagNumber).toBe(0) // [0]
+        expect(asn1.valueBlock.value[3].idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(asn1.valueBlock.value[3].idBlock.tagNumber).toEqual(0) // [0]
     })
 
     test('can be parsed from ASN.1 without attributes', () => {
@@ -131,8 +131,8 @@ describe('PrivateKeyInfo', () => {
 
         const privateKey = PrivateKeyInfo.fromAsn1(asn1)
         expect(privateKey).toBeInstanceOf(PrivateKeyInfo)
-        expect(privateKey.version).toBe(version)
-        expect(privateKey.algorithm.algorithm.toString()).toBe(algorithmOid)
+        expect(privateKey.version).toEqual(version)
+        expect(privateKey.algorithm.algorithm.toString()).toEqual(algorithmOid)
         expect(privateKey.privateKey.bytes).toEqual(keyData)
         expect(privateKey.attributes).toBeUndefined()
     })
@@ -171,8 +171,8 @@ describe('PrivateKeyInfo', () => {
 
         const privateKey = PrivateKeyInfo.fromAsn1(asn1)
         expect(privateKey).toBeInstanceOf(PrivateKeyInfo)
-        expect(privateKey.version).toBe(version)
-        expect(privateKey.algorithm.algorithm.toString()).toBe(algorithmOid)
+        expect(privateKey.version).toEqual(version)
+        expect(privateKey.algorithm.algorithm.toString()).toEqual(algorithmOid)
         expect(privateKey.privateKey.bytes).toEqual(keyData)
         // Due to the way we're testing, we can't check the exact attribute data
         expect(privateKey.attributes).toBeDefined()
@@ -331,6 +331,6 @@ Yr4Pe8+f6ak0lLdG0YPSuQ==
 -----END PRIVATE KEY-----
 `
         const privateKey = PrivateKeyInfo.fromPem(pem)
-        expect(privateKey.version).toBe(0)
+        expect(privateKey.version).toEqual(0)
     })
 })

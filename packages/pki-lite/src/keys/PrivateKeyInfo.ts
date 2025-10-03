@@ -82,7 +82,7 @@ export class PrivateKeyInfo extends PkiBase<PrivateKeyInfo> {
      */
     constructor(options: {
         algorithm: AlgorithmIdentifier
-        privateKey: Uint8Array | OctetString
+        privateKey: Uint8Array<ArrayBuffer> | OctetString
         version?: number
         attributes?: Attribute[]
     }) {
@@ -202,7 +202,7 @@ export class PrivateKeyInfo extends PkiBase<PrivateKeyInfo> {
         return PrivateKeyInfo.fromAsn1(asn1)
     }
 
-    static fromDer(der: Uint8Array): PrivateKeyInfo {
+    static fromDer(der: Uint8Array<ArrayBuffer>): PrivateKeyInfo {
         return PrivateKeyInfo.fromAsn1(derToAsn1(der))
     }
 

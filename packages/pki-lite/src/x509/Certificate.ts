@@ -116,7 +116,7 @@ export class Certificate extends PkiBase<Certificate> {
     constructor(options: {
         tbsCertificate: TBSCertificate
         signatureAlgorithm: AlgorithmIdentifier
-        signatureValue: Uint8Array | BitString
+        signatureValue: Uint8Array<ArrayBuffer> | BitString
     }) {
         super()
         const { tbsCertificate, signatureAlgorithm, signatureValue } = options
@@ -209,7 +209,7 @@ export class Certificate extends PkiBase<Certificate> {
         })
     }
 
-    static fromDer(der: Uint8Array): Certificate {
+    static fromDer(der: Uint8Array<ArrayBuffer>): Certificate {
         return Certificate.fromAsn1(derToAsn1(der))
     }
 
@@ -217,7 +217,9 @@ export class Certificate extends PkiBase<Certificate> {
         return Certificate.fromDer(pemToDer(pem, 'CERTIFICATE'))
     }
 
-    async getHash(algorithm: HashAlgorithm = 'SHA-1'): Promise<Uint8Array> {
+    async getHash(
+        algorithm: HashAlgorithm = 'SHA-1',
+    ): Promise<Uint8Array<ArrayBuffer>> {
         return AlgorithmIdentifier.digestAlgorithm(algorithm).digest(
             this.tbsCertificate.toDer(),
         )
@@ -291,7 +293,7 @@ export class Certificate extends PkiBase<Certificate> {
             notBefore: Date
             notAfter: Date
         }
-        serialNumber?: Uint8Array
+        serialNumber?: Uint8Array<ArrayBuffer>
         extensions?: Extension[]
     }): Promise<Certificate> {
         const {

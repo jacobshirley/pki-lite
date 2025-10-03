@@ -78,8 +78,8 @@ describe('OCSPSignature', () => {
             signature,
         })
 
-        expect(ocspSignature.signatureAlgorithm).toBe(signatureAlgorithm)
-        expect(ocspSignature.signature).toBe(signature)
+        expect(ocspSignature.signatureAlgorithm).toEqual(signatureAlgorithm)
+        expect(ocspSignature.signature).toEqual(signature)
         expect(ocspSignature.certs).toBeUndefined()
     })
 
@@ -94,10 +94,10 @@ describe('OCSPSignature', () => {
             certs: [cert],
         })
 
-        expect(ocspSignature.signatureAlgorithm).toBe(signatureAlgorithm)
-        expect(ocspSignature.signature).toBe(signature)
+        expect(ocspSignature.signatureAlgorithm).toEqual(signatureAlgorithm)
+        expect(ocspSignature.signature).toEqual(signature)
         expect(ocspSignature.certs).toHaveLength(1)
-        expect(ocspSignature.certs?.[0]).toBe(cert)
+        expect(ocspSignature.certs?.[0]).toEqual(cert)
     })
 
     it('should create an OCSPSignature with multiple certificates', () => {
@@ -112,11 +112,11 @@ describe('OCSPSignature', () => {
             certs: [cert1, cert2],
         })
 
-        expect(ocspSignature.signatureAlgorithm).toBe(signatureAlgorithm)
-        expect(ocspSignature.signature).toBe(signature)
+        expect(ocspSignature.signatureAlgorithm).toEqual(signatureAlgorithm)
+        expect(ocspSignature.signature).toEqual(signature)
         expect(ocspSignature.certs).toHaveLength(2)
-        expect(ocspSignature.certs?.[0]).toBe(cert1)
-        expect(ocspSignature.certs?.[1]).toBe(cert2)
+        expect(ocspSignature.certs?.[0]).toEqual(cert1)
+        expect(ocspSignature.certs?.[1]).toEqual(cert2)
     })
 
     it('should convert to ASN.1 and back without certificates', () => {

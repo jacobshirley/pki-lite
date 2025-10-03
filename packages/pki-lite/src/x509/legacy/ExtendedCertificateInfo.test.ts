@@ -82,8 +82,8 @@ describe('ExtendedCertificateInfo', () => {
             attributes,
         })
 
-        expect(info.version).toBe(version)
-        expect(info.certificate).toBe(certificate)
+        expect(info.version).toEqual(version)
+        expect(info.certificate).toEqual(certificate)
         expect(info.attributes).toEqual(attributes)
     })
 
@@ -104,12 +104,12 @@ describe('ExtendedCertificateInfo', () => {
 
         // Check that structure has correct elements
         const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-        expect(valueBlock.value.length).toBe(3)
+        expect(valueBlock.value.length).toEqual(3)
         expect(valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
 
         // Check version value is correct
         const versionAsn1 = valueBlock.value[0] as asn1js.Integer
-        expect(versionAsn1.valueBlock.valueDec).toBe(version)
+        expect(versionAsn1.valueBlock.valueDec).toEqual(version)
 
         // Check that attributes were converted to a Set
         expect(valueBlock.value[2]).toBeInstanceOf(asn1js.Set)
@@ -131,11 +131,11 @@ describe('ExtendedCertificateInfo', () => {
         const asn1 = originalInfo.toAsn1()
         const parsedInfo = ExtendedCertificateInfo.fromAsn1(asn1)
 
-        expect(parsedInfo.version).toBe(version)
+        expect(parsedInfo.version).toEqual(version)
         expect(parsedInfo.certificate).toBeInstanceOf(Certificate)
         expect(parsedInfo.attributes).toHaveLength(1)
         expect(parsedInfo.attributes[0]).toBeInstanceOf(Attribute)
-        expect(parsedInfo.attributes[0].type.toString()).toBe('1.2.3.4.5')
+        expect(parsedInfo.attributes[0].type.toString()).toEqual('1.2.3.4.5')
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {

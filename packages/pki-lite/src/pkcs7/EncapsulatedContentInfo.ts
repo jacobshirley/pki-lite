@@ -22,20 +22,23 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  */
 export class EncapsulatedContentInfo extends PkiBase<EncapsulatedContentInfo> {
     eContentType: ObjectIdentifier
-    eContent?: Uint8Array
+    eContent?: Uint8Array<ArrayBuffer>
 
     constructor(options: {
         eContentType: ObjectIdentifierString
-        eContent?: Uint8Array | string
+        eContent?: Uint8Array<ArrayBuffer> | Uint8Array | string
     }) {
         super()
         const { eContentType, eContent } = options
 
         this.eContentType = new ObjectIdentifier({ value: eContentType })
-        this.eContent =
-            typeof eContent === 'string'
-                ? new TextEncoder().encode(eContent)
-                : eContent
+        this.eContent = eContent
+            ? new Uint8Array(
+                  typeof eContent === 'string'
+                      ? new TextEncoder().encode(eContent)
+                      : eContent,
+              )
+            : undefined
     }
 
     /**
@@ -94,7 +97,7 @@ export class EncapsulatedContentInfo extends PkiBase<EncapsulatedContentInfo> {
         const contentType = values[0].valueBlock.toString()
 
         // Content (optional)
-        let content: Uint8Array | undefined = undefined
+        let content: Uint8Array<ArrayBuffer> | undefined = undefined
         if (values.length > 1) {
             // Check if the content is properly tagged with [0] EXPLICIT
             if (
@@ -123,7 +126,7 @@ export class EncapsulatedContentInfo extends PkiBase<EncapsulatedContentInfo> {
                 )
             }
 
-            content = contentValues[0].valueBlock.valueHexView
+            content = new Uint8Array(contentValues[0].valueBlock.valueHexView)
         }
 
         return new EncapsulatedContentInfo({

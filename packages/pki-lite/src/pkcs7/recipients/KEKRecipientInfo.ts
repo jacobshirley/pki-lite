@@ -22,7 +22,7 @@ export class KEKRecipientInfo extends PkiBase<KEKRecipientInfo> {
     version: CMSVersion
     kekid: KEKIdentifier
     keyEncryptionAlgorithm: AlgorithmIdentifier
-    encryptedKey: Uint8Array
+    encryptedKey: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new KEKRecipientInfo instance.
@@ -30,7 +30,7 @@ export class KEKRecipientInfo extends PkiBase<KEKRecipientInfo> {
     constructor(options: {
         kekid: KEKIdentifier
         keyEncryptionAlgorithm: AlgorithmIdentifier
-        encryptedKey: Uint8Array
+        encryptedKey: Uint8Array<ArrayBuffer>
     }) {
         super()
 

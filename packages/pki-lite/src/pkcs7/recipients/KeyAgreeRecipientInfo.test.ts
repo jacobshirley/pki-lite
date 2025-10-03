@@ -55,7 +55,7 @@ describe('KeyAgreeRecipientInfo', () => {
         const restored = KeyAgreeRecipientInfo.fromAsn1(asn1)
 
         expect(restored).toBeInstanceOf(KeyAgreeRecipientInfo)
-        expect(restored.version).toBe(original.version)
+        expect(restored.version).toEqual(original.version)
         expect(restored.ukm).toEqual(original.ukm)
 
         expect(restored.keyEncryptionAlgorithm.algorithm).toEqual(
@@ -67,7 +67,7 @@ describe('KeyAgreeRecipientInfo', () => {
             (original.originator as SubjectKeyIdentifier).bytes,
         )
 
-        expect(restored.recipientEncryptedKeys.length).toBe(1)
+        expect(restored.recipientEncryptedKeys.length).toEqual(1)
         const restoredRek = restored.recipientEncryptedKeys[0]
         expect(restoredRek.encryptedKey).toEqual(
             recipientEncryptedKey.encryptedKey,

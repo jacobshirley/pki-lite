@@ -21,10 +21,10 @@ describe('KEKRecipientInfo', () => {
         })
 
         expect(kekRecipientInfo).toBeInstanceOf(KEKRecipientInfo)
-        expect(kekRecipientInfo.version).toBe(CMSVersion.v4)
-        expect(kekRecipientInfo.kekid).toBe(kekId)
-        expect(kekRecipientInfo.keyEncryptionAlgorithm).toBe(algorithm)
-        expect(kekRecipientInfo.encryptedKey).toBe(encryptedKey)
+        expect(kekRecipientInfo.version).toEqual(CMSVersion.v4)
+        expect(kekRecipientInfo.kekid).toEqual(kekId)
+        expect(kekRecipientInfo.keyEncryptionAlgorithm).toEqual(algorithm)
+        expect(kekRecipientInfo.encryptedKey).toEqual(encryptedKey)
     })
 
     test('can be converted to ASN.1', () => {
@@ -43,12 +43,12 @@ describe('KEKRecipientInfo', () => {
         const asn1 = kekRecipientInfo.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(4)
+        expect(asn1.valueBlock.value.length).toEqual(4)
 
         // Check version
         const versionBlock = asn1.valueBlock.value[0]
         assert(versionBlock instanceof asn1js.Integer)
-        expect(versionBlock.valueBlock.valueDec).toBe(CMSVersion.v4)
+        expect(versionBlock.valueBlock.valueDec).toEqual(CMSVersion.v4)
 
         // Check kekid
         const kekidBlock = asn1.valueBlock.value[1]
@@ -83,13 +83,13 @@ describe('KEKRecipientInfo', () => {
         const parsed = KEKRecipientInfo.fromAsn1(asn1)
 
         expect(parsed).toBeInstanceOf(KEKRecipientInfo)
-        expect(parsed.version).toBe(CMSVersion.v4)
+        expect(parsed.version).toEqual(CMSVersion.v4)
         expect(parsed.kekid).toBeInstanceOf(KEKIdentifier)
         expect(parsed.kekid.keyIdentifier).toEqual(keyIdentifier)
         expect(parsed.keyEncryptionAlgorithm).toBeInstanceOf(
             AlgorithmIdentifier,
         )
-        expect(parsed.keyEncryptionAlgorithm.algorithm.toString()).toBe(
+        expect(parsed.keyEncryptionAlgorithm.algorithm.toString()).toEqual(
             '1.2.840.113549.3.7',
         )
         expect(parsed.encryptedKey).toEqual(encryptedKey)

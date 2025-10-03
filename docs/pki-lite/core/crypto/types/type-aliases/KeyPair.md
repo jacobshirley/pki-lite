@@ -12,10 +12,10 @@
 
 ### privateKey
 
-> **privateKey**: `Uint8Array`
+> **privateKey**: `Uint8Array<ArrayBuffer>`
 
 ---
 
 ### publicKey
 
-> **publicKey**: `Uint8Array`
+> **publicKey**: `Uint8Array<ArrayBuffer>`

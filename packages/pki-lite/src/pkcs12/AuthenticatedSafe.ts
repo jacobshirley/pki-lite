@@ -30,11 +30,13 @@ export class AuthenticatedSafe extends PkiSequence<ContentInfo> {
         return new AuthenticatedSafe(...contents)
     }
 
-    static fromDer(der: Uint8Array): AuthenticatedSafe {
+    static fromDer(der: Uint8Array<ArrayBuffer>): AuthenticatedSafe {
         return AuthenticatedSafe.fromAsn1(derToAsn1(der))
     }
 
-    async getBags(password: string | Uint8Array): Promise<SafeBag[]> {
+    async getBags(
+        password: string | Uint8Array<ArrayBuffer>,
+    ): Promise<SafeBag[]> {
         const bags: SafeBag[] = []
         for (const contentInfo of this) {
             if (contentInfo.contentType.is(OIDs.PKCS7.ENCRYPTED_DATA)) {
@@ -75,7 +77,7 @@ export class AuthenticatedSafe extends PkiSequence<ContentInfo> {
 
     async getBagsByName(
         bagName: keyof typeof OIDs.PKCS12.BAGS,
-        password: string | Uint8Array,
+        password: string | Uint8Array<ArrayBuffer>,
     ): Promise<SafeBag[]> {
         const bags = await this.getBags(password)
         const bagId = OIDs.PKCS12.BAGS[bagName]

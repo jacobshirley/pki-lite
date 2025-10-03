@@ -9,7 +9,7 @@ describe('OtherKeyAttribute', () => {
         const otherKeyAttr = new OtherKeyAttribute({ keyAttrId })
 
         expect(otherKeyAttr).toBeInstanceOf(OtherKeyAttribute)
-        expect(otherKeyAttr.keyAttrId.toString()).toBe(keyAttrId)
+        expect(otherKeyAttr.keyAttrId.toString()).toEqual(keyAttrId)
         expect(otherKeyAttr.keyAttr).toBeUndefined()
     })
 
@@ -23,8 +23,8 @@ describe('OtherKeyAttribute', () => {
         const otherKeyAttr = new OtherKeyAttribute({ keyAttrId, keyAttr })
 
         expect(otherKeyAttr).toBeInstanceOf(OtherKeyAttribute)
-        expect(otherKeyAttr.keyAttrId.toString()).toBe(keyAttrId)
-        expect(otherKeyAttr.keyAttr).toBe(keyAttr)
+        expect(otherKeyAttr.keyAttrId.toString()).toEqual(keyAttrId)
+        expect(otherKeyAttr.keyAttr).toEqual(keyAttr)
     })
 
     test('can be converted to ASN.1 with only keyAttrId', () => {
@@ -33,7 +33,7 @@ describe('OtherKeyAttribute', () => {
         const asn1 = otherKeyAttr.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(1)
+        expect(asn1.valueBlock.value.length).toEqual(1)
 
         const keyAttrIdBlock = asn1.valueBlock.value[0]
         assert(keyAttrIdBlock instanceof asn1js.ObjectIdentifier)
@@ -51,7 +51,7 @@ describe('OtherKeyAttribute', () => {
         const asn1 = otherKeyAttr.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         const keyAttrIdBlock = asn1.valueBlock.value[0]
         assert(keyAttrIdBlock instanceof asn1js.ObjectIdentifier)
@@ -105,7 +105,7 @@ describe('OtherKeyAttribute', () => {
 
         const result = otherKeyAttr.parseKeyAttrAs(MockClass)
         expect(result).toBeInstanceOf(MockClass)
-        expect(result.value).toBe('parsed')
+        expect(result.value).toEqual('parsed')
     })
 
     test('parseKeyAttrAs throws error if keyAttr is not set', () => {

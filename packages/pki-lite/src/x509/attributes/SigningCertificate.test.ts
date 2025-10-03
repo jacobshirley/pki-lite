@@ -33,7 +33,7 @@ describe('ESSCertID', () => {
         const asn1 = ess.toAsn1()
         const round = ESSCertID.fromAsn1(asn1)
         expect(round.certHash.bytes).toEqual(new Uint8Array([9]))
-        expect(round.issuerSerial?.serialNumber.toNumber()).toBe(1)
+        expect(round.issuerSerial?.serialNumber.toNumber()).toEqual(1)
     })
 
     it('throws when certHash is not OCTET STRING', () => {
@@ -52,7 +52,7 @@ describe('SigningCertificate', () => {
         const sc = new SigningCertificate({ certs: [ess] })
         const asn1 = sc.toAsn1()
         const round = SigningCertificate.fromAsn1(asn1)
-        expect(round.certs.length).toBe(1)
+        expect(round.certs.length).toEqual(1)
         expect(round.policies).toBeUndefined()
     })
 
@@ -69,9 +69,11 @@ describe('SigningCertificate', () => {
         const sc = new SigningCertificate({ certs: [ess], policies: [pi] })
         const asn1 = sc.toAsn1()
         const round = SigningCertificate.fromAsn1(asn1)
-        expect(round.certs.length).toBe(1)
-        expect(round.policies?.length).toBe(1)
-        expect(round.policies?.[0].policyIdentifier.value).toBe('2.5.29.32.0')
+        expect(round.certs.length).toEqual(1)
+        expect(round.policies?.length).toEqual(1)
+        expect(round.policies?.[0].policyIdentifier.value).toEqual(
+            '2.5.29.32.0',
+        )
     })
 
     it('throws for non-sequence', () => {

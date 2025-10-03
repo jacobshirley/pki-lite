@@ -18,8 +18,8 @@ describe('PolicyQualifierInfo', () => {
         })
         const asn1 = pqInfo.toAsn1()
         const decoded = PolicyQualifierInfo.fromAsn1(asn1)
-        expect(decoded.policyQualifierId.value).toBe(pqid)
-        expect(decoded.qualifier.derBytes![0]).toBe(0x13) // IA5String tag
+        expect(decoded.policyQualifierId.value).toEqual(pqid)
+        expect(decoded.qualifier.derBytes![0]).toEqual(0x13) // IA5String tag
     })
 
     it('should throw if ASN.1 is not a sequence', () => {
@@ -47,10 +47,12 @@ describe('PolicyInformation', () => {
         })
         const asn1 = pi.toAsn1()
         const decoded = PolicyInformation.fromAsn1(asn1)
-        expect(decoded.policyIdentifier.value).toBe('2.5.29.32.0')
+        expect(decoded.policyIdentifier.value).toEqual('2.5.29.32.0')
         expect(decoded.policyQualifiers).toBeDefined()
-        expect(decoded.policyQualifiers?.length).toBe(1)
-        expect(decoded.policyQualifiers?.[0].policyQualifierId.value).toBe(pqid)
+        expect(decoded.policyQualifiers?.length).toEqual(1)
+        expect(decoded.policyQualifiers?.[0].policyQualifierId.value).toEqual(
+            pqid,
+        )
     })
 
     it('should encode and decode ASN.1 correctly (no qualifier)', () => {
@@ -59,7 +61,7 @@ describe('PolicyInformation', () => {
         })
         const asn1 = pi.toAsn1()
         const decoded = PolicyInformation.fromAsn1(asn1)
-        expect(decoded.policyIdentifier.value).toBe('2.5.29.32.0')
+        expect(decoded.policyIdentifier.value).toEqual('2.5.29.32.0')
         expect(decoded.policyQualifiers).toBeUndefined()
     })
 

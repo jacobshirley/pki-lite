@@ -17,11 +17,11 @@ import { Integer } from './Integer.js'
  * ```
  */
 export class Any extends PkiBase<Any> {
-    derBytes: Uint8Array | null
+    derBytes: Uint8Array<ArrayBuffer> | null
 
     constructor(options: {
         derBytes:
-            | Uint8Array
+            | Uint8Array<ArrayBuffer>
             | ArrayBuffer
             | Asn1BaseBlock
             | null
@@ -128,7 +128,7 @@ export class Any extends PkiBase<Any> {
         return new Any({ derBytes: asn1ToDer(asn1) })
     }
 
-    static fromDer(derBytes: Uint8Array | ArrayBuffer): Any {
+    static fromDer(derBytes: Uint8Array<ArrayBuffer> | ArrayBuffer): Any {
         return new Any({ derBytes })
     }
 }

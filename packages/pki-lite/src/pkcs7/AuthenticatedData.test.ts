@@ -91,7 +91,7 @@ describe('AuthenticatedData', () => {
                           SEQUENCE :
                             OBJECT IDENTIFIER : 2.5.4.3
                             UTF8String : 'MyRootCA'
-                      INTEGER : 398928024258410044557557511117164742139576349660
+                      INTEGER : 40829422232738761675369452088356448433387579930
                     SEQUENCE :
                       OBJECT IDENTIFIER : 1.2.840.113549.1.1.1
                     OCTET STRING : 0a141e28

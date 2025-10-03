@@ -59,7 +59,7 @@ describe('RevocationInfoChoice', () => {
         // Verify the CRL has the expected structure
         expect(
             (result as CertificateList).signatureAlgorithm.algorithm.toString(),
-        ).toBe('1.2.840.113549.1.1.11')
+        ).toEqual('1.2.840.113549.1.1.11')
     })
 
     // Test for fromAsn1 method with OtherRevocationInfoFormat (tag 1)
@@ -79,7 +79,7 @@ describe('RevocationInfoChoice', () => {
         expect(result).toBeInstanceOf(OtherRevocationInfoFormat)
         expect(
             (result as OtherRevocationInfoFormat).otherRevInfoFormat.toString(),
-        ).toBe('1.2.3.4')
+        ).toEqual('1.2.3.4')
     })
 
     // Integration test with real objects

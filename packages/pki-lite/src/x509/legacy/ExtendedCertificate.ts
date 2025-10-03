@@ -32,7 +32,7 @@ export class ExtendedCertificate extends PkiBase<ExtendedCertificate> {
     constructor(options: {
         extendedCertificateInfo: ExtendedCertificateInfo
         signatureAlgorithm: AlgorithmIdentifier
-        signature: string | Uint8Array | BitString
+        signature: string | Uint8Array<ArrayBuffer> | BitString
     }) {
         super()
         const { extendedCertificateInfo, signatureAlgorithm, signature } =

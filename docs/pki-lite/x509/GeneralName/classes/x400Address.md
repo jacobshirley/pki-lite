@@ -24,7 +24,7 @@ TODO: define this properly
 
 ###### derBytes
 
-`null` \| `string` \| `number` \| `boolean` \| [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md) \| `ArrayBuffer` \| `Uint8Array`\<`ArrayBufferLike`\> \| [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\> \| [`Any`](../../../asn1/Any/classes/Any.md)
+`null` \| `string` \| `number` \| `boolean` \| [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md) \| `ArrayBuffer` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\> \| [`Any`](../../../asn1/Any/classes/Any.md)
 
 #### Returns
 
@@ -38,7 +38,7 @@ TODO: define this properly
 
 ### derBytes
 
-> **derBytes**: `null` \| `Uint8Array`\<`ArrayBufferLike`\>
+> **derBytes**: `null` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Inherited from
 
@@ -194,13 +194,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 
@@ -313,7 +313,7 @@ A string representation for debugging
 
 ##### derBytes
 
-`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 

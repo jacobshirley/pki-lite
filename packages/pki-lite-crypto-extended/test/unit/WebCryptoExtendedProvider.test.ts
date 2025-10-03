@@ -46,7 +46,7 @@ describe('WebCryptoExtendedProvider', () => {
 
             // Test SHA-256 (should fallback to parent implementation)
             const result = await provider.digest(testData, 'SHA-256')
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
             expect(result.length).toBe(32) // SHA-256 produces 32 bytes
         })
 
@@ -54,7 +54,7 @@ describe('WebCryptoExtendedProvider', () => {
             const largeData = new Uint8Array(10000).fill(0x41) // 10KB of 'A'
             const result = await provider.digest(largeData, 'MD5')
 
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
             expect(result.length).toBe(16) // MD5 always produces 16 bytes
         })
     })
@@ -81,7 +81,7 @@ describe('WebCryptoExtendedProvider', () => {
                 algorithm,
             )
 
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
             expect(result.length).toBe(16) // Same as input with no padding
             expect(result).not.toEqual(plaintext) // Should be encrypted
         })
@@ -101,7 +101,7 @@ describe('WebCryptoExtendedProvider', () => {
                 algorithm,
             )
 
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
             expect(result.length).toBe(16)
             expect(result).not.toEqual(plaintext)
         })
@@ -121,7 +121,7 @@ describe('WebCryptoExtendedProvider', () => {
                 algorithm,
             )
 
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
             expect(result.length).toBe(16)
             expect(result).not.toEqual(plaintext)
         })
@@ -145,7 +145,7 @@ describe('WebCryptoExtendedProvider', () => {
                 algorithm,
             )
 
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
             expect(result.length).toBeGreaterThanOrEqual(16) // ECB may add padding
             expect(result).not.toEqual(plaintext)
         })
@@ -162,7 +162,7 @@ describe('WebCryptoExtendedProvider', () => {
                 algorithm,
             )
 
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
             expect(result.length).toBeGreaterThanOrEqual(16) // ECB may add padding
             expect(result).not.toEqual(plaintext)
         })
@@ -179,7 +179,7 @@ describe('WebCryptoExtendedProvider', () => {
                 algorithm,
             )
 
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
             expect(result.length).toBeGreaterThanOrEqual(16) // ECB may add padding
             expect(result).not.toEqual(plaintext)
         })
@@ -265,7 +265,7 @@ describe('WebCryptoExtendedProvider', () => {
 
             const result = await provider.encrypt(plaintext, spki, algorithm)
 
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
             expect(result.length).toBeGreaterThan(0) // Should produce some output
 
             const privateKeyInfo = PrivateKeyInfo.fromDer(keys.privateKey)
@@ -298,7 +298,7 @@ describe('WebCryptoExtendedProvider', () => {
                 key,
                 algorithm,
             )
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
         })
 
         it('should fallback to parent for AES CBC with padding enabled', async () => {
@@ -320,7 +320,7 @@ describe('WebCryptoExtendedProvider', () => {
                 key,
                 algorithm,
             )
-            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result).toBeInstanceOf(Uint8Array<ArrayBuffer>)
         })
     })
 
@@ -369,8 +369,8 @@ describe('WebCryptoExtendedProvider', () => {
                 key,
                 algorithm,
             )
-            // Note: Decrypted data might have padding, so just check it's a Uint8Array
-            expect(decrypted).toBeInstanceOf(Uint8Array)
+            // Note: Decrypted data might have padding, so just check it's a Uint8Array<ArrayBuffer>
+            expect(decrypted).toBeInstanceOf(Uint8Array<ArrayBuffer>)
         })
     })
 })

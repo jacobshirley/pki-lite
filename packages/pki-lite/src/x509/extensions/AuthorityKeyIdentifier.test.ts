@@ -15,7 +15,7 @@ describe('AuthorityKeyIdentifier', () => {
             keyIdentifier: keyId,
         })
 
-        expect(aki.keyIdentifier).toBe(keyId)
+        expect(aki.keyIdentifier).toEqual(keyId)
         expect(aki.authorityCertIssuer).toBeUndefined()
         expect(aki.authorityCertSerialNumber).toBeUndefined()
     })
@@ -35,10 +35,10 @@ describe('AuthorityKeyIdentifier', () => {
             authorityCertSerialNumber: serialNumber,
         })
 
-        expect(aki.keyIdentifier).toBe(keyId)
-        expect(aki.authorityCertIssuer).toBe(generalNames)
+        expect(aki.keyIdentifier).toEqual(keyId)
+        expect(aki.authorityCertIssuer).toEqual(generalNames)
         expect(aki.authorityCertSerialNumber).toBeInstanceOf(Integer)
-        expect(aki.authorityCertSerialNumber!.toBigInt()).toBe(serialNumber)
+        expect(aki.authorityCertSerialNumber!.toBigInt()).toEqual(serialNumber)
     })
 
     test('should create AuthorityKeyIdentifier with number serial number', () => {
@@ -47,10 +47,10 @@ describe('AuthorityKeyIdentifier', () => {
         })
 
         expect(aki.authorityCertSerialNumber).toBeInstanceOf(Integer)
-        expect(aki.authorityCertSerialNumber!.toInteger()).toBe(123)
+        expect(aki.authorityCertSerialNumber!.toInteger()).toEqual(123)
     })
 
-    test('should create AuthorityKeyIdentifier with Uint8Array serial number', () => {
+    test('should create AuthorityKeyIdentifier with Uint8Array<ArrayBuffer> serial number', () => {
         const serialBytes = new Uint8Array([0x01, 0x02, 0x03])
         const aki = new AuthorityKeyIdentifier({
             authorityCertSerialNumber: serialBytes,
@@ -66,7 +66,7 @@ describe('AuthorityKeyIdentifier', () => {
             authorityCertSerialNumber: integer,
         })
 
-        expect(aki.authorityCertSerialNumber!.toBigInt()).toBe(456n)
+        expect(aki.authorityCertSerialNumber!.toBigInt()).toEqual(456n)
     })
 
     test('should convert to ASN.1 with only keyIdentifier', () => {
@@ -79,11 +79,11 @@ describe('AuthorityKeyIdentifier', () => {
 
         const asn1 = aki.toAsn1()
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(1)
+        expect(asn1.valueBlock.value.length).toEqual(1)
 
         const keyIdBlock = asn1.valueBlock.value[0] as asn1js.Constructed
-        expect(keyIdBlock.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(keyIdBlock.idBlock.tagNumber).toBe(0) // [0]
+        expect(keyIdBlock.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(keyIdBlock.idBlock.tagNumber).toEqual(0) // [0]
     })
 
     test('should convert to ASN.1 with all fields', () => {
@@ -101,16 +101,16 @@ describe('AuthorityKeyIdentifier', () => {
 
         const asn1 = aki.toAsn1()
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3)
+        expect(asn1.valueBlock.value.length).toEqual(3)
 
         const keyIdBlock = asn1.valueBlock.value[0] as asn1js.Constructed
-        expect(keyIdBlock.idBlock.tagNumber).toBe(0)
+        expect(keyIdBlock.idBlock.tagNumber).toEqual(0)
 
         const issuerBlock = asn1.valueBlock.value[1] as asn1js.Constructed
-        expect(issuerBlock.idBlock.tagNumber).toBe(1)
+        expect(issuerBlock.idBlock.tagNumber).toEqual(1)
 
         const serialBlock = asn1.valueBlock.value[2] as asn1js.Constructed
-        expect(serialBlock.idBlock.tagNumber).toBe(2)
+        expect(serialBlock.idBlock.tagNumber).toEqual(2)
     })
 
     test('should parse from ASN.1 with keyIdentifier', () => {
@@ -175,7 +175,7 @@ describe('AuthorityKeyIdentifier', () => {
         expect(aki.keyIdentifier).toBeInstanceOf(KeyIdentifier)
         expect(aki.authorityCertIssuer).toBeInstanceOf(GeneralNames)
         expect(aki.authorityCertSerialNumber).toBeInstanceOf(Integer)
-        expect(aki.authorityCertSerialNumber!.toInteger()).toBe(123)
+        expect(aki.authorityCertSerialNumber!.toInteger()).toEqual(123)
     })
 
     test('fromAsn1 should throw error for empty sequence', () => {
@@ -245,7 +245,7 @@ describe('AuthorityKeyIdentifier', () => {
             }
             if (testCase.authorityCertIssuer) {
                 expect(decoded.authorityCertIssuer).toBeInstanceOf(GeneralNames)
-                expect(decoded.authorityCertIssuer!.length).toBe(
+                expect(decoded.authorityCertIssuer!.length).toEqual(
                     testCase.authorityCertIssuer.length,
                 )
             }
@@ -253,7 +253,7 @@ describe('AuthorityKeyIdentifier', () => {
                 expect(decoded.authorityCertSerialNumber).toBeInstanceOf(
                     Integer,
                 )
-                expect(decoded.authorityCertSerialNumber!.toBigInt()).toBe(
+                expect(decoded.authorityCertSerialNumber!.toBigInt()).toEqual(
                     testCase.authorityCertSerialNumber,
                 )
             }

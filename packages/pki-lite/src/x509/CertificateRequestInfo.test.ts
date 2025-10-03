@@ -13,10 +13,10 @@ describe('CertificateRequestInfo', () => {
         const requestInfo = createSampleRequestInfo()
 
         expect(requestInfo).toBeInstanceOf(CertificateRequestInfo)
-        expect(requestInfo.version).toBe(0)
+        expect(requestInfo.version).toEqual(0)
         expect(requestInfo.publicKey).toBeInstanceOf(SubjectPublicKeyInfo)
         expect(requestInfo.attributes).toBeDefined()
-        expect(requestInfo.attributes?.length).toBe(1)
+        expect(requestInfo.attributes?.length).toEqual(1)
         expect(requestInfo.attributes?.[0]).toBeInstanceOf(Attribute)
     })
 
@@ -26,7 +26,7 @@ describe('CertificateRequestInfo', () => {
 
         assert(asn1 instanceof asn1js.Sequence)
         // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value.length).toBe(4)
+        expect(asn1.valueBlock.value.length).toEqual(4)
 
         // Check version
         // @ts-ignore - valueBlock.value exists at runtime but not in typings
@@ -44,9 +44,9 @@ describe('CertificateRequestInfo', () => {
         // @ts-ignore - valueBlock.value exists at runtime but not in typings
         expect(asn1.valueBlock.value[3]).toBeInstanceOf(asn1js.Constructed)
         // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value[3].idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
+        expect(asn1.valueBlock.value[3].idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
         // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value[3].idBlock.tagNumber).toBe(0) // [0]
+        expect(asn1.valueBlock.value[3].idBlock.tagNumber).toEqual(0) // [0]
     })
 
     test('without attributes', () => {
@@ -63,7 +63,7 @@ describe('CertificateRequestInfo', () => {
 
         const asn1 = requestInfo.toAsn1()
         // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value.length).toBe(3) // No attributes
+        expect(asn1.valueBlock.value.length).toEqual(3) // No attributes
     })
 
     test('can be parsed from ASN.1 without attributes', () => {
@@ -96,9 +96,9 @@ describe('CertificateRequestInfo', () => {
 
             const requestInfo = CertificateRequestInfo.fromAsn1(asn1)
             expect(requestInfo).toBeInstanceOf(CertificateRequestInfo)
-            expect(requestInfo.version).toBe(version)
-            expect(requestInfo.subject).toBe(subject)
-            expect(requestInfo.publicKey).toBe(publicKey)
+            expect(requestInfo.version).toEqual(version)
+            expect(requestInfo.subject).toEqual(subject)
+            expect(requestInfo.publicKey).toEqual(publicKey)
             expect(requestInfo.attributes).toBeUndefined()
         } finally {
             // Restore original methods
@@ -162,12 +162,12 @@ describe('CertificateRequestInfo', () => {
 
             const requestInfo = CertificateRequestInfo.fromAsn1(asn1)
             expect(requestInfo).toBeInstanceOf(CertificateRequestInfo)
-            expect(requestInfo.version).toBe(version)
-            expect(requestInfo.subject).toBe(subject)
-            expect(requestInfo.publicKey).toBe(publicKey)
+            expect(requestInfo.version).toEqual(version)
+            expect(requestInfo.subject).toEqual(subject)
+            expect(requestInfo.publicKey).toEqual(publicKey)
             expect(requestInfo.attributes).toBeDefined()
-            expect(requestInfo.attributes?.length).toBe(1)
-            expect(requestInfo.attributes?.[0]).toBe(attributes[0])
+            expect(requestInfo.attributes?.length).toEqual(1)
+            expect(requestInfo.attributes?.[0]).toEqual(attributes[0])
         } finally {
             // Restore original methods
             RDNSequence.fromAsn1 = originalRDNSequenceFromAsn1

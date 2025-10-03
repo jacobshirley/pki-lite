@@ -16,8 +16,8 @@ describe('Integer', () => {
         for (const { input, expected } of testCases) {
             const integer = new Integer({ value: input })
             expect(integer.bytes).toEqual(new Uint8Array(expected))
-            expect(integer.toInteger()).toBe(input)
-            expect(integer.toString()).toBe(String(input))
+            expect(integer.toInteger()).toEqual(input)
+            expect(integer.toString()).toEqual(String(input))
         }
     })
 
@@ -33,7 +33,7 @@ describe('Integer', () => {
         for (const { input, expected } of testCases) {
             const integer = new Integer({ value: input })
             expect(integer.bytes).toEqual(new Uint8Array(expected))
-            expect(integer.toString()).toBe(input)
+            expect(integer.toString()).toEqual(input)
         }
     })
 
@@ -50,7 +50,7 @@ describe('Integer', () => {
         const copy = new Integer({ value: original })
 
         expect(copy.bytes).toEqual(original.bytes)
-        expect(copy.toInteger()).toBe(original.toInteger())
+        expect(copy.toInteger()).toEqual(original.toInteger())
     })
 
     // ASN.1 encoding/decoding tests
@@ -66,7 +66,7 @@ describe('Integer', () => {
 
             // Round-trip conversion
             const decoded = Integer.fromAsn1(asn1)
-            expect(decoded.toInteger()).toBe(value)
+            expect(decoded.toInteger()).toEqual(value)
         }
     })
 
@@ -95,8 +95,8 @@ describe('Integer', () => {
         for (const { input, expected } of testCases) {
             const integer = new Integer({ value: input })
             expect(integer.bytes).toEqual(new Uint8Array(expected))
-            expect(integer.toInteger()).toBe(input)
-            expect(integer.toString()).toBe(String(input))
+            expect(integer.toInteger()).toEqual(input)
+            expect(integer.toString()).toEqual(String(input))
         }
     })
 
@@ -112,8 +112,8 @@ describe('Integer', () => {
         for (const { input, expected } of testCases) {
             const integer = new Integer({ value: input })
             expect(integer.bytes).toEqual(new Uint8Array(expected))
-            expect(integer.toInteger()).toBe(input)
-            expect(integer.toString()).toBe(String(input))
+            expect(integer.toInteger()).toEqual(input)
+            expect(integer.toString()).toEqual(String(input))
         }
     })
 
@@ -126,10 +126,10 @@ describe('Integer', () => {
         expect(integer.bytes.length).toBeGreaterThan(6) // Should be multi-byte
 
         // Verify string representation
-        expect(integer.toString()).toBe('9007199254740992')
+        expect(integer.toString()).toEqual('9007199254740992')
 
         // Test round-trip conversion
-        expect(integer.toBigInt()).toBe(bigIntValue)
+        expect(integer.toBigInt()).toEqual(bigIntValue)
     })
 
     test('should handle BigInt values', () => {
@@ -147,8 +147,8 @@ describe('Integer', () => {
         for (const { input, expected } of testCases) {
             const integer = new Integer({ value: input })
             expect(integer.bytes).toEqual(new Uint8Array(expected))
-            expect(integer.toBigInt()).toBe(input)
-            expect(integer.toString()).toBe(input.toString())
+            expect(integer.toBigInt()).toEqual(input)
+            expect(integer.toString()).toEqual(input.toString())
         }
     })
 
@@ -169,7 +169,7 @@ describe('Integer', () => {
 
         for (const { input, expected } of testCases) {
             const integer = new Integer({ value: input })
-            expect(integer.toHexString()).toBe(expected)
+            expect(integer.toHexString()).toEqual(expected)
         }
     })
 })

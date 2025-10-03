@@ -90,7 +90,7 @@ export class OtherHashAlgAndValue extends PkiBase<OtherHashAlgAndValue> {
 
     constructor(options: {
         hashAlgorithm: AlgorithmIdentifier
-        hashValue: Uint8Array | OctetString
+        hashValue: Uint8Array<ArrayBuffer> | OctetString
     }) {
         super()
         this.hashAlgorithm = options.hashAlgorithm

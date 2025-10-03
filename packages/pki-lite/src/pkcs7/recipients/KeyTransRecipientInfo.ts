@@ -75,7 +75,7 @@ export class KeyTransRecipientInfo extends PkiBase<KeyTransRecipientInfo> {
     /**
      * Encrypted content-encryption key.
      */
-    encryptedKey: Uint8Array
+    encryptedKey: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new KeyTransRecipientInfo instance.
@@ -84,7 +84,7 @@ export class KeyTransRecipientInfo extends PkiBase<KeyTransRecipientInfo> {
         version?: CMSVersion
         rid: RecipientIdentifier
         keyEncryptionAlgorithm: AlgorithmIdentifier
-        encryptedKey: Uint8Array
+        encryptedKey: Uint8Array<ArrayBuffer>
     }) {
         super()
         const { version, rid, keyEncryptionAlgorithm, encryptedKey } = options

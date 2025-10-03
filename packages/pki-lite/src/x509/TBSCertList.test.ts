@@ -24,9 +24,9 @@ describe('TBSCertList', () => {
         })
 
         expect(tbsCertList).toBeInstanceOf(TBSCertList)
-        expect(tbsCertList.signature).toBe(algorithm)
-        expect(tbsCertList.issuer).toBe(issuer)
-        expect(tbsCertList.thisUpdate).toBe(thisUpdate)
+        expect(tbsCertList.signature).toEqual(algorithm)
+        expect(tbsCertList.issuer).toEqual(issuer)
+        expect(tbsCertList.thisUpdate).toEqual(thisUpdate)
         expect(tbsCertList.version).toBeUndefined()
         expect(tbsCertList.nextUpdate).toBeUndefined()
         expect(tbsCertList.revokedCertificates).toBeUndefined()
@@ -72,15 +72,15 @@ describe('TBSCertList', () => {
         })
 
         expect(tbsCertList).toBeInstanceOf(TBSCertList)
-        expect(tbsCertList.signature).toBe(algorithm)
-        expect(tbsCertList.issuer).toBe(issuer)
-        expect(tbsCertList.thisUpdate).toBe(thisUpdate)
-        expect(tbsCertList.nextUpdate).toBe(nextUpdate)
+        expect(tbsCertList.signature).toEqual(algorithm)
+        expect(tbsCertList.issuer).toEqual(issuer)
+        expect(tbsCertList.thisUpdate).toEqual(thisUpdate)
+        expect(tbsCertList.nextUpdate).toEqual(nextUpdate)
         expect(tbsCertList.revokedCertificates).toHaveLength(1)
-        expect(tbsCertList.revokedCertificates?.[0]).toBe(revoked)
+        expect(tbsCertList.revokedCertificates?.[0]).toEqual(revoked)
         expect(tbsCertList.extensions).toHaveLength(1)
-        expect(tbsCertList.extensions?.[0]).toBe(crlExt)
-        expect(tbsCertList.version).toBe(1)
+        expect(tbsCertList.extensions?.[0]).toEqual(crlExt)
+        expect(tbsCertList.version).toEqual(1)
     })
 
     test('can be converted to ASN.1 with minimal fields', () => {
@@ -98,7 +98,7 @@ describe('TBSCertList', () => {
         const asn1 = tbsCertList.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3) // signature, issuer, thisUpdate
+        expect(asn1.valueBlock.value.length).toEqual(3) // signature, issuer, thisUpdate
     })
 
     test('can be converted to ASN.1 with all fields', () => {
@@ -142,7 +142,7 @@ describe('TBSCertList', () => {
         const asn1 = tbsCertList.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(7) // version, signature, issuer, thisUpdate, nextUpdate, revokedCerts, extensions
+        expect(asn1.valueBlock.value.length).toEqual(7) // version, signature, issuer, thisUpdate, nextUpdate, revokedCerts, extensions
 
         // First element should be the version
         const versionBlock = asn1.valueBlock.value[0]
@@ -151,10 +151,12 @@ describe('TBSCertList', () => {
         // Last element should be the extensions with tagClass 3 (CONTEXT-SPECIFIC)
         const extensionsBlock = asn1.valueBlock.value[6]
         expect(extensionsBlock).toBeInstanceOf(asn1js.Constructed)
-        expect((extensionsBlock as asn1js.Constructed).idBlock.tagClass).toBe(3)
-        expect((extensionsBlock as asn1js.Constructed).idBlock.tagNumber).toBe(
-            0,
-        ) // [0]
+        expect(
+            (extensionsBlock as asn1js.Constructed).idBlock.tagClass,
+        ).toEqual(3)
+        expect(
+            (extensionsBlock as asn1js.Constructed).idBlock.tagNumber,
+        ).toEqual(0) // [0]
     })
 
     test('can be converted to ASN.1 and back', () => {
@@ -202,26 +204,26 @@ describe('TBSCertList', () => {
 
         // Check that the basic structure is preserved
         expect(restoredTbs).toBeInstanceOf(TBSCertList)
-        expect(restoredTbs.version).toBe(tbsCertList.version)
-        expect(restoredTbs.signature.algorithm.toString()).toBe(
+        expect(restoredTbs.version).toEqual(tbsCertList.version)
+        expect(restoredTbs.signature.algorithm.toString()).toEqual(
             tbsCertList.signature.algorithm.toString(),
         )
 
         // Check that dates are preserved (using valueOf to compare only the time values)
-        expect(restoredTbs.thisUpdate.valueOf()).toBe(
+        expect(restoredTbs.thisUpdate.valueOf()).toEqual(
             tbsCertList.thisUpdate.valueOf(),
         )
-        expect(restoredTbs.nextUpdate?.valueOf()).toBe(
+        expect(restoredTbs.nextUpdate?.valueOf()).toEqual(
             tbsCertList.nextUpdate?.valueOf(),
         )
 
         // Check that revoked certificates are preserved
-        expect(restoredTbs.revokedCertificates?.length).toBe(
+        expect(restoredTbs.revokedCertificates?.length).toEqual(
             tbsCertList.revokedCertificates?.length,
         )
 
         // Check that extensions are preserved
-        expect(restoredTbs.extensions?.length).toBe(
+        expect(restoredTbs.extensions?.length).toEqual(
             tbsCertList.extensions?.length,
         )
     })

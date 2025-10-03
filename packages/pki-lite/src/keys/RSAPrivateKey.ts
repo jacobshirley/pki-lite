@@ -42,41 +42,41 @@ export class RSAPrivateKey extends PkiBase<RSAPrivateKey> {
     version: number
 
     /** The modulus (n) */
-    modulus: Uint8Array
+    modulus: Uint8Array<ArrayBuffer>
 
     /** The exponent (e) */
-    publicExponent: Uint8Array
+    publicExponent: Uint8Array<ArrayBuffer>
 
     /** The private exponent (d) */
-    privateExponent: Uint8Array
+    privateExponent: Uint8Array<ArrayBuffer>
 
     /** The first prime factor (p) */
-    prime1: Uint8Array
+    prime1: Uint8Array<ArrayBuffer>
 
     /** The second prime factor (q) */
-    prime2: Uint8Array
+    prime2: Uint8Array<ArrayBuffer>
 
     /** The first exponent (d mod (p-1)) */
-    exponent1: Uint8Array
+    exponent1: Uint8Array<ArrayBuffer>
 
     /** The second exponent (d mod (q-1)) */
-    exponent2: Uint8Array
+    exponent2: Uint8Array<ArrayBuffer>
 
     /** The CRT coefficient ((inverse of q) mod p) */
-    coefficient: Uint8Array
+    coefficient: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new RSAPrivateKey instance.
      */
     constructor(options: {
-        modulus: Uint8Array
-        publicExponent: Uint8Array
-        privateExponent: Uint8Array
-        prime1: Uint8Array
-        prime2: Uint8Array
-        exponent1: Uint8Array
-        exponent2: Uint8Array
-        coefficient: Uint8Array
+        modulus: Uint8Array<ArrayBuffer>
+        publicExponent: Uint8Array<ArrayBuffer>
+        privateExponent: Uint8Array<ArrayBuffer>
+        prime1: Uint8Array<ArrayBuffer>
+        prime2: Uint8Array<ArrayBuffer>
+        exponent1: Uint8Array<ArrayBuffer>
+        exponent2: Uint8Array<ArrayBuffer>
+        coefficient: Uint8Array<ArrayBuffer>
         version?: number
     }) {
         super()
@@ -170,7 +170,7 @@ export class RSAPrivateKey extends PkiBase<RSAPrivateKey> {
         const version = values[0].valueBlock.valueDec
 
         // Check that all other elements are Integers
-        const components: Uint8Array[] = []
+        const components: Uint8Array<ArrayBuffer>[] = []
         for (let i = 1; i < 9; i++) {
             if (!(values[i] instanceof asn1js.Integer)) {
                 throw new Asn1ParseError(
@@ -206,7 +206,7 @@ export class RSAPrivateKey extends PkiBase<RSAPrivateKey> {
      * @param der The DER encoded data
      * @returns A new RSAPrivateKey instance
      */
-    static fromDer(der: Uint8Array): RSAPrivateKey {
+    static fromDer(der: Uint8Array<ArrayBuffer>): RSAPrivateKey {
         const asn1 = derToAsn1(der)
         return RSAPrivateKey.fromAsn1(asn1)
     }

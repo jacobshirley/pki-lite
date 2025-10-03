@@ -204,7 +204,7 @@ true if the objects are equal, false otherwise
 
 ##### password
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
@@ -220,7 +220,7 @@ true if the objects are equal, false otherwise
 
 ##### password
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
@@ -240,7 +240,7 @@ true if the objects are equal, false otherwise
 
 ##### password
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
@@ -256,7 +256,7 @@ true if the objects are equal, false otherwise
 
 ##### password
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
@@ -272,7 +272,7 @@ true if the objects are equal, false otherwise
 
 ##### password
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
@@ -335,13 +335,13 @@ The ASN.1 SEQUENCE structure
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 
@@ -452,7 +452,7 @@ Optional friendly name for the key/cert pairs
 
 ###### password
 
-`string` \| `Uint8Array`\<`ArrayBufferLike`\>
+`string` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 Password to encrypt the private keys
 
@@ -494,7 +494,7 @@ A new PFX instance
 
 ##### der
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 #### Returns
 

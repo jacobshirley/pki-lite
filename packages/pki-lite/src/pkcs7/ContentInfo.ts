@@ -64,7 +64,7 @@ export class ContentInfo extends PkiBase<ContentInfo> {
 
     parseContentAs<T extends PkiBase<any>>(cls: {
         fromAsn1?(asn1: Asn1BaseBlock): T
-        fromDer?(der: Uint8Array): T
+        fromDer?(der: Uint8Array<ArrayBuffer>): T
     }): T {
         if (this.content) {
             try {
@@ -138,7 +138,7 @@ export class ContentInfo extends PkiBase<ContentInfo> {
         })
     }
 
-    static fromDer(der: Uint8Array): ContentInfo {
+    static fromDer(der: Uint8Array<ArrayBuffer>): ContentInfo {
         const asn1 = derToAsn1(der)
         return ContentInfo.fromAsn1(asn1)
     }

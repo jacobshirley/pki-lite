@@ -23,10 +23,10 @@ describe('DigestedData', () => {
             digest,
         })
 
-        expect(digestedData.version).toBe(1)
-        expect(digestedData.digestAlgorithm).toBe(digestAlgorithm)
-        expect(digestedData.encapContentInfo).toBe(contentInfo)
-        expect(digestedData.digest).toBe(digest)
+        expect(digestedData.version).toEqual(1)
+        expect(digestedData.digestAlgorithm).toEqual(digestAlgorithm)
+        expect(digestedData.encapContentInfo).toEqual(contentInfo)
+        expect(digestedData.digest).toEqual(digest)
     })
 
     it('should convert to ASN.1 structure', () => {
@@ -68,7 +68,7 @@ describe('DigestedData', () => {
         })
         const str = digestedData.toString()
 
-        expect(typeof str).toBe('string')
+        expect(typeof str).toEqual('string')
         expect(str.length).toBeGreaterThan(0)
     })
 

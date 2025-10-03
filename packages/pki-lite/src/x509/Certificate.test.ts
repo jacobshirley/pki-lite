@@ -92,7 +92,7 @@ describe('Certificate', () => {
         const asn1 = cert.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3)
+        expect(asn1.valueBlock.value.length).toEqual(3)
 
         // First element should be the tbsCertificate (a Sequence)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)

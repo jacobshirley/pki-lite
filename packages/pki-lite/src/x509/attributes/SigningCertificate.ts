@@ -34,7 +34,7 @@ export class ESSCertID extends PkiBase<ESSCertID> {
     issuerSerial?: IssuerSerial
 
     constructor(options: {
-        certHash: Uint8Array | OctetString
+        certHash: Uint8Array<ArrayBuffer> | OctetString
         issuerSerial?: IssuerSerial
     }) {
         super()

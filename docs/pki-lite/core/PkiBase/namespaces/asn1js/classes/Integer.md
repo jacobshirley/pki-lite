@@ -108,7 +108,7 @@
 
 ### valueBeforeDecodeView
 
-> **valueBeforeDecodeView**: `Uint8Array`
+> **valueBeforeDecodeView**: `Uint8Array<ArrayBuffer>`
 
 #### Since
 
@@ -222,7 +222,7 @@ Base function for converting block from BER encoded array of bytes
 
 ##### inputBuffer
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 ASN.1 BER encoded array
 

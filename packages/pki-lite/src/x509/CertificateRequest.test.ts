@@ -25,7 +25,7 @@ describe('CertificateRequest', () => {
         const asn1 = request.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3)
+        expect(asn1.valueBlock.value.length).toEqual(3)
 
         // First element should be the requestInfo (a Sequence)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
@@ -51,7 +51,7 @@ describe('CertificateRequest', () => {
             const parsedRequest = CertificateRequest.fromAsn1(asn1)
 
             expect(parsedRequest).toBeInstanceOf(CertificateRequest)
-            expect(parsedRequest.requestInfo).toBe(request.requestInfo)
+            expect(parsedRequest.requestInfo).toEqual(request.requestInfo)
             expect(parsedRequest.signatureAlgorithm.algorithm).toEqual(
                 request.signatureAlgorithm.algorithm,
             )

@@ -12,8 +12,8 @@ describe('IssuerSerial', () => {
         )
         const serial = new Integer({ value: 12345 })
         const iser = new IssuerSerial({ issuer: gn, serialNumber: serial })
-        expect(iser.issuer).toBe(gn)
-        expect(iser.serialNumber.toNumber()).toBe(12345)
+        expect(iser.issuer).toEqual(gn)
+        expect(iser.serialNumber.toNumber()).toEqual(12345)
     })
 
     test('constructs from Name', () => {
@@ -21,7 +21,7 @@ describe('IssuerSerial', () => {
         const serial = new Integer({ value: 67890 })
         const iser = new IssuerSerial({ issuer: name, serialNumber: serial })
         expect(iser.issuer).toBeInstanceOf(GeneralNames)
-        expect(iser.serialNumber.toNumber()).toBe(67890)
+        expect(iser.serialNumber.toNumber()).toEqual(67890)
     })
 
     test('ASN.1 encode/decode roundtrip', () => {
@@ -30,10 +30,10 @@ describe('IssuerSerial', () => {
         const iser = new IssuerSerial({ issuer: name, serialNumber: serial })
         const asn1 = iser.toAsn1()
         const decoded = IssuerSerial.fromAsn1(asn1)
-        expect(decoded.issuer.toDer().toString()).toBe(
+        expect(decoded.issuer.toDer().toString()).toEqual(
             iser.issuer.toDer().toString(),
         )
-        expect(decoded.serialNumber.toNumber()).toBe(42)
+        expect(decoded.serialNumber.toNumber()).toEqual(42)
     })
 
     test('throws on invalid ASN.1 (not sequence)', () => {

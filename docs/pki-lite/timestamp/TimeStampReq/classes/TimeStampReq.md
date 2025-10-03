@@ -94,7 +94,7 @@ Hash imprint of the data to timestamp
 
 ###### nonce?
 
-`Uint8Array`\<`ArrayBufferLike`\>
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 Optional nonce for replay protection
 
@@ -157,7 +157,7 @@ Hash of the data to be timestamped
 
 ### nonce?
 
-> `optional` **nonce**: `Uint8Array`\<`ArrayBufferLike`\>
+> `optional` **nonce**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 Optional nonce for replay protection, should be unique per request
 
@@ -391,13 +391,13 @@ const der = asn1.toBER(false) // Convert to DER for transmission
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 
@@ -510,7 +510,7 @@ Request configuration
 
 ###### nonce?
 
-`Uint8Array`\<`ArrayBufferLike`\>
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ###### reqPolicy?
 
@@ -589,7 +589,7 @@ Creates a TimeStampReq from DER-encoded bytes.
 
 ##### der
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded timestamp request bytes
 

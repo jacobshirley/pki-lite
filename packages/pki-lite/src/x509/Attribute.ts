@@ -107,7 +107,7 @@ export class Attribute extends PkiBase<Attribute> {
         })
     }
 
-    static fromDER(der: ArrayBuffer | Uint8Array): Attribute {
+    static fromDER(der: ArrayBuffer | Uint8Array<ArrayBuffer>): Attribute {
         return Attribute.fromAsn1(derToAsn1(der))
     }
 
@@ -129,7 +129,9 @@ export class Attribute extends PkiBase<Attribute> {
         })
     }
 
-    static messageDigest(digest: ArrayBuffer | Uint8Array): Attribute {
+    static messageDigest(
+        digest: ArrayBuffer | Uint8Array<ArrayBuffer>,
+    ): Attribute {
         return new Attribute({
             type: OIDs.PKCS9.MESSAGE_DIGEST,
             values: [new OctetString({ bytes: new Uint8Array(digest) })],

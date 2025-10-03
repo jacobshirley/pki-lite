@@ -83,7 +83,7 @@ Converts symmetric encryption algorithm parameters to a content encryption algor
 
 The symmetric encryption algorithm parameters
 
-[`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
+[`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
 
 #### Returns
 
@@ -99,7 +99,7 @@ Content encryption algorithm as an AlgorithmIdentifier
 
 ### decrypt()
 
-> **decrypt**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **decrypt**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Decrypts the given data using the specified private key and asymmetric algorithm.
 
@@ -107,7 +107,7 @@ Decrypts the given data using the specified private key and asymmetric algorithm
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to decrypt
 
@@ -125,9 +125,9 @@ The decryption algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the decrypted data as a Uint8Array
+Promise resolving to the decrypted data as a Uint8Array<ArrayBuffer>
 
 #### Overrides
 
@@ -137,7 +137,7 @@ Promise resolving to the decrypted data as a Uint8Array
 
 ### decryptSymmetric()
 
-> **decryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **decryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Decrypts the given data using the specified symmetric key and algorithm.
 
@@ -145,13 +145,13 @@ Decrypts the given data using the specified symmetric key and algorithm.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to decrypt
 
 ##### key
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The symmetric key to use for decryption
 
@@ -163,9 +163,9 @@ The decryption algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the decrypted data as a Uint8Array
+Promise resolving to the decrypted data as a Uint8Array<ArrayBuffer>
 
 #### Overrides
 
@@ -181,23 +181,23 @@ Promise resolving to the decrypted data as a Uint8Array
 
 ##### password
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\> | `CryptoKey`
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | `CryptoKey`
 
 ##### algorithm
 
 ###### params
 
-\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
+\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
 
 ###### params.derivationAlgorithm
 
-\{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}; `type`: `"PBKDF2"`; \}
+\{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}
 
 Key derivation algorithm and parameters
 
 ###### params.derivationAlgorithm.params
 
-\{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}
+\{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}
 
 ###### params.derivationAlgorithm.params.hash
 
@@ -219,7 +219,7 @@ Desired key length in bytes (optional)
 
 ###### params.derivationAlgorithm.params.salt
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 Salt value for key derivation
 
@@ -249,7 +249,7 @@ Symmetric encryption algorithm and parameters
 
 ### deriveKey()
 
-> **deriveKey**(`password`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **deriveKey**(`password`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Derives a cryptographic key from a password using the specified algorithm.
 
@@ -259,7 +259,7 @@ Derives a cryptographic key from a password using the specified algorithm.
 
 The password or key material to derive from
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\> | `CryptoKey`
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> | `CryptoKey`
 
 ##### algorithm
 
@@ -267,17 +267,17 @@ The key derivation algorithm parameters
 
 ###### params
 
-\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
+\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
 
 ###### params.derivationAlgorithm
 
-\{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}; `type`: `"PBKDF2"`; \}
+\{ `params`: \{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}; `type`: `"PBKDF2"`; \}
 
 Key derivation algorithm and parameters
 
 ###### params.derivationAlgorithm.params
 
-\{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}
+\{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}
 
 ###### params.derivationAlgorithm.params.hash
 
@@ -299,7 +299,7 @@ Desired key length in bytes (optional)
 
 ###### params.derivationAlgorithm.params.salt
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 Salt value for key derivation
 
@@ -319,9 +319,9 @@ Symmetric encryption algorithm and parameters
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the derived key as a Uint8Array
+Promise resolving to the derived key as a Uint8Array<ArrayBuffer>
 
 #### Inherited from
 
@@ -331,7 +331,7 @@ Promise resolving to the derived key as a Uint8Array
 
 ### digest()
 
-> **digest**(`data`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **digest**(`data`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Computes a cryptographic hash of the input data.
 
@@ -339,7 +339,7 @@ Computes a cryptographic hash of the input data.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to hash
 
@@ -351,7 +351,7 @@ The hash algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 The computed hash bytes
 
@@ -383,7 +383,7 @@ The hash algorithm
 
 [`AlgorithmIdentifier`](../../pki-lite/algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
 
-Digest algorithm as a Uint8Array or AlgorithmIdentifier
+Digest algorithm as a Uint8Array<ArrayBuffer> or AlgorithmIdentifier
 
 #### Inherited from
 
@@ -393,7 +393,7 @@ Digest algorithm as a Uint8Array or AlgorithmIdentifier
 
 ### encrypt()
 
-> **encrypt**(`data`, `publicKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **encrypt**(`data`, `publicKeyInfo`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Encrypts data using asymmetric (public key) cryptography.
 
@@ -401,7 +401,7 @@ Encrypts data using asymmetric (public key) cryptography.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to encrypt
 
@@ -419,9 +419,9 @@ The encryption algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the encrypted data as a Uint8Array
+Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
 #### Overrides
 
@@ -431,7 +431,7 @@ Promise resolving to the encrypted data as a Uint8Array
 
 ### encryptSymmetric()
 
-> **encryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **encryptSymmetric**(`data`, `key`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Encrypts the given data using the specified symmetric key and algorithm.
 
@@ -439,13 +439,13 @@ Encrypts the given data using the specified symmetric key and algorithm.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to encrypt
 
 ##### key
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The symmetric key to use for encryption
 
@@ -457,9 +457,9 @@ The encryption algorithm to use
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
-Promise resolving to the encrypted data as a Uint8Array
+Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
 #### Overrides
 
@@ -469,7 +469,7 @@ Promise resolving to the encrypted data as a Uint8Array
 
 ### generateKeyPair()
 
-> **generateKeyPair**(`options`): `Promise`\<\{ `privateKey`: `Uint8Array`; `publicKey`: `Uint8Array`; \}\>
+> **generateKeyPair**(`options`): `Promise`\<\{ `privateKey`: `Uint8Array<ArrayBuffer>`; `publicKey`: `Uint8Array<ArrayBuffer>`; \}\>
 
 Generates an asymmetric key pair for the specified algorithm and options.
 
@@ -497,11 +497,11 @@ Configuration options including algorithm, key size, and other parameters
 
 ###### publicExponent?
 
-`Uint8Array`\<`ArrayBufferLike`\>
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
-`Promise`\<\{ `privateKey`: `Uint8Array`; `publicKey`: `Uint8Array`; \}\>
+`Promise`\<\{ `privateKey`: `Uint8Array<ArrayBuffer>`; `publicKey`: `Uint8Array<ArrayBuffer>`; \}\>
 
 A Promise that resolves to an object containing the public and private keys
 
@@ -513,7 +513,7 @@ A Promise that resolves to an object containing the public and private keys
 
 ### generateSymmetricKey()
 
-> **generateSymmetricKey**(`algorithm`): `Uint8Array`
+> **generateSymmetricKey**(`algorithm`): `Uint8Array<ArrayBuffer>`
 
 Generates a symmetric key for the specified encryption algorithm.
 
@@ -527,9 +527,9 @@ The encryption algorithm to use
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
-The generated symmetric key as a Uint8Array
+The generated symmetric key as a Uint8Array<ArrayBuffer>
 
 #### Inherited from
 
@@ -555,7 +555,7 @@ The asymmetric encryption algorithm parameters
 
 [`ObjectIdentifier`](../../pki-lite/asn1/ObjectIdentifier/classes/ObjectIdentifier.md)
 
-EC curve parameters as a Uint8Array or ObjectIdentifier
+EC curve parameters as a Uint8Array<ArrayBuffer> or ObjectIdentifier
 
 #### Inherited from
 
@@ -603,7 +603,7 @@ The EC named curve identifier
 
 ##### password
 
-`string` | `Uint8Array`\<`ArrayBufferLike`\>
+`string` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 #### Returns
 
@@ -617,7 +617,7 @@ The EC named curve identifier
 
 ### getRandomValues()
 
-> **getRandomValues**(`length`): `Uint8Array`
+> **getRandomValues**(`length`): `Uint8Array<ArrayBuffer>`
 
 Generates cryptographically secure random bytes.
 
@@ -631,7 +631,7 @@ The number of random bytes to generate
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 Array containing the random bytes
 
@@ -679,7 +679,7 @@ Web Crypto API compatible algorithm specification
 
 ###### params
 
-\{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`; \}
+\{ `hash`: [`HashAlgorithm`](../../pki-lite/core/crypto/types/type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array<ArrayBuffer>`; \}
 
 ###### params.hash
 
@@ -701,7 +701,7 @@ Desired key length in bytes (optional)
 
 ###### params.salt
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 Salt value for key derivation
 
@@ -787,7 +787,7 @@ Key encryption algorithm as an AlgorithmIdentifier
 
 ### sign()
 
-> **sign**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+> **sign**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Creates a digital signature for the given data.
 
@@ -795,7 +795,7 @@ Creates a digital signature for the given data.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The data to sign
 
@@ -813,7 +813,7 @@ The signature algorithm and parameters
 
 #### Returns
 
-`Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
+`Promise`\<`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>\>
 
 Promise resolving to the signature bytes
 
@@ -841,7 +841,7 @@ The asymmetric encryption algorithm parameters
 
 [`AlgorithmIdentifier`](../../pki-lite/algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
 
-Signature algorithm as a Uint8Array or AlgorithmIdentifier
+Signature algorithm as a Uint8Array<ArrayBuffer> or AlgorithmIdentifier
 
 #### Inherited from
 
@@ -919,7 +919,7 @@ Desired key length in bytes (optional)
 
 ###### params.salt
 
-> **salt**: `Uint8Array`
+> **salt**: `Uint8Array<ArrayBuffer>`
 
 Salt value for key derivation
 
@@ -1007,7 +1007,7 @@ Desired key length in bytes (optional)
 
 ###### params.derivationAlgorithm.params.salt
 
-> **salt**: `Uint8Array`
+> **salt**: `Uint8Array<ArrayBuffer>`
 
 Salt value for key derivation
 
@@ -1067,7 +1067,7 @@ Verifies a digital signature against the original data.
 
 ##### data
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The original data that was signed
 
@@ -1079,7 +1079,7 @@ The signer's public key
 
 ##### signature
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The signature to verify
 

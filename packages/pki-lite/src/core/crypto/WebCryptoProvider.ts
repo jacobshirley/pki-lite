@@ -78,9 +78,9 @@ export class WebCryptoProvider implements CryptoProvider {
      * @throws UnsupportedCryptoAlgorithm if the algorithm is not supported
      */
     async digest(
-        data: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
         algorithm: HashAlgorithm,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         if (algorithm === 'MD5') {
             throw new UnsupportedCryptoAlgorithm(
                 'MD5 is not supported in WebCrypto',
@@ -144,10 +144,10 @@ export class WebCryptoProvider implements CryptoProvider {
     }
 
     async sign(
-        data: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
         privateKeyInfo: PrivateKeyInfo,
         algorithm: AsymmetricEncryptionAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const webCryptoParams = this.getWebCryptoAlgorithm(algorithm)
 
         const importedRsaKey = await this.crypto.subtle.importKey(
@@ -168,9 +168,9 @@ export class WebCryptoProvider implements CryptoProvider {
     }
 
     async verify(
-        data: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
         publicKeyInfo: SubjectPublicKeyInfo,
-        signature: Uint8Array,
+        signature: Uint8Array<ArrayBuffer>,
         algorithm: AsymmetricEncryptionAlgorithmParams,
     ): Promise<boolean> {
         const webCryptoParams = this.getWebCryptoAlgorithm(algorithm)
@@ -337,12 +337,12 @@ export class WebCryptoProvider implements CryptoProvider {
         }
     }
 
-    getRandomValues(length: number): Uint8Array {
+    getRandomValues(length: number): Uint8Array<ArrayBuffer> {
         return crypto.getRandomValues(new Uint8Array(length))
     }
 
     protected async getKeyMaterial(
-        password: string | Uint8Array,
+        password: string | Uint8Array<ArrayBuffer>,
     ): Promise<CryptoKey> {
         const enc = new TextEncoder()
         if (typeof password === 'string') {
@@ -361,7 +361,7 @@ export class WebCryptoProvider implements CryptoProvider {
     }
 
     protected async deriveCryptoKey(
-        password: string | Uint8Array | CryptoKey,
+        password: string | Uint8Array<ArrayBuffer> | CryptoKey,
         algorithm: PbeAlgorithmParams,
     ): Promise<CryptoKey> {
         if (password instanceof CryptoKey) {
@@ -390,19 +390,19 @@ export class WebCryptoProvider implements CryptoProvider {
     }
 
     async deriveKey(
-        password: string | Uint8Array | CryptoKey,
+        password: string | Uint8Array<ArrayBuffer> | CryptoKey,
         algorithm: PbeAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const cryptoKey = await this.deriveCryptoKey(password, algorithm)
         const rawKey = await this.crypto.subtle.exportKey('raw', cryptoKey)
         return new Uint8Array(rawKey)
     }
 
     async encryptSymmetric(
-        data: Uint8Array,
-        key: Uint8Array | CryptoKey | string,
+        data: Uint8Array<ArrayBuffer>,
+        key: Uint8Array<ArrayBuffer> | CryptoKey | string,
         algorithm: SymmetricEncryptionAlgorithmParams | PbeAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         if (algorithm.type === 'PBES2') {
             const derivedKey = await this.deriveCryptoKey(key, algorithm)
 
@@ -438,10 +438,10 @@ export class WebCryptoProvider implements CryptoProvider {
     }
 
     async encrypt(
-        data: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
         publicKeyInfo: SubjectPublicKeyInfo,
         algorithm: AsymmetricEncryptionAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const params = this.getWebCryptoAlgorithm(algorithm)
         if (!params)
             throw new UnsupportedCryptoAlgorithm(
@@ -462,10 +462,10 @@ export class WebCryptoProvider implements CryptoProvider {
     }
 
     async decrypt(
-        data: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
         privateKeyInfo: PrivateKeyInfo,
         algorithm: AsymmetricEncryptionAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const params = this.getWebCryptoAlgorithm(algorithm)
 
         const cryptoKey = await this.crypto.subtle.importKey(
@@ -482,10 +482,10 @@ export class WebCryptoProvider implements CryptoProvider {
     }
 
     async decryptSymmetric(
-        data: Uint8Array,
-        key: Uint8Array | CryptoKey | string,
+        data: Uint8Array<ArrayBuffer>,
+        key: Uint8Array<ArrayBuffer> | CryptoKey | string,
         algorithm: SymmetricEncryptionAlgorithmParams | PbeAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         if (algorithm.type === 'PBES2') {
             const derivedKey = await this.deriveCryptoKey(key, algorithm)
             return this.decryptSymmetric(
@@ -521,7 +521,7 @@ export class WebCryptoProvider implements CryptoProvider {
 
     generateSymmetricKey(
         algorithm: SymmetricEncryptionAlgorithmParams,
-    ): Uint8Array {
+    ): Uint8Array<ArrayBuffer> {
         switch (algorithm.type) {
             case 'AES_128_CBC':
             case 'AES_128_CCM':
@@ -548,10 +548,13 @@ export class WebCryptoProvider implements CryptoProvider {
     async generateKeyPair(options: {
         algorithm: 'RSA' | 'EC'
         keySize?: number
-        publicExponent?: Uint8Array
+        publicExponent?: Uint8Array<ArrayBuffer>
         hash?: string
         namedCurve?: string
-    }): Promise<{ publicKey: Uint8Array; privateKey: Uint8Array }> {
+    }): Promise<{
+        publicKey: Uint8Array<ArrayBuffer>
+        privateKey: Uint8Array<ArrayBuffer>
+    }> {
         let webCryptoAlgorithm:
             | RsaHashedKeyGenParams
             | EcKeyGenParams

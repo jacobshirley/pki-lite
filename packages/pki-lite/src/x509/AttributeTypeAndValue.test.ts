@@ -9,8 +9,8 @@ describe('AttributeTypeAndValue', () => {
             value: 'Test Common Name',
         }) // CN
         expect(atv).toBeInstanceOf(AttributeTypeAndValue)
-        expect(atv.type.toString()).toBe('2.5.4.3')
-        expect(atv.value.asString()).toBe('Test Common Name')
+        expect(atv.type.toString()).toEqual('2.5.4.3')
+        expect(atv.value.asString()).toEqual('Test Common Name')
     })
 
     test('can be converted into ASN.1', () => {
@@ -21,18 +21,18 @@ describe('AttributeTypeAndValue', () => {
         const asn1 = atv.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.ObjectIdentifier)
         assert(asn1.valueBlock.value[0] instanceof asn1js.ObjectIdentifier)
         // The toString() method includes "OBJECT IDENTIFIER : " prefix
-        expect(asn1.valueBlock.value[0].toString()).toBe(
+        expect(asn1.valueBlock.value[0].toString()).toEqual(
             'OBJECT IDENTIFIER : 2.5.4.3',
         )
 
         expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.PrintableString)
         assert(asn1.valueBlock.value[1] instanceof asn1js.PrintableString)
-        expect(asn1.valueBlock.value[1].valueBlock.value).toBe(
+        expect(asn1.valueBlock.value[1].valueBlock.value).toEqual(
             'Test Common Name',
         )
     })
@@ -50,8 +50,8 @@ describe('AttributeTypeAndValue', () => {
         })
 
         // Skip assertion since there's an issue with the shortName getter
-        expect(cnAtv.shortName).toBe('CN')
-        expect(ouAtv.shortName).toBe('OU')
+        expect(cnAtv.shortName).toEqual('CN')
+        expect(ouAtv.shortName).toEqual('OU')
     })
 
     test('toHumanString() returns formatted representation', () => {
@@ -60,7 +60,7 @@ describe('AttributeTypeAndValue', () => {
             type: '2.5.4.3',
             value: 'Test Common Name',
         })
-        expect(atv.toHumanString()).toBe('CN=Test Common Name')
+        expect(atv.toHumanString()).toEqual('CN=Test Common Name')
     })
 
     test('handles different attribute types', () => {
@@ -73,11 +73,11 @@ describe('AttributeTypeAndValue', () => {
             value: 'Example Org',
         })
 
-        expect(countryAtv.type.toString()).toBe('2.5.4.6')
-        expect(countryAtv.value.asString()).toBe('US')
+        expect(countryAtv.type.toString()).toEqual('2.5.4.6')
+        expect(countryAtv.value.asString()).toEqual('US')
 
-        expect(orgAtv.type.toString()).toBe('2.5.4.10')
-        expect(orgAtv.value.asString()).toBe('Example Org')
+        expect(orgAtv.type.toString()).toEqual('2.5.4.10')
+        expect(orgAtv.value.asString()).toEqual('Example Org')
     })
 
     test('can be converted from ASN.1', () => {
@@ -90,7 +90,7 @@ describe('AttributeTypeAndValue', () => {
 
         const atv = AttributeTypeAndValue.fromAsn1(asn1)
         expect(atv).toBeInstanceOf(AttributeTypeAndValue)
-        expect(atv.type.toString()).toBe('2.5.4.3')
+        expect(atv.type.toString()).toEqual('2.5.4.3')
         expect(atv.value.asString()).toEqual('Test Common Name')
     })
 

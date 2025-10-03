@@ -9,7 +9,7 @@ describe('ResponseBytes', () => {
 
         const responseBytes = new ResponseBytes({ responseType, response })
 
-        expect(responseBytes.responseType).toBe(responseType)
+        expect(responseBytes.responseType).toEqual(responseType)
         expect(responseBytes.response.bytes).toEqual(response)
     })
 
@@ -21,7 +21,7 @@ describe('ResponseBytes', () => {
         const asn1 = original.toAsn1()
         const parsed = ResponseBytes.fromAsn1(asn1)
 
-        expect(parsed.responseType).toBe(responseType)
+        expect(parsed.responseType).toEqual(responseType)
         expect(parsed.response.bytes).toEqual(response)
     })
 })

@@ -36,10 +36,10 @@ describe('TBSRequest', () => {
             requestList: [request],
         })
 
-        expect(tbsRequest.version).toBe(0) // v1 is default
+        expect(tbsRequest.version).toEqual(0) // v1 is default
         expect(tbsRequest.requestorName).toBeUndefined()
         expect(tbsRequest.requestList).toHaveLength(1)
-        expect(tbsRequest.requestList[0]).toBe(request)
+        expect(tbsRequest.requestList[0]).toEqual(request)
         expect(tbsRequest.requestExtensions).toBeUndefined()
     })
 
@@ -59,12 +59,12 @@ describe('TBSRequest', () => {
             requestExtensions: [extension],
         })
 
-        expect(tbsRequest.version).toBe(1)
-        expect(tbsRequest.requestorName).toBe(requestorName)
+        expect(tbsRequest.version).toEqual(1)
+        expect(tbsRequest.requestorName).toEqual(requestorName)
         expect(tbsRequest.requestList).toHaveLength(1)
-        expect(tbsRequest.requestList[0]).toBe(request)
+        expect(tbsRequest.requestList[0]).toEqual(request)
         expect(tbsRequest.requestExtensions).toHaveLength(1)
-        expect(tbsRequest.requestExtensions?.[0]).toBe(extension)
+        expect(tbsRequest.requestExtensions?.[0]).toEqual(extension)
     })
 
     it('should create a TBSRequest with multiple requests', () => {
@@ -73,8 +73,8 @@ describe('TBSRequest', () => {
         const tbsRequest = new TBSRequest({ requestList: [request1, request2] })
 
         expect(tbsRequest.requestList).toHaveLength(2)
-        expect(tbsRequest.requestList[0]).toBe(request1)
-        expect(tbsRequest.requestList[1]).toBe(request2)
+        expect(tbsRequest.requestList[0]).toEqual(request1)
+        expect(tbsRequest.requestList[1]).toEqual(request2)
     })
 
     it('should convert to ASN.1 and back with minimal fields', () => {
@@ -83,7 +83,7 @@ describe('TBSRequest', () => {
         const asn1 = original.toAsn1()
         const parsed = TBSRequest.fromAsn1(asn1)
 
-        expect(parsed.version).toBe(0) // v1
+        expect(parsed.version).toEqual(0) // v1
         expect(parsed.requestorName).toBeUndefined()
         expect(parsed.requestList).toHaveLength(1)
         expect(parsed.requestExtensions).toBeUndefined()
@@ -95,7 +95,7 @@ describe('TBSRequest', () => {
         const asn1 = original.toAsn1()
         const parsed = TBSRequest.fromAsn1(asn1)
 
-        expect(parsed.version).toBe(1)
+        expect(parsed.version).toEqual(1)
         expect(parsed.requestList).toHaveLength(1)
     })
 
@@ -110,7 +110,7 @@ describe('TBSRequest', () => {
         const asn1 = original.toAsn1()
         const parsed = TBSRequest.fromAsn1(asn1)
 
-        expect(parsed.version).toBe(0)
+        expect(parsed.version).toEqual(0)
         expect(parsed.requestorName).toBeDefined()
         expect(parsed.requestList).toHaveLength(1)
     })
@@ -131,11 +131,13 @@ describe('TBSRequest', () => {
         const asn1 = original.toAsn1()
         const parsed = TBSRequest.fromAsn1(asn1)
 
-        expect(parsed.version).toBe(0)
+        expect(parsed.version).toEqual(0)
         expect(parsed.requestorName).toBeUndefined()
         expect(parsed.requestList).toHaveLength(1)
         expect(parsed.requestExtensions).toHaveLength(1)
-        expect(parsed.requestExtensions?.[0].extnID.toString()).toBe('1.2.3.4')
+        expect(parsed.requestExtensions?.[0].extnID.toString()).toEqual(
+            '1.2.3.4',
+        )
     })
 
     it('should convert to DER and back', () => {
@@ -154,7 +156,7 @@ describe('TBSRequest', () => {
         const der = original.toDer()
         const parsed = TBSRequest.fromDer(der)
 
-        expect(parsed.version).toBe(0)
+        expect(parsed.version).toEqual(0)
         expect(parsed.requestList).toHaveLength(1)
         expect(parsed.requestExtensions).toHaveLength(1)
     })
@@ -232,6 +234,6 @@ describe('TBSRequest', () => {
 
         const versionContainer = sequence.valueBlock
             .value[0] as asn1js.Constructed
-        expect(versionContainer.idBlock.tagNumber).toBe(0) // [0] tag
+        expect(versionContainer.idBlock.tagNumber).toEqual(0) // [0] tag
     })
 })

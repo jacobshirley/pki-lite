@@ -4,14 +4,14 @@ import { CertStatus } from './CertStatus.js'
 describe('CertStatus', () => {
     it('should create a CertStatus with good status', () => {
         const status = CertStatus.createGood()
-        expect(status.status).toBe('good')
+        expect(status.status).toEqual('good')
         expect(status.revocationReason).toBeUndefined()
         expect(status.revocationTime).toBeUndefined()
     })
 
     it('should create a CertStatus with unknown status', () => {
         const status = CertStatus.createUnknown()
-        expect(status.status).toBe('unknown')
+        expect(status.status).toEqual('unknown')
         expect(status.revocationReason).toBeUndefined()
         expect(status.revocationTime).toBeUndefined()
     })
@@ -21,9 +21,9 @@ describe('CertStatus', () => {
         const reason = 1 // keyCompromise
         const status = CertStatus.createRevoked(revocationTime, reason)
 
-        expect(status.status).toBe('revoked')
+        expect(status.status).toEqual('revoked')
         expect(status.revocationTime).toEqual(revocationTime)
-        expect(status.revocationReason).toBe(reason)
+        expect(status.revocationReason).toEqual(reason)
     })
 
     it('should convert to ASN.1 and back for good status', () => {
@@ -31,7 +31,7 @@ describe('CertStatus', () => {
         const asn1 = original.toAsn1()
         const parsed = CertStatus.fromAsn1(asn1)
 
-        expect(parsed.status).toBe('good')
+        expect(parsed.status).toEqual('good')
         expect(parsed.revocationReason).toBeUndefined()
         expect(parsed.revocationTime).toBeUndefined()
     })
@@ -44,8 +44,8 @@ describe('CertStatus', () => {
         const asn1 = original.toAsn1()
         const parsed = CertStatus.fromAsn1(asn1)
 
-        expect(parsed.status).toBe('revoked')
+        expect(parsed.status).toEqual('revoked')
         expect(parsed.revocationTime).not.toBeUndefined()
-        expect(parsed.revocationReason).toBe(reason)
+        expect(parsed.revocationReason).toEqual(reason)
     })
 })

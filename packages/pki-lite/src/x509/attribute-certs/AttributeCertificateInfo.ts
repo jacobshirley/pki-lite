@@ -37,7 +37,7 @@ import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
  */
 export class Holder extends PkiBase<Holder> {
     // Simplified implementation for the holder
-    holderValue: Uint8Array
+    holderValue: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new Holder instance.
@@ -45,7 +45,7 @@ export class Holder extends PkiBase<Holder> {
      * @param options Configuration options for the holder
      * @param options.holderValue The binary representation of the holder
      */
-    constructor(options: { holderValue: Uint8Array }) {
+    constructor(options: { holderValue: Uint8Array<ArrayBuffer> }) {
         super()
         this.holderValue = options.holderValue
     }
@@ -95,7 +95,7 @@ export class Holder extends PkiBase<Holder> {
  */
 export class AttCertIssuer extends PkiBase<AttCertIssuer> {
     // Simplified implementation for the issuer
-    issuerValue: Uint8Array
+    issuerValue: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new AttCertIssuer instance.
@@ -103,7 +103,7 @@ export class AttCertIssuer extends PkiBase<AttCertIssuer> {
      * @param options Configuration options for the issuer
      * @param options.issuerValue The binary representation of the issuer
      */
-    constructor(options: { issuerValue: Uint8Array }) {
+    constructor(options: { issuerValue: Uint8Array<ArrayBuffer> }) {
         super()
         this.issuerValue = options.issuerValue
     }
@@ -167,13 +167,13 @@ export class AttributeCertificateInfo extends PkiBase<AttributeCertificateInfo> 
     holder: Holder
     issuer: AttCertIssuer
     signature: AlgorithmIdentifier
-    serialNumber: Uint8Array
+    serialNumber: Uint8Array<ArrayBuffer>
     validityPeriod: {
         notBefore: Date
         notAfter: Date
     }
     attributes: Attribute[]
-    issuerUniqueID?: Uint8Array
+    issuerUniqueID?: Uint8Array<ArrayBuffer>
     extensions?: Extension[]
 
     /**
@@ -194,13 +194,13 @@ export class AttributeCertificateInfo extends PkiBase<AttributeCertificateInfo> 
         holder: Holder
         issuer: AttCertIssuer
         signature: AlgorithmIdentifier
-        serialNumber: Uint8Array
+        serialNumber: Uint8Array<ArrayBuffer>
         validityPeriod: {
             notBefore: Date
             notAfter: Date
         }
         attributes: Attribute[]
-        issuerUniqueID?: Uint8Array
+        issuerUniqueID?: Uint8Array<ArrayBuffer>
         extensions?: Extension[]
     }) {
         super()
@@ -363,7 +363,7 @@ export class AttributeCertificateInfo extends PkiBase<AttributeCertificateInfo> 
         )
 
         // Extract optional issuerUniqueID if present
-        let issuerUniqueID: Uint8Array | undefined
+        let issuerUniqueID: Uint8Array<ArrayBuffer> | undefined
         let extensions: Extension[] | undefined
 
         if (values.length > 7) {

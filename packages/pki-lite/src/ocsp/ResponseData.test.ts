@@ -46,11 +46,11 @@ describe('ResponseData', () => {
             producedAt,
         })
 
-        expect(responseData.version).toBe(0) // v1
-        expect(responseData.responderID).toBe(responderID)
-        expect(responseData.producedAt).toBe(producedAt)
+        expect(responseData.version).toEqual(0) // v1
+        expect(responseData.responderID).toEqual(responderID)
+        expect(responseData.producedAt).toEqual(producedAt)
         expect(responseData.responses).toHaveLength(1)
-        expect(responseData.responses[0]).toBe(singleResponse)
+        expect(responseData.responses[0]).toEqual(singleResponse)
         expect(responseData.responseExtensions).toBeUndefined()
     })
 
@@ -100,13 +100,13 @@ describe('ResponseData', () => {
             responseExtensions: [extension],
         })
 
-        expect(responseData.version).toBe(0) // v1
-        expect(responseData.responderID).toBe(responderID)
-        expect(responseData.producedAt).toBe(producedAt)
+        expect(responseData.version).toEqual(0) // v1
+        expect(responseData.responderID).toEqual(responderID)
+        expect(responseData.producedAt).toEqual(producedAt)
         expect(responseData.responses).toHaveLength(1)
-        expect(responseData.responses[0]).toBe(singleResponse)
+        expect(responseData.responses[0]).toEqual(singleResponse)
         expect(responseData.responseExtensions).toHaveLength(1)
-        expect(responseData.responseExtensions?.[0]).toBe(extension)
+        expect(responseData.responseExtensions?.[0]).toEqual(extension)
     })
 
     it('should convert to ASN.1 and back', () => {
@@ -146,11 +146,11 @@ describe('ResponseData', () => {
         const asn1 = original.toAsn1()
         const parsed = ResponseData.fromAsn1(asn1)
 
-        expect(parsed.version).toBe(0) // v1
+        expect(parsed.version).toEqual(0) // v1
         expect(parsed.responderID).toBeInstanceOf(ResponderID.byKey)
         expect(parsed.producedAt).not.toBeUndefined()
         expect(parsed.responses).toHaveLength(1)
-        expect(parsed.responses[0].certStatus.status).toBe('good')
+        expect(parsed.responses[0].certStatus.status).toEqual('good')
         expect(parsed.responseExtensions).toBeUndefined()
     })
 })

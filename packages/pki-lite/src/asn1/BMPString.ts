@@ -10,9 +10,11 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class BMPString extends PkiBase<BMPString> {
-    bytes: Uint8Array
+    bytes: Uint8Array<ArrayBuffer>
 
-    constructor(options: { value: string | Uint8Array | BMPString }) {
+    constructor(options: {
+        value: string | Uint8Array<ArrayBuffer> | BMPString
+    }) {
         super()
         const { value } = options
 

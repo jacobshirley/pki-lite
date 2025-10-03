@@ -3,7 +3,7 @@ import { KeyIdentifier } from './KeyIdentifier.js'
 import { asn1js } from '../../core/PkiBase.js'
 
 describe('KeyIdentifier', () => {
-    test('can be created from Uint8Array', () => {
+    test('can be created from Uint8Array<ArrayBuffer>', () => {
         const keyId = new Uint8Array([1, 2, 3, 4, 5])
         const keyIdentifier = new KeyIdentifier({ bytes: keyId })
 

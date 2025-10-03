@@ -42,7 +42,7 @@ MacData ::= SEQUENCE {
 
 ###### macSalt
 
-`Uint8Array`\<`ArrayBufferLike`\> \| [`OctetString`](../../../asn1/OctetString/classes/OctetString.md)
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| [`OctetString`](../../../asn1/OctetString/classes/OctetString.md)
 
 #### Returns
 
@@ -192,13 +192,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 
@@ -307,7 +307,7 @@ A string representation for debugging
 
 ##### der
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 #### Returns
 

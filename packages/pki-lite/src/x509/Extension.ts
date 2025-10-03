@@ -137,7 +137,7 @@ export class Extension extends PkiBase<Extension> {
         })
     }
 
-    static fromDer(der: Uint8Array): Extension {
+    static fromDer(der: Uint8Array<ArrayBuffer>): Extension {
         return Extension.fromAsn1(derToAsn1(der))
     }
 
@@ -150,7 +150,9 @@ export class Extension extends PkiBase<Extension> {
         })
     }
 
-    static authorityKeyIdentifier(keyIdentifier: Uint8Array): Extension {
+    static authorityKeyIdentifier(
+        keyIdentifier: Uint8Array<ArrayBuffer>,
+    ): Extension {
         return new Extension({
             extnID: OIDs.EXTENSION.AUTHORITY_KEY_IDENTIFIER,
             critical: false,
@@ -159,7 +161,7 @@ export class Extension extends PkiBase<Extension> {
     }
 
     static subjectKeyIdentifier(
-        keyIdentifier: Uint8Array | OctetString,
+        keyIdentifier: Uint8Array<ArrayBuffer> | OctetString,
     ): Extension {
         return new Extension({
             extnID: OIDs.EXTENSION.SUBJECT_KEY_IDENTIFIER,

@@ -3,12 +3,12 @@ import { OCSPResponseStatus } from './OCSPResponseStatus.js'
 
 describe('OCSPResponseStatus', () => {
     it('should have correct status values', () => {
-        expect(OCSPResponseStatus.successful.value).toBe(0)
-        expect(OCSPResponseStatus.malformedRequest.value).toBe(1)
-        expect(OCSPResponseStatus.internalError.value).toBe(2)
-        expect(OCSPResponseStatus.tryLater.value).toBe(3)
-        expect(OCSPResponseStatus.sigRequired.value).toBe(5)
-        expect(OCSPResponseStatus.unauthorized.value).toBe(6)
+        expect(OCSPResponseStatus.successful.value).toEqual(0)
+        expect(OCSPResponseStatus.malformedRequest.value).toEqual(1)
+        expect(OCSPResponseStatus.internalError.value).toEqual(2)
+        expect(OCSPResponseStatus.tryLater.value).toEqual(3)
+        expect(OCSPResponseStatus.sigRequired.value).toEqual(5)
+        expect(OCSPResponseStatus.unauthorized.value).toEqual(6)
     })
 
     it('should have all expected status codes', () => {

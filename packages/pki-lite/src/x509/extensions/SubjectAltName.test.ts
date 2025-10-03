@@ -13,7 +13,7 @@ describe('SubjectAltName', () => {
         const subjectAltName = new SubjectAltName()
 
         expect(subjectAltName).toBeInstanceOf(SubjectAltName)
-        expect(subjectAltName.length).toBe(0)
+        expect(subjectAltName.length).toEqual(0)
     })
 
     test('should create SubjectAltName with DNS names', () => {
@@ -22,9 +22,9 @@ describe('SubjectAltName', () => {
 
         const subjectAltName = new SubjectAltName(dnsName1, dnsName2)
 
-        expect(subjectAltName.length).toBe(2)
-        expect(subjectAltName[0]).toBe(dnsName1)
-        expect(subjectAltName[1]).toBe(dnsName2)
+        expect(subjectAltName.length).toEqual(2)
+        expect(subjectAltName[0]).toEqual(dnsName1)
+        expect(subjectAltName[1]).toEqual(dnsName2)
     })
 
     test('should create SubjectAltName with mixed GeneralName types', () => {
@@ -36,10 +36,10 @@ describe('SubjectAltName', () => {
 
         const subjectAltName = new SubjectAltName(dnsName, emailName, uri)
 
-        expect(subjectAltName.length).toBe(3)
-        expect(subjectAltName[0]).toBe(dnsName)
-        expect(subjectAltName[1]).toBe(emailName)
-        expect(subjectAltName[2]).toBe(uri)
+        expect(subjectAltName.length).toEqual(3)
+        expect(subjectAltName[0]).toEqual(dnsName)
+        expect(subjectAltName[1]).toEqual(emailName)
+        expect(subjectAltName[2]).toEqual(uri)
     })
 
     test('should create SubjectAltName with IP addresses', () => {
@@ -53,9 +53,9 @@ describe('SubjectAltName', () => {
 
         const subjectAltName = new SubjectAltName(ipv4, ipv6)
 
-        expect(subjectAltName.length).toBe(2)
-        expect(subjectAltName[0]).toBe(ipv4)
-        expect(subjectAltName[1]).toBe(ipv6)
+        expect(subjectAltName.length).toEqual(2)
+        expect(subjectAltName[0]).toEqual(ipv4)
+        expect(subjectAltName[1]).toEqual(ipv6)
     })
 
     test('should convert to ASN.1 structure', () => {
@@ -66,7 +66,7 @@ describe('SubjectAltName', () => {
         const asn1 = subjectAltName.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
     })
 
     test('should parse from ASN.1 structure with DNS names', () => {
@@ -86,11 +86,11 @@ describe('SubjectAltName', () => {
         const subjectAltName = SubjectAltName.fromAsn1(asn1)
 
         expect(subjectAltName).toBeInstanceOf(SubjectAltName)
-        expect(subjectAltName.length).toBe(2)
+        expect(subjectAltName.length).toEqual(2)
         expect(subjectAltName[0]).toBeInstanceOf(dNSName)
         expect(subjectAltName[1]).toBeInstanceOf(dNSName)
-        expect(subjectAltName[0].toString()).toBe('example.com')
-        expect(subjectAltName[1].toString()).toBe('www.example.com')
+        expect(subjectAltName[0].toString()).toEqual('example.com')
+        expect(subjectAltName[1].toString()).toEqual('www.example.com')
     })
 
     test('should parse from ASN.1 structure with mixed types', () => {
@@ -117,7 +117,7 @@ describe('SubjectAltName', () => {
 
         const subjectAltName = SubjectAltName.fromAsn1(asn1)
 
-        expect(subjectAltName.length).toBe(3)
+        expect(subjectAltName.length).toEqual(3)
         expect(subjectAltName[0]).toBeInstanceOf(dNSName)
         expect(subjectAltName[1]).toBeInstanceOf(rfc822Name)
         expect(subjectAltName[2]).toBeInstanceOf(uniformResourceIdentifier)
@@ -137,7 +137,7 @@ describe('SubjectAltName', () => {
         const subjectAltName = SubjectAltName.fromAsn1(asn1)
 
         expect(subjectAltName).toBeInstanceOf(SubjectAltName)
-        expect(subjectAltName.length).toBe(0)
+        expect(subjectAltName.length).toEqual(0)
     })
 
     test('should handle round-trip conversion through ASN.1', () => {
@@ -151,13 +151,13 @@ describe('SubjectAltName', () => {
         const asn1 = original.toAsn1()
         const decoded = SubjectAltName.fromAsn1(asn1)
 
-        expect(decoded.length).toBe(original.length)
+        expect(decoded.length).toEqual(original.length)
         expect(decoded[0]).toBeInstanceOf(dNSName)
         expect(decoded[1]).toBeInstanceOf(rfc822Name)
         expect(decoded[2]).toBeInstanceOf(uniformResourceIdentifier)
-        expect(decoded[0].toString()).toBe('test.example.com')
-        expect(decoded[1].toString()).toBe('test@example.com')
-        expect(decoded[2].toString()).toBe('https://test.example.com')
+        expect(decoded[0].toString()).toEqual('test.example.com')
+        expect(decoded[1].toString()).toEqual('test@example.com')
+        expect(decoded[2].toString()).toEqual('https://test.example.com')
     })
 
     test('should support common certificate use cases', () => {
@@ -169,8 +169,10 @@ describe('SubjectAltName', () => {
             new dNSName({ value: 'api.example.com' }),
         )
 
-        expect(webServerSAN.length).toBe(4)
-        expect(webServerSAN.every((name) => name instanceof dNSName)).toBe(true)
+        expect(webServerSAN.length).toEqual(4)
+        expect(webServerSAN.every((name) => name instanceof dNSName)).toEqual(
+            true,
+        )
 
         // Email certificate
         const emailSAN = new SubjectAltName(
@@ -178,8 +180,10 @@ describe('SubjectAltName', () => {
             new rfc822Name({ value: 'admin@example.com' }),
         )
 
-        expect(emailSAN.length).toBe(2)
-        expect(emailSAN.every((name) => name instanceof rfc822Name)).toBe(true)
+        expect(emailSAN.length).toEqual(2)
+        expect(emailSAN.every((name) => name instanceof rfc822Name)).toEqual(
+            true,
+        )
 
         // Service certificate with IP addresses
         const serviceSAN = new SubjectAltName(
@@ -188,7 +192,7 @@ describe('SubjectAltName', () => {
             new dNSName({ value: 'service.internal' }),
         )
 
-        expect(serviceSAN.length).toBe(3)
+        expect(serviceSAN.length).toEqual(3)
         expect(serviceSAN[0]).toBeInstanceOf(iPAddress)
         expect(serviceSAN[1]).toBeInstanceOf(iPAddress)
         expect(serviceSAN[2]).toBeInstanceOf(dNSName)

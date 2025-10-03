@@ -83,7 +83,7 @@ export class SignerInfo extends PkiBase<SignerInfo> {
     digestAlgorithm: DigestAlgorithmIdentifier
     signedAttrs?: SignedAttributes
     signatureAlgorithm: SignatureAlgorithmIdentifier
-    signature: Uint8Array
+    signature: Uint8Array<ArrayBuffer>
     unsignedAttrs?: UnsignedAttributes
 
     constructor(options: {
@@ -91,7 +91,7 @@ export class SignerInfo extends PkiBase<SignerInfo> {
         sid: SignerIdentifier
         digestAlgorithm: AlgorithmIdentifier
         signatureAlgorithm: AlgorithmIdentifier
-        signature: Uint8Array
+        signature: Uint8Array<ArrayBuffer>
         signedAttrs?: Attribute[]
         unsignedAttrs?: Attribute[]
     }) {
@@ -254,11 +254,13 @@ export class SignerInfo extends PkiBase<SignerInfo> {
         })
     }
 
-    static fromDer(derBytes: Uint8Array): SignerInfo {
+    static fromDer(derBytes: Uint8Array<ArrayBuffer>): SignerInfo {
         return SignerInfo.fromAsn1(derToAsn1(derBytes))
     }
 
-    private getSignatureData(data?: Uint8Array): Uint8Array {
+    private getSignatureData(
+        data?: Uint8Array<ArrayBuffer>,
+    ): Uint8Array<ArrayBuffer> {
         if (this.signedAttrs) {
             // When signed attributes are present, the signature is computed over the
             // DER encoding of the SignedAttributes value
@@ -277,7 +279,7 @@ export class SignerInfo extends PkiBase<SignerInfo> {
     }
 
     async verify(options: {
-        data?: Uint8Array
+        data?: Uint8Array<ArrayBuffer>
         publicKeyInfo: SubjectPublicKeyInfo
     }): Promise<
         | {

@@ -17,8 +17,10 @@ describe('PFX', () => {
         const pfx = new PFX({ authSafe })
         const der = pfx.toDer()
         const decoded = PFX.fromDer(der)
-        expect(decoded.version).toBe(3)
-        expect(decoded.authSafe.contentType.value).toBe('1.2.840.113549.1.7.1')
+        expect(decoded.version).toEqual(3)
+        expect(decoded.authSafe.contentType.value).toEqual(
+            '1.2.840.113549.1.7.1',
+        )
         // decoded.authSafe.content is an Any object; check its .derBytes
         expect(
             decoded.authSafe.content?.parseAs(OctetString).bytes ?? [],
@@ -41,7 +43,7 @@ describe('PFX', () => {
         const pfx = new PFX({ authSafe, macData })
         const der = pfx.toDer()
         const decoded = PFX.fromDer(der)
-        expect(decoded.macData?.iterations).toBe(2048)
+        expect(decoded.macData?.iterations).toEqual(2048)
         expect(Array.from(decoded.macData?.macSalt.bytes ?? [])).toEqual([
             4, 5, 6,
         ])
@@ -65,7 +67,7 @@ describe('PFX', () => {
 
         const der = pfx.toDer()
         const decoded = PFX.fromDer(der)
-        expect(decoded.version).toBe(3)
+        expect(decoded.version).toEqual(3)
         expect(decoded.macData).toBeUndefined()
         expect(decoded.authSafe).toBeInstanceOf(ContentInfo)
     })

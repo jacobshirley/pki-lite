@@ -68,7 +68,7 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
     reqPolicy?: ObjectIdentifier
 
     /** Optional nonce for replay protection, should be unique per request */
-    nonce?: Uint8Array // Store as bytes to preserve exact value
+    nonce?: Uint8Array<ArrayBuffer> // Store as bytes to preserve exact value
 
     /** Whether to include the TSA certificate in the response */
     certReq: boolean = false
@@ -101,7 +101,7 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
         version?: number
         messageImprint: MessageImprint
         reqPolicy?: ObjectIdentifierString
-        nonce?: Uint8Array
+        nonce?: Uint8Array<ArrayBuffer>
         certReq?: boolean
         extensions?: Extension[]
     }) {
@@ -232,7 +232,7 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
 
         // Parse optional fields
         let reqPolicy: ObjectIdentifier | undefined
-        let nonce: Uint8Array | undefined
+        let nonce: Uint8Array<ArrayBuffer> | undefined
         let certReq = false
         let extensions: Extension[] | undefined
 
@@ -281,7 +281,7 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
      * @returns The parsed TimeStampReq
      * @throws Error if DER parsing fails
      */
-    static fromDer(der: Uint8Array): TimeStampReq {
+    static fromDer(der: Uint8Array<ArrayBuffer>): TimeStampReq {
         return TimeStampReq.fromAsn1(derToAsn1(der))
     }
 
@@ -403,7 +403,7 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
         messageImprint: MessageImprint
         version?: number
         reqPolicy?: ObjectIdentifierString
-        nonce?: Uint8Array
+        nonce?: Uint8Array<ArrayBuffer>
         certReq?: boolean
         extensions?: Extension[]
     }): TimeStampReq {

@@ -3,7 +3,7 @@
  */
 
 /**
- * Pads a Uint8Array to the specified length by adding zeros to the left.
+ * Pads a Uint8Array<ArrayBuffer> to the specified length by adding zeros to the left.
  * If the array is already at or exceeds the target length, it is returned as-is.
  *
  * @param array The array to pad
@@ -11,9 +11,9 @@
  * @returns A new Uint8Array padded to the target length
  */
 export function padUint8Array(
-    array: Uint8Array,
+    array: Uint8Array<ArrayBuffer>,
     targetLength: number,
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
     if (array.length >= targetLength) {
         return array
     }
@@ -25,12 +25,12 @@ export function padUint8Array(
 }
 
 /**
- * Converts a hex string to a Uint8Array
+ * Converts a hex string to a Uint8Array<ArrayBuffer>
  *
  * @param hex The hex string to convert (can optionally start with '0x')
- * @returns A Uint8Array containing the bytes represented by the hex string
+ * @returns A Uint8Array<ArrayBuffer> containing the bytes represented by the hex string
  */
-export function hexToUint8Array(hex: string): Uint8Array {
+export function hexToUint8Array(hex: string): Uint8Array<ArrayBuffer> {
     // Remove 0x prefix if present
     const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex
 
@@ -45,13 +45,16 @@ export function hexToUint8Array(hex: string): Uint8Array {
 }
 
 /**
- * Converts a Uint8Array to a hex string
+ * Converts a Uint8Array<ArrayBuffer> to a hex string
  *
- * @param bytes The Uint8Array to convert
+ * @param bytes The Uint8Array<ArrayBuffer> to convert
  * @param prefix Whether to include the '0x' prefix (default: false)
- * @returns A hex string representation of the Uint8Array
+ * @returns A hex string representation of the Uint8Array<ArrayBuffer>
  */
-export function uint8ArrayToHex(bytes: Uint8Array, prefix = false): string {
+export function uint8ArrayToHex(
+    bytes: Uint8Array<ArrayBuffer>,
+    prefix = false,
+): string {
     const hex = Array.from(bytes)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('')

@@ -123,7 +123,7 @@ export class SignedDataBuilder implements AsyncBuilder<SignedData> {
     /**
      * The data to be signed (optional for detached signatures).
      */
-    data?: Uint8Array
+    data?: Uint8Array<ArrayBuffer>
 
     /**
      * Content type identifier for the data being signed.
@@ -159,7 +159,10 @@ export class SignedDataBuilder implements AsyncBuilder<SignedData> {
      * @param contentType Optional content type identifier
      * @returns This builder instance for chaining
      */
-    setData(data: Uint8Array | string, contentType?: ObjectIdentifier): this {
+    setData(
+        data: Uint8Array<ArrayBuffer> | string,
+        contentType?: ObjectIdentifier,
+    ): this {
         this.data =
             typeof data === 'string' ? new TextEncoder().encode(data) : data
         if (contentType) {

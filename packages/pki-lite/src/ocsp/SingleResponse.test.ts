@@ -34,8 +34,8 @@ describe('SingleResponse', () => {
             thisUpdate,
         })
 
-        expect(singleResponse.certID).toBe(certID)
-        expect(singleResponse.certStatus).toBe(certStatus)
+        expect(singleResponse.certID).toEqual(certID)
+        expect(singleResponse.certStatus).toEqual(certStatus)
         expect(singleResponse.thisUpdate.time).toEqual(thisUpdate)
         expect(singleResponse.nextUpdate?.time).toBeUndefined()
         expect(singleResponse.singleExtensions).toBeUndefined()
@@ -78,12 +78,12 @@ describe('SingleResponse', () => {
             singleExtensions: [extension],
         })
 
-        expect(singleResponse.certID).toBe(certID)
-        expect(singleResponse.certStatus).toBe(certStatus)
+        expect(singleResponse.certID).toEqual(certID)
+        expect(singleResponse.certStatus).toEqual(certStatus)
         expect(singleResponse.thisUpdate.time).toEqual(thisUpdate)
         expect(singleResponse.nextUpdate?.time).toEqual(nextUpdate)
         expect(singleResponse.singleExtensions).toHaveLength(1)
-        expect(singleResponse.singleExtensions?.[0]).toBe(extension)
+        expect(singleResponse.singleExtensions?.[0]).toEqual(extension)
     })
 
     it('should convert to ASN.1 and back', () => {
@@ -114,7 +114,7 @@ describe('SingleResponse', () => {
         expect(parsed.certID.hashAlgorithm.algorithm).toEqual(
             hashAlgorithm.algorithm,
         )
-        expect(parsed.certStatus.status).toBe('good')
+        expect(parsed.certStatus.status).toEqual('good')
         expect(parsed.thisUpdate).not.toBeUndefined()
         expect(parsed.nextUpdate).toBeUndefined()
         expect(parsed.singleExtensions).toBeUndefined()

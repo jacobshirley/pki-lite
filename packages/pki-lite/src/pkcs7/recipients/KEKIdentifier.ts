@@ -15,12 +15,12 @@ import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
  * ```
  */
 export class KEKIdentifier extends PkiBase<KEKIdentifier> {
-    keyIdentifier: Uint8Array
+    keyIdentifier: Uint8Array<ArrayBuffer>
     date?: Date
     other?: OtherKeyAttribute
 
     constructor(options: {
-        keyIdentifier: Uint8Array
+        keyIdentifier: Uint8Array<ArrayBuffer>
         date?: Date
         other?: OtherKeyAttribute
     }) {

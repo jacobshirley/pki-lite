@@ -13,15 +13,15 @@ describe('BitString', () => {
         expect(bitString.bytes).toEqual(expectedBytes)
 
         // ToString should convert back to the original string
-        expect(bitString.toString()).toBe(testString)
+        expect(bitString.toString()).toEqual(testString)
     })
 
-    test('should correctly initialize with Uint8Array', () => {
+    test('should correctly initialize with Uint8Array<ArrayBuffer>', () => {
         const bytes = new Uint8Array([0x54, 0x65, 0x73, 0x74]) // "Test" in ASCII
         const bitString = new BitString({ value: bytes })
 
         expect(bitString.bytes).toEqual(bytes)
-        expect(bitString.toString()).toBe('Test')
+        expect(bitString.toString()).toEqual('Test')
     })
 
     test('should correctly initialize from another BitString', () => {
@@ -30,7 +30,7 @@ describe('BitString', () => {
 
         // Both should have the same bytes
         expect(copy.bytes).toEqual(original.bytes)
-        expect(copy.toString()).toBe(original.toString())
+        expect(copy.toString()).toEqual(original.toString())
 
         // Verify they are separate instances
         const newBytes = new TextEncoder().encode('Modified')
@@ -54,7 +54,7 @@ describe('BitString', () => {
 
         // Verify round-trip conversion
         expect(decoded.bytes).toEqual(original.bytes)
-        expect(decoded.toString()).toBe(testString)
+        expect(decoded.toString()).toEqual(testString)
     })
 
     // Test fromAsn1 with invalid input
@@ -70,13 +70,13 @@ describe('BitString', () => {
     // Test with empty values
     test('should handle empty string', () => {
         const bitString = new BitString({ value: '' })
-        expect(bitString.bytes.length).toBe(0)
-        expect(bitString.toString()).toBe('')
+        expect(bitString.bytes.length).toEqual(0)
+        expect(bitString.toString()).toEqual('')
     })
 
     // Test with binary data
     test('should handle binary data', () => {
-        // Create a Uint8Array with non-UTF8 data
+        // Create a Uint8Array<ArrayBuffer> with non-UTF8 data
         const binaryData = new Uint8Array([0x00, 0xff, 0xa0, 0x5f, 0x7e])
         const bitString = new BitString({ value: binaryData })
 
@@ -97,8 +97,8 @@ describe('BitString', () => {
         const largeString = 'A'.repeat(1000)
         const bitString = new BitString({ value: largeString })
 
-        expect(bitString.bytes.length).toBe(1000)
-        expect(bitString.toString()).toBe(largeString)
+        expect(bitString.bytes.length).toEqual(1000)
+        expect(bitString.toString()).toEqual(largeString)
     })
 
     // Test with special characters
@@ -106,7 +106,7 @@ describe('BitString', () => {
         const specialChars = '!@#$%^&*()_+{}[]|":;<>,.?/~`éñüçあいうえお😀😎🚀'
         const bitString = new BitString({ value: specialChars })
 
-        expect(bitString.toString()).toBe(specialChars)
+        expect(bitString.toString()).toEqual(specialChars)
     })
 
     // Test toString method
@@ -122,7 +122,7 @@ describe('BitString', () => {
 
         for (const testCase of testCases) {
             const bitString = new BitString({ value: testCase })
-            expect(bitString.toString()).toBe(testCase)
+            expect(bitString.toString()).toEqual(testCase)
         }
     })
 
@@ -138,7 +138,7 @@ describe('BitString', () => {
 
         for (const { input, expected } of testCases) {
             const bitString = new BitString({ value: input })
-            expect(bitString.toHexString().toLowerCase()).toBe(expected)
+            expect(bitString.toHexString().toLowerCase()).toEqual(expected)
         }
     })
 })

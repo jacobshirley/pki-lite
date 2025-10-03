@@ -26,7 +26,7 @@ export class IssuerAndSerialNumber extends PkiBase<IssuerAndSerialNumber> {
 
     constructor(options: {
         issuer: Name
-        serialNumber: Uint8Array | number | string | Integer
+        serialNumber: Uint8Array<ArrayBuffer> | number | string | Integer
     }) {
         super()
         const { issuer, serialNumber } = options

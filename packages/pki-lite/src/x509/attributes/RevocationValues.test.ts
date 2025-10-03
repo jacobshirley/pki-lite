@@ -62,7 +62,7 @@ describe('RevocationValues', () => {
         const rev = new RevocationValues({ crlVals: [crl] })
         const asn1 = rev.toAsn1()
         const decoded = RevocationValues.fromAsn1(asn1)
-        expect(decoded.crlVals?.length).toBe(1)
+        expect(decoded.crlVals?.length).toEqual(1)
     })
 
     test('encodes and decodes with OCSP', () => {
@@ -91,7 +91,7 @@ describe('RevocationValues', () => {
         })
         const asn1 = rev.toAsn1()
         const decoded = RevocationValues.fromAsn1(asn1)
-        expect(decoded.ocspVals?.length).toBe(1)
+        expect(decoded.ocspVals?.length).toEqual(1)
     })
 
     test('encodes and decodes with OtherRevVals', () => {
@@ -102,8 +102,10 @@ describe('RevocationValues', () => {
         const rev = new RevocationValues({ otherRevVals: [other] })
         const asn1 = rev.toAsn1()
         const decoded = RevocationValues.fromAsn1(asn1)
-        expect(decoded.otherRevVals?.length).toBe(1)
-        expect(decoded.otherRevVals?.[0].OtherRevValType.value).toBe('1.2.3.4')
+        expect(decoded.otherRevVals?.length).toEqual(1)
+        expect(decoded.otherRevVals?.[0].OtherRevValType.value).toEqual(
+            '1.2.3.4',
+        )
     })
 
     test('toString does not throw', () => {

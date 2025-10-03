@@ -26,13 +26,13 @@ describe('AuthorityInfoAccess', () => {
         const aia = new AuthorityInfoAccess(ad1, ad2)
         const asn1 = aia.toAsn1()
         const decoded = AuthorityInfoAccess.fromAsn1(asn1)
-        expect(decoded.length).toBe(2)
-        expect(decoded[0].accessMethod.value).toBe('1.3.6.1.5.5.7.48.1')
-        expect(decoded[0].accessLocation.toString()).toBe(
+        expect(decoded.length).toEqual(2)
+        expect(decoded[0].accessMethod.value).toEqual('1.3.6.1.5.5.7.48.1')
+        expect(decoded[0].accessLocation.toString()).toEqual(
             'http://ocsp.example.com',
         )
-        expect(decoded[1].accessMethod.value).toBe('1.3.6.1.5.5.7.48.2')
-        expect(decoded[1].accessLocation.toString()).toBe(
+        expect(decoded[1].accessMethod.value).toEqual('1.3.6.1.5.5.7.48.2')
+        expect(decoded[1].accessLocation.toString()).toEqual(
             'http://ca.example.com',
         )
     })
@@ -48,9 +48,9 @@ describe('AuthorityInfoAccess', () => {
         const aia = new AuthorityInfoAccess(ad)
         const asn1 = aia.toAsn1()
         const decoded = AuthorityInfoAccess.fromAsn1(asn1)
-        expect(decoded.length).toBe(1)
-        expect(decoded[0].accessMethod.value).toBe('1.3.6.1.5.5.7.48.1')
-        expect(decoded[0].accessLocation.toString()).toBe(
+        expect(decoded.length).toEqual(1)
+        expect(decoded[0].accessMethod.value).toEqual('1.3.6.1.5.5.7.48.1')
+        expect(decoded[0].accessLocation.toString()).toEqual(
             'http://ocsp.example.com',
         )
     })

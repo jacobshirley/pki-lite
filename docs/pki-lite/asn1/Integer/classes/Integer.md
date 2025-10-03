@@ -34,7 +34,7 @@ Creates a new Integer instance
 
 ###### value
 
-`string` \| `number` \| `bigint` \| `Uint8Array`\<`ArrayBufferLike`\> \| `Integer`
+`string` \| `number` \| `bigint` \| `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\> \| `Integer`
 
 #### Returns
 
@@ -48,7 +48,7 @@ Creates a new Integer instance
 
 ### bytes
 
-> **bytes**: `Uint8Array`
+> **bytes**: `Uint8Array<ArrayBuffer>`
 
 ## Accessors
 
@@ -196,13 +196,13 @@ Converts to a BigInt value, which can handle integers of arbitrary precision
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 
@@ -327,11 +327,11 @@ Returns string representation of the integer
 
 ### toUnsigned()
 
-> **toUnsigned**(): `Uint8Array`
+> **toUnsigned**(): `Uint8Array<ArrayBuffer>`
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 ---
 

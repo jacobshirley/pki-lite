@@ -8,14 +8,14 @@
 
 > **arrayToBase64**(`bytes`): `string`
 
-Converts a Uint8Array to a base64 string in a browser-compatible way.
+Converts a Uint8Array<ArrayBuffer> to a base64 string in a browser-compatible way.
 Uses the btoa() function available in both browsers and Node.js.
 
 ## Parameters
 
 ### bytes
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The bytes to encode
 

@@ -43,8 +43,8 @@ describe('PkiSet', () => {
         const item1 = new TestPkiItem('one')
         const item2 = new TestPkiItem('two')
         const set = new PkiSet(item1, item2, item1)
-        expect(set.length).toBe(3) // PkiSet does not enforce uniqueness on construction
-        expect(set.some((i) => i.value === item1.value)).toBe(true)
-        expect(set.some((i) => i.value === item2.value)).toBe(true)
+        expect(set.length).toEqual(3) // PkiSet does not enforce uniqueness on construction
+        expect(set.some((i) => i.value === item1.value)).toEqual(true)
+        expect(set.some((i) => i.value === item2.value)).toEqual(true)
     })
 })

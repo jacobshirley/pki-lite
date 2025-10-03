@@ -53,7 +53,7 @@ export class PBES2Params extends PkiBase<PBES2Params> {
         })
     }
 
-    static fromDer(der: Uint8Array): PBES2Params {
+    static fromDer(der: Uint8Array<ArrayBuffer>): PBES2Params {
         return PBES2Params.fromAsn1(derToAsn1(der))
     }
 }

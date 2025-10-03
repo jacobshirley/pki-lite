@@ -217,7 +217,7 @@ export class TBSRequest extends PkiBase<TBSRequest> {
         })
     }
 
-    static fromDer(der: Uint8Array): TBSRequest {
+    static fromDer(der: Uint8Array<ArrayBuffer>): TBSRequest {
         return TBSRequest.fromAsn1(derToAsn1(der))
     }
 }

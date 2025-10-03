@@ -19,7 +19,7 @@ describe('KEKIdentifier', () => {
         const kekId = new KEKIdentifier({ keyIdentifier, date })
         expect(kekId).toBeInstanceOf(KEKIdentifier)
         expect(kekId.keyIdentifier).toEqual(keyIdentifier)
-        expect(kekId.date).toBe(date)
+        expect(kekId.date).toEqual(date)
         expect(kekId.other).toBeUndefined()
     })
 
@@ -32,7 +32,7 @@ describe('KEKIdentifier', () => {
         expect(kekId).toBeInstanceOf(KEKIdentifier)
         expect(kekId.keyIdentifier).toEqual(keyIdentifier)
         expect(kekId.date).toBeUndefined()
-        expect(kekId.other).toBe(other)
+        expect(kekId.other).toEqual(other)
     })
 
     test('can be created with all parameters', () => {
@@ -44,8 +44,8 @@ describe('KEKIdentifier', () => {
         const kekId = new KEKIdentifier({ keyIdentifier, date, other })
         expect(kekId).toBeInstanceOf(KEKIdentifier)
         expect(kekId.keyIdentifier).toEqual(keyIdentifier)
-        expect(kekId.date).toBe(date)
-        expect(kekId.other).toBe(other)
+        expect(kekId.date).toEqual(date)
+        expect(kekId.other).toEqual(other)
     })
 
     test('can be converted to ASN.1 with only keyIdentifier', () => {
@@ -54,7 +54,7 @@ describe('KEKIdentifier', () => {
         const asn1 = kekId.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(1)
+        expect(asn1.valueBlock.value.length).toEqual(1)
 
         const keyIdBlock = asn1.valueBlock.value[0]
         assert(keyIdBlock instanceof asn1js.OctetString)
@@ -70,7 +70,7 @@ describe('KEKIdentifier', () => {
         const asn1 = kekId.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         const keyIdBlock = asn1.valueBlock.value[0]
         assert(keyIdBlock instanceof asn1js.OctetString)
@@ -94,7 +94,7 @@ describe('KEKIdentifier', () => {
         const asn1 = kekId.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         const keyIdBlock = asn1.valueBlock.value[0]
         assert(keyIdBlock instanceof asn1js.OctetString)
@@ -120,7 +120,7 @@ describe('KEKIdentifier', () => {
         const asn1 = kekId.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3)
+        expect(asn1.valueBlock.value.length).toEqual(3)
 
         const keyIdBlock = asn1.valueBlock.value[0]
         assert(keyIdBlock instanceof asn1js.OctetString)

@@ -105,7 +105,7 @@ export class RevokedInfo extends PkiBase<RevokedInfo> {
         return new RevokedInfo({ revocationTime, revocationReason })
     }
 
-    static fromDer(der: Uint8Array): RevokedInfo {
+    static fromDer(der: Uint8Array<ArrayBuffer>): RevokedInfo {
         return RevokedInfo.fromAsn1(derToAsn1(der))
     }
 }

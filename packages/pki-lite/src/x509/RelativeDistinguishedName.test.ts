@@ -7,7 +7,7 @@ describe('RelativeDistinguishedName', () => {
     test('can be created empty', () => {
         const rdn = new RelativeDistinguishedName()
         expect(rdn).toBeInstanceOf(RelativeDistinguishedName)
-        expect(rdn.length).toBe(0)
+        expect(rdn.length).toEqual(0)
     })
 
     test('can be created with attributes', () => {
@@ -18,8 +18,8 @@ describe('RelativeDistinguishedName', () => {
         const rdn = new RelativeDistinguishedName(cn)
 
         expect(rdn).toBeInstanceOf(RelativeDistinguishedName)
-        expect(rdn.length).toBe(1)
-        expect(rdn[0]).toBe(cn)
+        expect(rdn.length).toEqual(1)
+        expect(rdn[0]).toEqual(cn)
     })
 
     test('can add attributes after creation', () => {
@@ -31,8 +31,8 @@ describe('RelativeDistinguishedName', () => {
 
         rdn.push(cn)
 
-        expect(rdn.length).toBe(1)
-        expect(rdn[0]).toBe(cn)
+        expect(rdn.length).toEqual(1)
+        expect(rdn[0]).toEqual(cn)
     })
 
     test('can be converted into ASN.1', () => {
@@ -47,7 +47,7 @@ describe('RelativeDistinguishedName', () => {
         const asn1 = rdn.toAsn1()
 
         assert(asn1 instanceof asn1js.Set)
-        expect(asn1.valueBlock.value.length).toBe(1)
+        expect(asn1.valueBlock.value.length).toEqual(1)
 
         // The item should be a Sequence (the ASN.1 representation of AttributeTypeAndValue)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
@@ -72,10 +72,10 @@ describe('RelativeDistinguishedName', () => {
         rdn.push(ou)
         rdn.push(o)
 
-        expect(rdn.length).toBe(3)
-        expect(rdn[0]).toBe(cn)
-        expect(rdn[1]).toBe(ou)
-        expect(rdn[2]).toBe(o)
+        expect(rdn.length).toEqual(3)
+        expect(rdn[0]).toEqual(cn)
+        expect(rdn[1]).toEqual(ou)
+        expect(rdn[2]).toEqual(o)
     })
 
     test('can be parsed from ASN.1', () => {
@@ -94,9 +94,9 @@ describe('RelativeDistinguishedName', () => {
 
         const rdn = RelativeDistinguishedName.fromAsn1(asn1)
         expect(rdn).toBeInstanceOf(RelativeDistinguishedName)
-        expect(rdn.length).toBe(1)
-        expect(rdn[0].type.toString()).toBe('2.5.4.3')
-        expect(rdn[0].shortName).toBe('CN')
+        expect(rdn.length).toEqual(1)
+        expect(rdn[0].type.toString()).toEqual('2.5.4.3')
+        expect(rdn[0].shortName).toEqual('CN')
     })
 
     test('can be parsed from ASN.1 with multiple attributes', () => {
@@ -122,11 +122,11 @@ describe('RelativeDistinguishedName', () => {
 
         const rdn = RelativeDistinguishedName.fromAsn1(asn1)
         expect(rdn).toBeInstanceOf(RelativeDistinguishedName)
-        expect(rdn.length).toBe(2)
-        expect(rdn[0].type.toString()).toBe('2.5.4.3')
-        expect(rdn[0].shortName).toBe('CN')
-        expect(rdn[1].type.toString()).toBe('2.5.4.11')
-        expect(rdn[1].shortName).toBe('OU')
+        expect(rdn.length).toEqual(2)
+        expect(rdn[0].type.toString()).toEqual('2.5.4.3')
+        expect(rdn[0].shortName).toEqual('CN')
+        expect(rdn[1].type.toString()).toEqual('2.5.4.11')
+        expect(rdn[1].shortName).toEqual('OU')
     })
 
     test('throws an error when parsing invalid ASN.1', () => {

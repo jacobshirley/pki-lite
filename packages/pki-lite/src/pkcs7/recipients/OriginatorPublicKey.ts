@@ -13,11 +13,11 @@ import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
  */
 export class OriginatorPublicKey extends PkiBase<OriginatorPublicKey> {
     algorithm: AlgorithmIdentifier
-    publicKey: Uint8Array
+    publicKey: Uint8Array<ArrayBuffer>
 
     constructor(options: {
         algorithm: AlgorithmIdentifier
-        publicKey: Uint8Array
+        publicKey: Uint8Array<ArrayBuffer>
     }) {
         super()
         this.algorithm = options.algorithm

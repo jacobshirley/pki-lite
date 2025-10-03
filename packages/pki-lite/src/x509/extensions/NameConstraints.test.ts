@@ -23,8 +23,8 @@ describe('GeneralSubtree', () => {
             base: dnsName,
         })
 
-        expect(subtree.base).toBe(dnsName)
-        expect(subtree.minimum).toBe(0)
+        expect(subtree.base).toEqual(dnsName)
+        expect(subtree.minimum).toEqual(0)
         expect(subtree.maximum).toBeUndefined()
     })
 
@@ -36,9 +36,9 @@ describe('GeneralSubtree', () => {
             maximum: 5,
         })
 
-        expect(subtree.base).toBe(dnsName)
-        expect(subtree.minimum).toBe(1)
-        expect(subtree.maximum).toBe(5)
+        expect(subtree.base).toEqual(dnsName)
+        expect(subtree.minimum).toEqual(1)
+        expect(subtree.maximum).toEqual(5)
     })
 
     test('should convert to ASN.1 structure', () => {
@@ -60,23 +60,25 @@ describe('GeneralSubtree', () => {
         })
 
         // Exact match
-        expect(subtree.matches(new dNSName({ value: 'example.com' }))).toBe(
+        expect(subtree.matches(new dNSName({ value: 'example.com' }))).toEqual(
             true,
         )
 
         // Subdomain match
-        expect(subtree.matches(new dNSName({ value: 'sub.example.com' }))).toBe(
-            true,
-        )
+        expect(
+            subtree.matches(new dNSName({ value: 'sub.example.com' })),
+        ).toEqual(true)
         expect(
             subtree.matches(new dNSName({ value: 'www.sub.example.com' })),
-        ).toBe(true)
+        ).toEqual(true)
 
         // No match
-        expect(subtree.matches(new dNSName({ value: 'other.com' }))).toBe(false)
-        expect(subtree.matches(new dNSName({ value: 'notexample.com' }))).toBe(
+        expect(subtree.matches(new dNSName({ value: 'other.com' }))).toEqual(
             false,
         )
+        expect(
+            subtree.matches(new dNSName({ value: 'notexample.com' })),
+        ).toEqual(false)
     })
 
     test('should match RFC822 names correctly', () => {
@@ -87,13 +89,13 @@ describe('GeneralSubtree', () => {
         // Different email addresses - matches should match domain
         expect(
             subtree.matches(new rfc822Name({ value: 'user@example.com' })),
-        ).toBe(true)
+        ).toEqual(true)
         expect(
             subtree.matches(new rfc822Name({ value: 'other@example.com' })),
-        ).toBe(true)
+        ).toEqual(true)
         expect(
             subtree.matches(new rfc822Name({ value: 'user@other.com' })),
-        ).toBe(false)
+        ).toEqual(false)
     })
 
     test('should match URI correctly', () => {
@@ -108,7 +110,7 @@ describe('GeneralSubtree', () => {
             subtree.matches(
                 new uniformResourceIdentifier({ value: 'https://example.com' }),
             ),
-        ).toBe(true)
+        ).toEqual(true)
 
         // Prefix match
         expect(
@@ -117,14 +119,14 @@ describe('GeneralSubtree', () => {
                     value: 'https://example.com/path',
                 }),
             ),
-        ).toBe(false)
+        ).toEqual(false)
 
         // Different URI
         expect(
             subtree.matches(
                 new uniformResourceIdentifier({ value: 'https://other.com' }),
             ),
-        ).toBe(false)
+        ).toEqual(false)
     })
 
     test('should match directory names', () => {
@@ -165,7 +167,7 @@ describe('GeneralSubtree', () => {
 
         expect(
             dnsSubtree.matches(new rfc822Name({ value: 'test@example.com' })),
-        ).toBe(false)
+        ).toEqual(false)
     })
 })
 
@@ -173,7 +175,7 @@ describe('GeneralSubtrees', () => {
     test('should create empty GeneralSubtrees', () => {
         const subtrees = new GeneralSubtrees()
 
-        expect(subtrees.length).toBe(0)
+        expect(subtrees.length).toEqual(0)
     })
 
     test('should create GeneralSubtrees with multiple subtrees', () => {
@@ -186,9 +188,9 @@ describe('GeneralSubtrees', () => {
 
         const subtrees = new GeneralSubtrees(subtree1, subtree2)
 
-        expect(subtrees.length).toBe(2)
-        expect(subtrees[0]).toBe(subtree1)
-        expect(subtrees[1]).toBe(subtree2)
+        expect(subtrees.length).toEqual(2)
+        expect(subtrees[0]).toEqual(subtree1)
+        expect(subtrees[1]).toEqual(subtree2)
     })
 
     test('should match if any subtree matches', () => {
@@ -203,11 +205,11 @@ describe('GeneralSubtrees', () => {
 
         expect(
             subtrees.matches(new dNSName({ value: 'sub.example.com' })),
-        ).toBe(true)
-        expect(subtrees.matches(new dNSName({ value: 'sub.test.org' }))).toBe(
-            true,
-        )
-        expect(subtrees.matches(new dNSName({ value: 'other.com' }))).toBe(
+        ).toEqual(true)
+        expect(
+            subtrees.matches(new dNSName({ value: 'sub.test.org' })),
+        ).toEqual(true)
+        expect(subtrees.matches(new dNSName({ value: 'other.com' }))).toEqual(
             false,
         )
     })
@@ -257,8 +259,8 @@ describe('NameConstraints', () => {
 
         expect(nameConstraints.permittedSubtrees).toBeDefined()
         expect(nameConstraints.excludedSubtrees).toBeDefined()
-        expect(nameConstraints.permittedSubtrees!.length).toBe(1)
-        expect(nameConstraints.excludedSubtrees!.length).toBe(1)
+        expect(nameConstraints.permittedSubtrees!.length).toEqual(1)
+        expect(nameConstraints.excludedSubtrees!.length).toEqual(1)
     })
 
     test('should handle NameConstraints with both permitted and excluded subtrees', () => {
@@ -276,8 +278,8 @@ describe('NameConstraints', () => {
 
         expect(nameConstraints.permittedSubtrees).toBeDefined()
         expect(nameConstraints.excludedSubtrees).toBeDefined()
-        expect(nameConstraints.permittedSubtrees!.length).toBe(1)
-        expect(nameConstraints.excludedSubtrees!.length).toBe(1)
+        expect(nameConstraints.permittedSubtrees!.length).toEqual(1)
+        expect(nameConstraints.excludedSubtrees!.length).toEqual(1)
 
         // Test that we can access the subtrees
         expect(nameConstraints.permittedSubtrees![0].base).toBeInstanceOf(

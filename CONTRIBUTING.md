@@ -118,7 +118,7 @@ export class YourClass extends PkiBase<YourClass> {
     static fromAsn1(asn1: Asn1Any): YourClass {
         /* ... */
     }
-    static fromDer(der: Uint8Array): YourClass {
+    static fromDer(der: Uint8Array<ArrayBuffer>): YourClass {
         /* ... */
     }
     static fromPem(pem: string): YourClass {
@@ -129,7 +129,7 @@ export class YourClass extends PkiBase<YourClass> {
     toAsn1(): Asn1Any {
         /* ... */
     }
-    toDer(): Uint8Array {
+    toDer(): Uint8Array<ArrayBuffer> {
         /* ... */
     }
     toPem(): string {
@@ -172,7 +172,7 @@ If the algorithm requires parameters, create a new class in `src/algorithms/`:
  */
 export class NewAlgorithmParams extends PkiBase<NewAlgorithmParams> {
     parameter1: number
-    parameter2?: Uint8Array
+    parameter2?: Uint8Array<ArrayBuffer>
 
     // ... follow standard class structure
 }
@@ -201,10 +201,10 @@ Add crypto provider support in the appropriate crypto provider files:
 // For extended algorithms, update WebCryptoExtendedProvider
 
 async newAlgorithmOperation(
-    data: Uint8Array,
+    data: Uint8Array<ArrayBuffer>,
     key: CryptoKey,
     params: NewAlgorithmParams
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
     // Implementation using Web Crypto API or fallback library
 }
 ```

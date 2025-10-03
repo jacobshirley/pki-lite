@@ -19,13 +19,13 @@ describe('CRLDistributionPoints', () => {
         const crldp = new CRLDistributionPoints(dp1, dp2)
         const asn1 = crldp.toAsn1()
         const decoded = CRLDistributionPoints.fromAsn1(asn1)
-        expect(decoded.length).toBe(2)
+        expect(decoded.length).toEqual(2)
         expect(
             (decoded[0].distributionPoint as GeneralNames)[0].toString(),
-        ).toBe('http://crl1.example.com')
+        ).toEqual('http://crl1.example.com')
         expect(
             (decoded[1].distributionPoint as GeneralNames)[0].toString(),
-        ).toBe('http://crl2.example.com')
+        ).toEqual('http://crl2.example.com')
     })
 
     it('should throw if ASN.1 is not a sequence', () => {
@@ -41,9 +41,9 @@ describe('CRLDistributionPoints', () => {
         const crldp = new CRLDistributionPoints(dp)
         const asn1 = crldp.toAsn1()
         const decoded = CRLDistributionPoints.fromAsn1(asn1)
-        expect(decoded.length).toBe(1)
+        expect(decoded.length).toEqual(1)
         expect(
             (decoded[0].distributionPoint as GeneralNames)[0].toString(),
-        ).toBe('http://crl.example.com')
+        ).toEqual('http://crl.example.com')
     })
 })

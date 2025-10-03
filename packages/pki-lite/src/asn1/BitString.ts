@@ -29,7 +29,7 @@ export class BitString extends PkiBase<BitString> {
     /**
      * The bytes representing this bit string.
      */
-    bytes: Uint8Array
+    bytes: Uint8Array<ArrayBuffer>
 
     /**
      * Creates a new BitString instance.
@@ -37,7 +37,9 @@ export class BitString extends PkiBase<BitString> {
      * @param options Configuration object
      * @param options.value The value as string, bytes, BitString, or PKI object
      */
-    constructor(options: { value: string | Uint8Array | BitString | PkiBase }) {
+    constructor(options: {
+        value: string | Uint8Array<ArrayBuffer> | BitString | PkiBase
+    }) {
         super()
         const { value } = options
 

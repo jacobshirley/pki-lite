@@ -78,7 +78,7 @@ export class CertificateList extends PkiBase<CertificateList> {
     constructor(options: {
         tbsCertList: TBSCertList
         signatureAlgorithm: AlgorithmIdentifier
-        signatureValue: Uint8Array | BitString
+        signatureValue: Uint8Array<ArrayBuffer> | BitString
     }) {
         super()
 
@@ -271,7 +271,7 @@ export class CertificateList extends PkiBase<CertificateList> {
      * const crl = CertificateList.fromDer(crlBytes)
      * ```
      */
-    static fromDer(der: Uint8Array): CertificateList {
+    static fromDer(der: Uint8Array<ArrayBuffer>): CertificateList {
         return CertificateList.fromAsn1(derToAsn1(der))
     }
 

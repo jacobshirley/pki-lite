@@ -91,7 +91,7 @@ export class Request extends PkiBase<Request> {
         return new Request({ reqCert, singleRequestExtensions })
     }
 
-    static fromDer(der: Uint8Array): Request {
+    static fromDer(der: Uint8Array<ArrayBuffer>): Request {
         return Request.fromAsn1(derToAsn1(der))
     }
 }

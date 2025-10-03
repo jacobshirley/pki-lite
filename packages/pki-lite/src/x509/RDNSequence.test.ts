@@ -8,7 +8,7 @@ describe('RDNSequence', () => {
     test('can be created empty', () => {
         const rdnSequence = new RDNSequence()
         expect(rdnSequence).toBeInstanceOf(RDNSequence)
-        expect(rdnSequence.length).toBe(0)
+        expect(rdnSequence.length).toEqual(0)
     })
 
     test('can be created with RDNs', () => {
@@ -21,8 +21,8 @@ describe('RDNSequence', () => {
         rdnSequence.push(rdn)
 
         expect(rdnSequence).toBeInstanceOf(RDNSequence)
-        expect(rdnSequence.length).toBe(1)
-        expect(rdnSequence[0]).toBe(rdn)
+        expect(rdnSequence.length).toEqual(1)
+        expect(rdnSequence[0]).toEqual(rdn)
     })
 
     test('can add RDNs after creation', () => {
@@ -35,8 +35,8 @@ describe('RDNSequence', () => {
 
         rdnSequence.push(rdn)
 
-        expect(rdnSequence.length).toBe(1)
-        expect(rdnSequence[0]).toBe(rdn)
+        expect(rdnSequence.length).toEqual(1)
+        expect(rdnSequence[0]).toEqual(rdn)
     })
 
     test('can be converted into ASN.1', () => {
@@ -58,7 +58,7 @@ describe('RDNSequence', () => {
         const asn1 = rdnSequence.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         // Each item should be a Set (the ASN.1 representation of RelativeDistinguishedName)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Set)
@@ -87,10 +87,10 @@ describe('RDNSequence', () => {
         const rdnSequence = new RDNSequence()
         rdnSequence.push(rdn1, rdn2, rdn3)
 
-        expect(rdnSequence.length).toBe(3)
-        expect(rdnSequence[0]).toBe(rdn1)
-        expect(rdnSequence[1]).toBe(rdn2)
-        expect(rdnSequence[2]).toBe(rdn3)
+        expect(rdnSequence.length).toEqual(3)
+        expect(rdnSequence[0]).toEqual(rdn1)
+        expect(rdnSequence[1]).toEqual(rdn2)
+        expect(rdnSequence[2]).toEqual(rdn3)
     })
 
     test('can be parsed from ASN.1', () => {
@@ -128,19 +128,19 @@ describe('RDNSequence', () => {
 
         const rdnSequence = RDNSequence.fromAsn1(asn1)
         expect(rdnSequence).toBeInstanceOf(RDNSequence)
-        expect(rdnSequence.length).toBe(2)
+        expect(rdnSequence.length).toEqual(2)
 
         // Check first RDN (CN=Test)
         expect(rdnSequence[0]).toBeInstanceOf(RelativeDistinguishedName)
-        expect(rdnSequence[0].length).toBe(1)
-        expect(rdnSequence[0][0].type.toString()).toBe('2.5.4.3')
-        expect(rdnSequence[0][0].shortName).toBe('CN')
+        expect(rdnSequence[0].length).toEqual(1)
+        expect(rdnSequence[0][0].type.toString()).toEqual('2.5.4.3')
+        expect(rdnSequence[0][0].shortName).toEqual('CN')
 
         // Check second RDN (OU=Unit)
         expect(rdnSequence[1]).toBeInstanceOf(RelativeDistinguishedName)
-        expect(rdnSequence[1].length).toBe(1)
-        expect(rdnSequence[1][0].type.toString()).toBe('2.5.4.11')
-        expect(rdnSequence[1][0].shortName).toBe('OU')
+        expect(rdnSequence[1].length).toEqual(1)
+        expect(rdnSequence[1][0].type.toString()).toEqual('2.5.4.11')
+        expect(rdnSequence[1][0].shortName).toEqual('OU')
     })
 
     test('throws an error when parsing invalid ASN.1', () => {

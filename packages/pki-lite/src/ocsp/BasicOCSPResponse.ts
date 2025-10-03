@@ -22,7 +22,7 @@ export class BasicOCSPResponse extends PkiBase<BasicOCSPResponse> {
     constructor(options: {
         tbsResponseData: ResponseData
         signatureAlgorithm: AlgorithmIdentifier
-        signature: Uint8Array | BitString
+        signature: Uint8Array<ArrayBuffer> | BitString
         certs?: Certificate[]
     }) {
         super()
@@ -84,7 +84,7 @@ export class BasicOCSPResponse extends PkiBase<BasicOCSPResponse> {
             sequence.valueBlock.value[1],
         )
         const signatureBlock = sequence.valueBlock.value[2] as asn1js.BitString
-        const signature = signatureBlock.valueBlock.valueHexView
+        const signature = new Uint8Array(signatureBlock.valueBlock.valueHexView)
 
         let certs: Certificate[] | undefined = undefined
 

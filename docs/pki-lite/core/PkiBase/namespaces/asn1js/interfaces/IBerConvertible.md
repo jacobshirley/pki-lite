@@ -20,7 +20,7 @@ Base function for converting block from BER encoded array of bytes
 
 ASN.1 BER encoded array
 
-`ArrayBuffer` | `Uint8Array`\<`ArrayBufferLike`\>
+`ArrayBuffer` | `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ##### inputOffset
 

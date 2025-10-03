@@ -17,7 +17,7 @@ describe('CertificateList', () => {
         expect(crl).toBeInstanceOf(CertificateList)
         expect(crl.tbsCertList).toBeDefined()
         expect(crl.signatureAlgorithm).toBeInstanceOf(AlgorithmIdentifier)
-        expect(crl.signatureValue.bytes).toBeInstanceOf(Uint8Array)
+        expect(crl.signatureValue.bytes).toBeInstanceOf(Uint8Array<ArrayBuffer>)
     })
 
     test('can be converted into ASN.1', () => {
@@ -25,7 +25,7 @@ describe('CertificateList', () => {
         const asn1 = crl.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3)
+        expect(asn1.valueBlock.value.length).toEqual(3)
 
         // First element should be the tbsCertList (a Sequence)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
@@ -54,21 +54,21 @@ describe('CertificateList', () => {
         expect(restoredCrl.signatureValue).toEqual(crl.signatureValue)
 
         // Check that the TBSCertList is preserved
-        expect(restoredCrl.tbsCertList.version).toBe(crl.tbsCertList.version)
+        expect(restoredCrl.tbsCertList.version).toEqual(crl.tbsCertList.version)
         expect(restoredCrl.tbsCertList.signature.algorithm).toEqual(
             crl.tbsCertList.signature.algorithm,
         )
 
         // Check that dates are preserved (using valueOf to compare only the time values)
-        expect(restoredCrl.tbsCertList.thisUpdate.valueOf()).toBe(
+        expect(restoredCrl.tbsCertList.thisUpdate.valueOf()).toEqual(
             crl.tbsCertList.thisUpdate.valueOf(),
         )
-        expect(restoredCrl.tbsCertList.nextUpdate?.valueOf()).toBe(
+        expect(restoredCrl.tbsCertList.nextUpdate?.valueOf()).toEqual(
             crl.tbsCertList.nextUpdate?.valueOf(),
         )
 
         // Check that revoked certificates are preserved
-        expect(restoredCrl.tbsCertList.revokedCertificates?.length).toBe(
+        expect(restoredCrl.tbsCertList.revokedCertificates?.length).toEqual(
             crl.tbsCertList.revokedCertificates?.length,
         )
     })
@@ -119,7 +119,7 @@ describe('CertificateList', () => {
         // The tbsCertList should have 3 elements (signature, issuer, thisUpdate)
         const tbsAsn1 = asn1.valueBlock.value[0]
         assert(tbsAsn1 instanceof asn1js.Sequence)
-        expect(tbsAsn1.valueBlock.value.length).toBe(3)
+        expect(tbsAsn1.valueBlock.value.length).toEqual(3)
     })
 
     test('CertificateList toString snapshot', () => {

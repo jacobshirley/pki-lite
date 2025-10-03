@@ -15,7 +15,7 @@ describe('MessageImprint', () => {
             hashedMessage,
         })
         expect(messageImprint).toBeInstanceOf(MessageImprint)
-        expect(messageImprint.hashAlgorithm).toBe(hashAlgorithm)
+        expect(messageImprint.hashAlgorithm).toEqual(hashAlgorithm)
         expect(messageImprint.hashedMessage).toEqual(hashedMessage)
     })
 
@@ -32,7 +32,7 @@ describe('MessageImprint', () => {
         const asn1 = messageImprint.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         // First element should be AlgorithmIdentifier
         assert(asn1.valueBlock.value[0] instanceof asn1js.Sequence)
@@ -129,7 +129,7 @@ describe('MessageImprint', () => {
             const asn1 = messageImprint.toAsn1()
             const recreated = MessageImprint.fromAsn1(asn1)
 
-            expect(recreated.hashAlgorithm.algorithm.toString()).toBe(oid)
+            expect(recreated.hashAlgorithm.algorithm.toString()).toEqual(oid)
             expect(recreated.hashedMessage).toEqual(hashedMessage)
         })
     })

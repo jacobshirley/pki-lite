@@ -17,7 +17,7 @@ describe('SignerLocation', () => {
         const sl = new SignerLocation()
         const asn1 = sl.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect((asn1 as asn1js.Sequence).valueBlock.value.length).toBe(0)
+        expect((asn1 as asn1js.Sequence).valueBlock.value.length).toEqual(0)
     })
 
     it('encodes tagged fields correctly', () => {
@@ -33,7 +33,7 @@ describe('SignerLocation', () => {
             postalAddress: addr,
         })
         const seq = sl.toAsn1() as asn1js.Sequence
-        expect(seq.valueBlock.value.length).toBe(3)
+        expect(seq.valueBlock.value.length).toEqual(3)
 
         const [c, l, p] = seq.valueBlock.value
         expect(tagOf(c)).toEqual({
@@ -62,7 +62,7 @@ describe('SignerLocation', () => {
             new UTF8String({ value: '5' }) as DirectoryString,
             new UTF8String({ value: '6' }) as DirectoryString,
         )
-        expect(six.length).toBe(6)
+        expect(six.length).toEqual(6)
         expect(() =>
             six.push(new UTF8String({ value: '7' }) as DirectoryString),
         ).toThrow('Max size exceeded: 6')

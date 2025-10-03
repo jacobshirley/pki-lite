@@ -59,7 +59,7 @@ Hash algorithm for mask generation
 
 #### label?
 
-> `optional` **label**: `Uint8Array`\<`ArrayBufferLike`\>
+> `optional` **label**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 Optional label for encryption
 

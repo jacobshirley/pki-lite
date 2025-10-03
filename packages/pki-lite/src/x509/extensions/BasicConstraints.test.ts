@@ -8,7 +8,7 @@ describe('BasicConstraints', () => {
             cA: true,
         })
 
-        expect(basicConstraints.cA).toBe(true)
+        expect(basicConstraints.cA).toEqual(true)
         expect(basicConstraints.pathLenConstraint).toBeUndefined()
     })
 
@@ -17,7 +17,7 @@ describe('BasicConstraints', () => {
             cA: false,
         })
 
-        expect(basicConstraints.cA).toBe(false)
+        expect(basicConstraints.cA).toEqual(false)
         expect(basicConstraints.pathLenConstraint).toBeUndefined()
     })
 
@@ -27,8 +27,8 @@ describe('BasicConstraints', () => {
             pathLenConstraint: 3,
         })
 
-        expect(basicConstraints.cA).toBe(true)
-        expect(basicConstraints.pathLenConstraint).toBe(3)
+        expect(basicConstraints.cA).toEqual(true)
+        expect(basicConstraints.pathLenConstraint).toEqual(3)
     })
 
     test('should create BasicConstraints with cA false and pathLenConstraint 0', () => {
@@ -37,8 +37,8 @@ describe('BasicConstraints', () => {
             pathLenConstraint: 0,
         })
 
-        expect(basicConstraints.cA).toBe(false)
-        expect(basicConstraints.pathLenConstraint).toBe(0)
+        expect(basicConstraints.cA).toEqual(false)
+        expect(basicConstraints.pathLenConstraint).toEqual(0)
     })
 
     test('should convert to ASN.1 structure with only cA', () => {
@@ -48,11 +48,11 @@ describe('BasicConstraints', () => {
 
         const asn1 = basicConstraints.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(1)
+        expect(asn1.valueBlock.value.length).toEqual(1)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Boolean)
         expect(
             (asn1.valueBlock.value[0] as asn1js.Boolean).valueBlock.value,
-        ).toBe(true)
+        ).toEqual(true)
     })
 
     test('should convert to ASN.1 structure with cA and pathLenConstraint', () => {
@@ -63,15 +63,15 @@ describe('BasicConstraints', () => {
 
         const asn1 = basicConstraints.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Boolean)
         expect(
             (asn1.valueBlock.value[0] as asn1js.Boolean).valueBlock.value,
-        ).toBe(true)
+        ).toEqual(true)
         expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Integer)
         expect(
             (asn1.valueBlock.value[1] as asn1js.Integer).valueBlock.valueDec,
-        ).toBe(5)
+        ).toEqual(5)
     })
 
     test('should parse from ASN.1 structure with only cA', () => {
@@ -80,7 +80,7 @@ describe('BasicConstraints', () => {
         })
 
         const basicConstraints = BasicConstraints.fromAsn1(asn1)
-        expect(basicConstraints.cA).toBe(false)
+        expect(basicConstraints.cA).toEqual(false)
         expect(basicConstraints.pathLenConstraint).toBeUndefined()
     })
 
@@ -93,8 +93,8 @@ describe('BasicConstraints', () => {
         })
 
         const basicConstraints = BasicConstraints.fromAsn1(asn1)
-        expect(basicConstraints.cA).toBe(true)
-        expect(basicConstraints.pathLenConstraint).toBe(2)
+        expect(basicConstraints.cA).toEqual(true)
+        expect(basicConstraints.pathLenConstraint).toEqual(2)
     })
 
     test('fromAsn1 should throw error for empty sequence', () => {
@@ -142,15 +142,17 @@ describe('BasicConstraints', () => {
             const asn1 = original.toAsn1()
             const decoded = BasicConstraints.fromAsn1(asn1)
 
-            expect(decoded.cA).toBe(testCase.cA)
-            expect(decoded.pathLenConstraint).toBe(testCase.pathLenConstraint)
+            expect(decoded.cA).toEqual(testCase.cA)
+            expect(decoded.pathLenConstraint).toEqual(
+                testCase.pathLenConstraint,
+            )
         }
     })
 
     test('should handle CA certificates with path length constraints', () => {
         // Root CA - no path length constraint
         const rootCA = new BasicConstraints({ cA: true })
-        expect(rootCA.cA).toBe(true)
+        expect(rootCA.cA).toEqual(true)
         expect(rootCA.pathLenConstraint).toBeUndefined()
 
         // Intermediate CA with path length constraint of 0 (can only issue end-entity certs)
@@ -158,12 +160,12 @@ describe('BasicConstraints', () => {
             cA: true,
             pathLenConstraint: 0,
         })
-        expect(intermediateCA.cA).toBe(true)
-        expect(intermediateCA.pathLenConstraint).toBe(0)
+        expect(intermediateCA.cA).toEqual(true)
+        expect(intermediateCA.pathLenConstraint).toEqual(0)
 
         // End-entity certificate
         const endEntity = new BasicConstraints({ cA: false })
-        expect(endEntity.cA).toBe(false)
+        expect(endEntity.cA).toEqual(false)
         expect(endEntity.pathLenConstraint).toBeUndefined()
     })
 
@@ -173,11 +175,11 @@ describe('BasicConstraints', () => {
             pathLenConstraint: 255,
         })
 
-        expect(basicConstraints.pathLenConstraint).toBe(255)
+        expect(basicConstraints.pathLenConstraint).toEqual(255)
 
         // Test round-trip
         const asn1 = basicConstraints.toAsn1()
         const decoded = BasicConstraints.fromAsn1(asn1)
-        expect(decoded.pathLenConstraint).toBe(255)
+        expect(decoded.pathLenConstraint).toEqual(255)
     })
 })

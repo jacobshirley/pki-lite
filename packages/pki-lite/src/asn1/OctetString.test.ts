@@ -9,7 +9,7 @@ describe('OctetString', () => {
     ])
     const textString = 'Hello, World!'
 
-    test('constructor creates OctetString from Uint8Array', () => {
+    test('constructor creates OctetString from Uint8Array<ArrayBuffer>', () => {
         const octetString = new OctetString({ bytes: binaryData })
 
         expect(octetString).toBeInstanceOf(OctetString)
@@ -76,7 +76,7 @@ describe('OctetString', () => {
         const der = originalOctetString.toDer()
 
         // Manually parse DER back to ASN.1
-        // Create a new ArrayBuffer from the Uint8Array to ensure we have a proper BufferSource
+        // Create a new ArrayBuffer from the Uint8Array<ArrayBuffer> to ensure we have a proper BufferSource
         const arrayBuffer = der.buffer.slice(
             der.byteOffset,
             der.byteOffset + der.byteLength,
@@ -92,12 +92,12 @@ describe('OctetString', () => {
         const octetString = new OctetString({ bytes: emptyBytes })
 
         expect(octetString.bytes).toEqual(emptyBytes)
-        expect(octetString.bytes.length).toBe(0)
+        expect(octetString.bytes.length).toEqual(0)
 
         // Test ASN.1 conversion
         const asn1 = octetString.toAsn1()
         const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
-        expect(valueHex.length).toBe(0)
+        expect(valueHex.length).toEqual(0)
     })
 
     test('handles large octet strings', () => {
@@ -108,13 +108,13 @@ describe('OctetString', () => {
         }
 
         const octetString = new OctetString({ bytes: largeBytes })
-        expect(octetString.bytes.length).toBe(10240)
+        expect(octetString.bytes.length).toEqual(10240)
         expect(octetString.bytes).toEqual(largeBytes)
 
         // Test ASN.1 conversion
         const asn1 = octetString.toAsn1()
         const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
-        expect(valueHex.length).toBe(10240)
+        expect(valueHex.length).toEqual(10240)
         expect(valueHex).toEqual(largeBytes)
     })
 

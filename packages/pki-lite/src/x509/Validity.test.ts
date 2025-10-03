@@ -13,8 +13,8 @@ describe('Validity', () => {
         })
 
         expect(validity).toBeInstanceOf(Validity)
-        expect(validity.notBefore).toBe(notBefore)
-        expect(validity.notAfter).toBe(notAfter)
+        expect(validity.notBefore).toEqual(notBefore)
+        expect(validity.notAfter).toEqual(notAfter)
     })
 
     test('can be converted to ASN.1', () => {
@@ -28,7 +28,7 @@ describe('Validity', () => {
         const asn1 = validity.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         const [notBeforeBlock, notAfterBlock] = asn1.valueBlock.value
 
@@ -47,8 +47,8 @@ describe('Validity', () => {
         })
 
         expect(validity).toBeInstanceOf(Validity)
-        expect(validity.notBefore).toBe(notBefore)
-        expect(validity.notAfter).toBe(notAfter)
+        expect(validity.notBefore).toEqual(notBefore)
+        expect(validity.notAfter).toEqual(notAfter)
 
         // Verify toAsn1 works with these dates
         const asn1 = validity.toAsn1()
@@ -71,10 +71,10 @@ describe('Validity', () => {
         expect(validity).toBeInstanceOf(Validity)
 
         // Compare dates by converting to ISO strings (to avoid millisecond precision differences)
-        expect(validity.notBefore.toISOString().substring(0, 19)).toBe(
+        expect(validity.notBefore.toISOString().substring(0, 19)).toEqual(
             notBefore.toISOString().substring(0, 19),
         )
-        expect(validity.notAfter.toISOString().substring(0, 19)).toBe(
+        expect(validity.notAfter.toISOString().substring(0, 19)).toEqual(
             notAfter.toISOString().substring(0, 19),
         )
     })
@@ -95,10 +95,10 @@ describe('Validity', () => {
         expect(validity).toBeInstanceOf(Validity)
 
         // Compare dates by converting to ISO strings (to avoid millisecond precision differences)
-        expect(validity.notBefore.toISOString().substring(0, 19)).toBe(
+        expect(validity.notBefore.toISOString().substring(0, 19)).toEqual(
             notBefore.toISOString().substring(0, 19),
         )
-        expect(validity.notAfter.toISOString().substring(0, 19)).toBe(
+        expect(validity.notAfter.toISOString().substring(0, 19)).toEqual(
             notAfter.toISOString().substring(0, 19),
         )
     })

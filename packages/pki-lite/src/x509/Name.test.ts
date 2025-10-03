@@ -7,7 +7,7 @@ import { asn1js } from '../core/PkiBase.js'
 describe('Name', () => {
     test('can be created empty', () => {
         const name = new Name.RDNSequence()
-        expect(name.length).toBe(0)
+        expect(name.length).toEqual(0)
     })
 
     test('can be created with RDNs', () => {
@@ -19,8 +19,8 @@ describe('Name', () => {
         const name = new Name.RDNSequence()
         name.push(rdn)
 
-        expect(name.length).toBe(1)
-        expect(name[0]).toBe(rdn)
+        expect(name.length).toEqual(1)
+        expect(name[0]).toEqual(rdn)
     })
 
     test('can add RDNs after creation', () => {
@@ -33,8 +33,8 @@ describe('Name', () => {
 
         name.push(rdn)
 
-        expect(name.length).toBe(1)
-        expect(name[0]).toBe(rdn)
+        expect(name.length).toEqual(1)
+        expect(name[0]).toEqual(rdn)
     })
 
     test('can be converted into ASN.1', () => {
@@ -56,7 +56,7 @@ describe('Name', () => {
         const asn1 = name.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         // Each item should be a Set (the ASN.1 representation of RelativeDistinguishedName)
         expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Set)
@@ -90,12 +90,12 @@ describe('Name', () => {
         const name = new Name.RDNSequence()
         name.push(rdnCN, rdnOU, rdnO, rdnC)
 
-        expect(name.length).toBe(4)
+        expect(name.length).toEqual(4)
 
         // Check that the ASN.1 representation has the correct structure
         const asn1 = name.toAsn1()
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(4)
+        expect(asn1.valueBlock.value.length).toEqual(4)
     })
 
     test('toString snapshot', () => {

@@ -25,7 +25,7 @@ export class SubjectKeyIdentifier extends OctetString {
         )
     }
 
-    static fromDer(der: Uint8Array): SubjectKeyIdentifier {
+    static fromDer(der: Uint8Array<ArrayBuffer>): SubjectKeyIdentifier {
         return SubjectKeyIdentifier.fromAsn1(asn1js.fromBER(der).result)
     }
 

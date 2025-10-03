@@ -38,7 +38,7 @@ KEKIdentifier ::= SEQUENCE {
 
 ###### keyIdentifier
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 ###### other?
 
@@ -62,7 +62,7 @@ KEKIdentifier ::= SEQUENCE {
 
 ### keyIdentifier
 
-> **keyIdentifier**: `Uint8Array`
+> **keyIdentifier**: `Uint8Array<ArrayBuffer>`
 
 ---
 
@@ -192,13 +192,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 

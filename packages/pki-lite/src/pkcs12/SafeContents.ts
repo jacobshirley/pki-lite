@@ -27,7 +27,7 @@ export class SafeContents extends PkiSequence<SafeBag> {
         return new SafeContents(...bags)
     }
 
-    static fromDer(der: Uint8Array): SafeContents {
+    static fromDer(der: Uint8Array<ArrayBuffer>): SafeContents {
         return SafeContents.fromAsn1(derToAsn1(der))
     }
 }

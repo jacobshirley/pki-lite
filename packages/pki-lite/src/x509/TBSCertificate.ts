@@ -41,8 +41,8 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
     validity: Validity
     subject: Name
     subjectPublicKeyInfo: SubjectPublicKeyInfo
-    issuerUniqueID?: Uint8Array
-    subjectUniqueID?: Uint8Array
+    issuerUniqueID?: Uint8Array<ArrayBuffer>
+    subjectUniqueID?: Uint8Array<ArrayBuffer>
     extensions?: Extension[]
 
     constructor(options: {
@@ -53,8 +53,8 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
         validity: Validity
         subject: Name
         subjectPublicKeyInfo: SubjectPublicKeyInfo
-        issuerUniqueID?: Uint8Array
-        subjectUniqueID?: Uint8Array
+        issuerUniqueID?: Uint8Array<ArrayBuffer>
+        subjectUniqueID?: Uint8Array<ArrayBuffer>
         extensions?: Extension[]
     }) {
         super()
@@ -249,8 +249,8 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
         currentIndex++
 
         // Optional fields
-        let issuerUniqueID: Uint8Array | undefined
-        let subjectUniqueID: Uint8Array | undefined
+        let issuerUniqueID: Uint8Array<ArrayBuffer> | undefined
+        let subjectUniqueID: Uint8Array<ArrayBuffer> | undefined
         let extensions: Extension[] | undefined
 
         // Parse issuerUniqueID [1] IMPLICIT (optional)

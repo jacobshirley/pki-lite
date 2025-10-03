@@ -1608,13 +1608,13 @@ An ASN.1 SEQUENCE containing all items in order
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this sequence to DER format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this sequence
 
@@ -2174,7 +2174,7 @@ Value of 'this' used when executing mapfn.
 
 ##### der
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 #### Returns
 

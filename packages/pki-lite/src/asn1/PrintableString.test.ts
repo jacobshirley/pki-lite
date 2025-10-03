@@ -8,19 +8,19 @@ describe('PrintableString', () => {
         const printableString = new PrintableString({ value: testString })
 
         expect(printableString).toBeInstanceOf(PrintableString)
-        expect(printableString.toString()).toBe(testString)
+        expect(printableString.toString()).toEqual(testString)
 
         // Should encode as ASCII bytes
         const expectedBytes = new TextEncoder().encode(testString)
         expect(printableString.bytes).toEqual(expectedBytes)
     })
 
-    test('should create PrintableString from Uint8Array', () => {
+    test('should create PrintableString from Uint8Array<ArrayBuffer>', () => {
         const bytes = new Uint8Array([0x41, 0x42, 0x43]) // "ABC"
         const printableString = new PrintableString({ value: bytes })
 
         expect(printableString.bytes).toEqual(bytes)
-        expect(printableString.toString()).toBe('ABC')
+        expect(printableString.toString()).toEqual('ABC')
     })
 
     test('should create PrintableString from another PrintableString', () => {
@@ -28,7 +28,7 @@ describe('PrintableString', () => {
         const copy = new PrintableString({ value: original })
 
         expect(copy.bytes).toEqual(original.bytes)
-        expect(copy.toString()).toBe(original.toString())
+        expect(copy.toString()).toEqual(original.toString())
     })
 
     test('should handle printable characters', () => {
@@ -37,7 +37,7 @@ describe('PrintableString', () => {
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 '()+,-./:=?"
         const printableString = new PrintableString({ value: printableChars })
 
-        expect(printableString.toString()).toBe(printableChars)
+        expect(printableString.toString()).toEqual(printableChars)
 
         // Verify ASCII encoding
         const expectedBytes = new TextEncoder().encode(printableChars)
@@ -48,14 +48,14 @@ describe('PrintableString', () => {
         const orgName = 'Example Corp'
         const printableString = new PrintableString({ value: orgName })
 
-        expect(printableString.toString()).toBe(orgName)
+        expect(printableString.toString()).toEqual(orgName)
     })
 
     test('should handle empty string', () => {
         const printableString = new PrintableString({ value: '' })
 
-        expect(printableString.bytes.length).toBe(0)
-        expect(printableString.toString()).toBe('')
+        expect(printableString.bytes.length).toEqual(0)
+        expect(printableString.toString()).toEqual('')
     })
 
     test('should convert to ASN.1 structure correctly', () => {
@@ -78,7 +78,7 @@ describe('PrintableString', () => {
         const printableString = PrintableString.fromAsn1(asn1)
 
         expect(printableString).toBeInstanceOf(PrintableString)
-        expect(printableString.toString()).toBe(testString)
+        expect(printableString.toString()).toEqual(testString)
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -101,7 +101,9 @@ describe('PrintableString', () => {
 
         for (const { input, expected } of testCases) {
             const printableString = new PrintableString({ value: input })
-            expect(printableString.toHexString().toLowerCase()).toBe(expected)
+            expect(printableString.toHexString().toLowerCase()).toEqual(
+                expected,
+            )
         }
     })
 
@@ -122,7 +124,7 @@ describe('PrintableString', () => {
             const asn1 = original.toAsn1()
             const decoded = PrintableString.fromAsn1(asn1)
 
-            expect(decoded.toString()).toBe(testString)
+            expect(decoded.toString()).toEqual(testString)
             expect(decoded.bytes).toEqual(original.bytes)
         }
     })
@@ -132,23 +134,23 @@ describe('PrintableString', () => {
         const x500String = 'CN=John Doe, O=Example Corp, C=US'
         const printableString = new PrintableString({ value: x500String })
 
-        expect(printableString.toString()).toBe(x500String)
+        expect(printableString.toString()).toEqual(x500String)
 
         // Test round-trip
         const asn1 = printableString.toAsn1()
         const decoded = PrintableString.fromAsn1(asn1)
-        expect(decoded.toString()).toBe(x500String)
+        expect(decoded.toString()).toEqual(x500String)
     })
 
     test('should handle numbers and basic punctuation', () => {
         const numericString = '123-456-7890'
         const printableString = new PrintableString({ value: numericString })
 
-        expect(printableString.toString()).toBe(numericString)
+        expect(printableString.toString()).toEqual(numericString)
 
         // Test round-trip
         const asn1 = printableString.toAsn1()
         const decoded = PrintableString.fromAsn1(asn1)
-        expect(decoded.toString()).toBe(numericString)
+        expect(decoded.toString()).toEqual(numericString)
     })
 })

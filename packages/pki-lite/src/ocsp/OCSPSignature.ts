@@ -12,7 +12,7 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  */
 export class OCSPSignature extends PkiBase<OCSPSignature> {
     signatureAlgorithm: AlgorithmIdentifier
-    signature: Uint8Array
+    signature: Uint8Array<ArrayBuffer>
     certs?: Certificate[]
 
     constructor(options: {
@@ -22,7 +22,7 @@ export class OCSPSignature extends PkiBase<OCSPSignature> {
     }) {
         super()
         this.signatureAlgorithm = options.signatureAlgorithm
-        this.signature = options.signature
+        this.signature = new Uint8Array(options.signature)
         this.certs = options.certs
     }
 
@@ -105,7 +105,7 @@ export class OCSPSignature extends PkiBase<OCSPSignature> {
         })
     }
 
-    static fromDer(der: Uint8Array): OCSPSignature {
+    static fromDer(der: Uint8Array<ArrayBuffer>): OCSPSignature {
         return OCSPSignature.fromAsn1(derToAsn1(der))
     }
 }

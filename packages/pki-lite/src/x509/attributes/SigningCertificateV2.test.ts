@@ -47,11 +47,11 @@ describe('ESSCertIDv2', () => {
         const asn1 = ess.toAsn1()
 
         const round = ESSCertIDv2.fromAsn1(asn1)
-        expect(round.hashAlgorithm?.algorithm.value).toBe(
+        expect(round.hashAlgorithm?.algorithm.value).toEqual(
             '2.16.840.1.101.3.4.2.1',
         )
         expect(round.certHash.bytes).toEqual(new Uint8Array([9, 9, 9]))
-        expect(round.issuerSerial?.serialNumber.toNumber()).toBe(1)
+        expect(round.issuerSerial?.serialNumber.toNumber()).toEqual(1)
     })
 
     it('throws when certHash is not OCTET STRING', () => {
@@ -74,7 +74,7 @@ describe('PolicyQualifierInfo', () => {
         })
         const asn1 = pq.toAsn1()
         const round = PolicyQualifierInfo.fromAsn1(asn1)
-        expect(round.policyQualifierId.value).toBe('1.3.6.1.5.5.7.2.1')
+        expect(round.policyQualifierId.value).toEqual('1.3.6.1.5.5.7.2.1')
         // We can only check that qualifier is Any; content is preserved as DER
         expect(round.qualifier.toAsn1()).toBeInstanceOf(asn1js.Utf8String)
     })
@@ -94,7 +94,7 @@ describe('PolicyInformation', () => {
         const pi = new PolicyInformation({ policyIdentifier: '1.2.3.4' })
         const asn1 = pi.toAsn1()
         const round = PolicyInformation.fromAsn1(asn1)
-        expect(round.policyIdentifier.value).toBe('1.2.3.4')
+        expect(round.policyIdentifier.value).toEqual('1.2.3.4')
         expect(round.policyQualifiers).toBeUndefined()
     })
 
@@ -109,9 +109,9 @@ describe('PolicyInformation', () => {
         })
         const asn1 = pi.toAsn1()
         const round = PolicyInformation.fromAsn1(asn1)
-        expect(round.policyIdentifier.value).toBe('1.2.3.4.5')
-        expect(round.policyQualifiers?.length).toBe(1)
-        expect(round.policyQualifiers?.[0].policyQualifierId.value).toBe(
+        expect(round.policyIdentifier.value).toEqual('1.2.3.4.5')
+        expect(round.policyQualifiers?.length).toEqual(1)
+        expect(round.policyQualifiers?.[0].policyQualifierId.value).toEqual(
             '1.2.3',
         )
     })
@@ -130,7 +130,7 @@ describe('SigningCertificateV2', () => {
         const scv2 = new SigningCertificateV2({ certs: [ess] })
         const asn1 = scv2.toAsn1()
         const round = SigningCertificateV2.fromAsn1(asn1)
-        expect(round.certs.length).toBe(1)
+        expect(round.certs.length).toEqual(1)
         expect(round.policies).toBeUndefined()
     })
 
@@ -147,9 +147,11 @@ describe('SigningCertificateV2', () => {
         const scv2 = new SigningCertificateV2({ certs: [ess], policies: [pi] })
         const asn1 = scv2.toAsn1()
         const round = SigningCertificateV2.fromAsn1(asn1)
-        expect(round.certs.length).toBe(1)
-        expect(round.policies?.length).toBe(1)
-        expect(round.policies?.[0].policyIdentifier.value).toBe('2.5.29.32.0')
+        expect(round.certs.length).toEqual(1)
+        expect(round.policies?.length).toEqual(1)
+        expect(round.policies?.[0].policyIdentifier.value).toEqual(
+            '2.5.29.32.0',
+        )
         expect(round.toString()).toMatchInlineSnapshot(`
       "[SigningCertificateV2] SEQUENCE :
         SEQUENCE :

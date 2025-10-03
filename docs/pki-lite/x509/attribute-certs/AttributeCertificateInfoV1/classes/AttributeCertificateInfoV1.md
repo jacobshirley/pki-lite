@@ -58,15 +58,15 @@ The options object containing the certificate information
 
 ###### issuer
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 ###### issuerUniqueID?
 
-`Uint8Array`\<`ArrayBufferLike`\>
+`Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ###### serialNumber
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 ###### signature
 
@@ -74,7 +74,7 @@ The options object containing the certificate information
 
 ###### subject
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 ###### validityPeriod
 
@@ -116,19 +116,19 @@ The options object containing the certificate information
 
 ### issuer
 
-> **issuer**: `Uint8Array`
+> **issuer**: `Uint8Array<ArrayBuffer>`
 
 ---
 
 ### issuerUniqueID?
 
-> `optional` **issuerUniqueID**: `Uint8Array`\<`ArrayBufferLike`\>
+> `optional` **issuerUniqueID**: `Uint8Array<ArrayBuffer>`\<`ArrayBufferLike`\>
 
 ---
 
 ### serialNumber
 
-> **serialNumber**: `Uint8Array`
+> **serialNumber**: `Uint8Array<ArrayBuffer>`
 
 ---
 
@@ -140,7 +140,7 @@ The options object containing the certificate information
 
 ### subject
 
-> **subject**: `Uint8Array`
+> **subject**: `Uint8Array<ArrayBuffer>`
 
 ---
 
@@ -282,13 +282,13 @@ Converts the AttributeCertificateInfoV1 to an ASN.1 structure.
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 

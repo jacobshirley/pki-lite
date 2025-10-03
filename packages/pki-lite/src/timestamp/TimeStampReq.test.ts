@@ -19,11 +19,11 @@ describe('TimeStampReq', () => {
 
         const req = TimeStampReq.fromMessageImprint(messageImprint)
         expect(req).toBeInstanceOf(TimeStampReq)
-        expect(req.version).toBe(1)
-        expect(req.messageImprint).toBe(messageImprint)
+        expect(req.version).toEqual(1)
+        expect(req.messageImprint).toEqual(messageImprint)
         expect(req.reqPolicy).toBeUndefined()
         expect(req.nonce).toBeUndefined()
-        expect(req.certReq).toBe(false)
+        expect(req.certReq).toEqual(false)
         expect(req.extensions).toBeUndefined()
     })
 
@@ -49,10 +49,10 @@ describe('TimeStampReq', () => {
             extensions: extensions,
         })
 
-        expect(req.messageImprint).toBe(messageImprint)
-        expect(req.reqPolicy?.toString()).toBe(reqPolicy)
+        expect(req.messageImprint).toEqual(messageImprint)
+        expect(req.reqPolicy?.toString()).toEqual(reqPolicy)
         expect(req.nonce).toEqual(nonce)
-        expect(req.certReq).toBe(certReq)
+        expect(req.certReq).toEqual(certReq)
         expect(req.extensions).toEqual(extensions)
     })
 
@@ -65,11 +65,11 @@ describe('TimeStampReq', () => {
         const asn1 = req.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
 
         // Version
         assert(asn1.valueBlock.value[0] instanceof asn1js.Integer)
-        expect(asn1.valueBlock.value[0].valueBlock.valueDec).toBe(1)
+        expect(asn1.valueBlock.value[0].valueBlock.valueDec).toEqual(1)
 
         // MessageImprint
         assert(asn1.valueBlock.value[1] instanceof asn1js.Sequence)
@@ -101,19 +101,19 @@ describe('TimeStampReq', () => {
         const asn1 = req.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(6) // version, messageImprint, reqPolicy, nonce, certReq, extensions
+        expect(asn1.valueBlock.value.length).toEqual(6) // version, messageImprint, reqPolicy, nonce, certReq, extensions
 
         // Last element should be the extensions with tagClass 3 (CONTEXT-SPECIFIC) and tagNumber 0 ([0])
         const extensionsBlock = asn1.valueBlock.value[5]
         assert(extensionsBlock instanceof asn1js.Constructed)
-        expect(extensionsBlock.idBlock.tagClass).toBe(3) // CONTEXT-SPECIFIC
-        expect(extensionsBlock.idBlock.tagNumber).toBe(0) // [0]
+        expect(extensionsBlock.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
+        expect(extensionsBlock.idBlock.tagNumber).toEqual(0) // [0]
 
         // Check that it contains a sequence of extensions
         assert(extensionsBlock.valueBlock.value.length > 0)
         const extensionsSeq = extensionsBlock.valueBlock.value[0]
         assert(extensionsSeq instanceof asn1js.Sequence)
-        expect(extensionsSeq.valueBlock.value.length).toBe(2) // Two extensions
+        expect(extensionsSeq.valueBlock.value.length).toEqual(2) // Two extensions
     })
 
     test('can parse extensions from ASN.1', () => {
@@ -139,8 +139,8 @@ describe('TimeStampReq', () => {
 
         expect(recreated.extensions).toBeDefined()
         expect(recreated.extensions).toHaveLength(1)
-        expect(recreated.extensions![0].extnID.toString()).toBe('1.2.3.4')
-        expect(recreated.extensions![0].critical).toBe(false)
+        expect(recreated.extensions![0].extnID.toString()).toEqual('1.2.3.4')
+        expect(recreated.extensions![0].critical).toEqual(false)
         expect(recreated.extensions![0].extnValue).toBeDefined()
     })
 
@@ -159,11 +159,11 @@ describe('TimeStampReq', () => {
         const asn1 = req.toAsn1()
 
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(5) // version, messageImprint, reqPolicy, nonce, certReq
+        expect(asn1.valueBlock.value.length).toEqual(5) // version, messageImprint, reqPolicy, nonce, certReq
 
         // Version
         assert(asn1.valueBlock.value[0] instanceof asn1js.Integer)
-        expect(asn1.valueBlock.value[0].valueBlock.valueDec).toBe(1)
+        expect(asn1.valueBlock.value[0].valueBlock.valueDec).toEqual(1)
 
         // MessageImprint
         assert(asn1.valueBlock.value[1] instanceof asn1js.Sequence)
@@ -182,7 +182,7 @@ describe('TimeStampReq', () => {
 
         // CertReq
         assert(asn1.valueBlock.value[4] instanceof asn1js.Boolean)
-        expect(asn1.valueBlock.value[4].valueBlock.value).toBe(true)
+        expect(asn1.valueBlock.value[4].valueBlock.value).toEqual(true)
     })
 
     test('can be created from ASN.1', () => {
@@ -198,16 +198,16 @@ describe('TimeStampReq', () => {
         const asn1 = original.toAsn1()
         const recreated = TimeStampReq.fromAsn1(asn1)
 
-        expect(recreated.version).toBe(1)
+        expect(recreated.version).toEqual(1)
         expect(recreated.messageImprint.hashAlgorithm.algorithm).toEqual(
             messageImprint.hashAlgorithm.algorithm,
         )
         expect(recreated.messageImprint.hashedMessage).toEqual(
             messageImprint.hashedMessage,
         )
-        expect(recreated.reqPolicy?.toString()).toBe('1.2.3.4.5')
+        expect(recreated.reqPolicy?.toString()).toEqual('1.2.3.4.5')
         expect(recreated.nonce).toEqual(new Uint8Array([1, 2, 3, 4]))
-        expect(recreated.certReq).toBe(true)
+        expect(recreated.certReq).toEqual(true)
     })
 
     test('roundtrip conversion preserves data', () => {
@@ -286,7 +286,7 @@ describe('TimeStampReq', () => {
             })
 
             // Just verify the request was made without errors
-            expect(true).toBe(true)
+            expect(true).toEqual(true)
         } catch (error) {
             // Expected in test environment due to network mocking complexities
             expect(error).toBeDefined()
@@ -334,12 +334,12 @@ describe('TimeStampReq', () => {
         })
 
         const der = req.toDer()
-        expect(der).toBeInstanceOf(Uint8Array)
+        expect(der).toBeInstanceOf(Uint8Array<ArrayBuffer>)
         expect(der.length).toBeGreaterThan(0)
 
         // Should be able to parse back
         const parsed = TimeStampReq.fromAsn1(asn1js.fromBER(der).result)
-        expect(parsed.certReq).toBe(true)
+        expect(parsed.certReq).toEqual(true)
     })
 
     test('demonstrates hash algorithm flexibility', async () => {
@@ -375,7 +375,7 @@ describe('TimeStampReq', () => {
 
             expect(
                 parsed.messageImprint.hashAlgorithm.algorithm.toString(),
-            ).toBe(oid)
+            ).toEqual(oid)
             expect(parsed.messageImprint.hashedMessage).toEqual(hashBytes)
         }
     })

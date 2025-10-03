@@ -9,7 +9,7 @@ describe('OtherRevInfo', () => {
         const type = '1.2.3.4.5'
         const valueBytes = new Uint8Array([1, 2, 3, 4])
         const otherRevInfo = new OtherRevInfo({ type, value: valueBytes })
-        expect(otherRevInfo.type.value).toBe(type)
+        expect(otherRevInfo.type.value).toEqual(type)
         expect(otherRevInfo.value.derBytes).toEqual(valueBytes)
     })
 
@@ -21,12 +21,12 @@ describe('OtherRevInfo', () => {
         const otherRevInfo = new OtherRevInfo({ type, value: valueBytes })
         const asn1 = otherRevInfo.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2)
+        expect(asn1.valueBlock.value.length).toEqual(2)
         expect(
             (
                 asn1.valueBlock.value[0] as asn1js.ObjectIdentifier
             ).valueBlock.toString(),
-        ).toBe(type)
+        ).toEqual(type)
         // The value should be an octet string
         expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.OctetString)
         expect(
@@ -45,7 +45,7 @@ describe('OtherRevInfo', () => {
         const octetString = new OctetString({ bytes: valueBytes })
         const seq = new asn1js.Sequence({ value: [oid, octetString.toAsn1()] })
         const decoded = OtherRevInfo.fromAsn1(seq)
-        expect(decoded.type.value).toBe(type)
+        expect(decoded.type.value).toEqual(type)
         expect(decoded.value.parseAs(OctetString).bytes).toEqual(valueBytes)
     })
 

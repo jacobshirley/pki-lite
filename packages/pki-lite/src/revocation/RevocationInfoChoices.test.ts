@@ -8,12 +8,12 @@ import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.
 describe('RevocationInfoChoices', () => {
     it('should create an empty RevocationInfoChoices', () => {
         const revocationInfoChoices = new RevocationInfoChoices()
-        expect(revocationInfoChoices.length).toBe(0)
+        expect(revocationInfoChoices.length).toEqual(0)
 
         // Check that the ASN.1 encoding produces a SET
         const asn1 = revocationInfoChoices.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toBe(true)
-        expect((asn1 as any).valueBlock.value.length).toBe(0)
+        expect(asn1 instanceof asn1js.Set).toEqual(true)
+        expect((asn1 as any).valueBlock.value.length).toEqual(0)
     })
 
     it('should create RevocationInfoChoices with a CRL', () => {
@@ -22,15 +22,17 @@ describe('RevocationInfoChoices', () => {
 
         // Create RevocationInfoChoices with one CRL
         const revocationInfoChoices = new RevocationInfoChoices(crl)
-        expect(revocationInfoChoices.length).toBe(1)
+        expect(revocationInfoChoices.length).toEqual(1)
 
         // Check that the ASN.1 encoding is correct
         const asn1 = revocationInfoChoices.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toBe(true)
-        expect((asn1 as any).valueBlock.value.length).toBe(1)
+        expect(asn1 instanceof asn1js.Set).toEqual(true)
+        expect((asn1 as any).valueBlock.value.length).toEqual(1)
 
         // Check that the item is a CRL
-        expect(revocationInfoChoices[0] instanceof CertificateList).toBe(true)
+        expect(revocationInfoChoices[0] instanceof CertificateList).toEqual(
+            true,
+        )
     })
 
     it('should create RevocationInfoChoices with OtherRevocationInfoFormat', () => {
@@ -44,17 +46,17 @@ describe('RevocationInfoChoices', () => {
 
         // Create RevocationInfoChoices with OtherRevocationInfoFormat
         const revocationInfoChoices = new RevocationInfoChoices(otherFormat)
-        expect(revocationInfoChoices.length).toBe(1)
+        expect(revocationInfoChoices.length).toEqual(1)
 
         // Check that the ASN.1 encoding is correct
         const asn1 = revocationInfoChoices.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toBe(true)
-        expect((asn1 as any).valueBlock.value.length).toBe(1)
+        expect(asn1 instanceof asn1js.Set).toEqual(true)
+        expect((asn1 as any).valueBlock.value.length).toEqual(1)
 
         // Check that the item is tagged as OtherRevocationInfoFormat [1]
         const firstItem = (asn1 as any).valueBlock.value[0]
-        expect(firstItem.idBlock.tagClass).toBe(3) // CONTEXT_SPECIFIC
-        expect(firstItem.idBlock.tagNumber).toBe(1) // [1]
+        expect(firstItem.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
+        expect(firstItem.idBlock.tagNumber).toEqual(1) // [1]
     })
 
     it('should decode RevocationInfoChoices from ASN.1', () => {
@@ -71,10 +73,10 @@ describe('RevocationInfoChoices', () => {
         const decodedChoices = RevocationInfoChoices.fromAsn1(asn1)
 
         // Check that the decoded choices have the same count
-        expect(decodedChoices.length).toBe(originalChoices.length)
+        expect(decodedChoices.length).toEqual(originalChoices.length)
 
         // Check that the item is a CRL
-        expect(decodedChoices[0] instanceof CertificateList).toBe(true)
+        expect(decodedChoices[0] instanceof CertificateList).toEqual(true)
     })
 
     it('should handle multiple revocation info choices', () => {
@@ -94,23 +96,23 @@ describe('RevocationInfoChoices', () => {
             crl,
             otherFormat,
         )
-        expect(revocationInfoChoices.length).toBe(2)
+        expect(revocationInfoChoices.length).toEqual(2)
 
         // Check that the ASN.1 encoding is correct
         const asn1 = revocationInfoChoices.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toBe(true)
-        expect((asn1 as any).valueBlock.value.length).toBe(2)
+        expect(asn1 instanceof asn1js.Set).toEqual(true)
+        expect((asn1 as any).valueBlock.value.length).toEqual(2)
 
         // Check that the second item is tagged as OtherRevocationInfoFormat [1]
         const secondItem = (asn1 as any).valueBlock.value[1]
-        expect(secondItem.idBlock.tagClass).toBe(3) // CONTEXT_SPECIFIC
-        expect(secondItem.idBlock.tagNumber).toBe(1) // [1]
+        expect(secondItem.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
+        expect(secondItem.idBlock.tagNumber).toEqual(1) // [1]
 
         // Decode back
         const decodedChoices = RevocationInfoChoices.fromAsn1(asn1)
-        expect(decodedChoices.length).toBe(2)
-        expect(decodedChoices[0] instanceof CertificateList).toBe(true)
-        expect(decodedChoices[1] instanceof OtherRevocationInfoFormat).toBe(
+        expect(decodedChoices.length).toEqual(2)
+        expect(decodedChoices[0] instanceof CertificateList).toEqual(true)
+        expect(decodedChoices[1] instanceof OtherRevocationInfoFormat).toEqual(
             true,
         )
     })

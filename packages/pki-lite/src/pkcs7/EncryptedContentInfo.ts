@@ -35,7 +35,7 @@ export class EncryptedContentInfo extends PkiBase<EncryptedContentInfo> {
     constructor(options: {
         contentType: ObjectIdentifierString
         contentEncryptionAlgorithm: AlgorithmIdentifier
-        encryptedContent?: Uint8Array
+        encryptedContent?: Uint8Array<ArrayBuffer>
     }) {
         super()
         const { contentType, contentEncryptionAlgorithm, encryptedContent } =
@@ -99,7 +99,7 @@ export class EncryptedContentInfo extends PkiBase<EncryptedContentInfo> {
         )
 
         // EncryptedContent (optional)
-        let encryptedContent: Uint8Array | undefined = undefined
+        let encryptedContent: Uint8Array<ArrayBuffer> | undefined = undefined
         if (
             values.length > 2 &&
             (values[2] instanceof asn1js.Primitive ||
@@ -123,7 +123,7 @@ export class EncryptedContentInfo extends PkiBase<EncryptedContentInfo> {
         })
     }
 
-    async decrypt(key: string | Uint8Array): Promise<OctetString> {
+    async decrypt(key: string | Uint8Array<ArrayBuffer>): Promise<OctetString> {
         if (!this.encryptedContent) {
             throw new Error('No encrypted content to decrypt')
         }
@@ -140,7 +140,7 @@ export class EncryptedContentInfo extends PkiBase<EncryptedContentInfo> {
     }
 
     async decryptAs<T>(
-        key: string | Uint8Array,
+        key: string | Uint8Array<ArrayBuffer>,
         parseAs: ParseableAsn1<T>,
     ): Promise<T> {
         const octetString = await this.decrypt(key)

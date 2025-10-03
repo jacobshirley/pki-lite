@@ -35,35 +35,37 @@ import { PBEParameter } from 'pki-lite/pkcs5/PBEParameter'
  */
 export class WebCryptoExtendedProvider extends WebCryptoProvider {
     async digest(
-        data: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
         algorithm: HashAlgorithm,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         if (algorithm === 'MD5') {
-            return _md5(data)
+            return new Uint8Array(_md5(data))
         }
         return super.digest(data, algorithm)
     }
 
     async encryptSymmetric(
-        data: Uint8Array,
-        key: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
+        key: Uint8Array<ArrayBuffer>,
         algorithm: SymmetricEncryptionAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         if (
             (algorithm.type === 'AES_128_CBC' ||
                 algorithm.type === 'AES_192_CBC' ||
                 algorithm.type === 'AES_256_CBC') &&
             algorithm.params.disablePadding
         ) {
-            return cbc(key, algorithm.params.nonce, {
-                disablePadding: true,
-            }).encrypt(data)
+            return new Uint8Array(
+                cbc(key, algorithm.params.nonce, {
+                    disablePadding: true,
+                }).encrypt(data),
+            )
         } else if (
             algorithm.type === 'AES_128_ECB' ||
             algorithm.type === 'AES_192_ECB' ||
             algorithm.type === 'AES_256_ECB'
         ) {
-            return ecb(key).encrypt(data)
+            return new Uint8Array(ecb(key).encrypt(data))
         } else if (
             algorithm.type === 'SHA1_3DES_2KEY_CBC' ||
             algorithm.type === 'SHA1_RC2_40_CBC' ||
@@ -82,25 +84,27 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
     }
 
     async decryptSymmetric(
-        data: Uint8Array,
-        key: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
+        key: Uint8Array<ArrayBuffer>,
         algorithm: SymmetricEncryptionAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         if (
             (algorithm.type === 'AES_128_CBC' ||
                 algorithm.type === 'AES_192_CBC' ||
                 algorithm.type === 'AES_256_CBC') &&
             algorithm.params.disablePadding
         ) {
-            return cbc(key, algorithm.params.nonce, {
-                disablePadding: true,
-            }).decrypt(data)
+            return new Uint8Array(
+                cbc(key, algorithm.params.nonce, {
+                    disablePadding: true,
+                }).decrypt(data),
+            )
         } else if (
             algorithm.type === 'AES_128_ECB' ||
             algorithm.type === 'AES_192_ECB' ||
             algorithm.type === 'AES_256_ECB'
         ) {
-            return ecb(key).decrypt(data)
+            return new Uint8Array(ecb(key).decrypt(data))
         } else if (
             algorithm.type === 'SHA1_3DES_2KEY_CBC' ||
             algorithm.type === 'SHA1_RC2_40_CBC' ||
@@ -119,10 +123,10 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
     }
 
     async encrypt(
-        data: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
         publicKeyInfo: SubjectPublicKeyInfo,
         algorithm: AsymmetricEncryptionAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         if (algorithm.type === 'RSASSA_PKCS1_v1_5') {
             const publicKeyPem = forge.pki.publicKeyFromPem(
                 publicKeyInfo.getPublicKey().toPem(),
@@ -135,17 +139,17 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
                 throw new Error('Encryption failed')
             }
 
-            return forge.util.binary.raw.decode(encrypted)
+            return new Uint8Array(forge.util.binary.raw.decode(encrypted))
         }
 
         return super.encrypt(data, publicKeyInfo, algorithm)
     }
 
     async decrypt(
-        data: Uint8Array,
+        data: Uint8Array<ArrayBuffer>,
         privateKeyInfo: PrivateKeyInfo,
         algorithm: AsymmetricEncryptionAlgorithmParams,
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array<ArrayBuffer>> {
         // Currently only RSA-OAEP is supported for asymmetric encryption in WebCrypto
         if (algorithm.type === 'RSASSA_PKCS1_v1_5') {
             const privateKeyPem = forge.pki.privateKeyFromPem(
@@ -159,7 +163,7 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
                 throw new Error('Decryption failed')
             }
 
-            return forge.util.binary.raw.decode(decrypted)
+            return new Uint8Array(forge.util.binary.raw.decode(decrypted))
         }
 
         return super.decrypt(data, privateKeyInfo, algorithm)

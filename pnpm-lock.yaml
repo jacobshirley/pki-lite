@@ -7,6 +7,7 @@ settings:
 overrides:
   vitest: ^4.0.0-beta.11
   '@vitest/browser': ^4.0.0-beta.11
+  typescript: ^5.9.3
 
 importers:
 
@@ -21,7 +22,7 @@ importers:
     devDependencies:
       '@commitlint/cli':
         specifier: ^19.8.1
-        version: 19.8.1(@types/node@24.5.2)(typescript@5.8.2)
+        version: 19.8.1(@types/node@24.5.2)(typescript@5.9.3)
       '@commitlint/config-conventional':
         specifier: ^19.8.1
         version: 19.8.1
@@ -42,10 +43,13 @@ importers:
         version: 3.6.2
       typedoc:
         specifier: ^0.28.13
-        version: 0.28.13(typescript@5.8.2)
+        version: 0.28.13(typescript@5.9.3)
       typedoc-plugin-markdown:
         specifier: ^4.9.0
-        version: 4.9.0(typedoc@0.28.13(typescript@5.8.2))
+        version: 4.9.0(typedoc@0.28.13(typescript@5.9.3))
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
       vitest:
         specifier: ^4.0.0-beta.11
         version: 4.0.0-beta.12(@types/node@24.5.2)(@vitest/browser@4.0.0-beta.12)(jiti@2.6.0)(yaml@2.8.1)
@@ -66,8 +70,8 @@ importers:
         specifier: ^1.55.0
         version: 1.55.0
       typescript:
-        specifier: 5.8.2
-        version: 5.8.2
+        specifier: ^5.9.3
+        version: 5.9.3
       vitest:
         specifier: ^4.0.0-beta.11
         version: 4.0.0-beta.12(@types/node@24.5.2)(@vitest/browser@4.0.0-beta.12)(jiti@2.6.0)(yaml@2.8.1)
@@ -100,8 +104,8 @@ importers:
         specifier: ^1.55.0
         version: 1.55.0
       typescript:
-        specifier: 5.8.2
-        version: 5.8.2
+        specifier: ^5.9.3
+        version: 5.9.3
       vitest:
         specifier: ^4.0.0-beta.11
         version: 4.0.0-beta.12(@types/node@24.5.2)(@vitest/browser@4.0.0-beta.12)(jiti@2.6.0)(yaml@2.8.1)
@@ -682,13 +686,13 @@ packages:
     peerDependencies:
       '@types/node': '*'
       cosmiconfig: '>=9'
-      typescript: '>=5'
+      typescript: ^5.9.3
 
   cosmiconfig@9.0.0:
     resolution: {integrity: sha512-itvL5h8RETACmOTFc4UfIyB2RfEHi71Ax6E/PivVxq9NseKbOWpeyHEOIbmAw1rs8Ak0VursQNww7lf7YtUwzg==}
     engines: {node: '>=14'}
     peerDependencies:
-      typescript: '>=4.9.5'
+      typescript: ^5.9.3
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -1200,10 +1204,10 @@ packages:
     engines: {node: '>= 18', pnpm: '>= 10'}
     hasBin: true
     peerDependencies:
-      typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x || 5.8.x || 5.9.x
+      typescript: ^5.9.3
 
-  typescript@5.8.2:
-    resolution: {integrity: sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ==}
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -1343,11 +1347,11 @@ snapshots:
 
   '@babel/runtime@7.28.4': {}
 
-  '@commitlint/cli@19.8.1(@types/node@24.5.2)(typescript@5.8.2)':
+  '@commitlint/cli@19.8.1(@types/node@24.5.2)(typescript@5.9.3)':
     dependencies:
       '@commitlint/format': 19.8.1
       '@commitlint/lint': 19.8.1
-      '@commitlint/load': 19.8.1(@types/node@24.5.2)(typescript@5.8.2)
+      '@commitlint/load': 19.8.1(@types/node@24.5.2)(typescript@5.9.3)
       '@commitlint/read': 19.8.1
       '@commitlint/types': 19.8.1
       tinyexec: 1.0.1
@@ -1394,15 +1398,15 @@ snapshots:
       '@commitlint/rules': 19.8.1
       '@commitlint/types': 19.8.1
 
-  '@commitlint/load@19.8.1(@types/node@24.5.2)(typescript@5.8.2)':
+  '@commitlint/load@19.8.1(@types/node@24.5.2)(typescript@5.9.3)':
     dependencies:
       '@commitlint/config-validator': 19.8.1
       '@commitlint/execute-rule': 19.8.1
       '@commitlint/resolve-extends': 19.8.1
       '@commitlint/types': 19.8.1
       chalk: 5.6.2
-      cosmiconfig: 9.0.0(typescript@5.8.2)
-      cosmiconfig-typescript-loader: 6.1.0(@types/node@24.5.2)(cosmiconfig@9.0.0(typescript@5.8.2))(typescript@5.8.2)
+      cosmiconfig: 9.0.0(typescript@5.9.3)
+      cosmiconfig-typescript-loader: 6.1.0(@types/node@24.5.2)(cosmiconfig@9.0.0(typescript@5.9.3))(typescript@5.9.3)
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       lodash.uniq: 4.5.0
@@ -1838,21 +1842,21 @@ snapshots:
       meow: 12.1.1
       split2: 4.2.0
 
-  cosmiconfig-typescript-loader@6.1.0(@types/node@24.5.2)(cosmiconfig@9.0.0(typescript@5.8.2))(typescript@5.8.2):
+  cosmiconfig-typescript-loader@6.1.0(@types/node@24.5.2)(cosmiconfig@9.0.0(typescript@5.9.3))(typescript@5.9.3):
     dependencies:
       '@types/node': 24.5.2
-      cosmiconfig: 9.0.0(typescript@5.8.2)
+      cosmiconfig: 9.0.0(typescript@5.9.3)
       jiti: 2.6.0
-      typescript: 5.8.2
+      typescript: 5.9.3
 
-  cosmiconfig@9.0.0(typescript@5.8.2):
+  cosmiconfig@9.0.0(typescript@5.9.3):
     dependencies:
       env-paths: 2.2.1
       import-fresh: 3.3.1
       js-yaml: 4.1.0
       parse-json: 5.2.0
     optionalDependencies:
-      typescript: 5.8.2
+      typescript: 5.9.3
 
   dargs@8.1.0: {}
 
@@ -2296,20 +2300,20 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  typedoc-plugin-markdown@4.9.0(typedoc@0.28.13(typescript@5.8.2)):
+  typedoc-plugin-markdown@4.9.0(typedoc@0.28.13(typescript@5.9.3)):
     dependencies:
-      typedoc: 0.28.13(typescript@5.8.2)
+      typedoc: 0.28.13(typescript@5.9.3)
 
-  typedoc@0.28.13(typescript@5.8.2):
+  typedoc@0.28.13(typescript@5.9.3):
     dependencies:
       '@gerrit0/mini-shiki': 3.13.0
       lunr: 2.3.9
       markdown-it: 14.1.0
       minimatch: 9.0.5
-      typescript: 5.8.2
+      typescript: 5.9.3
       yaml: 2.8.1
 
-  typescript@5.8.2: {}
+  typescript@5.9.3: {}
 
   uc.micro@2.1.0: {}
 

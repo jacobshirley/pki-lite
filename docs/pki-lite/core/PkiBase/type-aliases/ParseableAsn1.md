@@ -44,7 +44,7 @@ The type that can be parsed
 
 ##### der
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 #### Returns
 

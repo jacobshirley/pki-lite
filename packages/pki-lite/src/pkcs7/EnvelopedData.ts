@@ -260,11 +260,11 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
         })
     }
 
-    static fromDer(der: Uint8Array): EnvelopedData {
+    static fromDer(der: Uint8Array<ArrayBuffer>): EnvelopedData {
         return EnvelopedData.fromAsn1(derToAsn1(der))
     }
 
-    static fromCms(cms: ContentInfo | Uint8Array): EnvelopedData {
+    static fromCms(cms: ContentInfo | Uint8Array<ArrayBuffer>): EnvelopedData {
         if (cms instanceof Uint8Array) {
             cms = ContentInfo.fromDer(cms)
         }
@@ -293,14 +293,16 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
         })
     }
 
-    async decrypt(privateKey: PrivateKeyInfo): Promise<Uint8Array> {
+    async decrypt(
+        privateKey: PrivateKeyInfo,
+    ): Promise<Uint8Array<ArrayBuffer>> {
         const encryptedContent = this.encryptedContentInfo.encryptedContent
 
         if (!encryptedContent) {
             throw new Error('Failed to retrieve encrypted content')
         }
 
-        let decryptedKey: Uint8Array | undefined
+        let decryptedKey: Uint8Array<ArrayBuffer> | undefined
         for (const recipientInfo of this.recipientInfos) {
             try {
                 if (recipientInfo instanceof KeyTransRecipientInfo) {

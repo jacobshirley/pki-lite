@@ -3,20 +3,20 @@ import { PbeAlgorithmMap } from './types'
 
 type PbeAlgorithm = {
     encrypt: (
-        plaintext: Uint8Array,
-        password: string | Uint8Array,
-        salt: Uint8Array,
+        plaintext: Uint8Array<ArrayBuffer>,
+        password: string | Uint8Array<ArrayBuffer>,
+        salt: Uint8Array<ArrayBuffer>,
         iterationCount: number,
-    ) => Uint8Array
+    ) => Uint8Array<ArrayBuffer>
     decrypt: (
-        ciphertext: Uint8Array,
-        password: string | Uint8Array,
-        salt: Uint8Array,
+        ciphertext: Uint8Array<ArrayBuffer>,
+        password: string | Uint8Array<ArrayBuffer>,
+        salt: Uint8Array<ArrayBuffer>,
         iterationCount: number,
-    ) => Uint8Array
+    ) => Uint8Array<ArrayBuffer>
 }
 
-const getPassword = (password: string | Uint8Array): string => {
+const getPassword = (password: string | Uint8Array<ArrayBuffer>): string => {
     if (typeof password === 'string') {
         return password
     } else {
@@ -27,11 +27,11 @@ const getPassword = (password: string | Uint8Array): string => {
 const pbeAlgorithms: { [name in keyof PbeAlgorithmMap]: PbeAlgorithm } = {
     SHA1_3DES_2KEY_CBC: {
         encrypt: (
-            plaintext: Uint8Array,
-            password: string | Uint8Array,
-            salt: Uint8Array,
+            plaintext: Uint8Array<ArrayBuffer>,
+            password: string | Uint8Array<ArrayBuffer>,
+            salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array => {
+        ): Uint8Array<ArrayBuffer> => {
             const key = forge.pkcs12.generateKey(
                 getPassword(password),
                 forge.util.createBuffer(forge.util.binary.raw.encode(salt)),
@@ -60,11 +60,11 @@ const pbeAlgorithms: { [name in keyof PbeAlgorithmMap]: PbeAlgorithm } = {
             )
         },
         decrypt: (
-            ciphertext: Uint8Array,
-            password: string | Uint8Array,
-            salt: Uint8Array,
+            ciphertext: Uint8Array<ArrayBuffer>,
+            password: string | Uint8Array<ArrayBuffer>,
+            salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array => {
+        ): Uint8Array<ArrayBuffer> => {
             const key = forge.pkcs12.generateKey(
                 getPassword(password),
                 forge.util.createBuffer(forge.util.binary.raw.encode(salt)),
@@ -95,11 +95,11 @@ const pbeAlgorithms: { [name in keyof PbeAlgorithmMap]: PbeAlgorithm } = {
     },
     SHA1_3DES_3KEY_CBC: {
         encrypt: (
-            plaintext: Uint8Array,
-            password: string | Uint8Array,
-            salt: Uint8Array,
+            plaintext: Uint8Array<ArrayBuffer>,
+            password: string | Uint8Array<ArrayBuffer>,
+            salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array => {
+        ): Uint8Array<ArrayBuffer> => {
             const saltBuffer = forge.util.createBuffer()
             saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
 
@@ -133,11 +133,11 @@ const pbeAlgorithms: { [name in keyof PbeAlgorithmMap]: PbeAlgorithm } = {
             )
         },
         decrypt: (
-            ciphertext: Uint8Array,
-            password: string | Uint8Array,
-            salt: Uint8Array,
+            ciphertext: Uint8Array<ArrayBuffer>,
+            password: string | Uint8Array<ArrayBuffer>,
+            salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array => {
+        ): Uint8Array<ArrayBuffer> => {
             const saltBuffer = forge.util.createBuffer()
             saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
 
@@ -173,11 +173,11 @@ const pbeAlgorithms: { [name in keyof PbeAlgorithmMap]: PbeAlgorithm } = {
     },
     SHA1_RC2_40_CBC: {
         encrypt: (
-            plaintext: Uint8Array,
-            password: string | Uint8Array,
-            salt: Uint8Array,
+            plaintext: Uint8Array<ArrayBuffer>,
+            password: string | Uint8Array<ArrayBuffer>,
+            salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array => {
+        ): Uint8Array<ArrayBuffer> => {
             const saltBuffer = forge.util.createBuffer()
             saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
 
@@ -209,11 +209,11 @@ const pbeAlgorithms: { [name in keyof PbeAlgorithmMap]: PbeAlgorithm } = {
             )
         },
         decrypt: (
-            ciphertext: Uint8Array,
-            password: string | Uint8Array,
-            salt: Uint8Array,
+            ciphertext: Uint8Array<ArrayBuffer>,
+            password: string | Uint8Array<ArrayBuffer>,
+            salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array => {
+        ): Uint8Array<ArrayBuffer> => {
             const saltBuffer = forge.util.createBuffer()
             saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
             const key = forge.pkcs12.generateKey(
@@ -246,11 +246,11 @@ const pbeAlgorithms: { [name in keyof PbeAlgorithmMap]: PbeAlgorithm } = {
     },
     SHA1_RC2_128_CBC: {
         encrypt: (
-            plaintext: Uint8Array,
-            password: string | Uint8Array,
-            salt: Uint8Array,
+            plaintext: Uint8Array<ArrayBuffer>,
+            password: string | Uint8Array<ArrayBuffer>,
+            salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array => {
+        ): Uint8Array<ArrayBuffer> => {
             const saltBuffer = forge.util.createBuffer()
             saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
 
@@ -282,11 +282,11 @@ const pbeAlgorithms: { [name in keyof PbeAlgorithmMap]: PbeAlgorithm } = {
             )
         },
         decrypt: (
-            ciphertext: Uint8Array,
-            password: string | Uint8Array,
-            salt: Uint8Array,
+            ciphertext: Uint8Array<ArrayBuffer>,
+            password: string | Uint8Array<ArrayBuffer>,
+            salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array => {
+        ): Uint8Array<ArrayBuffer> => {
             const saltBuffer = forge.util.createBuffer()
             saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
             const key = forge.pkcs12.generateKey(

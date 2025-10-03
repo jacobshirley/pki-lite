@@ -77,7 +77,7 @@ describe('SignedData', () => {
             signerInfos: signerInfos,
         })
 
-        expect(signedData.version).toBe(1)
+        expect(signedData.version).toEqual(1)
         expect(signedData.digestAlgorithms).toEqual(digestAlgorithms)
         expect(signedData.encapContentInfo).toEqual(encapContentInfo)
         expect(signedData.signerInfos).toEqual(signerInfos)
@@ -192,7 +192,7 @@ describe('SignedData', () => {
 
         const str = signedData.toString()
 
-        expect(typeof str).toBe('string')
+        expect(typeof str).toEqual('string')
         expect(str.length).toBeGreaterThan(0)
     })
 
@@ -211,15 +211,15 @@ describe('SignedData', () => {
         const parsedSignedData = SignedData.fromAsn1(asn1)
 
         // Verify the basic structure (partial verification due to simplified implementation)
-        expect(parsedSignedData.version).toBe(1)
-        expect(parsedSignedData.digestAlgorithms.length).toBe(1)
+        expect(parsedSignedData.version).toEqual(1)
+        expect(parsedSignedData.digestAlgorithms.length).toEqual(1)
         // Use partial matching to check just the algorithm string
-        expect(parsedSignedData.digestAlgorithms[0].algorithm.toString()).toBe(
-            '2.16.840.1.101.3.4.2.1',
-        )
-        expect(parsedSignedData.encapContentInfo.eContentType.toString()).toBe(
-            OIDs.PKCS7.DATA,
-        )
+        expect(
+            parsedSignedData.digestAlgorithms[0].algorithm.toString(),
+        ).toEqual('2.16.840.1.101.3.4.2.1')
+        expect(
+            parsedSignedData.encapContentInfo.eContentType.toString(),
+        ).toEqual(OIDs.PKCS7.DATA)
         // The other properties are placeholders in our current implementation
     })
 

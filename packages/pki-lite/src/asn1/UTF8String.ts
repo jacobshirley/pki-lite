@@ -10,9 +10,11 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class UTF8String extends PkiBase<UTF8String> {
-    bytes: Uint8Array
+    bytes: Uint8Array<ArrayBuffer>
 
-    constructor(options: { value: string | Uint8Array | UTF8String }) {
+    constructor(options: {
+        value: string | Uint8Array<ArrayBuffer> | UTF8String
+    }) {
         super()
         const { value } = options
 

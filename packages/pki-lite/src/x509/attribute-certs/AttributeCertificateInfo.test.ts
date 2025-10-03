@@ -15,7 +15,7 @@ describe('AttributeCertificateInfo', () => {
             const holderValue = new Uint8Array([1, 2, 3])
             const holder = new Holder({ holderValue })
 
-            expect(holder.holderValue).toBe(holderValue)
+            expect(holder.holderValue).toEqual(holderValue)
         })
 
         test('toAsn1 should return correct ASN.1 structure', () => {
@@ -26,7 +26,7 @@ describe('AttributeCertificateInfo', () => {
 
             expect(asn1).toBeInstanceOf(asn1js.Sequence)
             const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-            expect(valueBlock.value.length).toBe(1)
+            expect(valueBlock.value.length).toEqual(1)
             expect(valueBlock.value[0]).toBeInstanceOf(asn1js.OctetString)
 
             // Check OctetString value matches holderValue
@@ -46,7 +46,7 @@ describe('AttributeCertificateInfo', () => {
 
             // In the simplified implementation, we store the entire BER encoding
             expect(holder.holderValue).toBeDefined()
-            expect(holder.holderValue instanceof Uint8Array).toBe(true)
+            expect(holder.holderValue instanceof Uint8Array).toEqual(true)
         })
 
         test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -63,7 +63,7 @@ describe('AttributeCertificateInfo', () => {
             const issuerValue = new Uint8Array([1, 2, 3])
             const issuer = new AttCertIssuer({ issuerValue })
 
-            expect(issuer.issuerValue).toBe(issuerValue)
+            expect(issuer.issuerValue).toEqual(issuerValue)
         })
 
         test('toAsn1 should return correct ASN.1 structure', () => {
@@ -74,7 +74,7 @@ describe('AttributeCertificateInfo', () => {
 
             expect(asn1).toBeInstanceOf(asn1js.Sequence)
             const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-            expect(valueBlock.value.length).toBe(1)
+            expect(valueBlock.value.length).toEqual(1)
             expect(valueBlock.value[0]).toBeInstanceOf(asn1js.OctetString)
 
             // Check OctetString value matches issuerValue
@@ -94,7 +94,7 @@ describe('AttributeCertificateInfo', () => {
 
             // In the simplified implementation, we store the entire BER encoding
             expect(issuer.issuerValue).toBeDefined()
-            expect(issuer.issuerValue instanceof Uint8Array).toBe(true)
+            expect(issuer.issuerValue instanceof Uint8Array).toEqual(true)
         })
 
         test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
@@ -156,13 +156,13 @@ describe('AttributeCertificateInfo', () => {
                 attributes: mockAttributes,
             })
 
-            expect(info.version).toBe(version)
-            expect(info.holder).toBe(mockHolder)
-            expect(info.issuer).toBe(mockIssuer)
-            expect(info.signature).toBe(mockSignature)
-            expect(info.serialNumber).toBe(serialNumber)
-            expect(info.validityPeriod).toBe(validityPeriod)
-            expect(info.attributes).toBe(mockAttributes)
+            expect(info.version).toEqual(version)
+            expect(info.holder).toEqual(mockHolder)
+            expect(info.issuer).toEqual(mockIssuer)
+            expect(info.signature).toEqual(mockSignature)
+            expect(info.serialNumber).toEqual(serialNumber)
+            expect(info.validityPeriod).toEqual(validityPeriod)
+            expect(info.attributes).toEqual(mockAttributes)
             expect(info.issuerUniqueID).toBeUndefined()
             expect(info.extensions).toBeUndefined()
         })
@@ -191,12 +191,12 @@ describe('AttributeCertificateInfo', () => {
 
             // Check the structure has the correct elements
             const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-            expect(valueBlock.value.length).toBe(7) // No optional fields
+            expect(valueBlock.value.length).toEqual(7) // No optional fields
             expect(valueBlock.value[0]).toBeInstanceOf(asn1js.Integer) // version
 
             // Check version value
             const versionAsn1 = valueBlock.value[0] as asn1js.Integer
-            expect(versionAsn1.valueBlock.valueDec).toBe(version)
+            expect(versionAsn1.valueBlock.valueDec).toEqual(version)
         })
 
         test('fromAsn1 should parse ASN.1 structure correctly', () => {

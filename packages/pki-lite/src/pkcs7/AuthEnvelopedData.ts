@@ -8,6 +8,7 @@ import { ContentInfo } from './ContentInfo.js'
 import { OIDs } from '../core/OIDs.js'
 import { Attributes } from '../x509/Attributes.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { MessageAuthenticationCode } from './MessageAuthenticationCode.js'
 
 /**
  * Represents a set of authenticated attributes.
@@ -52,32 +53,6 @@ class RecipientInfos extends PkiSet<RecipientInfo> {
         )
 
         return new RecipientInfos(...recipients)
-    }
-}
-
-/**
- * Message Authentication Code
- *
- * @asn
- * ```asn
- * MessageAuthenticationCode ::= OCTET STRING
- * ```
- */
-class MessageAuthenticationCode extends Uint8Array {
-    static fromAsn1(asn1: Asn1BaseBlock): MessageAuthenticationCode {
-        if (!(asn1 instanceof asn1js.OctetString)) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected OctetString for MessageAuthenticationCode',
-            )
-        }
-
-        return new MessageAuthenticationCode(asn1.valueBlock.valueHexView)
-    }
-
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.OctetString({
-            valueHex: this,
-        })
     }
 }
 
@@ -160,7 +135,7 @@ export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
         version: CMSVersion
         recipientInfos: RecipientInfo[]
         authEncryptedContentInfo: EncryptedContentInfo
-        mac: Uint8Array
+        mac: Uint8Array<ArrayBuffer> | MessageAuthenticationCode
         originatorInfo?: OriginatorInfo
         authAttrs?: Attribute[]
         unauthAttrs?: Attribute[]
@@ -180,7 +155,7 @@ export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
         this.version = version
         this.recipientInfos = new RecipientInfos(...recipientInfos)
         this.authEncryptedContentInfo = authEncryptedContentInfo
-        this.mac = new MessageAuthenticationCode(mac)
+        this.mac = new MessageAuthenticationCode({ bytes: mac })
         this.originatorInfo = originatorInfo
         this.authAttrs =
             authAttrs && authAttrs.length > 0

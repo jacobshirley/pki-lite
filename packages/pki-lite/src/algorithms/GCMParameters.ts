@@ -27,7 +27,10 @@ export class GCMParameters extends PkiBase<GCMParameters> {
      * @param options.aesNonce The nonce value (initialization vector). Recommended size is 12 octets.
      * @param options.aesICVlen The integrity check value length in octets (12, 13, 14, 15, or 16). Default is 12.
      */
-    constructor(options: { aesNonce: Uint8Array; aesICVlen?: number }) {
+    constructor(options: {
+        aesNonce: Uint8Array<ArrayBuffer>
+        aesICVlen?: number
+    }) {
         super()
 
         this.aesNonce = new OctetString({ bytes: options.aesNonce })
@@ -61,8 +64,9 @@ export class GCMParameters extends PkiBase<GCMParameters> {
             )
         }
 
-        const aesNonce = (sequenceValue[0] as asn1js.OctetString).valueBlock
-            .valueHexView
+        const aesNonce = new Uint8Array(
+            (sequenceValue[0] as asn1js.OctetString).valueBlock.valueHexView,
+        )
 
         let aesICVlen: number | undefined
         if (sequenceValue.length > 1) {

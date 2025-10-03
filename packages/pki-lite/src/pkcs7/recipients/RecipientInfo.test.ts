@@ -39,12 +39,12 @@ describe('RecipientInfo', () => {
         expect(recipientInfo).toBeInstanceOf(
             RecipientInfo.KeyTransRecipientInfo,
         )
-        expect(recipientInfo.version).toBe(0)
-        expect(recipientInfo.rid).toBe(issuerAndSerialNumber)
+        expect(recipientInfo.version).toEqual(0)
+        expect(recipientInfo.rid).toEqual(issuerAndSerialNumber)
         expect(recipientInfo.keyEncryptionAlgorithm).toEqual(
             keyEncryptionAlgorithm,
         )
-        expect(recipientInfo.encryptedKey).toBe(encryptedKey)
+        expect(recipientInfo.encryptedKey).toEqual(encryptedKey)
     })
 
     it('should convert KeyTransRecipientInfo to ASN.1', () => {
@@ -101,7 +101,9 @@ describe('RecipientInfo', () => {
         assert(
             parsedRecipientInfo instanceof RecipientInfo.KeyTransRecipientInfo,
         )
-        expect(parsedRecipientInfo.version).toBe(originalRecipientInfo.version)
+        expect(parsedRecipientInfo.version).toEqual(
+            originalRecipientInfo.version,
+        )
 
         // Compare issuerAndSerialNumber
         assert(parsedRecipientInfo.rid instanceof IssuerAndSerialNumber)
@@ -113,7 +115,7 @@ describe('RecipientInfo', () => {
         // Compare keyEncryptionAlgorithm and encryptedKey
         expect(
             parsedRecipientInfo.keyEncryptionAlgorithm.algorithm.toString(),
-        ).toBe(
+        ).toEqual(
             originalRecipientInfo.keyEncryptionAlgorithm.algorithm.toString(),
         )
         expect(Array.from(parsedRecipientInfo.encryptedKey)).toEqual(
@@ -163,10 +165,10 @@ describe('RecipientInfo', () => {
         })
 
         expect(kari).toBeInstanceOf(KeyAgreeRecipientInfo)
-        expect(kari.version).toBe(3) // Always 3 for KeyAgreeRecipientInfo
-        expect(kari.originator).toBe(originatorPublicKey)
-        expect(kari.keyEncryptionAlgorithm).toBe(keyEncryptionAlgorithm)
-        expect(kari.recipientEncryptedKeys).toBe(recipientEncryptedKeys)
+        expect(kari.version).toEqual(3) // Always 3 for KeyAgreeRecipientInfo
+        expect(kari.originator).toEqual(originatorPublicKey)
+        expect(kari.keyEncryptionAlgorithm).toEqual(keyEncryptionAlgorithm)
+        expect(kari.recipientEncryptedKeys).toEqual(recipientEncryptedKeys)
     })
 
     it('should convert KeyAgreeRecipientInfo to ASN.1 with correct tagging', () => {
@@ -213,8 +215,8 @@ describe('RecipientInfo', () => {
         const asn1 = RecipientInfo.toAsn1(kari)
 
         // Check that it's properly tagged
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT_SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(1) // [1]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(1) // [1]
     })
 
     it('should create a KEKRecipientInfo instance', () => {
@@ -235,10 +237,10 @@ describe('RecipientInfo', () => {
         })
 
         expect(kekri).toBeInstanceOf(KEKRecipientInfo)
-        expect(kekri.version).toBe(4) // Always 4 for KEKRecipientInfo
-        expect(kekri.kekid).toBe(kekid)
-        expect(kekri.keyEncryptionAlgorithm).toBe(keyEncryptionAlgorithm)
-        expect(kekri.encryptedKey).toBe(encryptedKey)
+        expect(kekri.version).toEqual(4) // Always 4 for KEKRecipientInfo
+        expect(kekri.kekid).toEqual(kekid)
+        expect(kekri.keyEncryptionAlgorithm).toEqual(keyEncryptionAlgorithm)
+        expect(kekri.encryptedKey).toEqual(encryptedKey)
     })
 
     it('should convert KEKRecipientInfo to ASN.1 with correct tagging', () => {
@@ -262,8 +264,8 @@ describe('RecipientInfo', () => {
         const asn1 = RecipientInfo.toAsn1(kekri)
 
         // Check that it's properly tagged
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT_SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(2) // [2]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(2) // [2]
     })
 
     it('should create a PasswordRecipientInfo instance', () => {
@@ -281,9 +283,9 @@ describe('RecipientInfo', () => {
         })
 
         expect(pwri).toBeInstanceOf(PasswordRecipientInfo)
-        expect(pwri.version).toBe(0) // Always 0 for PasswordRecipientInfo
-        expect(pwri.keyEncryptionAlgorithm).toBe(keyEncryptionAlgorithm)
-        expect(pwri.encryptedKey).toBe(encryptedKey)
+        expect(pwri.version).toEqual(0) // Always 0 for PasswordRecipientInfo
+        expect(pwri.keyEncryptionAlgorithm).toEqual(keyEncryptionAlgorithm)
+        expect(pwri.encryptedKey).toEqual(encryptedKey)
     })
 
     it('should convert PasswordRecipientInfo to ASN.1 with correct tagging', () => {
@@ -304,8 +306,8 @@ describe('RecipientInfo', () => {
         const asn1 = RecipientInfo.toAsn1(pwri)
 
         // Check that it's properly tagged
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT_SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(3) // [3]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(3) // [3]
     })
 
     it('should create an OtherRecipientInfo instance', () => {
@@ -322,8 +324,8 @@ describe('RecipientInfo', () => {
         })
 
         expect(ori).toBeInstanceOf(OtherRecipientInfo)
-        expect(ori.oriType.toString()).toBe(oriType)
-        expect(ori.oriValue).toBe(oriValue)
+        expect(ori.oriType.toString()).toEqual(oriType)
+        expect(ori.oriValue).toEqual(oriValue)
     })
 
     it('should convert OtherRecipientInfo to ASN.1 with correct tagging', () => {
@@ -343,7 +345,7 @@ describe('RecipientInfo', () => {
         const asn1 = RecipientInfo.toAsn1(ori)
 
         // Check that it's properly tagged
-        expect(asn1.idBlock.tagClass).toBe(3) // CONTEXT_SPECIFIC
-        expect(asn1.idBlock.tagNumber).toBe(4) // [4]
+        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
+        expect(asn1.idBlock.tagNumber).toEqual(4) // [4]
     })
 })

@@ -34,7 +34,7 @@ EncryptedKey ::= OCTET STRING
 
 ###### encryptedKey
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 ###### rid
 
@@ -52,7 +52,7 @@ EncryptedKey ::= OCTET STRING
 
 ### encryptedKey
 
-> **encryptedKey**: `Uint8Array`
+> **encryptedKey**: `Uint8Array<ArrayBuffer>`
 
 ---
 
@@ -224,13 +224,13 @@ The ASN.1 representation of this object
 
 ### toDer()
 
-> **toDer**(): `Uint8Array`
+> **toDer**(): `Uint8Array<ArrayBuffer>`
 
 Converts this PKI object to DER (Distinguished Encoding Rules) format.
 
 #### Returns
 
-`Uint8Array`
+`Uint8Array<ArrayBuffer>`
 
 The DER-encoded bytes of this object
 

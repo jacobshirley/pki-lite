@@ -13,7 +13,7 @@ describe('SignerInfo', () => {
     let issuerAndSerialNumber: IssuerAndSerialNumber
     let digestAlgorithm: AlgorithmIdentifier
     let signatureAlgorithm: AlgorithmIdentifier
-    let signature: Uint8Array
+    let signature: Uint8Array<ArrayBuffer>
 
     beforeEach(() => {
         // Create test issuer
@@ -59,7 +59,7 @@ describe('SignerInfo', () => {
             signature,
         })
 
-        expect(signerInfo.version).toBe(1)
+        expect(signerInfo.version).toEqual(1)
         expect(signerInfo.sid).toEqual(issuerAndSerialNumber)
         expect(signerInfo.digestAlgorithm).toEqual(digestAlgorithm)
         expect(signerInfo.signatureAlgorithm).toEqual(signatureAlgorithm)
@@ -94,7 +94,7 @@ describe('SignerInfo', () => {
         })
 
         expect(signerInfo.signedAttrs).toBeDefined()
-        expect(signerInfo.signedAttrs!.length).toBe(2)
+        expect(signerInfo.signedAttrs!.length).toEqual(2)
         expect(signerInfo.unsignedAttrs).toBeUndefined()
     })
 
@@ -119,7 +119,7 @@ describe('SignerInfo', () => {
 
         expect(signerInfo.signedAttrs).toBeUndefined()
         expect(signerInfo.unsignedAttrs).toBeDefined()
-        expect(signerInfo.unsignedAttrs!.length).toBe(1)
+        expect(signerInfo.unsignedAttrs!.length).toEqual(1)
     })
 
     test('can be created with both signed and unsigned attributes', () => {
@@ -152,9 +152,9 @@ describe('SignerInfo', () => {
         })
 
         expect(signerInfo.signedAttrs).toBeDefined()
-        expect(signerInfo.signedAttrs!.length).toBe(1)
+        expect(signerInfo.signedAttrs!.length).toEqual(1)
         expect(signerInfo.unsignedAttrs).toBeDefined()
-        expect(signerInfo.unsignedAttrs!.length).toBe(1)
+        expect(signerInfo.unsignedAttrs!.length).toEqual(1)
     })
 
     test('can be converted to ASN.1 with minimal parameters', () => {
@@ -171,12 +171,12 @@ describe('SignerInfo', () => {
 
         const sequence = asn1 as asn1js.Sequence
         // Should have: version, sid, digestAlgorithm, signatureAlgorithm, signature (5 elements)
-        expect(sequence.valueBlock.value.length).toBe(5)
+        expect(sequence.valueBlock.value.length).toEqual(5)
 
         // Check version
         expect(sequence.valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
         const version = sequence.valueBlock.value[0] as asn1js.Integer
-        expect(version.valueBlock.valueDec).toBe(1)
+        expect(version.valueBlock.valueDec).toEqual(1)
     })
 
     test('can be converted to ASN.1 with signed attributes', () => {
@@ -203,7 +203,7 @@ describe('SignerInfo', () => {
 
         const sequence = asn1 as asn1js.Sequence
         // Should have: version, sid, digestAlgorithm, signedAttrs[0], signatureAlgorithm, signature (6 elements)
-        expect(sequence.valueBlock.value.length).toBe(6)
+        expect(sequence.valueBlock.value.length).toEqual(6)
     })
 
     test('can be converted to ASN.1 with unsigned attributes', () => {
@@ -230,7 +230,7 @@ describe('SignerInfo', () => {
 
         const sequence = asn1 as asn1js.Sequence
         // Should have: version, sid, digestAlgorithm, signatureAlgorithm, signature, unsignedAttrs[1] (6 elements)
-        expect(sequence.valueBlock.value.length).toBe(6)
+        expect(sequence.valueBlock.value.length).toEqual(6)
     })
 
     test('can be converted to ASN.1 with both signed and unsigned attributes', () => {
@@ -267,7 +267,7 @@ describe('SignerInfo', () => {
 
         const sequence = asn1 as asn1js.Sequence
         // Should have: version, sid, digestAlgorithm, signedAttrs[0], signatureAlgorithm, signature, unsignedAttrs[1] (7 elements)
-        expect(sequence.valueBlock.value.length).toBe(7)
+        expect(sequence.valueBlock.value.length).toEqual(7)
     })
 
     test('can be created from ASN.1', () => {
@@ -282,13 +282,13 @@ describe('SignerInfo', () => {
         const asn1 = originalSignerInfo.toAsn1()
         const reconstructedSignerInfo = SignerInfo.fromAsn1(asn1)
 
-        expect(reconstructedSignerInfo.version).toBe(1)
+        expect(reconstructedSignerInfo.version).toEqual(1)
         expect(
             reconstructedSignerInfo.digestAlgorithm.algorithm.toString(),
-        ).toBe(digestAlgorithm.algorithm.toString())
+        ).toEqual(digestAlgorithm.algorithm.toString())
         expect(
             reconstructedSignerInfo.signatureAlgorithm.algorithm.toString(),
-        ).toBe(signatureAlgorithm.algorithm.toString())
+        ).toEqual(signatureAlgorithm.algorithm.toString())
         expect(reconstructedSignerInfo.signature).toEqual(signature)
     })
 
@@ -330,20 +330,22 @@ describe('SignerInfo', () => {
         const asn1 = originalSignerInfo.toAsn1()
         const reconstructedSignerInfo = SignerInfo.fromAsn1(asn1)
 
-        expect(reconstructedSignerInfo.version).toBe(originalSignerInfo.version)
+        expect(reconstructedSignerInfo.version).toEqual(
+            originalSignerInfo.version,
+        )
         expect(
             reconstructedSignerInfo.digestAlgorithm.algorithm.toString(),
-        ).toBe(originalSignerInfo.digestAlgorithm.algorithm.toString())
+        ).toEqual(originalSignerInfo.digestAlgorithm.algorithm.toString())
         expect(
             reconstructedSignerInfo.signatureAlgorithm.algorithm.toString(),
-        ).toBe(originalSignerInfo.signatureAlgorithm.algorithm.toString())
+        ).toEqual(originalSignerInfo.signatureAlgorithm.algorithm.toString())
         expect(reconstructedSignerInfo.signature).toEqual(
             originalSignerInfo.signature,
         )
-        expect(reconstructedSignerInfo.signedAttrs?.length).toBe(
+        expect(reconstructedSignerInfo.signedAttrs?.length).toEqual(
             originalSignerInfo.signedAttrs?.length,
         )
-        expect(reconstructedSignerInfo.unsignedAttrs?.length).toBe(
+        expect(reconstructedSignerInfo.unsignedAttrs?.length).toEqual(
             originalSignerInfo.unsignedAttrs?.length,
         )
     })
@@ -379,12 +381,12 @@ describe('SignerInfo', () => {
         })
 
         const derBytes = signerInfo.toDer()
-        expect(derBytes).toBeInstanceOf(Uint8Array)
+        expect(derBytes).toBeInstanceOf(Uint8Array<ArrayBuffer>)
         expect(derBytes.length).toBeGreaterThan(0)
 
         // Verify it can be parsed back by converting to ASN.1 first
         const reconstructed = SignerInfo.fromDer(derBytes)
-        expect(reconstructed.version).toBe(signerInfo.version)
+        expect(reconstructed.version).toEqual(signerInfo.version)
     })
 
     test('handles empty signed attributes array', () => {

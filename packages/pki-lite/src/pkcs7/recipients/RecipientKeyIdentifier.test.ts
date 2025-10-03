@@ -20,7 +20,7 @@ describe('RecipientKeyIdentifier', () => {
         const subjectKeyIdentifier = new KeyIdentifier({ bytes: keyId })
         const date = new Date()
         const rki = new RecipientKeyIdentifier({ subjectKeyIdentifier, date })
-        expect(rki.date).toBe(date)
+        expect(rki.date).toEqual(date)
     })
 
     test('can be created with other', () => {
@@ -31,7 +31,7 @@ describe('RecipientKeyIdentifier', () => {
             subjectKeyIdentifier,
             other,
         })
-        expect(rki.other).toBe(other)
+        expect(rki.other).toEqual(other)
     })
 
     test('can be converted to ASN.1 with only subjectKeyIdentifier', () => {
@@ -40,7 +40,7 @@ describe('RecipientKeyIdentifier', () => {
         const rki = new RecipientKeyIdentifier({ subjectKeyIdentifier })
         const asn1 = rki.toAsn1()
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(1)
+        expect(asn1.valueBlock.value.length).toEqual(1)
         const keyIdBlock = asn1.valueBlock.value[0]
         assert(keyIdBlock instanceof asn1js.OctetString)
         expect(new Uint8Array(keyIdBlock.valueBlock.valueHexView)).toEqual(
@@ -60,7 +60,7 @@ describe('RecipientKeyIdentifier', () => {
         })
         const asn1 = rki.toAsn1()
         assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3)
+        expect(asn1.valueBlock.value.length).toEqual(3)
         assert(asn1.valueBlock.value[1] instanceof asn1js.GeneralizedTime)
         assert(asn1.valueBlock.value[2] instanceof asn1js.Sequence)
     })

@@ -24,13 +24,13 @@ describe('CertID', () => {
             serialNumber,
         })
 
-        expect(certID.hashAlgorithm).toBe(hashAlgorithm)
-        expect(certID.issuerNameHash).toBe(issuerNameHash)
-        expect(certID.issuerKeyHash).toBe(issuerKeyHash)
+        expect(certID.hashAlgorithm).toEqual(hashAlgorithm)
+        expect(certID.issuerNameHash).toEqual(issuerNameHash)
+        expect(certID.issuerKeyHash).toEqual(issuerKeyHash)
         expect(certID.serialNumber.bytes).toEqual(serialNumber)
     })
 
-    it('should create a CertID with Uint8Array hash values', () => {
+    it('should create a CertID with Uint8Array<ArrayBuffer> hash values', () => {
         const hashAlgorithm = new AlgorithmIdentifier({
             algorithm: '2.16.840.1.101.3.4.2.1',
         }) // SHA-256
@@ -45,7 +45,7 @@ describe('CertID', () => {
             serialNumber,
         })
 
-        expect(certID.hashAlgorithm).toBe(hashAlgorithm)
+        expect(certID.hashAlgorithm).toEqual(hashAlgorithm)
         expect(certID.issuerNameHash).toBeInstanceOf(OctetString)
         expect(certID.issuerKeyHash).toBeInstanceOf(OctetString)
         expect(certID.issuerNameHash.bytes).toEqual(issuerNameHash)
@@ -68,7 +68,7 @@ describe('CertID', () => {
             serialNumber,
         })
 
-        expect(certID.hashAlgorithm).toBe(hashAlgorithm)
+        expect(certID.hashAlgorithm).toEqual(hashAlgorithm)
         expect(certID.issuerNameHash).toBeInstanceOf(OctetString)
         expect(certID.issuerKeyHash).toBeInstanceOf(OctetString)
         expect(certID.serialNumber.bytes).toEqual(serialNumber)

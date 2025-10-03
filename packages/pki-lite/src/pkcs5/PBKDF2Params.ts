@@ -32,7 +32,7 @@ export class PBKDF2Params extends PkiBase<PBKDF2Params> {
     })
 
     constructor(options: {
-        salt: Uint8Array | AlgorithmIdentifier | OctetString
+        salt: Uint8Array<ArrayBuffer> | AlgorithmIdentifier | OctetString
         iterationCount: number
         keyLength?: number
         prf?: AlgorithmIdentifier

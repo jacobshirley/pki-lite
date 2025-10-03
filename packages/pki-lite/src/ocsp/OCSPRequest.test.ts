@@ -32,7 +32,7 @@ describe('OCSPRequest', () => {
 
         const ocspRequest = new OCSPRequest({ tbsRequest })
 
-        expect(ocspRequest.tbsRequest).toBe(tbsRequest)
+        expect(ocspRequest.tbsRequest).toEqual(tbsRequest)
         expect(ocspRequest.optionalSignature).toBeUndefined()
     })
 
@@ -68,8 +68,8 @@ describe('OCSPRequest', () => {
             optionalSignature: ocspSignature,
         })
 
-        expect(ocspRequest.tbsRequest).toBe(tbsRequest)
-        expect(ocspRequest.optionalSignature).toBe(ocspSignature)
+        expect(ocspRequest.tbsRequest).toEqual(tbsRequest)
+        expect(ocspRequest.optionalSignature).toEqual(ocspSignature)
     })
 
     it('should convert to ASN.1 and back', () => {
@@ -94,7 +94,7 @@ describe('OCSPRequest', () => {
         const asn1 = original.toAsn1()
         const parsed = OCSPRequest.fromAsn1(asn1)
 
-        expect(parsed.tbsRequest.version).toBe(0) // v1
+        expect(parsed.tbsRequest.version).toEqual(0) // v1
         expect(parsed.tbsRequest.requestList).toHaveLength(1)
         expect(parsed.optionalSignature).toBeUndefined()
     })
@@ -128,7 +128,7 @@ describe('OCSPRequest', () => {
         const asn1 = asn1js.fromBER(arrayBuffer as ArrayBuffer).result
         const parsed = OCSPRequest.fromAsn1(asn1)
 
-        expect(parsed.tbsRequest.version).toBe(0) // v1
+        expect(parsed.tbsRequest.version).toEqual(0) // v1
         expect(parsed.tbsRequest.requestList).toHaveLength(1)
         expect(parsed.optionalSignature).toBeUndefined()
     })

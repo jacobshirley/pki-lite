@@ -25,7 +25,7 @@ describe('RSAPublicKey', () => {
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
 
         const values = (asn1 as any).valueBlock.value
-        expect(values.length).toBe(2)
+        expect(values.length).toEqual(2)
 
         // Check modulus
         expect(values[0]).toBeInstanceOf(asn1js.Integer)
