@@ -1,5 +1,14 @@
 {
     "readme": "none",
     "entryPointStrategy": "expand",
-    "entryPoints": ["src/**/*.ts"]
+    "entryPoints": ["src/**/*.ts"],
+    "exclude": [
+        "**/node_modules/**",
+        "**/test/**",
+        "**/scripts/**",
+        "**/dist/**",
+        "**/*.spec.ts",
+        "**/*.test.ts"
+    ],
+    "tsconfig": "tsconfig.prod.json"
 }

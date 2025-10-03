@@ -31,12 +31,18 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                version: [v1, latest, master] # Add your major versions here
+                version:
+                    - v1
+                    - latest
+                    - ${{ github.ref_name }}
         steps:
             - name: Checkout ${{ matrix.version }}
               uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
               with:
                   ref: ${{ matrix.version }}
+            - name: Get formatted ref name
+              id: formatted-ref-name
+              run: echo "formatted_ref_name=${{ matrix.version }}" | sed 's/\//_/g' >> $GITHUB_OUTPUT
             - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
               with:
                   run_install: true
@@ -50,16 +56,18 @@ jobs:
             - name: Compile TypeScript
               run: pnpm compile
             - name: Build docs
-              run: pnpm docs:gen ${{ matrix.version }}
+              run: pnpm docs:gen ${{ steps.formatted-ref-name.outputs.formatted_ref_name }}
             - name: Copy latest to root
               if: matrix.version == 'latest'
               run: cp -r docs-html/latest/* docs-html/
             - name: Upload artifact
               uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
               with:
-                  name: docs-${{ matrix.version }}
+                  name: docs-${{ steps.formatted-ref-name.outputs.formatted_ref_name }}
                   path: ./docs-html
                   retention-days: 1
+            - name: Where to find the docs
+              run: echo "You can find the documentation for version ${{ matrix.version }} at https://jacobshirley.github.io/pki-lite/${{ steps.formatted-ref-name.outputs.formatted_ref_name }}" >> $GITHUB_STEP_SUMMARY
     combine:
         name: Combine Docs
         runs-on: ubuntu-latest
