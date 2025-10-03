@@ -42,8 +42,8 @@
         "pki-lite-crypto-extended": "^1.0.5"
     },
     "devDependencies": {
-        "@commitlint/cli": "^19.8.1",
-        "@commitlint/config-conventional": "^19.8.1",
+        "@commitlint/cli": "^20.0.0",
+        "@commitlint/config-conventional": "^20.0.0",
         "@types/node": "^24.5.2",
         "husky": "^9.1.7",
         "lint-staged": "^16.2.0",
