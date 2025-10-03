@@ -163,13 +163,13 @@ A new instance of the target type
 
 ### toAsn1()
 
-> **toAsn1**(): [`Sequence`](../../../../core/PkiBase/namespaces/asn1js/classes/Sequence.md)
+> **toAsn1**(): `Sequence`
 
 Converts the BasicConstraints to an ASN.1 structure.
 
 #### Returns
 
-[`Sequence`](../../../../core/PkiBase/namespaces/asn1js/classes/Sequence.md)
+`Sequence`
 
 #### Overrides
 
@@ -280,7 +280,7 @@ Creates a BasicConstraints from an ASN.1 structure
 
 ##### asn1
 
-[`Sequence`](../../../../core/PkiBase/namespaces/asn1js/classes/Sequence.md)
+`Sequence`
 
 #### Returns
 

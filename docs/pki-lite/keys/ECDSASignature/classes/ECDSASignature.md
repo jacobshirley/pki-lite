@@ -160,7 +160,7 @@ A new instance of the target type
 
 ### toAsn1()
 
-> **toAsn1**(): [`Sequence`](../../../core/PkiBase/namespaces/asn1js/classes/Sequence.md)
+> **toAsn1**(): `Sequence`
 
 Convert to ASN.1 structure.
 
@@ -170,7 +170,7 @@ This is handled by the Integer class.
 
 #### Returns
 
-[`Sequence`](../../../core/PkiBase/namespaces/asn1js/classes/Sequence.md)
+`Sequence`
 
 #### Overrides
 
@@ -293,7 +293,7 @@ Parse from ASN.1 structure.
 
 ##### asn1
 
-[`AsnType`](../../../core/PkiBase/namespaces/asn1js/type-aliases/AsnType.md)
+`AsnType`
 
 #### Returns
 

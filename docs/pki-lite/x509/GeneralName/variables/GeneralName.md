@@ -62,7 +62,7 @@
 
 ### toAsn1()
 
-> **toAsn1**(`value`): [`Sequence`](../../../core/PkiBase/namespaces/asn1js/classes/Sequence.md)
+> **toAsn1**(`value`): `Sequence`
 
 #### Parameters
 
@@ -72,4 +72,4 @@
 
 #### Returns
 
-[`Sequence`](../../../core/PkiBase/namespaces/asn1js/classes/Sequence.md)
+`Sequence`

@@ -148,13 +148,13 @@ A new instance of the target type
 
 ### toAsn1()
 
-> **toAsn1**(): [`GeneralizedTime`](../../../core/PkiBase/namespaces/asn1js/classes/GeneralizedTime.md)
+> **toAsn1**(): `GeneralizedTime`
 
 Converts this PKI object to its ASN.1 representation.
 
 #### Returns
 
-[`GeneralizedTime`](../../../core/PkiBase/namespaces/asn1js/classes/GeneralizedTime.md)
+`GeneralizedTime`
 
 The ASN.1 representation of this object
 

@@ -6,4 +6,4 @@
 
 # Type Alias: Asn1BaseBlock
 
-> **Asn1BaseBlock** = [`BaseBlock`](../namespaces/asn1js/classes/BaseBlock.md)
+> **Asn1BaseBlock** = `asn1js.BaseBlock`
