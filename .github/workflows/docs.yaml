@@ -56,7 +56,7 @@ jobs:
             - name: Compile TypeScript
               run: pnpm compile
             - name: Build docs
-              run: pnpm docs:gen ${{ matrix.version }}
+              run: pnpm docs:gen ${{ steps.formatted-ref-name.outputs.formatted_ref_name }}
             - name: Copy latest to root
               if: matrix.version == 'latest'
               run: cp -r docs-html/latest/* docs-html/
