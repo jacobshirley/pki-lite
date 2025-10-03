@@ -17,6 +17,14 @@
     "pretty": true,
     "packageOptions": {
         "includeVersion": false,
+        "exclude": [
+            "**/node_modules/**",
+            "**/test/**",
+            "**/scripts/**",
+            "**/dist/**",
+            "**/*.spec.ts",
+            "**/*.test.ts"
+        ],
         "entryPoints": ["src/index.ts"]
     },
     "searchInDocuments": true,
