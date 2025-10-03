@@ -1,0 +1,34 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        ":preserveSemverRanges",
+        ":rebaseStalePrs",
+        ":disableDigestUpdates",
+        "schedule:weekly",
+        "group:recommended",
+        "group:monorepos",
+        "workarounds:all"
+    ],
+    "labels": ["deps"],
+    "dependencyDashboard": true,
+    "ignorePaths": ["**/node_modules/**"],
+    "timezone": "Europe/London",
+    "schedule": ["after 2am every weekday", "before 5am every weekday"],
+    "packageRules": [
+        {
+            "minimumReleaseAge": "3 days",
+            "matchPackageNames": ["/npm/"]
+        },
+        {
+            "groupName": "patch updates",
+            "matchUpdateTypes": ["patch"],
+            "matchPackageNames": ["*"]
+        },
+        {
+            "groupName": "Typedoc",
+            "matchUpdateTypes": ["patch", "minor", "major"],
+            "matchPackageNames": ["/typedoc/"]
+        }
+    ]
+}
