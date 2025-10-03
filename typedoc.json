@@ -1,6 +1,14 @@
 {
     "$schema": "https://typedoc.org/schema.json",
     "entryPoints": ["packages/*"],
+    "exclude": [
+        "**/node_modules/**",
+        "**/test/**",
+        "**/scripts/**",
+        "**/dist/**",
+        "**/*.spec.ts",
+        "**/*.test.ts"
+    ],
     "name": "PKI-Lite",
     "entryPointStrategy": "packages",
     "disableSources": true,
