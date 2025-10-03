@@ -31,10 +31,10 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                version: 
-                  - v1
-                  - latest
-                  - ${{ github.ref_name }}
+                version:
+                    - v1
+                    - latest
+                    - ${{ github.ref_name }}
         steps:
             - name: Checkout ${{ matrix.version }}
               uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
