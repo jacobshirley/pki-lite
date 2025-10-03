@@ -6,10 +6,6 @@
 
 # core/PkiBase
 
-## Namespaces
-
-- [asn1js](namespaces/asn1js/README.md)
-
 ## Classes
 
 - [PkiArray](classes/PkiArray.md)

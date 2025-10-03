@@ -150,13 +150,13 @@ A new instance of the target type
 
 ### toAsn1()
 
-> **toAsn1**(): [`UTCTime`](../../../core/PkiBase/namespaces/asn1js/classes/UTCTime.md)
+> **toAsn1**(): `UTCTime`
 
 Converts this PKI object to its ASN.1 representation.
 
 #### Returns
 
-[`UTCTime`](../../../core/PkiBase/namespaces/asn1js/classes/UTCTime.md)
+`UTCTime`
 
 The ASN.1 representation of this object
 

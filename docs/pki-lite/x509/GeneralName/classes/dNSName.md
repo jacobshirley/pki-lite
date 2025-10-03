@@ -154,13 +154,13 @@ A new instance of the target type
 
 ### toAsn1()
 
-> **toAsn1**(): [`Sequence`](../../../core/PkiBase/namespaces/asn1js/classes/Sequence.md)
+> **toAsn1**(): `Sequence`
 
 Converts this PKI object to its ASN.1 representation.
 
 #### Returns
 
-[`Sequence`](../../../core/PkiBase/namespaces/asn1js/classes/Sequence.md)
+`Sequence`
 
 The ASN.1 representation of this object
 

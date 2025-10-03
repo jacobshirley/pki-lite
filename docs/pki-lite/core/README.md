@@ -26,12 +26,6 @@ Re-exports [Asn1BaseBlock](PkiBase/type-aliases/Asn1BaseBlock.md)
 
 ---
 
-### asn1js
-
-Re-exports [asn1js](PkiBase/namespaces/asn1js/README.md)
-
----
-
 ### asn1ToDer
 
 Re-exports [asn1ToDer](PkiBase/functions/asn1ToDer.md)

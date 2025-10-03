@@ -168,13 +168,13 @@ A new instance of the target type
 
 ### toAsn1()
 
-> **toAsn1**(): [`Integer`](../../../core/PkiBase/namespaces/asn1js/classes/Integer.md)
+> **toAsn1**(): `Integer`
 
 Converts the Integer to an ASN.1 INTEGER structure
 
 #### Returns
 
-[`Integer`](../../../core/PkiBase/namespaces/asn1js/classes/Integer.md)
+`Integer`
 
 #### Overrides
 

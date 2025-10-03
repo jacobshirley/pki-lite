@@ -373,7 +373,7 @@ Creates an Extension from an ASN.1 structure
 
 ##### asn1
 
-[`BaseBlock`](../../../core/PkiBase/namespaces/asn1js/classes/BaseBlock.md)
+`BaseBlock`
 
 The ASN.1 structure
 
