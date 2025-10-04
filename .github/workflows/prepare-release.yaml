@@ -61,7 +61,8 @@ jobs:
                   git config --global user.name "github-actions[bot]"
                   git config --global user.email "github-actions[bot]@users.noreply.github.com"
             - name: Prepare release
-              run: ./scripts/prepare-release.sh --create-pr --force=${{ github.event.inputs.force || github.event_name == 'push' }}
+              if: github.event_name == 'workflow_dispatch'
+              run: ./scripts/prepare-release.sh --create-pr --force=${{ github.event.inputs.force }}
               env:
                   GH_TOKEN: ${{ github.token }}
             - name: Get release version
