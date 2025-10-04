@@ -26,6 +26,9 @@ on:
                 description: 'Force prepare even if no changes detected'
                 required: false
                 type: boolean
+    push:
+        branches:
+            - release/**
 permissions:
     actions: write
     checks: write
@@ -58,7 +61,7 @@ jobs:
                   git config --global user.name "github-actions[bot]"
                   git config --global user.email "github-actions[bot]@users.noreply.github.com"
             - name: Prepare release
-              run: ./scripts/prepare-release.sh --create-pr --force=${{ github.event.inputs.force }}
+              run: ./scripts/prepare-release.sh --create-pr --force=${{ github.event.inputs.force || github.event_name == 'push' }}
               env:
                   GH_TOKEN: ${{ github.token }}
             - name: Get release version
