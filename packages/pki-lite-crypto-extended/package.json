@@ -41,7 +41,7 @@
     "author": "Jacob Shirley",
     "homepage": "https://jacobshirley.github.io/pki-lite/v1",
     "license": "MIT",
-    "packageManager": "pnpm@10.17.1",
+    "packageManager": "pnpm@10.18.0",
     "dependencies": {
         "@noble/ciphers": "2.0.1",
         "@noble/hashes": "2.0.1",
