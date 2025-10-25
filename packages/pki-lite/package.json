@@ -58,7 +58,7 @@
     },
     "devDependencies": {
         "@types/node": "^24.3.3",
-        "@vitest/browser": "^3.2.4",
+        "@vitest/browser-playwright": "^3.2.4",
         "playwright": "^1.55.0",
         "typescript": "5.9.3",
         "vitest": "^3.2.4"
