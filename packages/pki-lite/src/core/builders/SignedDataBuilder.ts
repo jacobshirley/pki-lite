@@ -406,16 +406,14 @@ export class SignedDataBuilder implements AsyncBuilder<SignedData> {
                     const hashAlgorithm =
                         typeof signer.tsa === 'object' && signer.tsa.hash
                             ? signer.tsa.hash
-                            : encryptionParams.params.hash
+                            : 'SHA-256'
                     const policyId =
                         typeof signer.tsa === 'object' && signer.tsa.policyId
                             ? signer.tsa.policyId
                             : undefined
 
                     const digestAlgorithm =
-                        DigestAlgorithmIdentifier.digestAlgorithm(
-                            hashAlgorithm ?? 'SHA-256',
-                        )
+                        DigestAlgorithmIdentifier.digestAlgorithm(hashAlgorithm)
 
                     const timestampResponse = await TimeStampReq.create({
                         messageImprint: new MessageImprint({
