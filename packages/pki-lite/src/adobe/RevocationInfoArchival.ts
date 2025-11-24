@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1BaseBlock, asn1js, derToAsn1, PkiBase } from '../core/PkiBase.js'
 import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -96,29 +96,54 @@ export class RevocationInfoArchival extends PkiBase<RevocationInfoArchival> {
             const tagNumber = element.idBlock.tagNumber
 
             if (tagNumber === 0) {
-                const crlSeq = element.valueBlock.value[0] as asn1js.Sequence
-                for (const crlAsn1 of crlSeq.valueBlock.value) {
-                    crls.push(
-                        CertificateList.fromAsn1(crlAsn1 as asn1js.Sequence),
+                const crlSeq = element.valueBlock.value[0]
+
+                if (!(crlSeq instanceof asn1js.Sequence)) {
+                    throw new Asn1ParseError(
+                        'Invalid ASN.1 structure for CRL sequence',
                     )
+                }
+
+                for (const crlAsn1 of crlSeq.valueBlock.value) {
+                    crls.push(CertificateList.fromAsn1(crlAsn1))
                 }
             } else if (tagNumber === 1) {
-                const ocspSeq = element.valueBlock.value[0] as asn1js.Sequence
-                for (const ocspAsn1 of ocspSeq.valueBlock.value) {
-                    ocsps.push(
-                        OCSPResponse.fromAsn1(ocspAsn1 as asn1js.Sequence),
+                const ocspSeq = element.valueBlock.value[0]
+
+                if (!(ocspSeq instanceof asn1js.Sequence)) {
+                    throw new Asn1ParseError(
+                        'Invalid ASN.1 structure for OCSP sequence',
                     )
                 }
+
+                for (const ocspAsn1 of ocspSeq.valueBlock.value) {
+                    ocsps.push(OCSPResponse.fromAsn1(ocspAsn1))
+                }
             } else if (tagNumber === 2) {
-                const oriSeq = element.valueBlock.value[0] as asn1js.Sequence
-                for (const oriAsn1 of oriSeq.valueBlock.value) {
-                    otherRevInfo.push(
-                        OtherRevInfo.fromAsn1(oriAsn1 as asn1js.Sequence),
+                const oriSeq = element.valueBlock.value[0]
+
+                if (!(oriSeq instanceof asn1js.Sequence)) {
+                    throw new Asn1ParseError(
+                        'Invalid ASN.1 structure for OtherRevInfo sequence',
                     )
+                }
+
+                for (const oriAsn1 of oriSeq.valueBlock.value) {
+                    if (!(oriAsn1 instanceof asn1js.Sequence)) {
+                        throw new Asn1ParseError(
+                            'Invalid ASN.1 structure for OtherRevInfo item',
+                        )
+                    }
+
+                    otherRevInfo.push(OtherRevInfo.fromAsn1(oriAsn1))
                 }
             }
         }
 
         return new RevocationInfoArchival({ crls, ocsps, otherRevInfo })
+    }
+
+    static fromDer(der: Uint8Array<ArrayBuffer>): RevocationInfoArchival {
+        return RevocationInfoArchival.fromAsn1(derToAsn1(der))
     }
 }

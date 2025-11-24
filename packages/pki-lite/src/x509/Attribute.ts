@@ -18,7 +18,6 @@ import { SignaturePolicyId } from './attributes/SignaturePolicyIdentifier.js'
 import { SignerLocation } from './attributes/SignerLocation.js'
 import { SigningCertificate } from './attributes/SigningCertificate.js'
 import { SigningCertificateV2 } from './attributes/SigningCertificateV2.js'
-import { CertificateList } from './CertificateList.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
 /**
