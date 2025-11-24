@@ -212,16 +212,12 @@ export class CertificateList extends PkiBase<CertificateList> {
     static fromAsn1(asn1: Asn1BaseBlock): CertificateList {
         if (!(asn1 instanceof asn1js.Sequence)) {
             throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected SEQUENCE',
+                'Invalid ASN.1 structure: expected SEQUENCE but got ' +
+                    asn1.constructor.name,
             )
         }
 
-        // Define a type for the valueBlock structure we need to access
-        interface ValueBlock {
-            value: asn1js.BaseBlock[]
-        }
-
-        const values = (asn1.valueBlock as unknown as ValueBlock).value
+        const values = asn1.valueBlock.value
         if (values.length !== 3) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 3 elements',
