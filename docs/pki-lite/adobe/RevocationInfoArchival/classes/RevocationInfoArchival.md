@@ -299,3 +299,19 @@ A string representation for debugging
 #### Returns
 
 `RevocationInfoArchival`
+
+---
+
+### fromDer()
+
+> `static` **fromDer**(`der`): `RevocationInfoArchival`
+
+#### Parameters
+
+##### der
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Returns
+
+`RevocationInfoArchival`
