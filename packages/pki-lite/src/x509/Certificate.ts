@@ -408,7 +408,13 @@ export class Certificate extends PkiBase<Certificate> {
                         continue
                     }
                     const crlDer = new Uint8Array(await response.arrayBuffer())
-                    return CertificateList.fromDer(crlDer)
+                    try {
+                        return CertificateList.fromDer(crlDer)
+                    } catch (e) {
+                        return CertificateList.fromPem(
+                            new TextDecoder().decode(crlDer),
+                        )
+                    }
                 } catch (e) {
                     if (!(e instanceof Error)) {
                         throw e
