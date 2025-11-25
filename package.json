@@ -34,7 +34,8 @@
         "overrides": {
             "vitest": "$vitest",
             "@vitest/browser-playwright": "$vitest",
-            "typescript": "$typescript"
+            "typescript": "$typescript",
+            "playwright": "$playwright"
         }
     },
     "dependencies": {

@@ -8,6 +8,7 @@ overrides:
   vitest: ^4.0.13
   '@vitest/browser-playwright': ^4.0.13
   typescript: ^5.9.3
+  playwright: ^1.55.0
 
 importers:
 
@@ -517,7 +518,7 @@ packages:
   '@vitest/browser-playwright@4.0.13':
     resolution: {integrity: sha512-oaRY+/pvwS4/sN2rE2aZh9jdli8EkXm5AidmXEbWRu2wW0omG9PmgChWCX2jsD9qRLQxXTSLl5oKezANNF6LnQ==}
     peerDependencies:
-      playwright: '*'
+      playwright: ^1.55.0
       vitest: ^4.0.13
 
   '@vitest/browser@4.0.13':
