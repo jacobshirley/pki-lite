@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { UTCTime } from './UTCTime.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('UTCTime', () => {
     test('should create UTCTime from Date object', () => {
@@ -34,7 +34,7 @@ describe('UTCTime', () => {
 
         // Verify the date is preserved
         const asn1UtcTime = asn1 as asn1js.UTCTime
-        expect(asn1UtcTime.toDate().getTime()).toEqual(testDate.getTime())
+        expect(asn1UtcTime.toDate()!.getTime()).toEqual(testDate.getTime())
     })
 
     test('should parse from ASN.1 UTCTime correctly', () => {

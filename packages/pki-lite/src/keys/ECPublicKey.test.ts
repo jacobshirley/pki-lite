@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { ECPublicKey } from './ECPublicKey.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('ECPublicKey', () => {
     // Sample X and Y coordinates (32 bytes each for P-256)

@@ -209,8 +209,8 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
         }
 
         const validityPeriod = {
-            notBefore: validityValues[0].toDate(),
-            notAfter: validityValues[1].toDate(),
+            notBefore: validityValues[0].toDate() ?? new Date(),
+            notAfter: validityValues[1].toDate() ?? new Date(),
         }
 
         // Extract attributes

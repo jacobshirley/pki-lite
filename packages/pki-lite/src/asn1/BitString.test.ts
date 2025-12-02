@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { BitString } from './BitString.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('BitString', () => {
     // Basic constructor tests

@@ -14,7 +14,7 @@ import { RDNSequence } from '../RDNSequence.js'
 import { RelativeDistinguishedName } from '../RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../AttributeTypeAndValue.js'
 import { OIDs } from '../../core/OIDs.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../../core/PkiBase.js'
 
 describe('GeneralSubtree', () => {
     test('should create GeneralSubtree with DNS name', () => {

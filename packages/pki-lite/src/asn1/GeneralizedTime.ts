@@ -27,6 +27,7 @@ export class GeneralizedTime extends PkiBase<Date> {
                 'Invalid ASN.1 structure: expected GeneralizedTime',
             )
         }
-        return new GeneralizedTime({ time: asn1.toDate() })
+        const dateValue = asn1.toDate()
+        return new GeneralizedTime({ time: dateValue ?? undefined })
     }
 }

@@ -1,4 +1,4 @@
-import * as asn1js from 'asn1js'
+import { asn1js } from '../../core/PkiBase.js'
 import { ExtendedCertificateInfo } from './ExtendedCertificateInfo.js'
 import { Certificate } from '../Certificate.js'
 import { Attribute } from '../Attribute.js'

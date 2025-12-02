@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { TeletexString } from './TeletexString.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('TeletexString', () => {
     test('should create TeletexString from string value', () => {

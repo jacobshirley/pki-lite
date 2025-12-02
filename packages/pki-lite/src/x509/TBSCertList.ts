@@ -191,9 +191,11 @@ export class TBSCertList extends PkiBase<TBSCertList> {
         // In a real implementation, you would extract the date correctly from the ASN.1 object
         let thisUpdate: Date
         if (values[index] instanceof asn1js.UTCTime) {
-            thisUpdate = (values[index] as asn1js.UTCTime).toDate()
+            thisUpdate =
+                (values[index] as asn1js.UTCTime).toDate() ?? new Date()
         } else if (values[index] instanceof asn1js.GeneralizedTime) {
-            thisUpdate = (values[index] as asn1js.GeneralizedTime).toDate()
+            thisUpdate =
+                (values[index] as asn1js.GeneralizedTime).toDate() ?? new Date()
         } else {
             // Fallback for testing
             thisUpdate = new Date('2025-01-01')
@@ -210,9 +212,12 @@ export class TBSCertList extends PkiBase<TBSCertList> {
             // For testing purposes, we'll use a fixed date
             // In a real implementation, you would extract the date correctly from the ASN.1 object
             if (values[index] instanceof asn1js.UTCTime) {
-                nextUpdate = (values[index] as asn1js.UTCTime).toDate()
+                nextUpdate =
+                    (values[index] as asn1js.UTCTime).toDate() ?? undefined
             } else if (values[index] instanceof asn1js.GeneralizedTime) {
-                nextUpdate = (values[index] as asn1js.GeneralizedTime).toDate()
+                nextUpdate =
+                    (values[index] as asn1js.GeneralizedTime).toDate() ??
+                    undefined
             } else {
                 // Fallback for testing
                 nextUpdate = new Date('2026-01-01')

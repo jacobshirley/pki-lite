@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { PrintableString } from './PrintableString.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('PrintableString', () => {
     test('should create PrintableString from string value', () => {

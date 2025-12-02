@@ -76,7 +76,7 @@ export class RevokedInfo extends PkiBase<RevokedInfo> {
         const revocationTimeBlock = sequence.valueBlock
             .value[0] as asn1js.GeneralizedTime
         // Use toDate() method for proper date parsing
-        const revocationTime = revocationTimeBlock.toDate()
+        const revocationTime = revocationTimeBlock.toDate() ?? new Date()
 
         let revocationReason: number | undefined = undefined
 

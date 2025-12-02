@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { UTF8String } from './UTF8String.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('UTF8String', () => {
     test('should create UTF8String from string value', () => {

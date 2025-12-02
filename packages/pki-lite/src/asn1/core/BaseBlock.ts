@@ -136,7 +136,7 @@ export abstract class BaseBlock {
      * Nested value block for accessing internals (compatibility)
      */
     get valueBlock(): {
-        value: BaseBlock[] | boolean | string | number
+        value: any
         valueHex: ArrayBuffer
         valueHexView: Uint8Array
         valueBeforeDecodeView: Uint8Array
@@ -313,5 +313,25 @@ export abstract class BaseBlock {
      */
     getValue(): any {
         return this._valueHex
+    }
+
+    /**
+     * Check if two blocks are equal (compare DER encodings)
+     */
+    isEqual(other: BaseBlock): boolean {
+        const thisDer = new Uint8Array(this.toBER(false))
+        const otherDer = new Uint8Array(other.toBER(false))
+
+        if (thisDer.length !== otherDer.length) {
+            return false
+        }
+
+        for (let i = 0; i < thisDer.length; i++) {
+            if (thisDer[i] !== otherDer[i]) {
+                return false
+            }
+        }
+
+        return true
     }
 }

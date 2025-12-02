@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { ObjectIdentifier } from './ObjectIdentifier.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('ObjectIdentifier', () => {
     test('should create ObjectIdentifier from string value', () => {

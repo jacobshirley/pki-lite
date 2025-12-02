@@ -116,9 +116,9 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
         let revocationDate: Date
 
         if (revocationDateAsn1 instanceof asn1js.UTCTime) {
-            revocationDate = revocationDateAsn1.toDate()
+            revocationDate = revocationDateAsn1.toDate() ?? new Date()
         } else if (revocationDateAsn1 instanceof asn1js.GeneralizedTime) {
-            revocationDate = revocationDateAsn1.toDate()
+            revocationDate = revocationDateAsn1.toDate() ?? new Date()
         } else {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: revocationDate must be a UTCTime or GeneralizedTime',

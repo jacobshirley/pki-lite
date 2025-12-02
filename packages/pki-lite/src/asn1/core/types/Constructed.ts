@@ -11,7 +11,7 @@ export interface ConstructedParams {
     isConstructed?: boolean
     valueHex?: ArrayBuffer | Uint8Array
     value?: BaseBlock[]
-    idBlock?: { tagClass?: number; tagNumber?: number }
+    idBlock?: { tagClass?: number; tagNumber?: number; isConstructed?: boolean }
 }
 
 export class Constructed extends BaseBlock {

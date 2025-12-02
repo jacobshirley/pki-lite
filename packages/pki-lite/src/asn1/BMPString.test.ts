@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { BMPString } from './BMPString.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('BMPString', () => {
     test('should create BMPString from string value', () => {

@@ -11,6 +11,8 @@ export interface IntegerParams {
     isConstructed?: boolean
     valueHex?: ArrayBuffer | Uint8Array
     value?: number | bigint
+    optional?: boolean
+    idBlock?: { tagClass?: number; tagNumber?: number }
 }
 
 export class Integer extends BaseBlock {

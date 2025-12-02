@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { GeneralizedTime } from './UTCTime.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('GeneralizedDate', () => {
     test('should create GeneralizedDate from Date object', () => {
@@ -34,7 +34,7 @@ describe('GeneralizedDate', () => {
 
         // Verify the date is preserved
         const asn1GeneralizedTime = asn1 as asn1js.GeneralizedTime
-        expect(asn1GeneralizedTime.toDate().getTime()).toEqual(
+        expect(asn1GeneralizedTime.toDate()!.getTime()).toEqual(
             testDate.getTime(),
         )
     })

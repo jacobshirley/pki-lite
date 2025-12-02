@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { IA5String } from './IA5String.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('IA5String', () => {
     test('should create IA5String from string value', () => {

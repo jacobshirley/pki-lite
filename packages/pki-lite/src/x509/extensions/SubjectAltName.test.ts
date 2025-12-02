@@ -6,7 +6,7 @@ import {
     uniformResourceIdentifier,
     iPAddress,
 } from '../GeneralName.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../../core/PkiBase.js'
 
 describe('SubjectAltName', () => {
     test('should create empty SubjectAltName', () => {

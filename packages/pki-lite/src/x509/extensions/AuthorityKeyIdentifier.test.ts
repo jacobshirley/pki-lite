@@ -3,7 +3,7 @@ import { AuthorityKeyIdentifier } from './AuthorityKeyIdentifier.js'
 import { KeyIdentifier } from '../../pkcs7/recipients/KeyIdentifier.js'
 import { GeneralNames, dNSName } from '../GeneralName.js'
 import { Integer } from '../../asn1/Integer.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../../core/PkiBase.js'
 import { Extension } from '../Extension.js'
 
 describe('AuthorityKeyIdentifier', () => {

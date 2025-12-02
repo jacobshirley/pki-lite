@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { Any } from './Any.js'
 import { Integer } from './Integer.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('Any', () => {
     test('should create Any with null value', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { ECPrivateKey } from './ECPrivateKey.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 
 describe('ECPrivateKey', () => {
