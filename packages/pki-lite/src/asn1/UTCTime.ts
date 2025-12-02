@@ -27,7 +27,8 @@ export class UTCTime extends PkiBase<Date> {
                 'Invalid ASN.1 structure: expected UTCTime',
             )
         }
-        return new UTCTime({ time: asn1.toDate() })
+        const dateValue = asn1.toDate()
+        return new UTCTime({ time: dateValue ?? undefined })
     }
 }
 
@@ -49,6 +50,7 @@ export class GeneralizedTime extends PkiBase<Date> {
                 'Invalid ASN.1 structure: expected GeneralizedTime',
             )
         }
-        return new GeneralizedTime({ date: asn1.toDate() })
+        const dateValue = asn1.toDate()
+        return new GeneralizedTime({ date: dateValue ?? undefined })
     }
 }

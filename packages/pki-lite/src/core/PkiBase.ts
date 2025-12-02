@@ -1,17 +1,9 @@
-import * as asn1js from 'asn1js'
+import * as asn1js from '../asn1/core/index.js'
 import { Any } from '../asn1/Any.js'
-export * as asn1js from 'asn1js'
+export * as asn1js from '../asn1/core/index.js'
 import { Asn1ParseError } from './errors/Asn1ParseError.js'
 
-// Fixes an issue where asn1js.Boolean.toString would return
-// `BOOLEAN : getValue() {
-//        return this.valueBlock.value;
-//  }`
-asn1js.Boolean.prototype.toString = function () {
-    return `BOOLEAN: ${('' + this.getValue()).toUpperCase()}`
-}
-
-export type Asn1BaseBlock = asn1js.BaseBlock
+export type Asn1BaseBlock = asn1js.BaseBlock | asn1js.AsnType
 
 // TODO
 export type ToJson<T> = {
