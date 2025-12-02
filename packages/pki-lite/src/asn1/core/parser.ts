@@ -177,7 +177,10 @@ function createAsn1Type(params: {
         }
 
         case TagNumber.BIT_STRING: {
-            const block = new Asn1BitString({ valueHex: content })
+            const block = new Asn1BitString({
+                valueHex: content,
+                _fromDer: true,
+            })
             ;(block as any)._valueBeforeDecodeView = rawBytes
             return block
         }

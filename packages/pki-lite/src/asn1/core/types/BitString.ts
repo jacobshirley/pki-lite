@@ -11,6 +11,8 @@ export interface BitStringParams {
     isConstructed?: boolean
     valueHex?: ArrayBuffer | Uint8Array
     unusedBits?: number
+    /** Internal flag to indicate this is from DER parsing (contains unused bits prefix) */
+    _fromDer?: boolean
 }
 
 export class BitString extends BaseBlock {
@@ -27,9 +29,13 @@ export class BitString extends BaseBlock {
 
         if (params.valueHex) {
             const bytes = new Uint8Array(params.valueHex)
-            if (bytes.length > 0) {
+            if (params._fromDer && bytes.length > 0) {
+                // When parsed from DER, first byte is unused bits count
                 this._unusedBits = bytes[0]
                 this._valueHex = bytes.slice(1)
+            } else {
+                // When constructed manually, valueHex is the raw bit data
+                this._valueHex = bytes
             }
         }
 
