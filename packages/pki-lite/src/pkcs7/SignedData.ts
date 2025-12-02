@@ -28,6 +28,7 @@ import {
     CertificateValidator,
 } from '../core/CertificateValidator.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { OctetString } from '../asn1/OctetString.js'
 
 /**
  * Represents a set of digest algorithm identifiers.
@@ -440,6 +441,61 @@ export class SignedData extends PkiBase<SignedData> {
             if (!cert) {
                 reasons.push('No matching certificate found for signerInfo')
                 continue
+            }
+
+            // Verify message digest if signed attributes are present (before signature check)
+            if (signerInfo.signedAttrs) {
+                const messageDigestAttr = signerInfo.signedAttrs.find(
+                    (attr) => attr.type.value === OIDs.PKCS9.MESSAGE_DIGEST,
+                )
+
+                if (!messageDigestAttr) {
+                    reasons.push(
+                        'Signed attributes present but message digest attribute is missing',
+                    )
+                    continue
+                }
+
+                if (messageDigestAttr.values.length === 0) {
+                    reasons.push('Message digest attribute has no values')
+                    continue
+                }
+
+                // Get the message digest from the attribute
+                const messageDigestOctetString =
+                    messageDigestAttr.values[0].parseAs<OctetString>(
+                        OctetString,
+                    )
+                const expectedDigest = messageDigestOctetString.bytes
+
+                // Determine the content to hash
+                const contentToHash =
+                    options.data ?? this.encapContentInfo.eContent
+
+                if (!contentToHash) {
+                    reasons.push(
+                        'No content available to verify message digest (detached signature requires data parameter)',
+                    )
+                    continue
+                }
+
+                // Compute the actual digest of the content
+                const actualDigest =
+                    await signerInfo.digestAlgorithm.digest(contentToHash)
+
+                // Compare the digests
+                if (
+                    expectedDigest.length !== actualDigest.length ||
+                    !expectedDigest.every(
+                        (byte: number, index: number) =>
+                            byte === actualDigest[index],
+                    )
+                ) {
+                    reasons.push(
+                        'Message digest in signed attributes does not match computed digest of content',
+                    )
+                    continue
+                }
             }
 
             const result = await signerInfo.verify({

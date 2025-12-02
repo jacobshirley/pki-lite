@@ -16,6 +16,10 @@ import { TBSCertList } from '../x509/TBSCertList.js'
 import { Extension } from '../x509/Extension.js'
 import { RevokedCertificate } from '../x509/RevokedCertificate.js'
 import { CRLReason } from '../x509/CRLReason.js'
+import { Attribute } from '../x509/Attribute.js'
+import { OctetString } from '../asn1/OctetString.js'
+import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
+import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 
 describe('SignedData', () => {
     let digestAlgorithms: DigestAlgorithmIdentifier[]
@@ -407,3 +411,299 @@ function createSampleCRL(): CertificateList {
         signatureValue,
     })
 }
+
+describe('SignedData - Message Digest Verification', () => {
+    it('should fail verification when message digest attribute is missing from signed attributes', async () => {
+        const content = new TextEncoder().encode('test content')
+        const cert = Certificate.fromDer(rsaSigningKeys.cert)
+        const digestAlg = DigestAlgorithmIdentifier.digestAlgorithm('SHA-256')
+
+        // Create a signer info with signed attributes but WITHOUT message digest
+        const issuerAndSerialNumber = new IssuerAndSerialNumber({
+            issuer: cert.tbsCertificate.issuer,
+            serialNumber: cert.tbsCertificate.serialNumber,
+        })
+
+        // Create signed attributes without message digest (this violates the spec)
+        const signedAttrs = new SignerInfo.SignedAttributes(
+            Attribute.contentType(OIDs.PKCS7.DATA),
+            // Missing message digest attribute!
+        )
+
+        const signerInfo = new SignerInfo({
+            version: 1,
+            sid: issuerAndSerialNumber,
+            digestAlgorithm: digestAlg,
+            signatureAlgorithm: AlgorithmIdentifier.signatureAlgorithm({
+                type: 'RSASSA_PKCS1_v1_5',
+                params: { hash: 'SHA-256' },
+            }),
+            signature: new Uint8Array(256), // Dummy signature
+            signedAttrs: [...signedAttrs],
+        })
+
+        const signedData = new SignedData({
+            version: 1,
+            digestAlgorithms: [digestAlg],
+            encapContentInfo: new EncapsulatedContentInfo({
+                eContentType: OIDs.PKCS7.DATA,
+                eContent: content,
+            }),
+            signerInfos: [signerInfo],
+            certificates: [cert], // Include certificate
+        })
+
+        const result = await signedData.verify({})
+
+        expect(result.valid).toBe(false)
+        if (!result.valid) {
+            expect(result.reasons).toContain(
+                'Signed attributes present but message digest attribute is missing',
+            )
+        }
+    })
+
+    it('should fail verification when message digest does not match content', async () => {
+        const content = new TextEncoder().encode('test content')
+        const cert = Certificate.fromDer(rsaSigningKeys.cert)
+        const digestAlg = DigestAlgorithmIdentifier.digestAlgorithm('SHA-256')
+
+        // Calculate correct digest but then corrupt it
+        const correctDigest = await digestAlg.digest(content)
+        const wrongDigest = new Uint8Array(correctDigest)
+        wrongDigest[0] = wrongDigest[0] ^ 0xff // Flip bits to make it wrong
+
+        const issuerAndSerialNumber = new IssuerAndSerialNumber({
+            issuer: cert.tbsCertificate.issuer,
+            serialNumber: cert.tbsCertificate.serialNumber,
+        })
+
+        const signedAttrs = new SignerInfo.SignedAttributes(
+            Attribute.contentType(OIDs.PKCS7.DATA),
+            Attribute.messageDigest(wrongDigest), // Wrong digest!
+        )
+
+        const signerInfo = new SignerInfo({
+            version: 1,
+            sid: issuerAndSerialNumber,
+            digestAlgorithm: digestAlg,
+            signatureAlgorithm: AlgorithmIdentifier.signatureAlgorithm({
+                type: 'RSASSA_PKCS1_v1_5',
+                params: { hash: 'SHA-256' },
+            }),
+            signature: new Uint8Array(256), // Dummy signature
+            signedAttrs: [...signedAttrs],
+        })
+
+        const signedData = new SignedData({
+            version: 1,
+            digestAlgorithms: [digestAlg],
+            encapContentInfo: new EncapsulatedContentInfo({
+                eContentType: OIDs.PKCS7.DATA,
+                eContent: content,
+            }),
+            signerInfos: [signerInfo],
+            certificates: [cert],
+        })
+
+        const result = await signedData.verify({})
+
+        expect(result.valid).toBe(false)
+        if (!result.valid) {
+            expect(result.reasons).toContain(
+                'Message digest in signed attributes does not match computed digest of content',
+            )
+        }
+    })
+
+    it('should pass message digest verification with correct digest (but fail on signature)', async () => {
+        const content = new TextEncoder().encode('test content')
+        const cert = Certificate.fromDer(rsaSigningKeys.cert)
+        const digestAlg = DigestAlgorithmIdentifier.digestAlgorithm('SHA-256')
+
+        // Calculate correct digest
+        const correctDigest = await digestAlg.digest(content)
+
+        const issuerAndSerialNumber = new IssuerAndSerialNumber({
+            issuer: cert.tbsCertificate.issuer,
+            serialNumber: cert.tbsCertificate.serialNumber,
+        })
+
+        const signedAttrs = new SignerInfo.SignedAttributes(
+            Attribute.contentType(OIDs.PKCS7.DATA),
+            Attribute.messageDigest(correctDigest), // Correct digest
+        )
+
+        const signerInfo = new SignerInfo({
+            version: 1,
+            sid: issuerAndSerialNumber,
+            digestAlgorithm: digestAlg,
+            signatureAlgorithm: AlgorithmIdentifier.signatureAlgorithm({
+                type: 'RSASSA_PKCS1_v1_5',
+                params: { hash: 'SHA-256' },
+            }),
+            signature: new Uint8Array(256), // Dummy signature (will fail signature check)
+            signedAttrs: [...signedAttrs],
+        })
+
+        const signedData = new SignedData({
+            version: 1,
+            digestAlgorithms: [digestAlg],
+            encapContentInfo: new EncapsulatedContentInfo({
+                eContentType: OIDs.PKCS7.DATA,
+                eContent: content,
+            }),
+            signerInfos: [signerInfo],
+            certificates: [cert],
+        })
+
+        const result = await signedData.verify({})
+
+        // Should fail on signature verification, but NOT on message digest
+        expect(result.valid).toBe(false)
+        if (!result.valid) {
+            expect(result.reasons).not.toContain(
+                'Message digest in signed attributes does not match computed digest of content',
+            )
+            expect(result.reasons).not.toContain(
+                'Signed attributes present but message digest attribute is missing',
+            )
+        }
+    })
+
+    it('should verify message digest for detached signatures', async () => {
+        const content = new TextEncoder().encode('test content')
+        const cert = Certificate.fromDer(rsaSigningKeys.cert)
+        const digestAlg = DigestAlgorithmIdentifier.digestAlgorithm('SHA-256')
+
+        // Calculate correct digest
+        const correctDigest = await digestAlg.digest(content)
+
+        const issuerAndSerialNumber = new IssuerAndSerialNumber({
+            issuer: cert.tbsCertificate.issuer,
+            serialNumber: cert.tbsCertificate.serialNumber,
+        })
+
+        const signedAttrs = new SignerInfo.SignedAttributes(
+            Attribute.contentType(OIDs.PKCS7.DATA),
+            Attribute.messageDigest(correctDigest), // Correct digest
+        )
+
+        const signerInfo = new SignerInfo({
+            version: 1,
+            sid: issuerAndSerialNumber,
+            digestAlgorithm: digestAlg,
+            signatureAlgorithm: AlgorithmIdentifier.signatureAlgorithm({
+                type: 'RSASSA_PKCS1_v1_5',
+                params: { hash: 'SHA-256' },
+            }),
+            signature: new Uint8Array(256), // Dummy signature
+            signedAttrs: [...signedAttrs],
+        })
+
+        // Detached signature - no eContent
+        const signedData = new SignedData({
+            version: 1,
+            digestAlgorithms: [digestAlg],
+            encapContentInfo: new EncapsulatedContentInfo({
+                eContentType: OIDs.PKCS7.DATA,
+                // No eContent for detached signature
+            }),
+            signerInfos: [signerInfo],
+            certificates: [cert],
+        })
+
+        // Pass data via options for detached signature
+        const result = await signedData.verify({ data: content })
+
+        // Should fail on signature but pass message digest check
+        expect(result.valid).toBe(false)
+        if (!result.valid) {
+            expect(result.reasons).not.toContain(
+                'Message digest in signed attributes does not match computed digest of content',
+            )
+            expect(result.reasons).not.toContain(
+                'No content available to verify message digest',
+            )
+        }
+    })
+
+    it('should fail when detached signature has no data provided', async () => {
+        const cert = Certificate.fromDer(rsaSigningKeys.cert)
+        const digestAlg = DigestAlgorithmIdentifier.digestAlgorithm('SHA-256')
+        const dummyDigest = new Uint8Array(32) // Dummy digest
+
+        const issuerAndSerialNumber = new IssuerAndSerialNumber({
+            issuer: cert.tbsCertificate.issuer,
+            serialNumber: cert.tbsCertificate.serialNumber,
+        })
+
+        const signedAttrs = new SignerInfo.SignedAttributes(
+            Attribute.contentType(OIDs.PKCS7.DATA),
+            Attribute.messageDigest(dummyDigest),
+        )
+
+        const signerInfo = new SignerInfo({
+            version: 1,
+            sid: issuerAndSerialNumber,
+            digestAlgorithm: digestAlg,
+            signatureAlgorithm: AlgorithmIdentifier.signatureAlgorithm({
+                type: 'RSASSA_PKCS1_v1_5',
+                params: { hash: 'SHA-256' },
+            }),
+            signature: new Uint8Array(256), // Dummy signature
+            signedAttrs: [...signedAttrs],
+        })
+
+        // Detached signature - no eContent
+        const signedData = new SignedData({
+            version: 1,
+            digestAlgorithms: [digestAlg],
+            encapContentInfo: new EncapsulatedContentInfo({
+                eContentType: OIDs.PKCS7.DATA,
+                // No eContent for detached signature
+            }),
+            signerInfos: [signerInfo],
+            certificates: [cert],
+        })
+
+        // Don't pass data for detached signature
+        const result = await signedData.verify({})
+
+        expect(result.valid).toBe(false)
+        if (!result.valid) {
+            expect(result.reasons).toContain(
+                'No content available to verify message digest (detached signature requires data parameter)',
+            )
+        }
+    })
+
+    it('should verify complete signature with correct message digest', async () => {
+        // Use builder to create a properly signed message
+        const content = new TextEncoder().encode('test content')
+
+        const signedData = await SignedData.builder()
+            .setData(content)
+            .addSigner({
+                privateKeyInfo: PrivateKeyInfo.fromDer(
+                    rsaSigningKeys.privateKey,
+                ),
+                certificate: Certificate.fromDer(rsaSigningKeys.cert),
+                encryptionAlgorithm: {
+                    type: 'RSASSA_PKCS1_v1_5',
+                    params: {
+                        hash: 'SHA-256',
+                    },
+                },
+            })
+            .build()
+
+        const result = await signedData.verify({})
+
+        // Should pass both message digest and signature verification
+        expect(result.valid).toBe(true)
+        if (result.valid) {
+            expect(result.signerInfo).toBe(signedData.signerInfos[0])
+        }
+    })
+})
