@@ -13,10 +13,63 @@ export interface PrintableStringParams {
     value?: string
 }
 
+/**
+ * ValueBlock wrapper for PrintableString
+ */
+class PrintableStringValueBlock {
+    private _parent: PrintableString
+
+    constructor(parent: PrintableString) {
+        this._parent = parent
+    }
+
+    get value(): string {
+        return this._parent._stringValue
+    }
+
+    set value(val: string) {
+        this._parent._stringValue = val
+        this._parent._valueHex = new TextEncoder().encode(val)
+    }
+
+    get valueHex(): ArrayBuffer {
+        return this._parent.valueHex
+    }
+
+    get valueHexView(): Uint8Array {
+        return this._parent.valueHexView
+    }
+
+    get valueBeforeDecodeView(): Uint8Array {
+        return this._parent.valueBeforeDecodeView
+    }
+
+    get valueDec(): number {
+        return 0
+    }
+
+    get isHexOnly(): boolean {
+        return false
+    }
+
+    get unusedBits(): number {
+        return 0
+    }
+
+    get isConstructed(): boolean {
+        return false
+    }
+
+    toString(): string {
+        return this._parent._stringValue
+    }
+}
+
 export class PrintableString extends BaseBlock {
     static override NAME = 'PrintableString'
 
-    private _stringValue: string = ''
+    _stringValue: string = ''
+    private _valueBlock: PrintableStringValueBlock
 
     constructor(params: PrintableStringParams = {}) {
         super({
@@ -25,6 +78,8 @@ export class PrintableString extends BaseBlock {
             isConstructed: false,
             valueHex: params.valueHex,
         })
+
+        this._valueBlock = new PrintableStringValueBlock(this)
 
         if (params.value !== undefined) {
             this._stringValue = params.value
@@ -49,11 +104,8 @@ export class PrintableString extends BaseBlock {
         return this._stringValue
     }
 
-    override get valueBlock() {
-        return {
-            ...super.valueBlock,
-            value: this._stringValue, // Return string value for compatibility
-        }
+    override get valueBlock(): PrintableStringValueBlock {
+        return this._valueBlock
     }
 
     override toString(): string {

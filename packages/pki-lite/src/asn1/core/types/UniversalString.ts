@@ -13,10 +13,63 @@ export interface UniversalStringParams {
     value?: string
 }
 
+/**
+ * ValueBlock wrapper for UniversalString
+ */
+class UniversalStringValueBlock {
+    private _parent: UniversalString
+
+    constructor(parent: UniversalString) {
+        this._parent = parent
+    }
+
+    get value(): string {
+        return this._parent._stringValue
+    }
+
+    set value(val: string) {
+        this._parent._stringValue = val
+        this._parent._valueHex = this._parent.encodeUtf32BE(val)
+    }
+
+    get valueHex(): ArrayBuffer {
+        return this._parent.valueHex
+    }
+
+    get valueHexView(): Uint8Array {
+        return this._parent.valueHexView
+    }
+
+    get valueBeforeDecodeView(): Uint8Array {
+        return this._parent.valueBeforeDecodeView
+    }
+
+    get valueDec(): number {
+        return 0
+    }
+
+    get isHexOnly(): boolean {
+        return false
+    }
+
+    get unusedBits(): number {
+        return 0
+    }
+
+    get isConstructed(): boolean {
+        return false
+    }
+
+    toString(): string {
+        return this._parent._stringValue
+    }
+}
+
 export class UniversalString extends BaseBlock {
     static override NAME = 'UniversalString'
 
-    private _stringValue: string = ''
+    _stringValue: string = ''
+    private _valueBlock: UniversalStringValueBlock
 
     constructor(params: UniversalStringParams = {}) {
         super({
@@ -24,6 +77,8 @@ export class UniversalString extends BaseBlock {
             tagClass: params.tagClass,
             isConstructed: false,
         })
+
+        this._valueBlock = new UniversalStringValueBlock(this)
 
         if (params.value !== undefined) {
             this._stringValue = params.value
@@ -34,7 +89,7 @@ export class UniversalString extends BaseBlock {
         }
     }
 
-    private encodeUtf32BE(str: string): Uint8Array {
+    encodeUtf32BE(str: string): Uint8Array {
         const codePoints: number[] = []
         for (const char of str) {
             codePoints.push(char.codePointAt(0) ?? 0)
@@ -81,11 +136,8 @@ export class UniversalString extends BaseBlock {
         return this._stringValue
     }
 
-    override get valueBlock() {
-        return {
-            ...super.valueBlock,
-            value: this._stringValue, // Return string value for compatibility
-        }
+    override get valueBlock(): UniversalStringValueBlock {
+        return this._valueBlock
     }
 
     override toString(): string {
