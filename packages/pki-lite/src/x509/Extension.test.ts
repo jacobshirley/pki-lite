@@ -72,7 +72,7 @@ describe('Extension', () => {
           "[Extension] SEQUENCE :
             OBJECT IDENTIFIER : 2.5.29.15
             BOOLEAN: TRUE
-            OCTET STRING : 0101ff"
+            OCTET STRING : 04050102030405"
         `)
     })
 
@@ -177,7 +177,7 @@ describe('Extension', () => {
           "[Extension] SEQUENCE :
             OBJECT IDENTIFIER : 2.5.29.15
             BOOLEAN: TRUE
-            OCTET STRING : 0101ff"
+            OCTET STRING : 04050102030405"
         `)
     })
 
@@ -202,7 +202,7 @@ describe('Extension', () => {
         })
         expect(extension.toPem()).toMatchInlineSnapshot(`
           "-----BEGIN EXTENSION-----
-          MA0GA1UdDwEB/wQDAQH/
+          MBEGA1UdDwEB/wQHBAUBAgMEBQ==
           -----END EXTENSION-----"
         `)
     })
