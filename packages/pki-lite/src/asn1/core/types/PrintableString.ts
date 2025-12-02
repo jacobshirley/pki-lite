@@ -57,7 +57,7 @@ export class PrintableString extends BaseBlock {
     }
 
     override toString(): string {
-        return `PrintableString : ${this._stringValue}`
+        return `PrintableString : '${this._stringValue}'`
     }
 }
 

@@ -116,6 +116,9 @@ export class GeneralizedTime extends BaseBlock {
     }
 
     override toString(): string {
+        if (this._dateValue) {
+            return `GeneralizedTime : ${this._dateValue.toISOString()}`
+        }
         return `GeneralizedTime : ${this._stringValue}`
     }
 }

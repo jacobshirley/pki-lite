@@ -113,6 +113,9 @@ export class UTCTime extends BaseBlock {
     }
 
     override toString(): string {
+        if (this._dateValue) {
+            return `UTCTime : ${this._dateValue.toISOString()}`
+        }
         return `UTCTime : ${this._stringValue}`
     }
 }
