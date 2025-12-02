@@ -1,6 +1,6 @@
 {
     "name": "pki-lite-crypto-extended",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "description": "Extended cryptographic provider for pki-lite with MD5 hashing and AES ECB/CBC support",
     "main": "dist/index.js",
     "scripts": {
