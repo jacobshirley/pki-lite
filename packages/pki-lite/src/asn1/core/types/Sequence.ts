@@ -13,8 +13,60 @@ export interface SequenceParams {
     value?: BaseBlock[]
 }
 
+/**
+ * ValueBlock wrapper that allows property assignment
+ */
+class SequenceValueBlock {
+    private _parent: Sequence
+
+    constructor(parent: Sequence) {
+        this._parent = parent
+    }
+
+    get value(): BaseBlock[] {
+        return this._parent._value
+    }
+
+    set value(val: BaseBlock[]) {
+        this._parent._value = val
+    }
+
+    get valueHex(): ArrayBuffer {
+        return this._parent.valueHex
+    }
+
+    get valueHexView(): Uint8Array {
+        return this._parent.valueHexView
+    }
+
+    get valueBeforeDecodeView(): Uint8Array {
+        return this._parent.valueBeforeDecodeView
+    }
+
+    get valueDec(): number {
+        return 0
+    }
+
+    get isHexOnly(): boolean {
+        return true
+    }
+
+    get unusedBits(): number {
+        return 0
+    }
+
+    get isConstructed(): boolean {
+        return true
+    }
+
+    toString(): string {
+        return this._parent.toString()
+    }
+}
+
 export class Sequence extends BaseBlock {
     static override NAME = 'SEQUENCE'
+    private _valueBlock: SequenceValueBlock
 
     constructor(params: SequenceParams = {}) {
         super({
@@ -24,6 +76,7 @@ export class Sequence extends BaseBlock {
             valueHex: params.valueHex,
         })
         this._value = params.value ?? []
+        this._valueBlock = new SequenceValueBlock(this)
     }
 
     get value(): BaseBlock[] {
@@ -34,11 +87,8 @@ export class Sequence extends BaseBlock {
         this._value = val
     }
 
-    override get valueBlock() {
-        return {
-            ...super.valueBlock,
-            value: this._value,
-        }
+    override get valueBlock(): SequenceValueBlock {
+        return this._valueBlock
     }
 
     override toString(): string {
