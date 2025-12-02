@@ -3,9 +3,19 @@
  */
 
 /**
- * ASN.1 Tag Classes
+ * ASN.1 Tag Classes (0-3 values, as used in asn1js API)
  */
 export const TagClass = {
+    UNIVERSAL: 1, // 0b00 (note: asn1js uses 1 for UNIVERSAL)
+    APPLICATION: 2, // 0b01
+    CONTEXT_SPECIFIC: 3, // 0b10
+    PRIVATE: 4, // 0b11
+} as const
+
+/**
+ * ASN.1 Tag Class encoded values (for actual byte encoding)
+ */
+export const TagClassEncoded = {
     UNIVERSAL: 0x00,
     APPLICATION: 0x40,
     CONTEXT_SPECIFIC: 0x80,

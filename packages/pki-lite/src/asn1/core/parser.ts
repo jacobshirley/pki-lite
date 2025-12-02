@@ -4,7 +4,7 @@
  * Parses DER-encoded ASN.1 data and returns the appropriate type.
  */
 
-import { BaseBlock, BaseBlockParams } from './BaseBlock.js'
+import { BaseBlock, BaseBlockParams, encodedToTagClass } from './BaseBlock.js'
 import {
     CONSTRUCTED_BIT,
     LENGTH_LONG_FORM_BIT,
@@ -57,7 +57,8 @@ function decodeTag(
     }
 
     const firstByte = buffer[offset]
-    const tagClass = firstByte & 0xc0
+    const tagClassEncoded = firstByte & 0xc0
+    const tagClass = encodedToTagClass(tagClassEncoded)
     const isConstructed = (firstByte & CONSTRUCTED_BIT) !== 0
 
     let tagNumber = firstByte & 0x1f

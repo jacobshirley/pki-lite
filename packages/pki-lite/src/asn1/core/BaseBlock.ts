@@ -9,7 +9,42 @@ import {
     LENGTH_LONG_FORM_BIT,
     LONG_FORM_TAG,
     TagClass,
+    TagClassEncoded,
 } from './constants.js'
+
+/**
+ * Convert tagClass (1-4) to encoded value (0x00, 0x40, 0x80, 0xC0)
+ */
+function tagClassToEncoded(tagClass: number): number {
+    switch (tagClass) {
+        case TagClass.UNIVERSAL:
+            return TagClassEncoded.UNIVERSAL
+        case TagClass.APPLICATION:
+            return TagClassEncoded.APPLICATION
+        case TagClass.CONTEXT_SPECIFIC:
+            return TagClassEncoded.CONTEXT_SPECIFIC
+        case TagClass.PRIVATE:
+            return TagClassEncoded.PRIVATE
+        default:
+            return TagClassEncoded.UNIVERSAL
+    }
+}
+
+/**
+ * Convert encoded tag class (0x00, 0x40, 0x80, 0xC0) to tagClass (1-4)
+ */
+export function encodedToTagClass(encoded: number): number {
+    switch (encoded & 0xc0) {
+        case TagClassEncoded.APPLICATION:
+            return TagClass.APPLICATION
+        case TagClassEncoded.CONTEXT_SPECIFIC:
+            return TagClass.CONTEXT_SPECIFIC
+        case TagClassEncoded.PRIVATE:
+            return TagClass.PRIVATE
+        default:
+            return TagClass.UNIVERSAL
+    }
+}
 
 /**
  * Parameters for constructing ASN.1 blocks
@@ -187,8 +222,9 @@ export abstract class BaseBlock {
      * Encode the tag byte(s)
      */
     protected encodeTag(): Uint8Array {
+        const encodedClass = tagClassToEncoded(this.tagClass)
         const tagByte =
-            (this.tagClass & 0xc0) |
+            encodedClass |
             (this.isConstructed ? CONSTRUCTED_BIT : 0) |
             (this.tagNumber < 31 ? this.tagNumber : LONG_FORM_TAG)
 
