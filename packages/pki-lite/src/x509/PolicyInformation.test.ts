@@ -19,6 +19,7 @@ describe('PolicyQualifierInfo', () => {
         const asn1 = pqInfo.toAsn1()
         const decoded = PolicyQualifierInfo.fromAsn1(asn1)
         expect(decoded.policyQualifierId.value).toEqual(pqid)
+        // After round-trip, valid ASN.1 is preserved
         expect(decoded.qualifier.derBytes![0]).toEqual(0x13) // IA5String tag
     })
 

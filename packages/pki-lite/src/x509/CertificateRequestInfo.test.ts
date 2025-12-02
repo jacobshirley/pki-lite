@@ -262,7 +262,7 @@ describe('CertificateRequestInfo', () => {
                 SEQUENCE :
                   OBJECT IDENTIFIER : 1.2.840.113549.1.9.14
                   SET :
-                    BOOLEAN: FALSE"
+                    OCTET STRING : 010203"
         `)
     })
 
@@ -301,7 +301,7 @@ describe('CertificateRequestInfo', () => {
         const obj = createSampleRequestInfo()
         expect(obj.toPem()).toMatchInlineSnapshot(`
           "-----BEGIN CERTIFICATEREQUESTINFO-----
-          MHICAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaAUMRIwEAYJKoZIhvcNAQkOMQMBAQA=
+          MHQCAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaAWMRQwEgYJKoZIhvcNAQkOMQUEAwECAw==
           -----END CERTIFICATEREQUESTINFO-----"
         `)
     })

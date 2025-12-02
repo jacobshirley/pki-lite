@@ -158,6 +158,11 @@ function createAsn1Type(params: {
     // Universal tags
     switch (tagNumber) {
         case TagNumber.BOOLEAN: {
+            if (content.length !== 1) {
+                throw new Error(
+                    `Invalid Boolean encoding: length must be 1, got ${content.length}`,
+                )
+            }
             const block = new Asn1Boolean({
                 value: content.length > 0 && content[0] !== 0,
             })

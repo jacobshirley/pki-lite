@@ -99,7 +99,7 @@ describe('AuthEnvelopedData', () => {
                   OBJECT IDENTIFIER : 1.2.840.113549.1.7.1
                   SEQUENCE :
                     OBJECT IDENTIFIER : 2.16.840.1.101.3.4.1.46
-                  PRIMITIVE : 
+                  [CONTEXT 0] PRIMITIVE (5 bytes)
                 OCTET STRING : 0504030201"
         `)
     })

@@ -127,8 +127,8 @@ describe('RevocationInfoArchival', () => {
               SEQUENCE :
                 SEQUENCE :
                   OBJECT IDENTIFIER : 1.2.3.4.5
-                  OBJECT IDENTIFIER : empty"
-    `)
+                  OCTET STRING : 060708090a"
+        `)
     })
 
     it('should throw if fromAsn1 is not a sequence', () => {
