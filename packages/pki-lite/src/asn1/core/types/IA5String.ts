@@ -49,6 +49,13 @@ export class IA5String extends BaseBlock {
         return this._stringValue
     }
 
+    override get valueBlock() {
+        return {
+            ...super.valueBlock,
+            value: this._stringValue, // Return string value for compatibility
+        }
+    }
+
     override toString(): string {
         return `IA5String : ${this._stringValue}`
     }

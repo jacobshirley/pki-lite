@@ -29,9 +29,8 @@ export class UniversalString extends BaseBlock {
             this._stringValue = params.value
             this._valueHex = this.encodeUtf32BE(params.value)
         } else if (params.valueHex) {
-            this._stringValue = this.decodeUtf32BE(
-                new Uint8Array(params.valueHex),
-            )
+            this._valueHex = new Uint8Array(params.valueHex)
+            this._stringValue = this.decodeUtf32BE(this._valueHex)
         }
     }
 
@@ -53,13 +52,18 @@ export class UniversalString extends BaseBlock {
 
     private decodeUtf32BE(bytes: Uint8Array): string {
         let result = ''
-        for (let i = 0; i < bytes.length; i += 4) {
+        for (let i = 0; i + 3 < bytes.length; i += 4) {
+            // Use >>> 0 to ensure unsigned 32-bit integer
             const code =
-                (bytes[i] << 24) |
-                (bytes[i + 1] << 16) |
-                (bytes[i + 2] << 8) |
-                bytes[i + 3]
-            result += String.fromCodePoint(code)
+                ((bytes[i] << 24) |
+                    (bytes[i + 1] << 16) |
+                    (bytes[i + 2] << 8) |
+                    bytes[i + 3]) >>>
+                0
+            // Only decode valid code points
+            if (code <= 0x10ffff) {
+                result += String.fromCodePoint(code)
+            }
         }
         return result
     }
@@ -75,6 +79,13 @@ export class UniversalString extends BaseBlock {
 
     override getValue(): string {
         return this._stringValue
+    }
+
+    override get valueBlock() {
+        return {
+            ...super.valueBlock,
+            value: this._stringValue, // Return string value for compatibility
+        }
     }
 
     override toString(): string {

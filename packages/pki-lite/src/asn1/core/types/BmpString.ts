@@ -29,9 +29,8 @@ export class BmpString extends BaseBlock {
             this._stringValue = params.value
             this._valueHex = this.encodeUtf16BE(params.value)
         } else if (params.valueHex) {
-            this._stringValue = this.decodeUtf16BE(
-                new Uint8Array(params.valueHex),
-            )
+            this._valueHex = new Uint8Array(params.valueHex)
+            this._stringValue = this.decodeUtf16BE(this._valueHex)
         }
     }
 
@@ -47,7 +46,7 @@ export class BmpString extends BaseBlock {
 
     private decodeUtf16BE(bytes: Uint8Array): string {
         let result = ''
-        for (let i = 0; i < bytes.length; i += 2) {
+        for (let i = 0; i + 1 < bytes.length; i += 2) {
             const code = (bytes[i] << 8) | bytes[i + 1]
             result += String.fromCharCode(code)
         }
@@ -65,6 +64,13 @@ export class BmpString extends BaseBlock {
 
     override getValue(): string {
         return this._stringValue
+    }
+
+    override get valueBlock() {
+        return {
+            ...super.valueBlock,
+            value: this._stringValue, // Return string value for compatibility
+        }
     }
 
     override toString(): string {
