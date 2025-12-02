@@ -67,7 +67,16 @@ export class BitString extends BaseBlock {
     }
 
     override toString(): string {
-        return `BIT STRING : ${this._valueHex.length * 8 - this._unusedBits} bits`
+        // Convert to binary string representation
+        let binary = ''
+        for (const byte of this._valueHex) {
+            binary += byte.toString(2).padStart(8, '0')
+        }
+        // Remove unused bits from the end if any
+        if (this._unusedBits > 0 && binary.length > 0) {
+            binary = binary.slice(0, -this._unusedBits)
+        }
+        return `BIT STRING : ${binary}`
     }
 }
 

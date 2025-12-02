@@ -46,13 +46,29 @@ export class Constructed extends BaseBlock {
     }
 
     override toString(): string {
-        const tagClassStr =
-            this.tagClass === TagClass.CONTEXT_SPECIFIC
-                ? 'CONTEXT'
-                : this.tagClass === TagClass.APPLICATION
-                  ? 'APPLICATION'
-                  : 'PRIVATE'
-        return `[${tagClassStr} ${this.tagNumber}] (${this._value.length} items)`
+        return this.toStringTree()
+    }
+
+    /**
+     * Generate a tree-like string representation
+     */
+    toStringTree(indent: string = ''): string {
+        const lines: string[] = [`[${this.tagNumber}] :`]
+        for (const child of this._value) {
+            const childStr = this.childToString(child, indent + '  ')
+            lines.push(`${indent}  ${childStr}`)
+        }
+        return lines.join('\n')
+    }
+
+    private childToString(child: BaseBlock, indent: string): string {
+        if (
+            'toStringTree' in child &&
+            typeof child.toStringTree === 'function'
+        ) {
+            return (child as any).toStringTree(indent)
+        }
+        return child.toString()
     }
 }
 

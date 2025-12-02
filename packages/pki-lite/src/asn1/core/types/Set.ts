@@ -92,7 +92,29 @@ export class Set extends BaseBlock {
     }
 
     override toString(): string {
-        return `SET (${this._value.length} items)`
+        return this.toStringTree()
+    }
+
+    /**
+     * Generate a tree-like string representation
+     */
+    toStringTree(indent: string = ''): string {
+        const lines: string[] = [`SET :`]
+        for (const child of this._value) {
+            const childStr = this.childToString(child, indent + '  ')
+            lines.push(`${indent}  ${childStr}`)
+        }
+        return lines.join('\n')
+    }
+
+    private childToString(child: BaseBlock, indent: string): string {
+        if (
+            'toStringTree' in child &&
+            typeof child.toStringTree === 'function'
+        ) {
+            return (child as any).toStringTree(indent)
+        }
+        return child.toString()
     }
 }
 
