@@ -17,7 +17,7 @@ export class OctetString extends BaseBlock {
     }
 
     override toString(): string {
-        if (this._valueHex.length <= 8) {
+        if (this._valueHex.length <= 64) {
             const hex = Array.from(this._valueHex)
                 .map((b) => b.toString(16).padStart(2, '0'))
                 .join('')

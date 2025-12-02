@@ -57,7 +57,7 @@ export class Utf8String extends BaseBlock {
     }
 
     override toString(): string {
-        return `UTF8String : ${this._stringValue}`
+        return `UTF8String : '${this._stringValue}'`
     }
 }
 
