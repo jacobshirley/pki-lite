@@ -69,6 +69,41 @@ export interface BaseBlockJson {
 }
 
 /**
+ * ID Block wrapper that allows property modification
+ */
+class IdBlock {
+    private _parent: BaseBlock
+
+    constructor(parent: BaseBlock) {
+        this._parent = parent
+    }
+
+    get tagClass(): number {
+        return this._parent.tagClass
+    }
+
+    set tagClass(value: number) {
+        this._parent.tagClass = value
+    }
+
+    get tagNumber(): number {
+        return this._parent.tagNumber
+    }
+
+    set tagNumber(value: number) {
+        this._parent.tagNumber = value
+    }
+
+    get isConstructed(): boolean {
+        return this._parent.isConstructed
+    }
+
+    set isConstructed(value: boolean) {
+        this._parent.isConstructed = value
+    }
+}
+
+/**
  * Base class for all ASN.1 types
  */
 export abstract class BaseBlock {
@@ -87,7 +122,10 @@ export abstract class BaseBlock {
     protected _valueHex: Uint8Array
 
     /** Nested values for constructed types */
-    protected _value: BaseBlock[]
+    _value: BaseBlock[]
+
+    /** ID block wrapper */
+    private _idBlock: IdBlock
 
     /** Original bytes before decode (for round-trip) */
     protected _valueBeforeDecodeView: Uint8Array | null = null
@@ -97,6 +135,7 @@ export abstract class BaseBlock {
         this.tagClass = params.tagClass ?? TagClass.UNIVERSAL
         this.isConstructed = params.isConstructed ?? false
         this._value = []
+        this._idBlock = new IdBlock(this)
 
         if (params.valueHex) {
             this._valueHex = new Uint8Array(params.valueHex)
@@ -115,16 +154,8 @@ export abstract class BaseBlock {
     /**
      * ID block for compatibility with asn1js
      */
-    get idBlock(): {
-        tagClass: number
-        tagNumber: number
-        isConstructed: boolean
-    } {
-        return {
-            tagClass: this.tagClass,
-            tagNumber: this.tagNumber,
-            isConstructed: this.isConstructed,
-        }
+    get idBlock(): IdBlock {
+        return this._idBlock
     }
 
     /**
