@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { UniversalString } from './UniversalString.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('UniversalString', () => {
     test('should create UniversalString from string value', () => {

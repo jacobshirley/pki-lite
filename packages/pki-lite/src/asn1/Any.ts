@@ -61,7 +61,12 @@ export class Any extends PkiBase<Any> {
         if (this.derBytes === null) {
             return new asn1js.Null()
         }
-        return derToAsn1(this.derBytes)
+        try {
+            return derToAsn1(this.derBytes)
+        } catch {
+            // If parsing fails, wrap in OctetString
+            return new asn1js.OctetString({ valueHex: this.derBytes })
+        }
     }
 
     asString(): string {

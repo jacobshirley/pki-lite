@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { ECDSASignature } from './ECDSASignature.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('ECDSASignature', () => {
     // Sample r and s values for testing

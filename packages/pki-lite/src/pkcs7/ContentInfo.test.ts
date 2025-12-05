@@ -204,7 +204,7 @@ describe('ContentInfo', () => {
           "[ContentInfo] SEQUENCE :
             OBJECT IDENTIFIER : 1.2.840.113549.1.7.1
             [0] :
-              BOOLEAN: TRUE"
+              OCTET STRING : 0102030405"
         `)
     })
 

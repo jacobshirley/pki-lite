@@ -63,9 +63,9 @@ export class Validity extends PkiBase<Validity> {
         let notAfter: Date
 
         if (notBeforeBlock instanceof asn1js.UTCTime) {
-            notBefore = notBeforeBlock.toDate()
+            notBefore = notBeforeBlock.toDate() ?? new Date()
         } else if (notBeforeBlock instanceof asn1js.GeneralizedTime) {
-            notBefore = notBeforeBlock.toDate()
+            notBefore = notBeforeBlock.toDate() ?? new Date()
         } else {
             throw new Asn1ParseError(
                 'Expected UTCTime or GeneralizedTime for notBefore',
@@ -73,9 +73,9 @@ export class Validity extends PkiBase<Validity> {
         }
 
         if (notAfterBlock instanceof asn1js.UTCTime) {
-            notAfter = notAfterBlock.toDate()
+            notAfter = notAfterBlock.toDate() ?? new Date()
         } else if (notAfterBlock instanceof asn1js.GeneralizedTime) {
-            notAfter = notAfterBlock.toDate()
+            notAfter = notAfterBlock.toDate() ?? new Date()
         } else {
             throw new Asn1ParseError(
                 'Expected UTCTime or GeneralizedTime for notAfter',

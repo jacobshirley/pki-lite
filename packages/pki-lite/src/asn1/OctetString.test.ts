@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { OctetString } from './OctetString.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('OctetString', () => {
     // Sample test data

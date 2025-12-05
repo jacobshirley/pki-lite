@@ -1,4 +1,4 @@
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 import { RevocationInfoChoice } from './RevocationInfoChoice.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { OtherRevocationInfoFormat } from './OtherRevocationInfoFormat.js'

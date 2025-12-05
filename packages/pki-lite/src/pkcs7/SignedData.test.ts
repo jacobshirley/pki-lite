@@ -114,7 +114,7 @@ describe('SignedData', () => {
               OBJECT IDENTIFIER : 1.2.840.113549.1.7.1
               [0] :
                 OCTET STRING : 01020304
-            [1] :
+            SET :
               SEQUENCE :
                 SEQUENCE :
                   INTEGER : 1
@@ -150,7 +150,7 @@ describe('SignedData', () => {
                     SEQUENCE :
                       SEQUENCE :
                         OBJECT IDENTIFIER : 2.5.29.20
-                        OCTET STRING : 0100
+                        OCTET STRING : 04020100
                 SEQUENCE :
                   OBJECT IDENTIFIER : 1.2.840.113549.1.1.11
                 BIT STRING : 0000101000010100000111100010100000110010

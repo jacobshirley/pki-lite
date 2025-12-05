@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { BasicConstraints } from './BasicConstraints.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../../core/PkiBase.js'
 
 describe('BasicConstraints', () => {
     test('should create BasicConstraints with cA true and no pathLenConstraint', () => {

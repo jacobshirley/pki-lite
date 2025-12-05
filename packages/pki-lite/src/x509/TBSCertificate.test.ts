@@ -384,8 +384,8 @@ describe('TBSCertificate', () => {
               SEQUENCE :
                 OBJECT IDENTIFIER : 1.2.840.113549.1.1.1
               BIT STRING : 0000000100000010000000110000010000000101
-            PRIMITIVE : 
-            PRIMITIVE : 
+            [CONTEXT 1] PRIMITIVE (3 bytes)
+            [CONTEXT 2] PRIMITIVE (3 bytes)
             [3] :
               SEQUENCE :
                 SEQUENCE :

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { RSAPublicKey } from './RSAPublicKey.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 
 describe('RSAPublicKey', () => {
     // Sample test data

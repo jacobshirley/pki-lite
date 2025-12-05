@@ -18,7 +18,7 @@ import { RDNSequence } from './RDNSequence.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
 import { OIDs } from '../core/OIDs.js'
-import * as asn1js from 'asn1js'
+import { asn1js } from '../core/PkiBase.js'
 import { DirectoryString } from './DirectoryString.js'
 
 describe('AnotherName', () => {
