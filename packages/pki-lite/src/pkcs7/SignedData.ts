@@ -435,6 +435,15 @@ export class SignedData extends PkiBase<SignedData> {
         }
 
         let validSignerInfo: SignerInfo | null = null
+        const data = options.data ?? this.encapContentInfo.eContent
+        if (!data) {
+            return {
+                valid: false,
+                reasons: [
+                    'No content available to verify message digest (detached signature requires data parameter)',
+                ],
+            }
+        }
 
         for (const signerInfo of this.signerInfos) {
             const cert = this.findCertificateForSignerInfo(signerInfo)
@@ -443,63 +452,8 @@ export class SignedData extends PkiBase<SignedData> {
                 continue
             }
 
-            // Verify message digest if signed attributes are present (before signature check)
-            if (signerInfo.signedAttrs) {
-                const messageDigestAttr = signerInfo.signedAttrs.find(
-                    (attr) => attr.type.value === OIDs.PKCS9.MESSAGE_DIGEST,
-                )
-
-                if (!messageDigestAttr) {
-                    reasons.push(
-                        'Signed attributes present but message digest attribute is missing',
-                    )
-                    continue
-                }
-
-                if (messageDigestAttr.values.length === 0) {
-                    reasons.push('Message digest attribute has no values')
-                    continue
-                }
-
-                // Get the message digest from the attribute
-                const messageDigestOctetString =
-                    messageDigestAttr.values[0].parseAs<OctetString>(
-                        OctetString,
-                    )
-                const expectedDigest = messageDigestOctetString.bytes
-
-                // Determine the content to hash
-                const contentToHash =
-                    options.data ?? this.encapContentInfo.eContent
-
-                if (!contentToHash) {
-                    reasons.push(
-                        'No content available to verify message digest (detached signature requires data parameter)',
-                    )
-                    continue
-                }
-
-                // Compute the actual digest of the content
-                const actualDigest =
-                    await signerInfo.digestAlgorithm.digest(contentToHash)
-
-                // Compare the digests
-                if (
-                    expectedDigest.length !== actualDigest.length ||
-                    !expectedDigest.every(
-                        (byte: number, index: number) =>
-                            byte === actualDigest[index],
-                    )
-                ) {
-                    reasons.push(
-                        'Message digest in signed attributes does not match computed digest of content',
-                    )
-                    continue
-                }
-            }
-
             const result = await signerInfo.verify({
-                data: options.data,
+                data,
                 publicKeyInfo: cert.tbsCertificate.subjectPublicKeyInfo,
             })
 

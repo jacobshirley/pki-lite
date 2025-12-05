@@ -17,6 +17,8 @@ import { CMSVersion } from './CMSVersion.js'
 import { Attributes } from '../x509/Attributes.js'
 import { SubjectPublicKeyInfo } from '../keys/SubjectPublicKeyInfo.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { OIDs } from '../core/OIDs.js'
+import { OctetString } from '../asn1/OctetString.js'
 
 /**
  * Represents a set of unsigned attributes.
@@ -279,7 +281,7 @@ export class SignerInfo extends PkiBase<SignerInfo> {
     }
 
     async verify(options: {
-        data?: Uint8Array<ArrayBuffer>
+        data: Uint8Array<ArrayBuffer>
         publicKeyInfo: SubjectPublicKeyInfo
     }): Promise<
         | {
@@ -293,6 +295,51 @@ export class SignerInfo extends PkiBase<SignerInfo> {
         const reasons: string[] = []
 
         try {
+            // Verify message digest if signed attributes are present (before signature check)
+            if (this.signedAttrs) {
+                const messageDigestAttr = this.signedAttrs.find(
+                    (attr) => attr.type.value === OIDs.PKCS9.MESSAGE_DIGEST,
+                )
+
+                if (!messageDigestAttr) {
+                    reasons.push(
+                        'Signed attributes present but message digest attribute is missing',
+                    )
+                    return { valid: false, reasons }
+                }
+
+                if (messageDigestAttr.values.length === 0) {
+                    reasons.push('Message digest attribute has no values')
+                    return { valid: false, reasons }
+                }
+
+                // Get the message digest from the attribute
+                const messageDigestOctetString =
+                    messageDigestAttr.values[0].parseAs<OctetString>(
+                        OctetString,
+                    )
+                const expectedDigest = messageDigestOctetString.bytes
+
+                // Compute the actual digest of the content
+                const actualDigest = await this.digestAlgorithm.digest(
+                    options.data,
+                )
+
+                // Compare the digests
+                if (
+                    expectedDigest.length !== actualDigest.length ||
+                    !expectedDigest.every(
+                        (byte: number, index: number) =>
+                            byte === actualDigest[index],
+                    )
+                ) {
+                    reasons.push(
+                        'Message digest in signed attributes does not match computed digest of content',
+                    )
+                    return { valid: false, reasons }
+                }
+            }
+
             const valid = await this.signatureAlgorithm.verify(
                 this.getSignatureData(options.data),
                 this.signature,
