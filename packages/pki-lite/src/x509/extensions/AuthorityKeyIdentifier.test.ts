@@ -136,6 +136,27 @@ describe('AuthorityKeyIdentifier', () => {
         expect(aki.authorityCertSerialNumber).toBeUndefined()
     })
 
+    test('should parse from ASN.1 with IMPLICIT keyIdentifier (primitive)', () => {
+        // This test simulates the format used in real-world certificates
+        // where keyIdentifier uses IMPLICIT tagging, making it a primitive element
+        const asn1 = new asn1js.Sequence({
+            value: [
+                new asn1js.Primitive({
+                    idBlock: { tagClass: 3, tagNumber: 0 }, // [0] IMPLICIT
+                    valueHex: new Uint8Array([1, 2, 3, 4, 5]),
+                }),
+            ],
+        })
+
+        const aki = AuthorityKeyIdentifier.fromAsn1(asn1)
+        expect(aki.keyIdentifier).toBeInstanceOf(KeyIdentifier)
+        expect(aki.keyIdentifier!.bytes).toEqual(
+            new Uint8Array([1, 2, 3, 4, 5]),
+        )
+        expect(aki.authorityCertIssuer).toBeUndefined()
+        expect(aki.authorityCertSerialNumber).toBeUndefined()
+    })
+
     test('should parse from ASN.1 with all fields', () => {
         const asn1 = new asn1js.Sequence({
             value: [
@@ -186,13 +207,13 @@ describe('AuthorityKeyIdentifier', () => {
         )
     })
 
-    test('fromAsn1 should throw error for non-constructed elements', () => {
+    test('fromAsn1 should throw error for non-context-specific tags', () => {
         const asn1 = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 123 })], // Should be constructed
+            value: [new asn1js.Integer({ value: 123 })], // Should be context-specific
         })
 
         expect(() => AuthorityKeyIdentifier.fromAsn1(asn1)).toThrow(
-            'Expected constructed element in AuthorityKeyIdentifier sequence',
+            'Expected context-specific tag in AuthorityKeyIdentifier sequence',
         )
     })
 

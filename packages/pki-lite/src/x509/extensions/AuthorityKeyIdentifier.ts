@@ -88,26 +88,59 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
         let authorityCertSerialNumber: Integer | undefined
 
         for (const element of sequence.valueBlock.value) {
-            if (!(element instanceof asn1js.Constructed)) {
+            // Check if element has context-specific tag class
+            if (element.idBlock.tagClass !== 3) {
                 throw new Asn1ParseError(
-                    'Expected constructed element in AuthorityKeyIdentifier sequence',
+                    'Expected context-specific tag in AuthorityKeyIdentifier sequence',
                 )
             }
+
             switch (element.idBlock.tagNumber) {
-                case 0: // keyIdentifier
-                    keyIdentifier = KeyIdentifier.fromAsn1(
-                        element.valueBlock.value[0],
-                    )
+                case 0: // keyIdentifier [0] IMPLICIT OCTET STRING
+                    // For IMPLICIT tagging, the element itself is the OCTET STRING with [0] tag
+                    if (element instanceof asn1js.Constructed) {
+                        // EXPLICIT tagging: [0] { OCTET STRING }
+                        keyIdentifier = KeyIdentifier.fromAsn1(
+                            element.valueBlock.value[0],
+                        )
+                    } else {
+                        // IMPLICIT tagging: [0] (primitive OCTET STRING)
+                        // Create KeyIdentifier directly from the primitive element's valueHex
+                        keyIdentifier = new KeyIdentifier({
+                            bytes: (element as asn1js.Primitive).valueBlock
+                                .valueHexView,
+                        })
+                    }
                     break
-                case 1: // authorityCertIssuer
-                    authorityCertIssuer = GeneralNames.fromAsn1(
-                        element.valueBlock.value[0],
-                    )
+                case 1: // authorityCertIssuer [1] IMPLICIT GeneralNames
+                    if (element instanceof asn1js.Constructed) {
+                        // GeneralNames is a SEQUENCE, so it's always constructed
+                        authorityCertIssuer = GeneralNames.fromAsn1(
+                            element.valueBlock.value[0],
+                        )
+                    } else {
+                        throw new Asn1ParseError(
+                            'Expected constructed element for authorityCertIssuer',
+                        )
+                    }
                     break
-                case 2: // authorityCertSerialNumber
-                    authorityCertSerialNumber = Integer.fromAsn1(
-                        element.valueBlock.value[0],
-                    )
+                case 2: // authorityCertSerialNumber [2] IMPLICIT INTEGER
+                    if (element instanceof asn1js.Constructed) {
+                        // EXPLICIT tagging: [2] { INTEGER }
+                        authorityCertSerialNumber = Integer.fromAsn1(
+                            element.valueBlock.value[0],
+                        )
+                    } else {
+                        // IMPLICIT tagging: [2] (primitive INTEGER)
+                        // Create Integer directly from the primitive element's valueHex
+                        authorityCertSerialNumber = new Integer({
+                            value: new Uint8Array(
+                                (
+                                    element as asn1js.Primitive
+                                ).valueBlock.valueHexView,
+                            ),
+                        })
+                    }
                     break
                 default:
                     throw new Asn1ParseError(
