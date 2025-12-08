@@ -103,24 +103,28 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
                         keyIdentifier = KeyIdentifier.fromAsn1(
                             element.valueBlock.value[0],
                         )
-                    } else {
+                    } else if (element instanceof asn1js.Primitive) {
                         // IMPLICIT tagging: [0] (primitive OCTET STRING)
                         // Create KeyIdentifier directly from the primitive element's valueHex
                         keyIdentifier = new KeyIdentifier({
-                            bytes: (element as asn1js.Primitive).valueBlock
-                                .valueHexView,
+                            bytes: element.valueBlock.valueHexView,
                         })
+                    } else {
+                        throw new Asn1ParseError(
+                            'Invalid element type for keyIdentifier',
+                        )
                     }
                     break
                 case 1: // authorityCertIssuer [1] IMPLICIT GeneralNames
+                    // GeneralNames is a SEQUENCE, so even with IMPLICIT tagging it remains constructed.
+                    // RFC 5280: IMPLICIT on a SEQUENCE doesn't change its constructed nature.
                     if (element instanceof asn1js.Constructed) {
-                        // GeneralNames is a SEQUENCE, so it's always constructed
                         authorityCertIssuer = GeneralNames.fromAsn1(
                             element.valueBlock.value[0],
                         )
                     } else {
                         throw new Asn1ParseError(
-                            'Expected constructed element for authorityCertIssuer',
+                            'Expected constructed element for authorityCertIssuer (GeneralNames is a SEQUENCE)',
                         )
                     }
                     break
@@ -130,16 +134,18 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
                         authorityCertSerialNumber = Integer.fromAsn1(
                             element.valueBlock.value[0],
                         )
-                    } else {
+                    } else if (element instanceof asn1js.Primitive) {
                         // IMPLICIT tagging: [2] (primitive INTEGER)
                         // Create Integer directly from the primitive element's valueHex
                         authorityCertSerialNumber = new Integer({
                             value: new Uint8Array(
-                                (
-                                    element as asn1js.Primitive
-                                ).valueBlock.valueHexView,
+                                element.valueBlock.valueHexView,
                             ),
                         })
+                    } else {
+                        throw new Asn1ParseError(
+                            'Invalid element type for authorityCertSerialNumber',
+                        )
                     }
                     break
                 default:
