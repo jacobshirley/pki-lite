@@ -11,6 +11,20 @@ export type ExtKeyCommonNames =
     | 'timeStamping'
     | 'ocspSigning'
 
+/**
+ * Represents the Extended Key Usage extension defined in RFC 5280.
+ *
+ * The Extended Key Usage extension indicates one or more purposes for which
+ * the certified public key may be used, in addition to or in place of the
+ * basic purposes indicated in the key usage extension.
+ *
+ * @asn
+ * ```asn
+ * ExtKeyUsageSyntax ::= SEQUENCE SIZE (1..MAX) OF KeyPurposeId
+ *
+ * KeyPurposeId ::= OBJECT IDENTIFIER
+ * ```
+ */
 export class ExtKeyUsage extends PkiSequence<ObjectIdentifier> {
     static create(
         options: {
