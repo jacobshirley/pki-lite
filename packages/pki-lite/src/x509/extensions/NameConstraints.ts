@@ -7,6 +7,21 @@ import {
 import { GeneralName } from '../GeneralName.js'
 import { RDNSequence } from '../RDNSequence.js'
 
+/**
+ * Represents a GeneralSubtree structure used in name constraints.
+ *
+ * A GeneralSubtree defines a subtree of names along with optional minimum
+ * and maximum distances for matching purposes.
+ *
+ * @asn
+ * ```asn
+ * GeneralSubtree ::= SEQUENCE {
+ *      base                    GeneralName,
+ *      minimum         [0]     BaseDistance DEFAULT 0,
+ *      maximum         [1]     BaseDistance OPTIONAL
+ * }
+ * ```
+ */
 export class GeneralSubtree extends PkiBase<GeneralSubtree> {
     base: GeneralName
     minimum: number
@@ -106,6 +121,17 @@ export class GeneralSubtree extends PkiBase<GeneralSubtree> {
     }
 }
 
+/**
+ * Represents a sequence of GeneralSubtree structures.
+ *
+ * This class extends PkiSequence and provides methods for matching
+ * names against multiple subtrees.
+ *
+ * @asn
+ * ```asn
+ * GeneralSubtrees ::= SEQUENCE SIZE (1..MAX) OF GeneralSubtree
+ * ```
+ */
 export class GeneralSubtrees extends PkiSequence<GeneralSubtree> {
     matches(other: GeneralName | string | RDNSequence): boolean {
         for (const subtree of this) {
@@ -117,6 +143,21 @@ export class GeneralSubtrees extends PkiSequence<GeneralSubtree> {
     }
 }
 
+/**
+ * Represents the NameConstraints extension defined in RFC 5280.
+ *
+ * Name constraints provide a mechanism to restrict the set of names that
+ * can appear in subsequent certificates in a certification path. This is
+ * useful for limiting the scope of a CA's authority.
+ *
+ * @asn
+ * ```asn
+ * NameConstraints ::= SEQUENCE {
+ *      permittedSubtrees       [0]     GeneralSubtrees OPTIONAL,
+ *      excludedSubtrees        [1]     GeneralSubtrees OPTIONAL
+ * }
+ * ```
+ */
 export class NameConstraints extends PkiBase<NameConstraints> {
     /** Permitted subtrees */
     permittedSubtrees?: GeneralSubtrees

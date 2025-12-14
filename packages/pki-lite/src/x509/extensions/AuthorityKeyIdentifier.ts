@@ -88,26 +88,35 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
         let authorityCertSerialNumber: Integer | undefined
 
         for (const element of sequence.valueBlock.value) {
-            if (!(element instanceof asn1js.Constructed)) {
-                throw new Asn1ParseError(
-                    'Expected constructed element in AuthorityKeyIdentifier sequence',
-                )
-            }
-            switch (element.idBlock.tagNumber) {
-                case 0: // keyIdentifier
-                    keyIdentifier = KeyIdentifier.fromAsn1(
-                        element.valueBlock.value[0],
-                    )
+            const tagNumber = element.idBlock.tagNumber
+
+            switch (tagNumber) {
+                case 0: // keyIdentifier [0] IMPLICIT OCTET STRING
+                    if (element instanceof asn1js.Constructed) {
+                        keyIdentifier = KeyIdentifier.fromAsn1(
+                            element.valueBlock.value[0],
+                        )
+                    } else {
+                        keyIdentifier = KeyIdentifier.fromAsn1(element)
+                    }
                     break
                 case 1: // authorityCertIssuer
-                    authorityCertIssuer = GeneralNames.fromAsn1(
-                        element.valueBlock.value[0],
-                    )
+                    if (element instanceof asn1js.Constructed) {
+                        authorityCertIssuer = GeneralNames.fromAsn1(
+                            element.valueBlock.value[0],
+                        )
+                    } else {
+                        authorityCertIssuer = GeneralNames.fromAsn1(element)
+                    }
                     break
                 case 2: // authorityCertSerialNumber
-                    authorityCertSerialNumber = Integer.fromAsn1(
-                        element.valueBlock.value[0],
-                    )
+                    if (element instanceof asn1js.Constructed) {
+                        authorityCertSerialNumber = Integer.fromAsn1(
+                            element.valueBlock.value[0],
+                        )
+                    } else {
+                        authorityCertSerialNumber = Integer.fromAsn1(element)
+                    }
                     break
                 default:
                     throw new Asn1ParseError(
