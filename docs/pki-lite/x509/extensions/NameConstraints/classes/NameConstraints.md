@@ -6,11 +6,20 @@
 
 # Class: NameConstraints
 
-Base class for all PKI objects in the library.
+Represents the NameConstraints extension defined in RFC 5280.
 
-Provides common functionality for ASN.1 encoding/decoding, PEM formatting,
-DER serialization, and object comparison. All PKI structures extend this class
-to ensure consistent behavior across the library.
+Name constraints provide a mechanism to restrict the set of names that
+can appear in subsequent certificates in a certification path. This is
+useful for limiting the scope of a CA's authority.
+
+## Asn
+
+```asn
+NameConstraints ::= SEQUENCE {
+     permittedSubtrees       [0]     GeneralSubtrees OPTIONAL,
+     excludedSubtrees        [1]     GeneralSubtrees OPTIONAL
+}
+```
 
 ## Extends
 

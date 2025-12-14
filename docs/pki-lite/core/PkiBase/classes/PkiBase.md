@@ -78,6 +78,8 @@ to ensure consistent behavior across the library.
 - [`SignerInfo`](../../../pkcs7/SignerInfo/classes/SignerInfo.md)
 - [`OtherRevocationInfoFormat`](../../../revocation/OtherRevocationInfoFormat/classes/OtherRevocationInfoFormat.md)
 - [`MessageImprint`](../../../timestamp/MessageImprint/classes/MessageImprint.md)
+- [`Accuracy`](../../../timestamp/TSTInfo/classes/Accuracy.md)
+- [`TSTInfo`](../../../timestamp/TSTInfo/classes/TSTInfo.md)
 - [`TimeStampReq`](../../../timestamp/TimeStampReq/classes/TimeStampReq.md)
 - [`PKIFreeText`](../../../timestamp/TimeStampResp/classes/PKIFreeText.md)
 - [`PKIStatusInfo`](../../../timestamp/TimeStampResp/classes/PKIStatusInfo.md)

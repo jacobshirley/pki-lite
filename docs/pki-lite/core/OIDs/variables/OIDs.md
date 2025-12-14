@@ -686,6 +686,12 @@ SignedAndEnvelopedData content type
 
 SignedData content type
 
+#### PKCS7.TST_INFO
+
+> **TST_INFO**: `string` = `'1.2.840.113549.1.9.16.1.4'`
+
+TSTInfo content type (RFC 3161)
+
 ### PKCS9
 
 > **PKCS9**: `object`

@@ -6,11 +6,16 @@
 
 # Class: GeneralSubtrees
 
-Represents a SEQUENCE OF PKI objects in ASN.1.
+Represents a sequence of GeneralSubtree structures.
 
-A SEQUENCE contains an ordered collection of objects, which may be of
-different types. This class provides SEQUENCE-specific ASN.1 encoding
-and comparison methods.
+This class extends PkiSequence and provides methods for matching
+names against multiple subtrees.
+
+## Asn
+
+```asn
+GeneralSubtrees ::= SEQUENCE SIZE (1..MAX) OF GeneralSubtree
+```
 
 ## Extends
 

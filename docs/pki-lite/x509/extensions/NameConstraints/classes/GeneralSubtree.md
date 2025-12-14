@@ -6,11 +6,20 @@
 
 # Class: GeneralSubtree
 
-Base class for all PKI objects in the library.
+Represents a GeneralSubtree structure used in name constraints.
 
-Provides common functionality for ASN.1 encoding/decoding, PEM formatting,
-DER serialization, and object comparison. All PKI structures extend this class
-to ensure consistent behavior across the library.
+A GeneralSubtree defines a subtree of names along with optional minimum
+and maximum distances for matching purposes.
+
+## Asn
+
+```asn
+GeneralSubtree ::= SEQUENCE {
+     base                    GeneralName,
+     minimum         [0]     BaseDistance DEFAULT 0,
+     maximum         [1]     BaseDistance OPTIONAL
+}
+```
 
 ## Extends
 

@@ -2,78 +2,81 @@
 
 ---
 
-[PKI-Lite](../../../../README.md) / [pki-lite](../../../README.md) / [pkcs7/SignerInfo](../README.md) / SignerInfo
+[PKI-Lite](../../../../README.md) / [pki-lite](../../../README.md) / [timestamp/TSTInfo](../README.md) / Accuracy
 
-# Class: SignerInfo
+# Class: Accuracy
 
-Represents a CMS SignerInfo structure as defined in RFC 5652.
+Accuracy structure for RFC 3161 Time-Stamp Protocol.
+
+Specifies the accuracy of the time in the timestamp token.
+All fields are optional, but at least one should be present.
 
 ## Asn
 
 ```asn
-SignerInfo ::= SEQUENCE {
-     version CMSVersion,
-     sid SignerIdentifier,
-     digestAlgorithm DigestAlgorithmIdentifier,
-     signedAttrs [0] IMPLICIT SignedAttributes OPTIONAL,
-     signatureAlgorithm SignatureAlgorithmIdentifier,
-     signature SignatureValue,
-     unsignedAttrs [1] IMPLICIT UnsignedAttributes OPTIONAL
-}
-
-SignedAttributes ::= SET SIZE (1..MAX) OF Attribute
-UnsignedAttributes ::= SET SIZE (1..MAX) OF Attribute
-DigestAlgorithmIdentifier ::= AlgorithmIdentifier
-SignatureAlgorithmIdentifier ::= AlgorithmIdentifier
-SignatureValue ::= OCTET STRING
-SubjectKeyIdentifier ::= OCTET STRING
+Accuracy ::= SEQUENCE {
+    seconds        INTEGER           OPTIONAL,
+    millis     [0] INTEGER  (1..999) OPTIONAL,
+    micros     [1] INTEGER  (1..999) OPTIONAL  }
 ```
+
+## See
+
+RFC 3161 Section 2.4.2 - TSTInfo Structure
 
 ## Extends
 
-- [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`SignerInfo`\>
+- [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`Accuracy`\>
 
 ## Constructors
 
 ### Constructor
 
-> **new SignerInfo**(`options`): `SignerInfo`
+> **new Accuracy**(`options`): `Accuracy`
+
+Creates a new Accuracy instance.
 
 #### Parameters
 
 ##### options
 
-###### digestAlgorithm
+Configuration object for accuracy values
 
-[`AlgorithmIdentifier`](../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
-
-###### sid
-
-[`SignerIdentifier`](../../SignerIdentifier/type-aliases/SignerIdentifier.md)
-
-###### signature
-
-`Uint8Array`\<`ArrayBuffer`\>
-
-###### signatureAlgorithm
-
-[`AlgorithmIdentifier`](../../../algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
-
-###### signedAttrs?
-
-[`Attribute`](../../../x509/Attribute/classes/Attribute.md)[]
-
-###### unsignedAttrs?
-
-[`Attribute`](../../../x509/Attribute/classes/Attribute.md)[]
-
-###### version
+###### micros?
 
 `number`
 
+Optional accuracy in microseconds (1-999)
+
+###### millis?
+
+`number`
+
+Optional accuracy in milliseconds (1-999)
+
+###### seconds?
+
+`number`
+
+Optional accuracy in seconds
+
 #### Returns
 
-`SignerInfo`
+`Accuracy`
+
+#### Throws
+
+Error if millis or micros are out of valid range
+
+#### Example
+
+```typescript
+const accuracy = new Accuracy({
+    seconds: 1,
+    millis: 500,
+    micros: 250,
+})
+```
 
 #### Overrides
 
@@ -81,57 +84,27 @@ SubjectKeyIdentifier ::= OCTET STRING
 
 ## Properties
 
-### digestAlgorithm
+### micros?
 
-> **digestAlgorithm**: [`DigestAlgorithmIdentifier`](../../../algorithms/AlgorithmIdentifier/classes/DigestAlgorithmIdentifier.md)
+> `optional` **micros**: `number`
 
----
-
-### sid
-
-> **sid**: [`SignerIdentifier`](../../SignerIdentifier/type-aliases/SignerIdentifier.md)
+Accuracy in microseconds (1-999), optional
 
 ---
 
-### signature
+### millis?
 
-> **signature**: `Uint8Array`\<`ArrayBuffer`\>
+> `optional` **millis**: `number`
 
----
-
-### signatureAlgorithm
-
-> **signatureAlgorithm**: [`SignatureAlgorithmIdentifier`](../../../algorithms/AlgorithmIdentifier/classes/SignatureAlgorithmIdentifier.md)
+Accuracy in milliseconds (1-999), optional
 
 ---
 
-### signedAttrs?
+### seconds?
 
-> `optional` **signedAttrs**: [`SignedAttributes`](SignedAttributes.md)
+> `optional` **seconds**: `number`
 
----
-
-### unsignedAttrs?
-
-> `optional` **unsignedAttrs**: [`UnsignedAttributes`](UnsignedAttributes.md)
-
----
-
-### version
-
-> **version**: `number`
-
----
-
-### SignedAttributes
-
-> `static` **SignedAttributes**: _typeof_ [`SignedAttributes`](SignedAttributes.md)
-
----
-
-### UnsignedAttributes
-
-> `static` **UnsignedAttributes**: _typeof_ [`UnsignedAttributes`](UnsignedAttributes.md)
+Accuracy in seconds, optional
 
 ## Accessors
 
@@ -239,13 +212,20 @@ A new instance of the target type
 
 > **toAsn1**(): [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
-Converts this PKI object to its ASN.1 representation.
+Converts the Accuracy to its ASN.1 representation.
 
 #### Returns
 
 [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
-The ASN.1 representation of this object
+ASN.1 SEQUENCE containing the accuracy fields
+
+#### Example
+
+```typescript
+const asn1 = accuracy.toAsn1()
+const der = asn1.toBER(false)
+```
 
 #### Overrides
 
@@ -346,33 +326,11 @@ A string representation for debugging
 
 ---
 
-### verify()
-
-> **verify**(`options`): `Promise`\<\{ `valid`: `true`; \} \| \{ `reasons`: `string`[]; `valid`: `false`; \}\>
-
-#### Parameters
-
-##### options
-
-###### data
-
-`Uint8Array`\<`ArrayBuffer`\>
-
-###### publicKeyInfo
-
-[`SubjectPublicKeyInfo`](../../../keys/SubjectPublicKeyInfo/classes/SubjectPublicKeyInfo.md)
-
-#### Returns
-
-`Promise`\<\{ `valid`: `true`; \} \| \{ `reasons`: `string`[]; `valid`: `false`; \}\>
-
----
-
 ### fromAsn1()
 
-> `static` **fromAsn1**(`asn1`): `SignerInfo`
+> `static` **fromAsn1**(`asn1`): `Accuracy`
 
-Creates a SignerInfo from an ASN.1 structure.
+Creates an Accuracy from an ASN.1 structure.
 
 #### Parameters
 
@@ -380,26 +338,22 @@ Creates a SignerInfo from an ASN.1 structure.
 
 [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
-The ASN.1 structure
+The ASN.1 structure to parse
 
 #### Returns
 
-`SignerInfo`
+`Accuracy`
 
-A SignerInfo object
+The parsed Accuracy object
 
----
+#### Throws
 
-### fromDer()
+Asn1ParseError if the ASN.1 structure is invalid
 
-> `static` **fromDer**(`derBytes`): `SignerInfo`
+#### Example
 
-#### Parameters
-
-##### derBytes
-
-`Uint8Array`\<`ArrayBuffer`\>
-
-#### Returns
-
-`SignerInfo`
+```typescript
+const asn1 = derToAsn1(accuracyBytes)
+const accuracy = Accuracy.fromAsn1(asn1)
+console.log(accuracy.seconds, accuracy.millis, accuracy.micros)
+```
