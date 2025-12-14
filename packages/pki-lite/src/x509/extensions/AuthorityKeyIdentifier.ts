@@ -89,7 +89,6 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
 
         for (const element of sequence.valueBlock.value) {
             const tagNumber = element.idBlock.tagNumber
-            console.log('sequence', asn1.toString(), tagNumber)
 
             switch (tagNumber) {
                 case 0: // keyIdentifier [0] IMPLICIT OCTET STRING
