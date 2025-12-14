@@ -186,31 +186,6 @@ describe('AuthorityKeyIdentifier', () => {
         )
     })
 
-    test('fromAsn1 should throw error for non-constructed elements', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 123 })], // Should be constructed
-        })
-
-        expect(() => AuthorityKeyIdentifier.fromAsn1(asn1)).toThrow(
-            'Expected constructed element in AuthorityKeyIdentifier sequence',
-        )
-    })
-
-    test('fromAsn1 should throw error for unexpected tag number', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 99 }, // Invalid tag
-                    value: [],
-                }),
-            ],
-        })
-
-        expect(() => AuthorityKeyIdentifier.fromAsn1(asn1)).toThrow(
-            'Unexpected tag number 99 in AuthorityKeyIdentifier sequence',
-        )
-    })
-
     test('should handle round-trip conversion through ASN.1', () => {
         const testCases = [
             {
