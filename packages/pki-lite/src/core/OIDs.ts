@@ -166,6 +166,8 @@ export const OIDs = {
         AUTHENTICATED_DATA: '1.2.840.113549.1.7.7',
         /** AuthEnvelopedData content type */
         AUTH_ENVELOPED_DATA: '1.2.840.113549.1.9.16.1.23',
+        /** TSTInfo content type (RFC 3161) */
+        TST_INFO: '1.2.840.113549.1.9.16.1.4',
     },
 
     /**
@@ -426,6 +428,7 @@ export const OIDToFriendlyName: Record<string, string> = {
     [OIDs.PKCS7.ENCRYPTED_DATA]: 'PKCS#7 EncryptedData',
     [OIDs.PKCS7.AUTHENTICATED_DATA]: 'PKCS#7 AuthenticatedData',
     [OIDs.PKCS7.AUTH_ENVELOPED_DATA]: 'PKCS#7 AuthEnvelopedData',
+    [OIDs.PKCS7.TST_INFO]: 'TSTInfo (RFC 3161 Timestamp)',
 
     // X.509 Extensions
     [OIDs.EXTENSION.SUBJECT_KEY_IDENTIFIER]: 'Subject Key Identifier',
