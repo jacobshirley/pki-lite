@@ -56,7 +56,10 @@ export class OctetString extends PkiBase<OctetString> {
     }
 
     static fromAsn1(asn1: Asn1BaseBlock): OctetString {
-        if (!(asn1 instanceof asn1js.OctetString)) {
+        if (
+            !(asn1 instanceof asn1js.OctetString) &&
+            !(asn1 instanceof asn1js.Primitive)
+        ) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OCTET STRING but got ' +
                     asn1.constructor.name,
