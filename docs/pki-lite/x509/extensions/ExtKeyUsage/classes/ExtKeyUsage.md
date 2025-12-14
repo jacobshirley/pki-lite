@@ -6,11 +6,19 @@
 
 # Class: ExtKeyUsage
 
-Represents a SEQUENCE OF PKI objects in ASN.1.
+Represents the Extended Key Usage extension defined in RFC 5280.
 
-A SEQUENCE contains an ordered collection of objects, which may be of
-different types. This class provides SEQUENCE-specific ASN.1 encoding
-and comparison methods.
+The Extended Key Usage extension indicates one or more purposes for which
+the certified public key may be used, in addition to or in place of the
+basic purposes indicated in the key usage extension.
+
+## Asn
+
+```asn
+ExtKeyUsageSyntax ::= SEQUENCE SIZE (1..MAX) OF KeyPurposeId
+
+KeyPurposeId ::= OBJECT IDENTIFIER
+```
 
 ## Extends
 

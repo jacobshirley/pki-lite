@@ -6,11 +6,19 @@
 
 # Class: SubjectAltName
 
-Represents a SEQUENCE OF PKI objects in ASN.1.
+Represents the Subject Alternative Name extension defined in RFC 5280.
 
-A SEQUENCE contains an ordered collection of objects, which may be of
-different types. This class provides SEQUENCE-specific ASN.1 encoding
-and comparison methods.
+The Subject Alternative Name extension allows identities to be bound to the
+subject of the certificate. These identities may be included in addition to
+or in place of the identity in the subject field of the certificate.
+
+## Asn
+
+```asn
+SubjectAltName ::= GeneralNames
+
+GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
+```
 
 ## Extends
 

@@ -115,6 +115,7 @@
 - [timestamp/MessageImprint](timestamp/MessageImprint/README.md)
 - [timestamp/TimeStampReq](timestamp/TimeStampReq/README.md)
 - [timestamp/TimeStampResp](timestamp/TimeStampResp/README.md)
+- [timestamp/TSTInfo](timestamp/TSTInfo/README.md)
 - [x509/Attribute](x509/Attribute/README.md)
 - [x509/attribute-certs/AttributeCertificate](x509/attribute-certs/AttributeCertificate/README.md)
 - [x509/attribute-certs/AttributeCertificateInfo](x509/attribute-certs/AttributeCertificateInfo/README.md)
