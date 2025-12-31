@@ -7,6 +7,9 @@ A modern, lightweight JavaScript/TypeScript library for Public Key Infrastructur
 > **Notice:**  
 > _This package is new. If you plan to use it in production, please review the code and functionality closely to ensure it meets your security and reliability requirements._
 
+[![npm version](https://img.shields.io/npm/v/pki-lite.svg)](https://www.npmjs.com/package/pki-lite)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## Features
 
 - **X.509 Certificate Operations**: Create, validate, and manage X.509 certificates
