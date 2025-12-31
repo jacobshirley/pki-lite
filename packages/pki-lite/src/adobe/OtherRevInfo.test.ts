@@ -31,9 +31,8 @@ describe('OtherRevInfo', () => {
         expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.OctetString)
         expect(
             new Uint8Array(
-                (
-                    asn1.valueBlock.value[1] as asn1js.OctetString
-                ).valueBlock.valueHexView,
+                (asn1.valueBlock.value[1] as asn1js.OctetString).valueBlock
+                    .valueHexView,
             ),
         ).toEqual(valueBytes.bytes)
     })
