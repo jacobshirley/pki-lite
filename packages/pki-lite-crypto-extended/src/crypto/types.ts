@@ -22,5 +22,6 @@ export type PbeAlgorithmMap = {
 
 declare module 'pki-lite/core/crypto/index.js' {
     // Extensible interface for PBE algorithms
-    export interface SymmetricEncryptionAlgorithmParamsMap extends PbeAlgorithmMap {}
+    export interface SymmetricEncryptionAlgorithmParamsMap
+        extends PbeAlgorithmMap {}
 }
