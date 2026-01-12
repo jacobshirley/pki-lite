@@ -124,7 +124,8 @@ export interface PbeAlgorithmParamsMap {
  * Parameter mapping for symmetric encryption algorithms.
  * Includes both standalone symmetric algorithms and password-based encryption.
  */
-export interface SymmetricEncryptionAlgorithmParamsMap extends PbeAlgorithmParamsMap {
+export interface SymmetricEncryptionAlgorithmParamsMap
+    extends PbeAlgorithmParamsMap {
     /**
      * AES-128 in Galois/Counter Mode parameters.
      */
