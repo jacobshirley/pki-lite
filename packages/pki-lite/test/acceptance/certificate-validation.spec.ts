@@ -87,7 +87,7 @@ describe('Certificate Validation', () => {
             subject: 'C=US, ST=Test, L=Local, O=MyOrg, OU=Dev, CN=MyCodeSign',
             validity: {
                 notBefore: new Date('2025-01-01T00:00:00Z'),
-                notAfter: new Date('2026-01-01T00:00:00Z'),
+                notAfter: new Date('2050-01-01T00:00:00Z'),
             },
             extensions: [
                 Extension.authorityInfoAccess(
