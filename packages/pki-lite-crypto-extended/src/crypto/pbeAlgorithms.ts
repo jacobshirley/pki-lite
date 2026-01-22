@@ -1,5 +1,5 @@
 import forge from 'node-forge'
-import { PbeAlgorithmMap } from './types'
+import { PbeAlgorithmMap } from './types.js'
 
 type PbeAlgorithm = {
     encrypt: (

@@ -7,13 +7,13 @@ import {
     AsymmetricEncryptionAlgorithmParams,
     PbeAlgorithmParams,
 } from 'pki-lite/core/crypto/index.js'
-import { SubjectPublicKeyInfo } from 'pki-lite/keys/SubjectPublicKeyInfo'
-import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo'
+import { SubjectPublicKeyInfo } from 'pki-lite/keys/SubjectPublicKeyInfo.js'
+import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
 import forge from 'node-forge'
-import { getPbeAlgorithm } from './pbeAlgorithms'
-import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
-import { OIDs } from 'pki-lite/core/OIDs'
-import { PBEParameter } from 'pki-lite/pkcs5/PBEParameter'
+import { getPbeAlgorithm } from './pbeAlgorithms.js'
+import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
+import { OIDs } from 'pki-lite/core/OIDs.js'
+import { PBEParameter } from 'pki-lite/pkcs5/PBEParameter.js'
 
 /**
  * Extended WebCryptoProvider that adds support for additional algorithms
