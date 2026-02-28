@@ -9,7 +9,7 @@
         "compile:examples": "node ./scripts/build-examples.ts && prettier --write EXAMPLES.md",
         "compile:test": "tsc --noEmit",
         "prepublish": "pnpm -r run compile",
-        "test": "pnpm -r --no-sort run test",
+        "test": "pnpm -r --no-sort --workspace-concurrency=1 run test",
         "prepare": "husky || true",
         "lint:staged": "lint-staged --allow-empty",
         "lint:commit": "commitlint --edit $1",
