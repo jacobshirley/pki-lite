@@ -25,7 +25,7 @@
         "compile:validate": "tsc -p tsconfig.json --noEmit",
         "watch": "tsc -watch -p tsconfig.prod.json",
         "watch:all": "tsc -watch -p tsconfig.json",
-        "test": "vitest run --force-exit",
+        "test": "vitest run",
         "test:watch": "vitest",
         "test:unit": "vitest run src/",
         "test:node": "vitest run test/node",
