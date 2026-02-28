@@ -551,15 +551,20 @@ export class Certificate extends PkiBase<Certificate> {
                     continue
                 }
                 const certDer = new Uint8Array(await response.arrayBuffer())
-                const certificate = Certificate.fromDer(certDer)
-                return certificate
+                try {
+                    return Certificate.fromDer(certDer)
+                } catch (e) {
+                    return Certificate.fromPem(
+                        new TextDecoder().decode(certDer),
+                    )
+                }
             } catch (e) {
                 if (!(e instanceof Error)) {
                     throw e
                 }
 
                 console.warn(
-                    `Error fetching OCSP response from ${uri}:`,
+                    `Error fetching issuer certificate from ${uri}:`,
                     e.message,
                 )
                 continue
