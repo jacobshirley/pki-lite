@@ -116,4 +116,8 @@ export class SubjectPublicKeyInfo extends PkiBase<SubjectPublicKeyInfo> {
         }
         throw new Error('Unsupported key algorithm')
     }
+
+    get pemHeader(): string {
+        return 'PUBLIC KEY'
+    }
 }

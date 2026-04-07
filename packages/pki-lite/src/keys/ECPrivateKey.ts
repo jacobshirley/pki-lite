@@ -1,5 +1,3 @@
-import { getCryptoProvider } from '../core/crypto/provider.js'
-import { NamedCurve } from '../core/crypto/types.js'
 import {
     Asn1BaseBlock,
     asn1js,
@@ -246,5 +244,9 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
         publicKey?: Uint8Array<ArrayBuffer>,
     ): ECPrivateKey {
         return new ECPrivateKey({ privateKey, namedCurve: curve, publicKey })
+    }
+
+    get pemHeader(): string {
+        return 'EC PRIVATE KEY'
     }
 }

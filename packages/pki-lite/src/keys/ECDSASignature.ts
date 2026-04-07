@@ -1,6 +1,5 @@
-import * as asn1js from 'asn1js'
 import { padUint8Array } from '../core/utils.js'
-import { derToAsn1, PkiBase } from '../core/PkiBase.js'
+import { asn1js, derToAsn1, PkiBase } from '../core/PkiBase.js'
 import { Integer } from '../asn1/Integer.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
