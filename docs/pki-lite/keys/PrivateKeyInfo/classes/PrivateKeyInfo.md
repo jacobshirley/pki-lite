@@ -141,7 +141,7 @@ Converts the class name to uppercase for use in PEM encoding.
 
 `string`
 
-#### Inherited from
+#### Overrides
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`pemHeader`](../../../core/PkiBase/classes/PkiBase.md#pemheader)
 
