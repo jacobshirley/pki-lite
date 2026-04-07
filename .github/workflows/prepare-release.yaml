@@ -39,7 +39,7 @@ jobs:
         runs-on: ubuntu-latest
         name: Prepare Release
         steps:
-            - uses: actions/create-github-app-token@v2
+            - uses: actions/create-github-app-token@v3
               id: generate-token
               with:
                   app-id: 2384674
