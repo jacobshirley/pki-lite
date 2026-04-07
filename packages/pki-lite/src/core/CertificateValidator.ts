@@ -1259,40 +1259,14 @@ export class CertificateValidator {
     }
 
     private extractSubjectAltNames(certificate: Certificate): SubjectAltName[] {
-        const subjectAltNames: SubjectAltName[] = []
-        const extensions = certificate.tbsCertificate.extensions
-        if (!extensions) return []
-
-        for (const ext of extensions) {
-            // Subject Alternative Name OID:
-            if (ext.extnID.value === OIDs.EXTENSION.SUBJECT_ALT_NAME) {
-                subjectAltNames.push(ext.extnValue.parseAs(SubjectAltName))
-            }
-        }
-
-        return subjectAltNames
+        return certificate.getSubjectAltNames()
     }
 
     /**
      * Extracts the common name (CN) from a certificate's subject.
      */
     private extractCommonName(certificate: Certificate): string | undefined {
-        const subject = certificate.tbsCertificate.subject
-
-        if (subject && Array.isArray(subject)) {
-            for (const rdn of subject) {
-                for (const atv of rdn) {
-                    if (atv && atv.type && atv.type.value === OIDs.DN.CN) {
-                        return atv.value.asString()
-                    }
-                }
-            }
-        }
-
-        // Fallback: extract from string representation
-        const subjectStr = subject.toString()
-        const cnMatch = subjectStr.match(/CN=([^,\]]+)/)
-        return cnMatch ? cnMatch[1].trim() : undefined
+        return certificate.getCommonName()
     }
 
     /**

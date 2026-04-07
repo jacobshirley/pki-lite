@@ -169,4 +169,36 @@ describe('Certificate', () => {
           -----END CERTIFICATE-----"
         `)
     })
+
+    // Regression test for issue #84: OpenSSL uses implicit tagging for SAN entries
+    test('getSubjectAltNames parses OpenSSL-generated certificate with implicit-tagged dNSName', () => {
+        const certPem = `-----BEGIN CERTIFICATE-----
+MIIDJTCCAg2gAwIBAgIUcrK/GL//nD5tolE0vt6Vy5EEj9YwDQYJKoZIhvcNAQEL
+BQAwFjEUMBIGA1UEAwwLZXhhbXBsZS5jb20wHhcNMjYwMzMxMjAwNzM5WhcNMjcw
+MzMxMjAwNzM5WjAWMRQwEgYDVQQDDAtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBALZKfc0D7gVZUn88yH9dNgseviWi55W6ZVy7Doha
+eTVC4e0qDtJycW8KVYNoc2MmJN3pnQpc5P7tFJ9I5/zaVQ3WqMVDI8lesDlwoUmI
+iFizxBxotmQOGo/G1ZU3wAGtzogs6MPZ5m10fPom7gRifT4rvl24GMXxoGZQlstE
+QSW4nrT/X5e2nzDn+qUeRTwg30u5X3j4ojLFf3IQeQuXgjNpwi1u661iXMDgDT2G
+mI9IYVoK9rAT00OUuMm024o+irA1XXDtY594jKS4QsSGHN7BCKLCM+8mw7G0oDqQ
+VNdVr8Q/SZoiL7b3+Tjo8JIPWoPsNHCMBysYHnfmdBuO5kcCAwEAAaNrMGkwHQYD
+VR0OBBYEFIKs2ZBlbwHlfokChUyYQrNk5GpAMB8GA1UdIwQYMBaAFIKs2ZBlbwHl
+fokChUyYQrNk5GpAMA8GA1UdEwEB/wQFMAMBAf8wFgYDVR0RBA8wDYILZXhhbXBs
+ZS5jb20wDQYJKoZIhvcNAQELBQADggEBAHDCvJwp9HkLMUUNzn0pNXP7YgxDDzjJ
+HTgVHdwcyz1v0u+1jJXmuWy0T6Oq79NAMIol37NinsMoH3/UNLbZc+NJ23PplHy9
+sSvpifUgAW2/JgBnQddas8IYusBdckqE2RJD2XdNHsNpyMX9SrC6PawEDT28xVx9
+gp89l0naLH02o+NguQYJv+taCGp96o9VEEhap/qUcSQI+C6RMcWth2EHAXmLaYxp
+PdX78veNZQefzueZK3mlv41LkAIYlEHgH9/p31EbDZmbZcpbPDDMOY9Xbpcu4iha
+YCq9EV5g9cM3mH/4raahln+1O63McYb36rlLFrJaQz+aX7A/9Wir1Jk=
+-----END CERTIFICATE-----`
+
+        const cert = Certificate.fromPem(certPem)
+
+        const sans = cert.getSubjectAltNames()
+        expect(sans).toHaveLength(1)
+        expect(sans[0]).toHaveLength(1)
+        expect(sans[0][0].toString()).toEqual('example.com')
+
+        expect(cert.getCommonName()).toEqual('example.com')
+    })
 })

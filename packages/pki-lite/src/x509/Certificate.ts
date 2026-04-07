@@ -24,6 +24,7 @@ import { OIDs } from '../core/OIDs.js'
 import { CertificateList } from './CertificateList.js'
 import { CRLDistributionPoints } from './extensions/CRLDistributionPoints.js'
 import { GeneralName } from './GeneralName.js'
+import { SubjectAltName } from './extensions/SubjectAltName.js'
 import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { AuthorityInfoAccess } from './extensions/AuthorityInfoAccess.js'
 import { OCSPRequest } from '../ocsp/OCSPRequest.js'
@@ -360,6 +361,56 @@ export class Certificate extends PkiBase<Certificate> {
 
     getExtensionsByName(name: keyof typeof OIDs.EXTENSION): Extension[] {
         return this.tbsCertificate.getExtensionsByName(name)
+    }
+
+    /**
+     * Returns all Subject Alternative Names from the certificate's extensions.
+     */
+    getSubjectAltNames(): SubjectAltName[] {
+        const extensions = this.tbsCertificate.extensions
+        if (!extensions) return []
+
+        return extensions
+            .filter(
+                (ext) => ext.extnID.value === OIDs.EXTENSION.SUBJECT_ALT_NAME,
+            )
+            .map((ext) => ext.extnValue.parseAs(SubjectAltName))
+    }
+
+    /**
+     * Returns all Subject Alternative Names as strings (e.g. DNS names, email addresses).
+     * This is a convenience method that extracts the string representation of each SAN entry.
+     * @returns An array of strings representing the Subject Alternative Names.
+     */
+    getSubjectAltNamesAsStrings(): string[] {
+        const sans = this.getSubjectAltNames()
+        const sanStrings: string[] = []
+        for (const san of sans) {
+            for (const name of san) {
+                sanStrings.push(name.toString())
+            }
+        }
+        return sanStrings
+    }
+
+    /**
+     * Returns the Common Name (CN) from the certificate's subject, or undefined if not present.
+     */
+    getCommonName(): string | undefined {
+        const subject = this.tbsCertificate.subject
+
+        if (subject && Array.isArray(subject)) {
+            for (const rdn of subject) {
+                for (const atv of rdn) {
+                    if (atv && atv.type && atv.type.value === OIDs.DN.CN) {
+                        return atv.value.asString()
+                    }
+                }
+            }
+        }
+
+        const cnMatch = subject.toString().match(/CN=([^,\]]+)/)
+        return cnMatch ? cnMatch[1].trim() : undefined
     }
 
     getSubjectPublicKeyInfo(): SubjectPublicKeyInfo {
