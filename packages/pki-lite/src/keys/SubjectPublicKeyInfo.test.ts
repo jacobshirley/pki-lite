@@ -140,9 +140,9 @@ describe('SubjectPublicKeyInfo', () => {
             subjectPublicKey: publicKey,
         })
         expect(spki.toPem()).toMatchInlineSnapshot(`
-          "-----BEGIN SUBJECTPUBLICKEYINFO-----
+          "-----BEGIN PUBLIC KEY-----
           MBgwCwYJKoZIhvcNAQEBAwkAMIIBCgKCAQE=
-          -----END SUBJECTPUBLICKEYINFO-----"
+          -----END PUBLIC KEY-----"
         `)
     })
 
@@ -173,9 +173,9 @@ describe('SubjectPublicKeyInfo', () => {
             subjectPublicKey: publicKey,
         })
         expect(spki.toPem()).toMatchInlineSnapshot(`
-          "-----BEGIN SUBJECTPUBLICKEYINFO-----
+          "-----BEGIN PUBLIC KEY-----
           MBEwCQYHKoZIzj0CAQMEAARBBA==
-          -----END SUBJECTPUBLICKEYINFO-----"
+          -----END PUBLIC KEY-----"
         `)
     })
 })

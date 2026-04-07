@@ -270,9 +270,9 @@ describe('PrivateKeyInfo', () => {
             privateKey: keyData,
         })
         expect(privateKey.toPem()).toMatchInlineSnapshot(`
-          "-----BEGIN PRIVATEKEYINFO-----
+          "-----BEGIN PRIVATE KEY-----
           MBcCAQAwCwYJKoZIhvcNAQEBBAUBAgMEBQ==
-          -----END PRIVATEKEYINFO-----"
+          -----END PRIVATE KEY-----"
         `)
     })
 
@@ -294,9 +294,9 @@ describe('PrivateKeyInfo', () => {
             attributes,
         })
         expect(privateKey.toPem()).toMatchInlineSnapshot(`
-          "-----BEGIN PRIVATEKEYINFO-----
+          "-----BEGIN PRIVATE KEY-----
           MDECAQEwCwYJKoZIhvcNAQEBBAUBAgMEBaAYMBYGCSqGSIb3DQEJATEJAgEKAgEUAgEe
-          -----END PRIVATEKEYINFO-----"
+          -----END PRIVATE KEY-----"
         `)
     })
 
