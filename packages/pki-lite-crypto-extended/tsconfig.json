@@ -1,4 +1,7 @@
 {
     "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "noUncheckedSideEffectImports": false
+    },
     "include": ["src/**/*", "examples/**/*", "test/**/*", "test-fixtures"]
 }
