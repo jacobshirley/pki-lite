@@ -1,7 +1,7 @@
 {
     "name": "pki-lite",
     "type": "module",
-    "version": "1.0.14",
+    "version": "1.1.0",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
