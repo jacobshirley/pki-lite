@@ -197,6 +197,18 @@ true if the objects are equal, false otherwise
 
 ---
 
+### getCommonName()
+
+> **getCommonName**(): `undefined` \| `string`
+
+Returns the Common Name (CN) from the certificate's subject, or undefined if not present.
+
+#### Returns
+
+`undefined` \| `string`
+
+---
+
 ### getExtensionByName()
 
 > **getExtensionByName**(`name`): `undefined` \| [`Extension`](../../Extension/classes/Extension.md)
@@ -284,6 +296,33 @@ true if the objects are equal, false otherwise
 #### Returns
 
 [`IssuerSerial`](../../IssuerSerial/classes/IssuerSerial.md)
+
+---
+
+### getSubjectAltNames()
+
+> **getSubjectAltNames**(): [`SubjectAltName`](../../extensions/SubjectAltName/classes/SubjectAltName.md)[]
+
+Returns all Subject Alternative Names from the certificate's extensions.
+
+#### Returns
+
+[`SubjectAltName`](../../extensions/SubjectAltName/classes/SubjectAltName.md)[]
+
+---
+
+### getSubjectAltNamesAsStrings()
+
+> **getSubjectAltNamesAsStrings**(): `string`[]
+
+Returns all Subject Alternative Names as strings (e.g. DNS names, email addresses).
+This is a convenience method that extracts the string representation of each SAN entry.
+
+#### Returns
+
+`string`[]
+
+An array of strings representing the Subject Alternative Names.
 
 ---
 
