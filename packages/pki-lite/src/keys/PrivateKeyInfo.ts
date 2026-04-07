@@ -221,4 +221,8 @@ export class PrivateKeyInfo extends PkiBase<PrivateKeyInfo> {
             return this.getEcPrivateKey()
         }
     }
+
+    get pemHeader(): string {
+        return 'PRIVATE KEY'
+    }
 }

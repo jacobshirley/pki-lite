@@ -1,4 +1,3 @@
-import { getCryptoProvider } from '../core/crypto/provider.js'
 import {
     Asn1BaseBlock,
     asn1js,
@@ -105,7 +104,7 @@ export class RSAPrivateKey extends PkiBase<RSAPrivateKey> {
     }
 
     get pemHeader(): string {
-        return 'PRIVATE KEY'
+        return 'RSA PRIVATE KEY'
     }
 
     /**
@@ -218,6 +217,6 @@ export class RSAPrivateKey extends PkiBase<RSAPrivateKey> {
      * @returns A new RSAPrivateKey instance
      */
     static fromPem(pem: string): RSAPrivateKey {
-        return RSAPrivateKey.fromDer(pemToDer(pem, 'PRIVATE KEY'))
+        return RSAPrivateKey.fromDer(pemToDer(pem, 'RSA PRIVATE KEY'))
     }
 }

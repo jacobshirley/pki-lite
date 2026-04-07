@@ -70,4 +70,8 @@ export class EncryptedPrivateKeyInfo extends PkiBase<EncryptedPrivateKeyInfo> {
         )
         return PrivateKeyInfo.fromDer(decrypted)
     }
+
+    get pemHeader(): string {
+        return 'ENCRYPTED PRIVATE KEY'
+    }
 }
