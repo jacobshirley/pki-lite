@@ -16,7 +16,8 @@
         "allowJs": true,
         "incremental": true,
         "allowArbitraryExtensions": true,
-        "erasableSyntaxOnly": true
+        "erasableSyntaxOnly": true,
+        "types": ["node"]
     },
     "include": ["examples/**/*", "scripts/**/*"]
 }
