@@ -131,6 +131,26 @@ describe('SubjectAltName', () => {
         )
     })
 
+    test('should parse dNSName from OpenSSL implicit-tagged Primitive (issue #84)', () => {
+        // OpenSSL uses implicit tagging for SAN entries, encoding dNSName as
+        // a Primitive with context-specific tag [2] instead of Constructed + IA5String
+        const asn1 = new asn1js.Sequence({
+            value: [
+                new asn1js.Primitive({
+                    idBlock: { tagClass: 3, tagNumber: 2 }, // [2] IMPLICIT dNSName
+                    valueHex: new TextEncoder().encode('example.com'),
+                }),
+            ],
+        })
+
+        const subjectAltName = SubjectAltName.fromAsn1(asn1)
+
+        expect(subjectAltName).toBeInstanceOf(SubjectAltName)
+        expect(subjectAltName.length).toEqual(1)
+        expect(subjectAltName[0]).toBeInstanceOf(dNSName)
+        expect(subjectAltName[0].toString()).toEqual('example.com')
+    })
+
     test('should handle empty ASN.1 sequence', () => {
         const asn1 = new asn1js.Sequence({ value: [] })
 
