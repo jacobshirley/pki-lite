@@ -146,6 +146,10 @@ export class rfc822Name extends IA5String {
     }
 
     static fromAsn1(asn1: Asn1BaseBlock) {
+        if (asn1 instanceof asn1js.Primitive) {
+            return new rfc822Name({ value: asn1.valueBlock.valueHexView })
+        }
+
         return new rfc822Name({ value: super.fromAsn1(asn1).bytes })
     }
 }
@@ -159,6 +163,10 @@ export class dNSName extends IA5String {
     }
 
     static fromAsn1(asn1: Asn1BaseBlock) {
+        if (asn1 instanceof asn1js.Primitive) {
+            return new dNSName({ value: asn1.valueBlock.valueHexView })
+        }
+
         return new dNSName({ value: super.fromAsn1(asn1).bytes })
     }
 }
