@@ -1,4 +1,3 @@
-import { writeFileSync } from 'fs'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { ContentInfo } from '../pkcs7/ContentInfo.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
