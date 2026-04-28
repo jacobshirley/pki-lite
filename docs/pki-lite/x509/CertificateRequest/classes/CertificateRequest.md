@@ -85,7 +85,7 @@ Converts the class name to uppercase for use in PEM encoding.
 
 `string`
 
-#### Inherited from
+#### Overrides
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`pemHeader`](../../../core/PkiBase/classes/PkiBase.md#pemheader)
 
@@ -300,3 +300,35 @@ The ASN.1 structure
 `CertificateRequest`
 
 A CertificateRequest
+
+---
+
+### fromDer()
+
+> `static` **fromDer**(`der`): `CertificateRequest`
+
+#### Parameters
+
+##### der
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Returns
+
+`CertificateRequest`
+
+---
+
+### fromPem()
+
+> `static` **fromPem**(`pem`): `CertificateRequest`
+
+#### Parameters
+
+##### pem
+
+`string`
+
+#### Returns
+
+`CertificateRequest`
