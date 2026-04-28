@@ -8,21 +8,21 @@ set -e
 
 if [ -n "$1" ]; then
   # Bump version in root package.json
-  pnpm version --no-git-tag-version $@
+  npm version --no-git-tag-version $@
 
   # Bump version in all workspaces
-  pnpm -r exec pnpm version --no-git-tag-version $@
+  pnpm -r exec npm version --no-git-tag-version $@
 
   # Get the new version from root package.json
   NEW_VERSION=$(node -p "require('./package.json').version")
 
-  # Make sure all packages pki-lite* depend on latest versions of other pki-lite* packages
+  # Make sure all packages pdf-lite* depend on latest versions of other pdf-lite* packages
 
-  echo "Updating all pki-lite* dependencies to version $NEW_VERSION"
+  echo "Updating all pdf-lite* dependencies to version $NEW_VERSION"
 
   find . -name 'package.json' -not -path '*/node_modules/*' | while read -r pkg_file; do
-    # Only update if there are pki-lite* dependencies
-    if grep -q '"pki-lite' "$pkg_file"; then
+    # Only update if there are pdf-lite* dependencies
+    if grep -q '"pdf-lite' "$pkg_file"; then
       tmp_file=$(mktemp)
       node -e "
         const fs = require('fs');
@@ -31,7 +31,7 @@ if [ -n "$1" ]; then
         ['dependencies', 'devDependencies'].forEach(depType => {
           if (pkg[depType]) {
             Object.keys(pkg[depType]).forEach(dep => {
-              if (dep.startsWith('pki-lite')) {
+              if (dep.startsWith('pdf-lite')) {
                 const initialChar = pkg[depType][dep][0];
                 if (['^', '~', '>', '<', '='].includes(initialChar)) {
                   pkg[depType][dep] = initialChar + newVersion;
