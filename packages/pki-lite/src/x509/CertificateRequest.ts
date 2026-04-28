@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1BaseBlock,
+    asn1js,
+    derToAsn1,
+    pemToDer,
+    PkiBase,
+} from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { CertificateRequestInfo } from './CertificateRequestInfo.js'
 import { BitString } from '../asn1/BitString.js'
@@ -45,6 +51,10 @@ export class CertificateRequest extends PkiBase<CertificateRequest> {
                 this.signature.toAsn1(),
             ],
         })
+    }
+
+    static fromDer(der: Uint8Array<ArrayBuffer>): CertificateRequest {
+        return CertificateRequest.fromAsn1(derToAsn1(der))
     }
 
     /**
@@ -100,5 +110,13 @@ export class CertificateRequest extends PkiBase<CertificateRequest> {
             signatureAlgorithm,
             signature,
         })
+    }
+
+    static fromPem(pem: string): CertificateRequest {
+        return CertificateRequest.fromDer(pemToDer(pem, 'CERTIFICATE REQUEST'))
+    }
+
+    get pemHeader(): string {
+        return 'CERTIFICATE REQUEST'
     }
 }
