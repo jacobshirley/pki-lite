@@ -159,9 +159,9 @@ describe('CertificateRequest', () => {
     test('CertificateRequest toPem snapshot', () => {
         const request = createSampleRequest()
         expect(request.toPem()).toMatchInlineSnapshot(`
-          "-----BEGIN CERTIFICATEREQUEST-----
+          "-----BEGIN CERTIFICATE REQUEST-----
           MIGJMHICAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaAUMRIwEAYJKoZIhvcNAQkOMQMBAQAwCwYJKoZIhvcNAQELAwYAChQeKDI=
-          -----END CERTIFICATEREQUEST-----"
+          -----END CERTIFICATE REQUEST-----"
         `)
     })
 })
