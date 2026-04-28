@@ -653,4 +653,8 @@ export class Certificate extends PkiBase<Certificate> {
         const validator = new CertificateValidator()
         return await validator.validate(this, options)
     }
+
+    get pemHeader(): string {
+        return 'CERTIFICATE'
+    }
 }
