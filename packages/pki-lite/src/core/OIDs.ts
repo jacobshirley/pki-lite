@@ -274,6 +274,8 @@ export const OIDs = {
         CHALLENGE_PASSWORD: '1.2.840.113549.1.9.7',
         /** Extension Request */
         EXTENSION_REQUEST: '1.2.840.113549.1.9.14',
+        /** Friendly Name */
+        FRIENDLY_NAME: '1.2.840.113549.1.9.20',
         /** Time Stamp Token */
         TIME_STAMP_TOKEN: '1.2.840.113549.1.9.16.2.14',
         /** Signing Certificate */
@@ -467,6 +469,7 @@ export const OIDToFriendlyName: Record<string, string> = {
     [OIDs.PKCS9.SIGNING_TIME]: 'Signing Time',
     [OIDs.PKCS9.CHALLENGE_PASSWORD]: 'Challenge Password',
     [OIDs.PKCS9.EXTENSION_REQUEST]: 'Extension Request',
+    [OIDs.PKCS9.FRIENDLY_NAME]: 'Friendly Name',
     [OIDs.PKCS9.TIME_STAMP_TOKEN]: 'Time Stamp Token',
     [OIDs.PKCS9.ETS_SIGNING_CERTIFICATE]: 'Signing Certificate',
     [OIDs.PKCS9.ETS_SIGNING_CERTIFICATE_V2]: 'Signing Certificate V2',

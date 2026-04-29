@@ -23,8 +23,38 @@ export class BMPString extends PkiBase<BMPString> {
         } else if (value instanceof Uint8Array) {
             this.bytes = value
         } else {
-            this.bytes = new TextEncoder().encode(value)
+            // Encode as UTF-16BE (UCS-2 big endian)
+            this.bytes = stringToUtf16BE(value)
         }
+    }
+
+    /**
+     * Converts a string to UTF-16BE (UCS-2 big endian) bytes.
+     */
+    static toUtf16BE(str: string): Uint8Array<ArrayBuffer> {
+        return stringToUtf16BE(str)
+    }
+
+    /**
+     * Converts a password to PKCS#12 form: BMPString (UTF-16BE) with a
+     * trailing 16-bit NUL terminator.
+     *
+     * @param password The password (string or bytes)
+     * @returns UTF-16BE encoded password with NUL terminator
+     */
+    static nullTerminated(
+        password: string | Uint8Array<ArrayBuffer>,
+    ): Uint8Array<ArrayBuffer> {
+        const str =
+            typeof password === 'string'
+                ? password
+                : new TextDecoder().decode(password)
+        // Encode as UTF-16BE, then append NUL terminator
+        const utf16be = stringToUtf16BE(str)
+        const result = new Uint8Array(utf16be.length + 2)
+        result.set(utf16be)
+        // Last 2 bytes are already 0 (null terminator)
+        return result
     }
 
     toAsn1(): Asn1BaseBlock {
@@ -43,19 +73,39 @@ export class BMPString extends PkiBase<BMPString> {
             )
         }
 
-        // Get the binary data from the ASN.1 structure
-        const valueHex = new TextEncoder().encode(asn1.valueBlock.value)
+        // Get the decoded string value from the ASN.1 structure
+        const value = asn1.valueBlock.value
 
-        if (!valueHex) {
+        if (!value) {
             throw new Asn1ParseError(
                 'Could not extract value from ASN.1 BMPString',
             )
         }
 
-        return new BMPString({ value: new Uint8Array(valueHex) })
+        // Pass the string directly - constructor will handle UTF-16BE encoding
+        return new BMPString({ value })
     }
 
     toString() {
-        return new TextDecoder().decode(this.bytes)
+        // Decode UTF-16BE to string
+        let result = ''
+        for (let i = 0; i < this.bytes.length; i += 2) {
+            const code = (this.bytes[i] << 8) | this.bytes[i + 1]
+            result += String.fromCharCode(code)
+        }
+        return result
     }
+}
+
+/**
+ * Converts a string to UTF-16BE (UCS-2 big endian) bytes.
+ */
+function stringToUtf16BE(str: string): Uint8Array<ArrayBuffer> {
+    const bytes = new Uint8Array(str.length * 2)
+    for (let i = 0; i < str.length; i++) {
+        const code = str.charCodeAt(i)
+        bytes[i * 2] = (code >> 8) & 0xff
+        bytes[i * 2 + 1] = code & 0xff
+    }
+    return bytes
 }

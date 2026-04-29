@@ -268,6 +268,18 @@ export class DigestAlgorithmIdentifier extends AlgorithmIdentifier {
         )
     }
 
+    async hmac(
+        key: Uint8Array<ArrayBuffer>,
+        data: Uint8Array<ArrayBuffer> | PkiBase,
+    ): Promise<Uint8Array<ArrayBuffer>> {
+        const crypto = getCryptoProvider()
+        return await crypto.hmac(
+            key,
+            data instanceof Uint8Array ? data : data.toDer(),
+            this.toHashAlgorithm(),
+        )
+    }
+
     static fromAsn1(asn1: Asn1BaseBlock): DigestAlgorithmIdentifier {
         const algId = AlgorithmIdentifier.fromAsn1(asn1)
         return new DigestAlgorithmIdentifier({
@@ -282,6 +294,42 @@ export class DigestAlgorithmIdentifier extends AlgorithmIdentifier {
 
     toHashAlgorithm(): HashAlgorithm {
         return getCryptoProvider().toHashAlgorithm(this)
+    }
+
+    /**
+     * Returns the output length in bytes for this hash algorithm.
+     */
+    getOutputBytes(): number {
+        const hash = this.toHashAlgorithm()
+        switch (hash) {
+            case 'SHA-1':
+                return 20
+            case 'SHA-256':
+                return 32
+            case 'SHA-384':
+                return 48
+            case 'SHA-512':
+                return 64
+            default:
+                throw new Error(`Unsupported hash algorithm: ${hash}`)
+        }
+    }
+
+    /**
+     * Returns the block size in bytes for this hash algorithm.
+     */
+    getBlockBytes(): number {
+        const hash = this.toHashAlgorithm()
+        switch (hash) {
+            case 'SHA-1':
+            case 'SHA-256':
+                return 64
+            case 'SHA-384':
+            case 'SHA-512':
+                return 128
+            default:
+                throw new Error(`Unsupported hash algorithm: ${hash}`)
+        }
     }
 }
 

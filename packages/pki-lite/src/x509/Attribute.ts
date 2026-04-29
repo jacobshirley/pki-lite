@@ -1,5 +1,6 @@
 import { RevocationInfoArchival } from '../adobe/RevocationInfoArchival.js'
 import { Any } from '../asn1/Any.js'
+import { BMPString } from '../asn1/BMPString.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { UTCTime } from '../asn1/UTCTime.js'
@@ -134,6 +135,14 @@ export class Attribute extends PkiBase<Attribute> {
         return new Attribute({
             type: OIDs.PKCS9.MESSAGE_DIGEST,
             values: [new OctetString({ bytes: new Uint8Array(digest) })],
+        })
+    }
+
+    static friendlyName(name: string): Attribute {
+        const bmpString = new BMPString({ value: name })
+        return new Attribute({
+            type: OIDs.PKCS9.FRIENDLY_NAME,
+            values: [bmpString.toDer()],
         })
     }
 

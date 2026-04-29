@@ -16,6 +16,7 @@ import { EncryptedPrivateKeyInfo } from '../keys/EncryptedPrivateKeyInfo.js'
 import { CertBag } from './CertBag.js'
 import { Certificate } from '../x509/Certificate.js'
 import { OctetString } from '../asn1/OctetString.js'
+import { PFXBuilder } from '../core/builders/PFXBuilder.js'
 
 /**
  * Represents a PFX structure in a PKCS#12 file.
@@ -231,12 +232,47 @@ export class PFX extends PkiBase<PFX> {
      * @param options.friendlyName Optional friendly name for the key/cert pairs
      * @returns A new PFX instance
      */
+    /**
+     * Creates a fluent builder for constructing PFX containers.
+     *
+     * @returns A new PFXBuilder instance
+     *
+     * @example
+     * ```typescript
+     * const pfx = await PFX.builder()
+     *     .addCertificate(cert)
+     *     .addPrivateKey(privateKey)
+     *     .setPassword('secret')
+     *     .build()
+     * ```
+     */
+    static builder(): PFXBuilder {
+        return new PFXBuilder()
+    }
+
+    /**
+     * Creates a new PFX instance containing the given certificates and private keys.
+     *
+     * @param options Configuration object
+     * @param options.certificates Array of certificates to include
+     * @param options.privateKeys Array of private keys to include
+     * @param options.password Password to encrypt the private keys
+     * @param options.friendlyName Optional friendly name for the key/cert pairs
+     * @returns A new PFX instance
+     */
     static async create(options: {
         certificates: Certificate[]
         privateKeys: PrivateKeyInfo[]
         password: string | Uint8Array<ArrayBuffer>
         friendlyName?: string
     }): Promise<PFX> {
-        throw new Error('Not implemented yet')
+        const builder = PFX.builder()
+            .addCertificate(...options.certificates)
+            .addPrivateKey(...options.privateKeys)
+            .setPassword(options.password)
+        if (options.friendlyName) {
+            builder.setFriendlyName(options.friendlyName)
+        }
+        return builder.build()
     }
 }

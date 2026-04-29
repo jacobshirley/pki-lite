@@ -247,3 +247,39 @@ export async function opensslVerifyCertificate(options: {
         }
     }
 }
+
+/**
+ * Parses a PKCS#12 (PFX) file with OpenSSL using the given password and
+ * returns the extracted PEM contents (concatenated certificates and key).
+ */
+export async function opensslPkcs12Parse(options: {
+    pfx: Uint8Array
+    password: string
+}): Promise<{
+    success: boolean
+    output?: string
+    error?: string
+}> {
+    const tmpFolder = getTempFolder()
+    const pfxPath = `${tmpFolder}/in.p12`
+    fs.writeFileSync(pfxPath, options.pfx)
+
+    const args = [
+        'pkcs12',
+        '-in',
+        pfxPath,
+        '-password',
+        `pass:${options.password}`,
+        '-nodes',
+    ]
+
+    try {
+        const output = await runOpenSSL(args, tmpFolder)
+        return { success: true, output: output.toString() }
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+        }
+    }
+}

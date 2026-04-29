@@ -10,13 +10,18 @@ describe('BMPString', () => {
         expect(bmpString).toBeInstanceOf(BMPString)
         expect(bmpString.toString()).toEqual(testString)
 
-        // Should encode as UTF-8 bytes
-        const expectedBytes = new TextEncoder().encode(testString)
-        expect(bmpString.bytes).toEqual(expectedBytes)
+        // Should encode as UTF-16BE bytes (2 bytes per character)
+        expect(bmpString.bytes.length).toEqual(testString.length * 2)
+        // First character 'H' = 0x0048 in UTF-16BE
+        expect(bmpString.bytes[0]).toEqual(0x00)
+        expect(bmpString.bytes[1]).toEqual(0x48)
     })
 
     test('should create BMPString from Uint8Array<ArrayBuffer>', () => {
-        const bytes = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]) // "Hello"
+        // UTF-16BE for "Hello": 00 48 00 65 00 6C 00 6C 00 6F
+        const bytes = new Uint8Array([
+            0x00, 0x48, 0x00, 0x65, 0x00, 0x6c, 0x00, 0x6c, 0x00, 0x6f,
+        ])
         const bmpString = new BMPString({ value: bytes })
 
         expect(bmpString.bytes).toEqual(bytes)
@@ -37,9 +42,8 @@ describe('BMPString', () => {
 
         expect(bmpString.toString()).toEqual(unicodeString)
 
-        // Verify UTF-8 encoding
-        const expectedBytes = new TextEncoder().encode(unicodeString)
-        expect(bmpString.bytes).toEqual(expectedBytes)
+        // Verify UTF-16BE encoding (2 bytes per code unit)
+        expect(bmpString.bytes.length).toEqual(unicodeString.length * 2)
     })
 
     test('should handle empty string', () => {
