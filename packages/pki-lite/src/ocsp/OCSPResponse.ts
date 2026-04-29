@@ -4,15 +4,12 @@ import { ResponseBytes } from './ResponseBytes.js'
 import { BasicOCSPResponse } from './BasicOCSPResponse.js'
 import { OCSPResponseStatus } from './OCSPResponseStatus.js'
 import { Certificate } from '../x509/Certificate.js'
-import { ResponseData } from './ResponseData.js'
 import { Name } from '../x509/Name.js'
 import { AsymmetricEncryptionAlgorithmParams } from '../core/crypto/types.js'
 import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
-import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
-import { SingleResponse } from './SingleResponse.js'
 import { CertID } from './CertID.js'
-import { CertStatus } from './CertStatus.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { OCSPResponseBuilder } from '../core/builders/OCSPResponseBuilder.js'
 
 /**
  * Represents an OCSP (Online Certificate Status Protocol) Response.
@@ -131,6 +128,15 @@ export class OCSPResponse extends PkiBase<OCSPResponse> {
         return this.responseBytes.response.parseAs(BasicOCSPResponse)
     }
 
+    /**
+     * Returns a builder for creating OCSP responses.
+     *
+     * @returns A new OCSPResponseBuilder instance
+     */
+    static builder(): OCSPResponseBuilder {
+        return new OCSPResponseBuilder()
+    }
+
     static async forCertificate(options: {
         issuerCertificate: Certificate
         subjectCertificate: Certificate
@@ -141,68 +147,32 @@ export class OCSPResponse extends PkiBase<OCSPResponse> {
         thisUpdate?: Date
         nextUpdate?: Date
     }): Promise<OCSPResponse> {
-        const signatureAlgorithmParams: AsymmetricEncryptionAlgorithmParams =
-            options.signatureAlgorithmParams ?? {
-                type: 'RSASSA_PKCS1_v1_5',
-                params: {
-                    hash: 'SHA-256',
-                },
-            }
-
-        const signatureAlgorithm = AlgorithmIdentifier.signatureAlgorithm(
-            signatureAlgorithmParams,
+        const certId = await CertID.forCertificate(
+            options.issuerCertificate,
+            options.subjectCertificate,
         )
 
-        const hashAlgorithm = AlgorithmIdentifier.digestAlgorithm('SHA-256')
+        const builder = OCSPResponse.builder()
+            .setPrivateKey(options.privateKey)
+            .addResponse(certId, 'good', {
+                thisUpdate: options.thisUpdate,
+                nextUpdate: options.nextUpdate,
+            })
 
-        const certId = new CertID({
-            hashAlgorithm,
-            issuerNameHash: await hashAlgorithm.digest(
-                options.issuerCertificate.tbsCertificate.issuer.toDer(),
-            ),
-            issuerKeyHash: await hashAlgorithm.digest(
-                options.issuerCertificate.tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.toDer(),
-            ),
-            serialNumber:
-                options.subjectCertificate.tbsCertificate.serialNumber,
-        })
+        if (options.responderID) {
+            builder.setResponderByName(options.responderID)
+        } else {
+            builder.setResponderFromCertificate(options.issuerCertificate)
+        }
 
-        const thisUpdate = options?.thisUpdate ?? new Date()
+        if (options.productedAt) {
+            builder.setProducedAt(options.productedAt)
+        }
 
-        const tbsResponseData = new ResponseData({
-            responderID:
-                options.responderID ??
-                options.issuerCertificate.tbsCertificate.subject,
-            producedAt: options?.productedAt ?? new Date(),
-            responses: [
-                new SingleResponse({
-                    certID: certId,
-                    certStatus: CertStatus.good,
-                    thisUpdate,
-                    nextUpdate:
-                        options?.nextUpdate ??
-                        new Date(
-                            thisUpdate.getTime() + 7 * 24 * 60 * 60 * 1000, // +7 days
-                        ),
-                }),
-            ],
-        })
+        if (options.signatureAlgorithmParams) {
+            builder.setAlgorithm(options.signatureAlgorithmParams)
+        }
 
-        const basicResponse = new BasicOCSPResponse({
-            tbsResponseData,
-            signatureAlgorithm,
-            signature: await signatureAlgorithm.sign(
-                tbsResponseData,
-                options.privateKey,
-            ),
-        })
-
-        return new OCSPResponse({
-            responseStatus: OCSPResponseStatus.successful,
-            responseBytes: new ResponseBytes({
-                responseType: OIDs.PKIX.ID_PKIX_OCSP_BASIC,
-                response: basicResponse,
-            }),
-        })
+        return builder.build()
     }
 }

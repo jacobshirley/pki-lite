@@ -10,6 +10,7 @@ import { TBSCertList } from './TBSCertList.js'
 import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 import { Name } from './Name.js'
 import { RevokedCertificate } from './RevokedCertificate.js'
+import { CertificateListBuilder } from '../core/builders/CertificateListBuilder.js'
 import { AsymmetricEncryptionAlgorithmParams } from '../core/crypto/types.js'
 import { BitString } from '../asn1/BitString.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -125,6 +126,24 @@ export class CertificateList extends PkiBase<CertificateList> {
      * console.log(emptyCrl.tbsCertList.nextUpdate) // 30 days later
      * ```
      */
+    /**
+     * Creates a fluent builder for constructing CRLs.
+     *
+     * @returns A new CertificateListBuilder instance
+     *
+     * @example
+     * ```typescript
+     * const crl = await CertificateList.builder()
+     *     .setIssuer('CN=My CA')
+     *     .setPrivateKey(caKey)
+     *     .addRevokedCertificate({ serialNumber: 12345, revocationDate: new Date() })
+     *     .build()
+     * ```
+     */
+    static builder(): CertificateListBuilder {
+        return new CertificateListBuilder()
+    }
+
     static async createEmpty(options: {
         issuer: Name
         privateKey: PrivateKeyInfo

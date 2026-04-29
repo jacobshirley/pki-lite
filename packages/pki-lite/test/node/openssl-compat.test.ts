@@ -5,6 +5,7 @@ import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.
 import {
     opensslCmsDecrypt,
     opensslCmsToText,
+    opensslPkcs12Parse,
     opensslValidate,
     opensslVerifyCertificate,
 } from '../../test-fixtures/openSsl.js'
@@ -19,6 +20,7 @@ import { ContentInfo } from '../../src/pkcs7/ContentInfo.js'
 import { OIDs } from '../../src/core/OIDs.js'
 import { UTCTime } from '../../src/asn1/UTCTime.js'
 import { ecP256SigningKeys } from '../../test-fixtures/signing-keys/ec-p256/index.js'
+import { PFX } from '../../src/pkcs12/PFX.js'
 
 describe('OpenSSL compatibility', { timeout: 60000 }, () => {
     describe('EnvelopedData', () => {
@@ -552,6 +554,122 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
             })
 
             expect(result.success, result.error).toBe(true)
+        })
+    })
+
+    describe('PFX (PKCS#12)', () => {
+        test('PFX built with PFXBuilder is parseable by OpenSSL', async () => {
+            const cert = Certificate.fromPem(rsaSigningKeys.certPem)
+            const privateKey = PrivateKeyInfo.fromPem(
+                rsaSigningKeys.privateKeyPem,
+            )
+            const password = 'test123'
+
+            const pfx = await PFX.builder()
+                .addCertificate(cert)
+                .addPrivateKey(privateKey)
+                .setPassword(password)
+                .build()
+
+            const result = await opensslPkcs12Parse({
+                pfx: pfx.toDer(),
+                password,
+            })
+
+            expect(result.success, result.error).toBe(true)
+            expect(result.output).toContain('BEGIN CERTIFICATE')
+            expect(result.output).toContain('BEGIN PRIVATE KEY')
+        })
+
+        test('PFX with full certificate chain is parseable by OpenSSL', async () => {
+            const cert = Certificate.fromPem(rsaSigningKeys.certPem)
+            const caCert = Certificate.fromPem(rsaSigningKeys.caCertPem)
+            const privateKey = PrivateKeyInfo.fromPem(
+                rsaSigningKeys.privateKeyPem,
+            )
+            const password = 'chain-pass'
+
+            const pfx = await PFX.builder()
+                .addCertificate(cert, caCert)
+                .addPrivateKey(privateKey)
+                .setPassword(password)
+                .setFriendlyName('My Identity')
+                .build()
+
+            const result = await opensslPkcs12Parse({
+                pfx: pfx.toDer(),
+                password,
+            })
+
+            expect(result.success, result.error).toBe(true)
+            // Two certificates should be present in the output
+            const certCount = (result.output?.match(/BEGIN CERTIFICATE/g) ?? [])
+                .length
+            expect(certCount).toBe(2)
+            expect(result.output).toContain('BEGIN PRIVATE KEY')
+        })
+
+        test('PFX created via PFX.create is parseable by OpenSSL', async () => {
+            const cert = Certificate.fromPem(rsaSigningKeys.certPem)
+            const privateKey = PrivateKeyInfo.fromPem(
+                rsaSigningKeys.privateKeyPem,
+            )
+            const password = 'create-pass'
+
+            const pfx = await PFX.create({
+                certificates: [cert],
+                privateKeys: [privateKey],
+                password,
+            })
+
+            const result = await opensslPkcs12Parse({
+                pfx: pfx.toDer(),
+                password,
+            })
+
+            expect(result.success, result.error).toBe(true)
+        })
+
+        test('PFX with custom iterations is parseable by OpenSSL', async () => {
+            const cert = Certificate.fromPem(rsaSigningKeys.certPem)
+            const privateKey = PrivateKeyInfo.fromPem(
+                rsaSigningKeys.privateKeyPem,
+            )
+            const password = 'iters-pass'
+
+            const pfx = await PFX.builder()
+                .addCertificate(cert)
+                .addPrivateKey(privateKey)
+                .setPassword(password)
+                .setIterations(4096)
+                .build()
+
+            const result = await opensslPkcs12Parse({
+                pfx: pfx.toDer(),
+                password,
+            })
+
+            expect(result.success, result.error).toBe(true)
+        })
+
+        test('OpenSSL rejects PFX with wrong password (MAC verification)', async () => {
+            const cert = Certificate.fromPem(rsaSigningKeys.certPem)
+            const privateKey = PrivateKeyInfo.fromPem(
+                rsaSigningKeys.privateKeyPem,
+            )
+
+            const pfx = await PFX.builder()
+                .addCertificate(cert)
+                .addPrivateKey(privateKey)
+                .setPassword('correct-password')
+                .build()
+
+            const result = await opensslPkcs12Parse({
+                pfx: pfx.toDer(),
+                password: 'wrong-password',
+            })
+
+            expect(result.success).toBe(false)
         })
     })
 })

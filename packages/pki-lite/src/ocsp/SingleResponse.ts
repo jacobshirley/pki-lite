@@ -98,7 +98,7 @@ export class SingleResponse extends PkiBase<SingleResponse> {
         const certStatus = CertStatus.fromAsn1(sequence.valueBlock.value[1])
         const thisUpdateBlock = sequence.valueBlock
             .value[2] as asn1js.GeneralizedTime
-        const thisUpdate = new Date(thisUpdateBlock.valueBlock.value)
+        const thisUpdate = thisUpdateBlock.toDate()
 
         let nextUpdate: Date | undefined = undefined
         let singleExtensions: Extension[] | undefined = undefined
@@ -116,7 +116,7 @@ export class SingleResponse extends PkiBase<SingleResponse> {
                 // nextUpdate
                 const nextUpdateBlock = block.valueBlock
                     .value[0] as asn1js.GeneralizedTime
-                nextUpdate = new Date(nextUpdateBlock.valueBlock.value)
+                nextUpdate = nextUpdateBlock.toDate()
             } else if (
                 block.idBlock.tagClass === 3 &&
                 block.idBlock.tagNumber === 1 &&

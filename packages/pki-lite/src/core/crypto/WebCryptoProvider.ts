@@ -5,8 +5,10 @@ import {
 import { CCMParameters } from '../../algorithms/CCMParameters.js'
 import { GCMParameters } from '../../algorithms/GCMParameters.js'
 import { PBES2Params } from '../../pkcs5/PBES2Params.js'
+import { PBEParameter } from '../../pkcs5/PBEParameter.js'
 import { RSAESOAEPParams } from '../../algorithms/RSAESOAEPParams.js'
 import { RSASSAPSSParams } from '../../algorithms/RSASSAPSSParams.js'
+import { BMPString } from '../../asn1/BMPString.js'
 import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
 import { OctetString } from '../../asn1/OctetString.js'
 import type { PrivateKeyInfo } from '../../keys/PrivateKeyInfo.js'
@@ -24,6 +26,7 @@ import type {
     PbeAlgorithmParams,
 } from './types.js'
 import { PBKDF2Params } from '../../pkcs5/PBKDF2Params.js'
+import { pkcs12Derive } from './utils.js'
 
 /**
  * Cryptographic provider implementation using the Web Crypto API.
@@ -91,6 +94,36 @@ export class WebCryptoProvider implements CryptoProvider {
     }
 
     /**
+     * Computes an HMAC (Hash-based Message Authentication Code) of the input data.
+     *
+     * @param key The secret key for HMAC
+     * @param data The data to authenticate
+     * @param hash The hash algorithm to use
+     * @returns The computed HMAC bytes
+     * @throws UnsupportedCryptoAlgorithmError if the algorithm is not supported
+     */
+    async hmac(
+        key: Uint8Array<ArrayBuffer>,
+        data: Uint8Array<ArrayBuffer>,
+        hash: HashAlgorithm,
+    ): Promise<Uint8Array<ArrayBuffer>> {
+        if (hash === 'MD5') {
+            throw new UnsupportedCryptoAlgorithmError(
+                'MD5 is not supported in WebCrypto',
+            )
+        }
+        const cryptoKey = await this.crypto.subtle.importKey(
+            'raw',
+            key,
+            { name: 'HMAC', hash: { name: hash } },
+            false,
+            ['sign'],
+        )
+        const signature = await this.crypto.subtle.sign('HMAC', cryptoKey, data)
+        return new Uint8Array(signature)
+    }
+
+    /**
      * Converts PKI algorithm parameters to Web Crypto API algorithm specification.
      *
      * @param algorithm The PKI algorithm parameters
@@ -136,9 +169,9 @@ export class WebCryptoProvider implements CryptoProvider {
                     namedCurve: algorithm.params.namedCurve,
                 }
             default:
+                const _exhaustiveCheck: never = algorithm
                 throw new UnsupportedCryptoAlgorithmError(
-                    //@ts-expect-error
-                    `Unsupported algorithm type: ${algorithm.type}`,
+                    `Unsupported algorithm type: ${_exhaustiveCheck}`,
                 )
         }
     }
@@ -254,17 +287,26 @@ export class WebCryptoProvider implements CryptoProvider {
             case 'AES_192_ECB':
             case 'AES_256_ECB':
                 throw new UnsupportedCryptoAlgorithmError(
-                    'ECB mode is not supported in WebCrypto',
+                    'ECB mode is not supported by WebCryptoProvider. Use an extended crypto provider that supports legacy algorithms.',
                 )
             case 'PBES2':
                 throw new UnsupportedCryptoAlgorithmError(
-                    'PBES2 should be handled separately',
+                    'PBES2 is not supported for symmetric encryption in WebCrypto. Use an extended crypto provider that supports legacy algorithms.',
+                )
+            case 'PKCS12_SHA1_3DES_2KEY':
+            case 'PKCS12_SHA1_3DES_3KEY':
+            case 'PKCS12_SHA1_RC2_128':
+            case 'PKCS12_SHA1_RC2_40':
+            case 'PKCS12_SHA1_RC4_128':
+            case 'PKCS12_SHA1_RC4_40':
+                throw new UnsupportedCryptoAlgorithmError(
+                    `PKCS#12 PBE algorithm ${algorithm.type} is not supported by WebCryptoProvider. Use an extended crypto provider that supports legacy algorithms.`,
                 )
 
             default:
+                const _exhaustiveCheck1: never = algorithm
                 throw new UnsupportedCryptoAlgorithmError(
-                    //@ts-expect-error
-                    `Unsupported symmetric encryption algorithm: ${algorithm.type}`,
+                    `Unsupported symmetric encryption algorithm: ${_exhaustiveCheck1}`,
                 )
         }
     }
@@ -306,13 +348,26 @@ export class WebCryptoProvider implements CryptoProvider {
             case 'AES_192_ECB':
             case 'AES_256_ECB':
                 throw new UnsupportedCryptoAlgorithmError(
-                    'ECB mode is not supported in WebCrypto',
+                    'ECB mode is not supported by WebCryptoProvider. Use an extended crypto provider that supports legacy algorithms.',
+                )
+            case 'PBES2':
+                throw new UnsupportedCryptoAlgorithmError(
+                    'PBES2 is not supported for key generation in WebCryptoProvider. Use an extended crypto provider that supports legacy algorithms.',
+                )
+            case 'PKCS12_SHA1_RC4_128':
+            case 'PKCS12_SHA1_RC4_40':
+            case 'PKCS12_SHA1_3DES_3KEY':
+            case 'PKCS12_SHA1_3DES_2KEY':
+            case 'PKCS12_SHA1_RC2_128':
+            case 'PKCS12_SHA1_RC2_40':
+                throw new UnsupportedCryptoAlgorithmError(
+                    `PKCS#12 PBE algorithm ${algorithm} is not supported by WebCryptoProvider`,
                 )
 
             default:
+                const _exhaustiveCheck2: never = algorithm
                 throw new UnsupportedCryptoAlgorithmError(
-                    //@ts-expect-error
-                    `Unsupported symmetric encryption algorithm: ${algorithm.type}`,
+                    `Unsupported symmetric encryption algorithm: ${_exhaustiveCheck2}`,
                 )
         }
 
@@ -368,6 +423,13 @@ export class WebCryptoProvider implements CryptoProvider {
             return password
         }
 
+        // PKCS#12 PBE algorithms are not supported by Web Crypto API
+        if (algorithm.type !== 'PBES2') {
+            throw new UnsupportedCryptoAlgorithmError(
+                `PKCS#12 PBE algorithm ${algorithm.type} is not supported by WebCryptoProvider. Use an extended crypto provider that supports legacy algorithms.`,
+            )
+        }
+
         const { derivationAlgorithm } = algorithm.params
         const keyMaterial = await this.getKeyMaterial(password)
         const webCryptoDerivationAlgorithm =
@@ -389,10 +451,103 @@ export class WebCryptoProvider implements CryptoProvider {
         return derivedKey
     }
 
+    /**
+     * Derives key material using PKCS#12 password-based KDF (RFC 7292 Appendix B).
+     * Supports modern hash algorithms for improved security while maintaining OpenSSL compatibility.
+     *
+     * @param password The password (string or bytes, will be converted to BMPString format)
+     * @param salt Salt value for key derivation
+     * @param iterationCount Number of iterations for key strengthening
+     * @param keyLength Desired key length in bytes
+     * @param purpose Key purpose: 'encryption' (id=1), 'iv' (id=2), or 'mac' (id=3)
+     * @param hash Hash algorithm to use (default: SHA-1 for legacy compatibility)
+     * @returns Promise resolving to the derived key bytes
+     *
+     * @example
+     * ```typescript
+     * // Derive a MAC key with SHA-256
+     * const macKey = await provider.derivePkcs12Key(
+     *     password,
+     *     salt,
+     *     100000,
+     *     32,
+     *     'mac',
+     *     'SHA-256'
+     * )
+     * ```
+     */
+    async derivePkcs12Key(
+        password: string | Uint8Array<ArrayBuffer>,
+        salt: Uint8Array<ArrayBuffer>,
+        iterationCount: number,
+        keyLength: number,
+        purpose: 'encryption' | 'iv' | 'mac' = 'encryption',
+        hash: HashAlgorithm = 'SHA-1',
+    ): Promise<Uint8Array<ArrayBuffer>> {
+        // Convert password to BMPString format (UTF-16BE with NUL terminator)
+        const passwordBytes = BMPString.nullTerminated(password)
+
+        // Map purpose to PKCS#12 id parameter
+        const id = purpose === 'encryption' ? 1 : purpose === 'iv' ? 2 : 3
+
+        return pkcs12Derive(
+            passwordBytes,
+            salt,
+            id,
+            iterationCount,
+            keyLength,
+            hash,
+        )
+    }
+
     async deriveKey(
         password: string | Uint8Array<ArrayBuffer> | CryptoKey,
         algorithm: PbeAlgorithmParams,
     ): Promise<Uint8Array<ArrayBuffer>> {
+        // Handle PKCS#12 PBE algorithms using derivePkcs12Key
+        if (algorithm.type !== 'PBES2') {
+            if (password instanceof CryptoKey) {
+                throw new UnsupportedCryptoAlgorithmError(
+                    `PKCS#12 PBE algorithm ${algorithm.type} requires a password, not a CryptoKey`,
+                )
+            }
+
+            const { salt, iterationCount } = algorithm.params
+
+            // Determine key length based on algorithm
+            let keyLength: number
+            switch (algorithm.type) {
+                case 'PKCS12_SHA1_RC4_128':
+                case 'PKCS12_SHA1_3DES_2KEY':
+                case 'PKCS12_SHA1_RC2_128':
+                    keyLength = 16 // 128 bits
+                    break
+                case 'PKCS12_SHA1_RC4_40':
+                case 'PKCS12_SHA1_RC2_40':
+                    keyLength = 5 // 40 bits
+                    break
+                case 'PKCS12_SHA1_3DES_3KEY':
+                    keyLength = 24 // 192 bits
+                    break
+                default:
+                    // This should never happen if all PKCS#12 algorithms are handled
+                    throw new UnsupportedCryptoAlgorithmError(
+                        `Unsupported PKCS#12 PBE algorithm: ${(algorithm as any).type}`,
+                    )
+            }
+
+            // Legacy PKCS#12 algorithms always use SHA-1
+            return this.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                keyLength,
+                'encryption',
+                'SHA-1',
+            )
+        }
+
+        // Handle PBES2 using Web Crypto API
         const cryptoKey = await this.deriveCryptoKey(password, algorithm)
         const rawKey = await this.crypto.subtle.exportKey('raw', cryptoKey)
         return new Uint8Array(rawKey)
@@ -893,10 +1048,19 @@ export class WebCryptoProvider implements CryptoProvider {
                     ),
                 })
                 break
+            case 'PKCS12_SHA1_3DES_2KEY':
+            case 'PKCS12_SHA1_3DES_3KEY':
+            case 'PKCS12_SHA1_RC2_128':
+            case 'PKCS12_SHA1_RC2_40':
+            case 'PKCS12_SHA1_RC4_128':
+            case 'PKCS12_SHA1_RC4_40':
+                throw new UnsupportedCryptoAlgorithmError(
+                    `PKCS#12 PBE algorithm ${encryptionParams.type} is not supported by WebCryptoProvider. Use an extended crypto provider that supports legacy algorithms.`,
+                )
             default:
-                throw new Error(
-                    //@ts-expect-error
-                    `Unsupported symmetric encryption algorithm: ${encryptionParams.type}`,
+                const _exhaustiveCheck: never = encryptionParams
+                throw new UnsupportedCryptoAlgorithmError(
+                    `Unsupported symmetric encryption algorithm: ${_exhaustiveCheck}. Use an extended crypto provider that supports legacy algorithms.`,
                 )
         }
 
@@ -944,7 +1108,9 @@ export class WebCryptoProvider implements CryptoProvider {
     }
 
     toPbeAlgorithmParams(algorithm: AlgorithmIdentifier): PbeAlgorithmParams {
-        switch (algorithm.algorithm.toString()) {
+        const oidString = algorithm.algorithm.toString()
+
+        switch (oidString) {
             case OIDs.PKCS5.PBES2: {
                 const parameters = algorithm.parameters?.parseAs(PBES2Params)
                 if (!parameters) {
@@ -965,6 +1131,104 @@ export class WebCryptoProvider implements CryptoProvider {
                     },
                 }
             }
+
+            // PKCS#12 PBE algorithms
+            case OIDs.PKCS12.PBE.SHA1_RC4_128: {
+                const parameters = algorithm.parameters?.parseAs(PBEParameter)
+                if (!parameters) {
+                    throw new Error(
+                        `Invalid PKCS#12 PBE parameters: ${algorithm.parameters}`,
+                    )
+                }
+                return {
+                    type: 'PKCS12_SHA1_RC4_128',
+                    params: {
+                        salt: parameters.salt.bytes,
+                        iterationCount: parameters.iterationCount,
+                    },
+                }
+            }
+
+            case OIDs.PKCS12.PBE.SHA1_RC4_40: {
+                const parameters = algorithm.parameters?.parseAs(PBEParameter)
+                if (!parameters) {
+                    throw new Error(
+                        `Invalid PKCS#12 PBE parameters: ${algorithm.parameters}`,
+                    )
+                }
+                return {
+                    type: 'PKCS12_SHA1_RC4_40',
+                    params: {
+                        salt: parameters.salt.bytes,
+                        iterationCount: parameters.iterationCount,
+                    },
+                }
+            }
+
+            case OIDs.PKCS12.PBE.SHA1_3DES_3KEY_CBC: {
+                const parameters = algorithm.parameters?.parseAs(PBEParameter)
+                if (!parameters) {
+                    throw new Error(
+                        `Invalid PKCS#12 PBE parameters: ${algorithm.parameters}`,
+                    )
+                }
+                return {
+                    type: 'PKCS12_SHA1_3DES_3KEY',
+                    params: {
+                        salt: parameters.salt.bytes,
+                        iterationCount: parameters.iterationCount,
+                    },
+                }
+            }
+
+            case OIDs.PKCS12.PBE.SHA1_3DES_2KEY_CBC: {
+                const parameters = algorithm.parameters?.parseAs(PBEParameter)
+                if (!parameters) {
+                    throw new Error(
+                        `Invalid PKCS#12 PBE parameters: ${algorithm.parameters}`,
+                    )
+                }
+                return {
+                    type: 'PKCS12_SHA1_3DES_2KEY',
+                    params: {
+                        salt: parameters.salt.bytes,
+                        iterationCount: parameters.iterationCount,
+                    },
+                }
+            }
+
+            case OIDs.PKCS12.PBE.SHA1_RC2_128_CBC: {
+                const parameters = algorithm.parameters?.parseAs(PBEParameter)
+                if (!parameters) {
+                    throw new Error(
+                        `Invalid PKCS#12 PBE parameters: ${algorithm.parameters}`,
+                    )
+                }
+                return {
+                    type: 'PKCS12_SHA1_RC2_128',
+                    params: {
+                        salt: parameters.salt.bytes,
+                        iterationCount: parameters.iterationCount,
+                    },
+                }
+            }
+
+            case OIDs.PKCS12.PBE.SHA1_RC2_40_CBC: {
+                const parameters = algorithm.parameters?.parseAs(PBEParameter)
+                if (!parameters) {
+                    throw new Error(
+                        `Invalid PKCS#12 PBE parameters: ${algorithm.parameters}`,
+                    )
+                }
+                return {
+                    type: 'PKCS12_SHA1_RC2_40',
+                    params: {
+                        salt: parameters.salt.bytes,
+                        iterationCount: parameters.iterationCount,
+                    },
+                }
+            }
+
             default:
                 throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported PBE algorithm: ${algorithm.friendlyName}`,

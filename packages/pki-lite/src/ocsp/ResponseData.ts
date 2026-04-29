@@ -126,7 +126,7 @@ export class ResponseData extends PkiBase<ResponseData> {
         const producedAtBlock = sequence.valueBlock.value[
             currentIndex
         ] as asn1js.GeneralizedTime
-        const producedAt = new Date(producedAtBlock.valueBlock.value)
+        const producedAt = producedAtBlock.toDate()
         currentIndex++
 
         if (currentIndex >= sequence.valueBlock.value.length) {

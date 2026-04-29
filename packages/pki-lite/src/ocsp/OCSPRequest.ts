@@ -4,6 +4,7 @@ import { OCSPSignature } from './OCSPSignature.js'
 import { OCSPResponse } from './OCSPResponse.js'
 import { Certificate } from '../x509/Certificate.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { OCSPRequestBuilder } from '../core/builders/OCSPRequestBuilder.js'
 
 /**
  * Represents an OCSP (Online Certificate Status Protocol) request.
@@ -74,6 +75,22 @@ export class OCSPRequest extends PkiBase<OCSPRequest> {
      * @param options.issuerCertificate The issuer's certificate
      * @returns A new OCSPRequest instance
      */
+    /**
+     * Creates a fluent builder for constructing OCSP requests.
+     *
+     * @returns A new OCSPRequestBuilder instance
+     *
+     * @example
+     * ```typescript
+     * const request = await OCSPRequest.builder()
+     *     .addCertificate({ certificate: clientCert, issuerCertificate: caCert })
+     *     .build()
+     * ```
+     */
+    static builder(): OCSPRequestBuilder {
+        return new OCSPRequestBuilder()
+    }
+
     static async forCertificate(options: {
         certificate: Certificate
         issuerCertificate: Certificate

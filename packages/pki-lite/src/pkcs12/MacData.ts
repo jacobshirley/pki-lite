@@ -2,6 +2,9 @@ import { OctetString } from '../asn1/OctetString.js'
 import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { DigestInfo } from './DigestInfo.js'
+import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
+import { getCryptoProvider } from '../core/crypto/provider.js'
+import type { HashAlgorithm } from '../core/crypto/types.js'
 
 /**
  * Represents a MacData structure in a PKCS#12 file.
@@ -68,5 +71,52 @@ export class MacData extends PkiBase<MacData> {
 
     static fromDer(der: Uint8Array<ArrayBuffer>): MacData {
         return MacData.fromAsn1(derToAsn1(der))
+    }
+
+    /**
+     * Creates a PKCS#12 MacData: HMAC over `data` keyed by a key
+     * derived using the PKCS#12 password-based KDF (RFC 7292 Appendix B).
+     *
+     * Note: Uses the legacy PKCS#12 KDF for MAC key derivation to maintain
+     * compatibility with OpenSSL and other PKCS#12 implementations.
+     *
+     * @param data The data to compute MAC over
+     * @param password The password (string or bytes)
+     * @param iterations Iteration count for KDF
+     * @param hash Hash algorithm to use (default: SHA-256)
+     * @returns Promise resolving to MacData instance
+     */
+    static async create(
+        data: Uint8Array<ArrayBuffer>,
+        password: string | Uint8Array<ArrayBuffer>,
+        iterations: number,
+        hash: HashAlgorithm = 'SHA-256',
+    ): Promise<MacData> {
+        const macSalt = crypto.getRandomValues(new Uint8Array(8))
+        const digestAlgorithm = AlgorithmIdentifier.digestAlgorithm(hash)
+        const keyLen = digestAlgorithm.getOutputBytes()
+
+        // Use PKCS#12 KDF (RFC 7292 Appendix B) for MAC key derivation
+        // This is required for OpenSSL compatibility
+        const provider = getCryptoProvider()
+        const macKey = await provider.derivePkcs12Key(
+            password,
+            macSalt,
+            iterations,
+            keyLen,
+            'mac',
+            hash,
+        )
+
+        const macValue = await digestAlgorithm.hmac(macKey, data)
+
+        return new MacData({
+            mac: new DigestInfo({
+                digestAlgorithm,
+                digest: new OctetString({ bytes: macValue }),
+            }),
+            macSalt: new OctetString({ bytes: macSalt }),
+            iterations,
+        })
     }
 }

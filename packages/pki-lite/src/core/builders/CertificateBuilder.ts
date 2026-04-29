@@ -1,4 +1,7 @@
-import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
+import {
+    AlgorithmIdentifier,
+    SignatureAlgorithmIdentifier,
+} from '../../algorithms/AlgorithmIdentifier.js'
 import { Certificate } from '../../x509/Certificate.js'
 import { Extension } from '../../x509/Extension.js'
 import { Name } from '../../x509/Name.js'
@@ -8,6 +11,9 @@ import { TBSCertificate } from '../../x509/TBSCertificate.js'
 import { Validity } from '../../x509/Validity.js'
 import { AsyncBuilder } from './types.js'
 import { AsymmetricEncryptionAlgorithmParams } from '../crypto/types.js'
+import { KeyUsageOptions } from '../../x509/extensions/KeyUsage.js'
+import { ExtKeyCommonNames } from '../../x509/extensions/ExtKeyUsage.js'
+import { GeneralName } from '../../x509/GeneralName.js'
 
 /**
  * Builder class for creating X.509 certificates.
@@ -51,7 +57,9 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
     private notAfter?: Date
     private serialNumber?: Uint8Array<ArrayBuffer>
     private extensions: Extension[] = []
-    private algorithm?: AsymmetricEncryptionAlgorithmParams
+    private algorithm?:
+        | AsymmetricEncryptionAlgorithmParams
+        | SignatureAlgorithmIdentifier
     private version: number = 2 // Default to v3 (version 2)
 
     /**
@@ -199,12 +207,150 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
     }
 
     /**
-     * Sets the signature algorithm.
+     * Adds a Key Usage extension to the certificate.
      *
-     * @param algorithm Algorithm parameters
+     * @param options Key usage flags
+     * @returns This builder for chaining
+     * @example
+     * ```typescript
+     * builder.addKeyUsage({
+     *     digitalSignature: true,
+     *     keyEncipherment: true
+     * })
+     * ```
+     */
+    addKeyUsage(options: KeyUsageOptions): this {
+        this.extensions.push(Extension.keyUsage(options))
+        return this
+    }
+
+    /**
+     * Adds a Basic Constraints extension to the certificate.
+     *
+     * @param cA Whether this is a CA certificate
+     * @param pathLenConstraint Optional path length constraint
+     * @returns This builder for chaining
+     * @example
+     * ```typescript
+     * // CA certificate with path length 1
+     * builder.addBasicConstraints(true, 1)
+     *
+     * // End-entity certificate
+     * builder.addBasicConstraints(false)
+     * ```
+     */
+    addBasicConstraints(cA: boolean, pathLenConstraint?: number): this {
+        this.extensions.push(
+            Extension.basicConstraints({ cA, pathLenConstraint }),
+        )
+        return this
+    }
+
+    /**
+     * Adds a Subject Alternative Name extension to the certificate.
+     * Strings are automatically converted to DNS names.
+     *
+     * @param altNames Alternative names for the subject (strings or GeneralName objects)
+     * @returns This builder for chaining
+     * @example
+     * ```typescript
+     * // Simple DNS names as strings
+     * builder.addSubjectAltName('example.com', '*.example.com')
+     *
+     * // Or use GeneralName objects for other types
+     * builder.addSubjectAltName(
+     *     new GeneralName.dNSName({ value: 'example.com' }),
+     *     new GeneralName.rfc822Name({ value: 'admin@example.com' })
+     * )
+     *
+     * // Mix strings and GeneralName objects
+     * builder.addSubjectAltName(
+     *     'example.com',
+     *     new GeneralName.rfc822Name({ value: 'admin@example.com' })
+     * )
+     * ```
+     */
+    addSubjectAltName(...altNames: (string | GeneralName)[]): this {
+        const generalNames = altNames.map((name) =>
+            typeof name === 'string'
+                ? new GeneralName.dNSName({ value: name })
+                : name,
+        )
+        this.extensions.push(Extension.subjectAltName(generalNames))
+        return this
+    }
+
+    /**
+     * Adds an Extended Key Usage extension to the certificate.
+     *
+     * @param options Extended key usage purposes
+     * @returns This builder for chaining
+     * @example
+     * ```typescript
+     * builder.addExtendedKeyUsage({
+     *     serverAuth: true,
+     *     clientAuth: true
+     * })
+     * ```
+     */
+    addExtendedKeyUsage(
+        options: {
+            [key in ExtKeyCommonNames]?: boolean
+        } & {
+            [oid: string]: boolean
+        },
+    ): this {
+        this.extensions.push(Extension.extendedKeyUsage(options))
+        return this
+    }
+
+    /**
+     * Adds a Subject Key Identifier extension to the certificate.
+     *
+     * @param keyIdentifier The key identifier bytes
      * @returns This builder for chaining
      */
-    setAlgorithm(algorithm: AsymmetricEncryptionAlgorithmParams): this {
+    addSubjectKeyIdentifier(keyIdentifier: Uint8Array<ArrayBuffer>): this {
+        this.extensions.push(Extension.subjectKeyIdentifier(keyIdentifier))
+        return this
+    }
+
+    /**
+     * Adds an Authority Key Identifier extension to the certificate.
+     *
+     * @param keyIdentifier The authority key identifier bytes
+     * @returns This builder for chaining
+     */
+    addAuthorityKeyIdentifier(keyIdentifier: Uint8Array<ArrayBuffer>): this {
+        this.extensions.push(Extension.authorityKeyIdentifier(keyIdentifier))
+        return this
+    }
+
+    /**
+     * Sets the signature algorithm.
+     *
+     * @param algorithm Algorithm parameters or SignatureAlgorithmIdentifier
+     * @returns This builder for chaining
+     * @example
+     * ```typescript
+     * // Using algorithm parameters
+     * builder.setAlgorithm({
+     *     type: 'ECDSA',
+     *     params: { namedCurve: 'P-256', hash: 'SHA-256' }
+     * })
+     *
+     * // Or using a SignatureAlgorithmIdentifier
+     * builder.setAlgorithm(AlgorithmIdentifier.signatureAlgorithm({
+     *     type: 'RSA_PSS',
+     *     params: { hash: 'SHA-512', saltLength: 64 }
+     * }))
+     * ```
+     */
+    setAlgorithm(
+        algorithm:
+            | AsymmetricEncryptionAlgorithmParams
+            | SignatureAlgorithmIdentifier,
+    ): this {
         this.algorithm = algorithm
         return this
     }
@@ -261,12 +407,15 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
             this.generateSerialNumber()
         }
 
-        const signatureAlgorithm = AlgorithmIdentifier.signatureAlgorithm(
-            this.algorithm ?? {
-                type: 'RSASSA_PKCS1_v1_5',
-                params: { hash: 'SHA-256' },
-            },
-        )
+        const signatureAlgorithm =
+            this.algorithm instanceof SignatureAlgorithmIdentifier
+                ? this.algorithm
+                : AlgorithmIdentifier.signatureAlgorithm(
+                      this.algorithm ?? {
+                          type: 'RSASSA_PKCS1_v1_5',
+                          params: { hash: 'SHA-256' },
+                      },
+                  )
 
         const issuerName =
             this.issuer instanceof Certificate
@@ -323,12 +472,15 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
             this.generateSerialNumber()
         }
 
-        const signatureAlgorithm = AlgorithmIdentifier.signatureAlgorithm(
-            this.algorithm ?? {
-                type: 'RSASSA_PKCS1_v1_5',
-                params: { hash: 'SHA-256' },
-            },
-        )
+        const signatureAlgorithm =
+            this.algorithm instanceof SignatureAlgorithmIdentifier
+                ? this.algorithm
+                : AlgorithmIdentifier.signatureAlgorithm(
+                      this.algorithm ?? {
+                          type: 'RSASSA_PKCS1_v1_5',
+                          params: { hash: 'SHA-256' },
+                      },
+                  )
 
         const issuerName =
             this.issuer instanceof Certificate

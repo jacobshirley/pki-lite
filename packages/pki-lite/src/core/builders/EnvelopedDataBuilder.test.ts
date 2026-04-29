@@ -164,6 +164,11 @@ describe('EnvelopedDataBuilder', () => {
             .build()
 
         expect(envelopedData.recipientInfos).toHaveLength(2)
+        expect(
+            await envelopedData.decrypt(
+                PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem),
+            ),
+        ).toEqual(new TextEncoder().encode(data))
     })
 
     test('encrypted content is different from plaintext', async () => {

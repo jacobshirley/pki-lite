@@ -9,6 +9,7 @@ import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { CertificateRequestInfo } from './CertificateRequestInfo.js'
 import { BitString } from '../asn1/BitString.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { CertificateRequestBuilder } from '../core/builders/CertificateRequestBuilder.js'
 
 /**
  * Represents a PKCS#10 certificate request.
@@ -114,6 +115,25 @@ export class CertificateRequest extends PkiBase<CertificateRequest> {
 
     static fromPem(pem: string): CertificateRequest {
         return CertificateRequest.fromDer(pemToDer(pem, 'CERTIFICATE REQUEST'))
+    }
+
+    /**
+     * Creates a new certificate request builder.
+     *
+     * @returns A new CertificateRequestBuilder instance
+     * @example
+     * ```typescript
+     * const csr = await CertificateRequest.builder()
+     *     .setSubject('CN=example.com')
+     *     .setPublicKey(publicKey)
+     *     .setPrivateKey(privateKey)
+     *     .addKeyUsage({ digitalSignature: true })
+     *     .addSubjectAltName('example.com', '*.example.com')
+     *     .build()
+     * ```
+     */
+    static builder(): CertificateRequestBuilder {
+        return new CertificateRequestBuilder()
     }
 
     get pemHeader(): string {

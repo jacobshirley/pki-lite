@@ -10,6 +10,7 @@ import { Extension } from '../x509/Extension.js'
 import { TimeStampResp } from './TimeStampResp.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { TimeStampReqBuilder } from '../core/builders/TimeStampReqBuilder.js'
 
 /**
  * Time-Stamp Request structure for RFC 3161 Time-Stamp Protocol.
@@ -399,6 +400,24 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
      * })
      * ```
      */
+    /**
+     * Creates a fluent builder for constructing TimeStampReq objects.
+     *
+     * @returns A new TimeStampReqBuilder instance
+     *
+     * @example
+     * ```typescript
+     * const tsReq = await TimeStampReq.builder()
+     *     .setData(documentBytes)
+     *     .setRandomNonce()
+     *     .setCertReq(true)
+     *     .build()
+     * ```
+     */
+    static builder(): TimeStampReqBuilder {
+        return new TimeStampReqBuilder()
+    }
+
     static create(options: {
         messageImprint: MessageImprint
         version?: number

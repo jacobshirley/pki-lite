@@ -274,6 +274,8 @@ export const OIDs = {
         CHALLENGE_PASSWORD: '1.2.840.113549.1.9.7',
         /** Extension Request */
         EXTENSION_REQUEST: '1.2.840.113549.1.9.14',
+        /** Friendly Name */
+        FRIENDLY_NAME: '1.2.840.113549.1.9.20',
         /** Time Stamp Token */
         TIME_STAMP_TOKEN: '1.2.840.113549.1.9.16.2.14',
         /** Signing Certificate */
@@ -356,6 +358,27 @@ export const OIDs = {
     },
     getOidFriendlyName,
 }
+
+/**
+ * Mapping of PKCS#7 content type names to their OIDs.
+ * Used for convenient type-safe content type specification.
+ */
+export const CONTENT_TYPE_TO_OID = {
+    DATA: OIDs.PKCS7.DATA,
+    SIGNED_DATA: OIDs.PKCS7.SIGNED_DATA,
+    ENVELOPED_DATA: OIDs.PKCS7.ENVELOPED_DATA,
+    SIGNED_AND_ENVELOPED_DATA: OIDs.PKCS7.SIGNED_AND_ENVELOPED_DATA,
+    DIGESTED_DATA: OIDs.PKCS7.DIGESTED_DATA,
+    ENCRYPTED_DATA: OIDs.PKCS7.ENCRYPTED_DATA,
+    AUTHENTICATED_DATA: OIDs.PKCS7.AUTHENTICATED_DATA,
+    AUTH_ENVELOPED_DATA: OIDs.PKCS7.AUTH_ENVELOPED_DATA,
+    TST_INFO: OIDs.PKCS7.TST_INFO,
+} as const
+
+/**
+ * Type representing valid PKCS#7 content type names.
+ */
+export type Pkcs7ContentType = keyof typeof CONTENT_TYPE_TO_OID
 
 /**
  * Mapping of OIDs to their friendly names.
@@ -467,6 +490,7 @@ export const OIDToFriendlyName: Record<string, string> = {
     [OIDs.PKCS9.SIGNING_TIME]: 'Signing Time',
     [OIDs.PKCS9.CHALLENGE_PASSWORD]: 'Challenge Password',
     [OIDs.PKCS9.EXTENSION_REQUEST]: 'Extension Request',
+    [OIDs.PKCS9.FRIENDLY_NAME]: 'Friendly Name',
     [OIDs.PKCS9.TIME_STAMP_TOKEN]: 'Time Stamp Token',
     [OIDs.PKCS9.ETS_SIGNING_CERTIFICATE]: 'Signing Certificate',
     [OIDs.PKCS9.ETS_SIGNING_CERTIFICATE_V2]: 'Signing Certificate V2',

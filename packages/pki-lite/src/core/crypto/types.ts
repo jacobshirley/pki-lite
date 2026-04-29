@@ -118,6 +118,60 @@ export interface PbeAlgorithmParamsMap {
         /** Symmetric encryption algorithm and parameters */
         encryptionAlgorithm: SymmetricEncryptionAlgorithmParams
     }
+    /**
+     * PKCS#12 PBE with SHA-1 and 128-bit RC4.
+     */
+    PKCS12_SHA1_RC4_128: {
+        /** Salt value for key derivation */
+        salt: Uint8Array<ArrayBuffer>
+        /** Number of iterations */
+        iterationCount: number
+    }
+    /**
+     * PKCS#12 PBE with SHA-1 and 40-bit RC4.
+     */
+    PKCS12_SHA1_RC4_40: {
+        /** Salt value for key derivation */
+        salt: Uint8Array<ArrayBuffer>
+        /** Number of iterations */
+        iterationCount: number
+    }
+    /**
+     * PKCS#12 PBE with SHA-1 and 3-key Triple DES-CBC.
+     */
+    PKCS12_SHA1_3DES_3KEY: {
+        /** Salt value for key derivation */
+        salt: Uint8Array<ArrayBuffer>
+        /** Number of iterations */
+        iterationCount: number
+    }
+    /**
+     * PKCS#12 PBE with SHA-1 and 2-key Triple DES-CBC.
+     */
+    PKCS12_SHA1_3DES_2KEY: {
+        /** Salt value for key derivation */
+        salt: Uint8Array<ArrayBuffer>
+        /** Number of iterations */
+        iterationCount: number
+    }
+    /**
+     * PKCS#12 PBE with SHA-1 and 128-bit RC2-CBC.
+     */
+    PKCS12_SHA1_RC2_128: {
+        /** Salt value for key derivation */
+        salt: Uint8Array<ArrayBuffer>
+        /** Number of iterations */
+        iterationCount: number
+    }
+    /**
+     * PKCS#12 PBE with SHA-1 and 40-bit RC2-CBC.
+     */
+    PKCS12_SHA1_RC2_40: {
+        /** Salt value for key derivation */
+        salt: Uint8Array<ArrayBuffer>
+        /** Number of iterations */
+        iterationCount: number
+    }
 }
 
 /**
@@ -276,6 +330,20 @@ export interface CryptoProvider {
     ): Promise<Uint8Array<ArrayBuffer>>
 
     /**
+     * Computes an HMAC (Hash-based Message Authentication Code) of the given data.
+     *
+     * @param key The secret key for HMAC
+     * @param data The data to authenticate
+     * @param hash The hash algorithm to use (SHA-1, SHA-256, etc.)
+     * @returns Promise resolving to the HMAC bytes
+     */
+    hmac(
+        key: Uint8Array<ArrayBuffer>,
+        data: Uint8Array<ArrayBuffer>,
+        hash: HashAlgorithm,
+    ): Promise<Uint8Array<ArrayBuffer>>
+
+    /**
      * Generates cryptographically secure random bytes.
      *
      * @param length The number of random bytes to generate
@@ -397,6 +465,27 @@ export interface CryptoProvider {
     deriveKey(
         password: string | Uint8Array<ArrayBuffer>,
         algorithm: PbeAlgorithmParams,
+    ): Promise<Uint8Array<ArrayBuffer>>
+
+    /**
+     * Derives key material using PKCS#12 password-based KDF (RFC 7292 Appendix B).
+     * Supports modern hash algorithms for improved security while maintaining OpenSSL compatibility.
+     *
+     * @param password The password (string or bytes, will be converted to BMPString format)
+     * @param salt Salt value for key derivation
+     * @param iterationCount Number of iterations for key strengthening
+     * @param keyLength Desired key length in bytes
+     * @param purpose Key purpose: 'encryption' (id=1), 'iv' (id=2), or 'mac' (id=3)
+     * @param hash Hash algorithm to use (default: SHA-1 for legacy compatibility)
+     * @returns Promise resolving to the derived key bytes
+     */
+    derivePkcs12Key(
+        password: string | Uint8Array<ArrayBuffer>,
+        salt: Uint8Array<ArrayBuffer>,
+        iterationCount: number,
+        keyLength: number,
+        purpose?: 'encryption' | 'iv' | 'mac',
+        hash?: HashAlgorithm,
     ): Promise<Uint8Array<ArrayBuffer>>
 
     /**
