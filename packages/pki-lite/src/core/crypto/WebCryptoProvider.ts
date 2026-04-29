@@ -11,7 +11,7 @@ import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
 import { OctetString } from '../../asn1/OctetString.js'
 import type { PrivateKeyInfo } from '../../keys/PrivateKeyInfo.js'
 import type { SubjectPublicKeyInfo } from '../../keys/SubjectPublicKeyInfo.js'
-import { UnsupportedCryptoAlgorithm } from '../errors/UnsupportedCryptoAlgorithm.js'
+import { UnsupportedCryptoAlgorithmError } from '../errors/UnsupportedCryptoAlgorithmError.js'
 import { OIDs } from '../OIDs.js'
 import type { Asn1Any, ObjectIdentifierString } from '../PkiBase.js'
 import type {
@@ -75,14 +75,14 @@ export class WebCryptoProvider implements CryptoProvider {
      * @param data The data to hash
      * @param algorithm The hash algorithm to use
      * @returns The computed hash bytes
-     * @throws UnsupportedCryptoAlgorithm if the algorithm is not supported
+     * @throws UnsupportedCryptoAlgorithmError if the algorithm is not supported
      */
     async digest(
         data: Uint8Array<ArrayBuffer>,
         algorithm: HashAlgorithm,
     ): Promise<Uint8Array<ArrayBuffer>> {
         if (algorithm === 'MD5') {
-            throw new UnsupportedCryptoAlgorithm(
+            throw new UnsupportedCryptoAlgorithmError(
                 'MD5 is not supported in WebCrypto',
             )
         }
@@ -136,7 +136,7 @@ export class WebCryptoProvider implements CryptoProvider {
                     namedCurve: algorithm.params.namedCurve,
                 }
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     //@ts-expect-error
                     `Unsupported algorithm type: ${algorithm.type}`,
                 )
@@ -175,7 +175,7 @@ export class WebCryptoProvider implements CryptoProvider {
     ): Promise<boolean> {
         const webCryptoParams = this.getWebCryptoAlgorithm(algorithm)
         if (!webCryptoParams) {
-            throw new UnsupportedCryptoAlgorithm(
+            throw new UnsupportedCryptoAlgorithmError(
                 `Unsupported algorithm: ${algorithm.type}`,
             )
         }
@@ -206,13 +206,13 @@ export class WebCryptoProvider implements CryptoProvider {
             case 'AES_192_CBC':
             case 'AES_256_CBC': {
                 if (algorithm.params.disablePadding) {
-                    throw new UnsupportedCryptoAlgorithm(
+                    throw new UnsupportedCryptoAlgorithmError(
                         'AES-CBC with no padding is not supported in WebCrypto',
                     )
                 }
                 const iv = algorithm.params.nonce
                 if (!iv) {
-                    throw new UnsupportedCryptoAlgorithm(
+                    throw new UnsupportedCryptoAlgorithmError(
                         `Invalid IV for AES-CBC: ${algorithm.params}`,
                     )
                 }
@@ -224,7 +224,7 @@ export class WebCryptoProvider implements CryptoProvider {
             case 'AES_256_GCM': {
                 const gcmParams = algorithm.params
                 if (!gcmParams.nonce) {
-                    throw new UnsupportedCryptoAlgorithm(
+                    throw new UnsupportedCryptoAlgorithmError(
                         `Invalid IV for AES-GCM: ${algorithm.params}`,
                     )
                 }
@@ -240,7 +240,7 @@ export class WebCryptoProvider implements CryptoProvider {
             case 'AES_256_CCM': {
                 const ccmParams = algorithm.params
                 if (!ccmParams.nonce) {
-                    throw new UnsupportedCryptoAlgorithm(
+                    throw new UnsupportedCryptoAlgorithmError(
                         `Invalid nonce for AES-CCM: ${algorithm.params}`,
                     )
                 }
@@ -253,16 +253,16 @@ export class WebCryptoProvider implements CryptoProvider {
             case 'AES_128_ECB':
             case 'AES_192_ECB':
             case 'AES_256_ECB':
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     'ECB mode is not supported in WebCrypto',
                 )
             case 'PBES2':
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     'PBES2 should be handled separately',
                 )
 
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     //@ts-expect-error
                     `Unsupported symmetric encryption algorithm: ${algorithm.type}`,
                 )
@@ -281,7 +281,7 @@ export class WebCryptoProvider implements CryptoProvider {
         } else if (algorithm.includes('256')) {
             length = 256
         } else {
-            throw new UnsupportedCryptoAlgorithm(
+            throw new UnsupportedCryptoAlgorithmError(
                 `Unsupported symmetric encryption algorithm: ${algorithm}`,
             )
         }
@@ -305,12 +305,12 @@ export class WebCryptoProvider implements CryptoProvider {
             case 'AES_128_ECB':
             case 'AES_192_ECB':
             case 'AES_256_ECB':
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     'ECB mode is not supported in WebCrypto',
                 )
 
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     //@ts-expect-error
                     `Unsupported symmetric encryption algorithm: ${algorithm.type}`,
                 )
@@ -331,7 +331,7 @@ export class WebCryptoProvider implements CryptoProvider {
                     iterations: algorithm.params.iterationCount,
                 }
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported key derivation algorithm: ${algorithm.type}`,
                 )
         }
@@ -414,7 +414,7 @@ export class WebCryptoProvider implements CryptoProvider {
         } else {
             const params = this.getWebCryptoSymmetricAlgorithm(algorithm)
             if (!params)
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported symmetric encryption algorithm: ${algorithm}`,
                 )
 
@@ -444,7 +444,7 @@ export class WebCryptoProvider implements CryptoProvider {
     ): Promise<Uint8Array<ArrayBuffer>> {
         const params = this.getWebCryptoAlgorithm(algorithm)
         if (!params)
-            throw new UnsupportedCryptoAlgorithm(
+            throw new UnsupportedCryptoAlgorithmError(
                 `Unsupported asymmetric encryption algorithm: ${algorithm}`,
             )
 
@@ -496,7 +496,7 @@ export class WebCryptoProvider implements CryptoProvider {
         } else {
             const params = this.getWebCryptoSymmetricAlgorithm(algorithm)
             if (!params)
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported symmetric decryption algorithm: ${algorithm}`,
                 )
 
@@ -539,7 +539,7 @@ export class WebCryptoProvider implements CryptoProvider {
             case 'AES_256_ECB':
                 return this.getRandomValues(32)
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported symmetric encryption algorithm: ${algorithm}`,
                 )
         }
@@ -580,7 +580,7 @@ export class WebCryptoProvider implements CryptoProvider {
                 namedCurve,
             }
         } else {
-            throw new UnsupportedCryptoAlgorithm(
+            throw new UnsupportedCryptoAlgorithmError(
                 `Unsupported algorithm: ${options.algorithm}`,
             )
         }
@@ -624,13 +624,13 @@ export class WebCryptoProvider implements CryptoProvider {
                         value: OIDs.CURVES.SECP521R1,
                     })
                 default:
-                    throw new UnsupportedCryptoAlgorithm(
+                    throw new UnsupportedCryptoAlgorithmError(
                         `Unsupported named curve: ${encryptionParams.params.namedCurve}`,
                     )
             }
         }
 
-        throw new UnsupportedCryptoAlgorithm(
+        throw new UnsupportedCryptoAlgorithmError(
             `Unsupported encryption parameters: ${JSON.stringify(encryptionParams)}`,
         )
     }
@@ -734,7 +734,7 @@ export class WebCryptoProvider implements CryptoProvider {
                     parameters: this.getEcCurveParameters(encryptionParams),
                 })
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported signature algorithm: ${key}`,
                 )
         }
@@ -763,7 +763,7 @@ export class WebCryptoProvider implements CryptoProvider {
                     algorithm: OIDs.HASH.MD5,
                 })
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported hash algorithm: ${hash}`,
                 )
         }
@@ -937,7 +937,7 @@ export class WebCryptoProvider implements CryptoProvider {
                 }
             }
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported key derivation algorithm: ${algorithm.friendlyName}`,
                 )
         }
@@ -966,7 +966,7 @@ export class WebCryptoProvider implements CryptoProvider {
                 }
             }
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported PBE algorithm: ${algorithm.friendlyName}`,
                 )
         }
@@ -1058,7 +1058,7 @@ export class WebCryptoProvider implements CryptoProvider {
                 return this.toPbeAlgorithmParams(algorithm)
 
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported symmetric encryption algorithm: ${algorithm.friendlyName}`,
                 )
         }
@@ -1177,7 +1177,7 @@ export class WebCryptoProvider implements CryptoProvider {
                     },
                 }
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported algorithm: ${algorithm.friendlyName}`,
                 )
         }
@@ -1203,7 +1203,7 @@ export class WebCryptoProvider implements CryptoProvider {
             case OIDs.CURVES.SECP521R1:
                 return 'P-521'
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported curve OID: ${curve}`,
                 )
         }
@@ -1230,7 +1230,7 @@ export class WebCryptoProvider implements CryptoProvider {
             case OIDs.HASH.HMAC_SHA512:
                 return 'SHA-512'
             default:
-                throw new UnsupportedCryptoAlgorithm(
+                throw new UnsupportedCryptoAlgorithmError(
                     `Unsupported hash algorithm: ${algorithm.friendlyName}`,
                 )
         }
