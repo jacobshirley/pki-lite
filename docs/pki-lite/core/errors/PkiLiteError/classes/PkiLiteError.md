@@ -13,7 +13,7 @@
 ## Extended by
 
 - [`Asn1ParseError`](../../Asn1ParseError/classes/Asn1ParseError.md)
-- [`UnsupportedCryptoAlgorithm`](../../UnsupportedCryptoAlgorithm/classes/UnsupportedCryptoAlgorithm.md)
+- [`UnsupportedCryptoAlgorithmError`](../../UnsupportedCryptoAlgorithmError/classes/UnsupportedCryptoAlgorithmError.md)
 
 ## Constructors
 

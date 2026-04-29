@@ -328,35 +328,47 @@ A string representation for debugging
 
 ---
 
+### builder()
+
+> `static` **builder**(): [`OCSPRequestBuilder`](../../../core/builders/OCSPRequestBuilder/classes/OCSPRequestBuilder.md)
+
+Creates a fluent builder for constructing OCSP requests.
+
+#### Returns
+
+[`OCSPRequestBuilder`](../../../core/builders/OCSPRequestBuilder/classes/OCSPRequestBuilder.md)
+
+A new OCSPRequestBuilder instance
+
+#### Example
+
+```typescript
+const request = await OCSPRequest.builder()
+    .addCertificate({ certificate: clientCert, issuerCertificate: caCert })
+    .build()
+```
+
+---
+
 ### forCertificate()
 
 > `static` **forCertificate**(`options`): `Promise`\<`OCSPRequest`\>
-
-Creates an OCSP request for checking a specific certificate's status.
 
 #### Parameters
 
 ##### options
 
-Configuration object
-
 ###### certificate
 
 [`Certificate`](../../../x509/Certificate/classes/Certificate.md)
-
-The certificate to check
 
 ###### issuerCertificate
 
 [`Certificate`](../../../x509/Certificate/classes/Certificate.md)
 
-The issuer's certificate
-
 #### Returns
 
 `Promise`\<`OCSPRequest`\>
-
-A new OCSPRequest instance
 
 ---
 

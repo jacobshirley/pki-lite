@@ -584,6 +584,31 @@ A string representation for debugging
 
 ---
 
+### builder()
+
+> `static` **builder**(): [`CertificateBuilder`](../../../core/builders/CertificateBuilder/classes/CertificateBuilder.md)
+
+Creates a new CertificateBuilder for constructing certificates.
+
+#### Returns
+
+[`CertificateBuilder`](../../../core/builders/CertificateBuilder/classes/CertificateBuilder.md)
+
+A new CertificateBuilder instance
+
+#### Example
+
+```typescript
+const cert = await Certificate.builder()
+    .setSubject('CN=Example')
+    .setPublicKey(publicKey)
+    .setPrivateKey(privateKey)
+    .setValidityDays(365)
+    .selfSign()
+```
+
+---
+
 ### createCertificate()
 
 > `static` **createCertificate**(`options`): `Promise`\<`Certificate`\>

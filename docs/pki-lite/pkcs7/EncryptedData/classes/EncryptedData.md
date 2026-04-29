@@ -100,6 +100,16 @@ Used for PEM headers and debugging output.
 
 ## Methods
 
+### asCms()
+
+> **asCms**(): [`ContentInfo`](../../ContentInfo/classes/ContentInfo.md)
+
+#### Returns
+
+[`ContentInfo`](../../ContentInfo/classes/ContentInfo.md)
+
+---
+
 ### equals()
 
 > **equals**(`other`): `boolean`
@@ -268,6 +278,64 @@ A string representation for debugging
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toString`](../../../core/PkiBase/classes/PkiBase.md#tostring)
+
+---
+
+### builder()
+
+> `static` **builder**(): [`EncryptedDataBuilder`](../../../core/builders/EncryptedDataBuilder/classes/EncryptedDataBuilder.md)
+
+Returns a builder for creating encrypted data.
+
+#### Returns
+
+[`EncryptedDataBuilder`](../../../core/builders/EncryptedDataBuilder/classes/EncryptedDataBuilder.md)
+
+A new EncryptedDataBuilder instance
+
+---
+
+### create()
+
+> `static` **create**(`options`): `Promise`\<`EncryptedData`\>
+
+Creates an encrypted data structure using PBES2 (PBKDF2 + AES-256-CBC).
+
+#### Parameters
+
+##### options
+
+Configuration for creating encrypted data
+
+###### contentType
+
+`"DATA"` \| `"SIGNED_DATA"` \| `"ENVELOPED_DATA"` \| `"SIGNED_AND_ENVELOPED_DATA"` \| `"DIGESTED_DATA"` \| `"ENCRYPTED_DATA"` \| `"AUTHENTICATED_DATA"` \| `"AUTH_ENVELOPED_DATA"` \| `"TST_INFO"`
+
+###### data
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+###### iterations?
+
+`number`
+
+###### iv?
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+###### password
+
+`string` \| `Uint8Array`\<`ArrayBuffer`\>
+
+###### salt?
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Returns
+
+`Promise`\<`EncryptedData`\>
+
+Promise resolving to the encrypted data
 
 ---
 

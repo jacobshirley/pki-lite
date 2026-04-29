@@ -109,10 +109,10 @@ importers:
   .:
     dependencies:
       pki-lite:
-        specifier: ^1.1.3
+        specifier: ^1.2.0
         version: link:packages/pki-lite
       pki-lite-crypto-extended:
-        specifier: ^1.1.3
+        specifier: ^1.2.0
         version: link:packages/pki-lite-crypto-extended
     devDependencies:
       '@commitlint/cli':

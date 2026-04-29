@@ -758,6 +758,12 @@ Signing Location
 
 Extension Request
 
+#### PKCS9.FRIENDLY_NAME
+
+> **FRIENDLY_NAME**: `string` = `'1.2.840.113549.1.9.20'`
+
+Friendly Name
+
 #### PKCS9.MESSAGE_DIGEST
 
 > **MESSAGE_DIGEST**: `string` = `'1.2.840.113549.1.9.4'`

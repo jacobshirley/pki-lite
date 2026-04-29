@@ -348,61 +348,53 @@ A string representation for debugging
 
 ---
 
+### builder()
+
+> `static` **builder**(): [`CertificateListBuilder`](../../../core/builders/CertificateListBuilder/classes/CertificateListBuilder.md)
+
+Creates a fluent builder for constructing CRLs.
+
+#### Returns
+
+[`CertificateListBuilder`](../../../core/builders/CertificateListBuilder/classes/CertificateListBuilder.md)
+
+A new CertificateListBuilder instance
+
+#### Example
+
+```typescript
+const crl = await CertificateList.builder()
+    .setIssuer('CN=My CA')
+    .setPrivateKey(caKey)
+    .addRevokedCertificate({ serialNumber: 12345, revocationDate: new Date() })
+    .build()
+```
+
+---
+
 ### createEmpty()
 
 > `static` **createEmpty**(`options`): `Promise`\<`CertificateList`\>
-
-Creates an empty CRL with no revoked certificates.
-
-This method is useful for initializing a new CRL or for testing purposes.
-The created CRL will have a validity period of 30 days by default.
 
 #### Parameters
 
 ##### options
 
-Configuration for the empty CRL
-
 ###### issuer
 
 [`RDNSequence`](../../RDNSequence/classes/RDNSequence.md)
-
-The name of the CA issuing the CRL
 
 ###### privateKey
 
 [`PrivateKeyInfo`](../../../keys/PrivateKeyInfo/classes/PrivateKeyInfo.md)
 
-The CA's private key for signing
-
 ###### signatureAlgorithmParams?
 
 [`AsymmetricEncryptionAlgorithmParams`](../../../core/crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md)
 
-Optional signature algorithm, defaults to RSA-SHA256
-
 #### Returns
 
 `Promise`\<`CertificateList`\>
-
-Promise resolving to the created empty CRL
-
-#### Example
-
-```typescript
-const emptyCrl = await CertificateList.createEmpty({
-    issuer: new Name({ commonName: 'Test CA' }),
-    privateKey: caPrivateKey,
-    signatureAlgorithmParams: {
-        type: 'RSASSA_PKCS1_v1_5',
-        params: { hash: 'SHA-384' },
-    },
-})
-
-// CRL is valid for 30 days from creation
-console.log(emptyCrl.tbsCertList.thisUpdate) // Current time
-console.log(emptyCrl.tbsCertList.nextUpdate) // 30 days later
-```
 
 ---
 

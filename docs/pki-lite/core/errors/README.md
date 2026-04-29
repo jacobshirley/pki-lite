@@ -8,12 +8,18 @@
 
 ## References
 
+### Asn1ParseError
+
+Re-exports [Asn1ParseError](Asn1ParseError/classes/Asn1ParseError.md)
+
+---
+
 ### PkiLiteError
 
 Re-exports [PkiLiteError](PkiLiteError/classes/PkiLiteError.md)
 
 ---
 
-### UnsupportedCryptoAlgorithm
+### UnsupportedCryptoAlgorithmError
 
-Re-exports [UnsupportedCryptoAlgorithm](UnsupportedCryptoAlgorithm/classes/UnsupportedCryptoAlgorithm.md)
+Re-exports [UnsupportedCryptoAlgorithmError](UnsupportedCryptoAlgorithmError/classes/UnsupportedCryptoAlgorithmError.md)

@@ -426,6 +426,30 @@ A string representation for debugging
 
 ---
 
+### builder()
+
+> `static` **builder**(): [`PFXBuilder`](../../../core/builders/PFXBuilder/classes/PFXBuilder.md)
+
+Creates a fluent builder for constructing PFX containers.
+
+#### Returns
+
+[`PFXBuilder`](../../../core/builders/PFXBuilder/classes/PFXBuilder.md)
+
+A new PFXBuilder instance
+
+#### Example
+
+```typescript
+const pfx = await PFX.builder()
+    .addCertificate(cert)
+    .addPrivateKey(privateKey)
+    .setPassword('secret')
+    .build()
+```
+
+---
+
 ### create()
 
 > `static` **create**(`options`): `Promise`\<`PFX`\>

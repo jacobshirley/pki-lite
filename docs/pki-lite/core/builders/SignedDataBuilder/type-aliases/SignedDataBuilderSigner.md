@@ -22,9 +22,9 @@ The signer's certificate.
 
 ### encryptionAlgorithm?
 
-> `optional` **encryptionAlgorithm**: [`AsymmetricEncryptionAlgorithmParams`](../../../crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md)
+> `optional` **encryptionAlgorithm**: [`AsymmetricEncryptionAlgorithmParams`](../../../crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md) \| [`SignatureAlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/SignatureAlgorithmIdentifier.md)
 
-Optional encryption algorithm parameters.
+Optional encryption algorithm parameters or SignatureAlgorithmIdentifier.
 
 ---
 

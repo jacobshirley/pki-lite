@@ -37,7 +37,7 @@ SubjectPublicKeyInfo  ::=  SEQUENCE  {
 
 ###### subjectPublicKey
 
-`Uint8Array`\<`ArrayBuffer`\> \| [`BitString`](../../../asn1/BitString/classes/BitString.md) \| [`RSAPublicKey`](../../RSAPublicKey/classes/RSAPublicKey.md) \| [`ECPublicKey`](../../ECPublicKey/classes/ECPublicKey.md)
+`Uint8Array`\<`ArrayBuffer`\> \| [`RSAPublicKey`](../../RSAPublicKey/classes/RSAPublicKey.md) \| [`BitString`](../../../asn1/BitString/classes/BitString.md) \| [`ECPublicKey`](../../ECPublicKey/classes/ECPublicKey.md)
 
 #### Returns
 

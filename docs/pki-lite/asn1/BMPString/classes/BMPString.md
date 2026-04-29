@@ -274,3 +274,44 @@ Creates a BMPString from an ASN.1 BMPString structure
 #### Returns
 
 `BMPString`
+
+---
+
+### nullTerminated()
+
+> `static` **nullTerminated**(`password`): `Uint8Array`\<`ArrayBuffer`\>
+
+Converts a password to PKCS#12 form: BMPString (UTF-16BE) with a
+trailing 16-bit NUL terminator.
+
+#### Parameters
+
+##### password
+
+The password (string or bytes)
+
+`string` | `Uint8Array`\<`ArrayBuffer`\>
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+UTF-16BE encoded password with NUL terminator
+
+---
+
+### toUtf16BE()
+
+> `static` **toUtf16BE**(`str`): `Uint8Array`\<`ArrayBuffer`\>
+
+Converts a string to UTF-16BE (UCS-2 big endian) bytes.
+
+#### Parameters
+
+##### str
+
+`string`
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>

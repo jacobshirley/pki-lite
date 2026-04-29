@@ -290,6 +290,20 @@ A string representation for debugging
 
 ---
 
+### builder()
+
+> `static` **builder**(): [`OCSPResponseBuilder`](../../../core/builders/OCSPResponseBuilder/classes/OCSPResponseBuilder.md)
+
+Returns a builder for creating OCSP responses.
+
+#### Returns
+
+[`OCSPResponseBuilder`](../../../core/builders/OCSPResponseBuilder/classes/OCSPResponseBuilder.md)
+
+A new OCSPResponseBuilder instance
+
+---
+
 ### forCertificate()
 
 > `static` **forCertificate**(`options`): `Promise`\<`OCSPResponse`\>

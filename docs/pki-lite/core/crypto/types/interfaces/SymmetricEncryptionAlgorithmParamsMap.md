@@ -248,3 +248,147 @@ Symmetric encryption algorithm and parameters
 #### Inherited from
 
 [`PbeAlgorithmParamsMap`](PbeAlgorithmParamsMap.md).[`PBES2`](PbeAlgorithmParamsMap.md#pbes2)
+
+---
+
+### PKCS12_SHA1_3DES_2KEY
+
+> **PKCS12_SHA1_3DES_2KEY**: `object`
+
+PKCS#12 PBE with SHA-1 and 2-key Triple DES-CBC.
+
+#### iterationCount
+
+> **iterationCount**: `number`
+
+Number of iterations
+
+#### salt
+
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
+
+Salt value for key derivation
+
+#### Inherited from
+
+[`PbeAlgorithmParamsMap`](PbeAlgorithmParamsMap.md).[`PKCS12_SHA1_3DES_2KEY`](PbeAlgorithmParamsMap.md#pkcs12_sha1_3des_2key)
+
+---
+
+### PKCS12_SHA1_3DES_3KEY
+
+> **PKCS12_SHA1_3DES_3KEY**: `object`
+
+PKCS#12 PBE with SHA-1 and 3-key Triple DES-CBC.
+
+#### iterationCount
+
+> **iterationCount**: `number`
+
+Number of iterations
+
+#### salt
+
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
+
+Salt value for key derivation
+
+#### Inherited from
+
+[`PbeAlgorithmParamsMap`](PbeAlgorithmParamsMap.md).[`PKCS12_SHA1_3DES_3KEY`](PbeAlgorithmParamsMap.md#pkcs12_sha1_3des_3key)
+
+---
+
+### PKCS12_SHA1_RC2_128
+
+> **PKCS12_SHA1_RC2_128**: `object`
+
+PKCS#12 PBE with SHA-1 and 128-bit RC2-CBC.
+
+#### iterationCount
+
+> **iterationCount**: `number`
+
+Number of iterations
+
+#### salt
+
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
+
+Salt value for key derivation
+
+#### Inherited from
+
+[`PbeAlgorithmParamsMap`](PbeAlgorithmParamsMap.md).[`PKCS12_SHA1_RC2_128`](PbeAlgorithmParamsMap.md#pkcs12_sha1_rc2_128)
+
+---
+
+### PKCS12_SHA1_RC2_40
+
+> **PKCS12_SHA1_RC2_40**: `object`
+
+PKCS#12 PBE with SHA-1 and 40-bit RC2-CBC.
+
+#### iterationCount
+
+> **iterationCount**: `number`
+
+Number of iterations
+
+#### salt
+
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
+
+Salt value for key derivation
+
+#### Inherited from
+
+[`PbeAlgorithmParamsMap`](PbeAlgorithmParamsMap.md).[`PKCS12_SHA1_RC2_40`](PbeAlgorithmParamsMap.md#pkcs12_sha1_rc2_40)
+
+---
+
+### PKCS12_SHA1_RC4_128
+
+> **PKCS12_SHA1_RC4_128**: `object`
+
+PKCS#12 PBE with SHA-1 and 128-bit RC4.
+
+#### iterationCount
+
+> **iterationCount**: `number`
+
+Number of iterations
+
+#### salt
+
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
+
+Salt value for key derivation
+
+#### Inherited from
+
+[`PbeAlgorithmParamsMap`](PbeAlgorithmParamsMap.md).[`PKCS12_SHA1_RC4_128`](PbeAlgorithmParamsMap.md#pkcs12_sha1_rc4_128)
+
+---
+
+### PKCS12_SHA1_RC4_40
+
+> **PKCS12_SHA1_RC4_40**: `object`
+
+PKCS#12 PBE with SHA-1 and 40-bit RC4.
+
+#### iterationCount
+
+> **iterationCount**: `number`
+
+Number of iterations
+
+#### salt
+
+> **salt**: `Uint8Array`\<`ArrayBuffer`\>
+
+Salt value for key derivation
+
+#### Inherited from
+
+[`PbeAlgorithmParamsMap`](PbeAlgorithmParamsMap.md).[`PKCS12_SHA1_RC4_40`](PbeAlgorithmParamsMap.md#pkcs12_sha1_rc4_40)
