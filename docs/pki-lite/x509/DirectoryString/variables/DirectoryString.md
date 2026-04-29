@@ -32,7 +32,7 @@
 
 ### fromAsn1()
 
-> **fromAsn1**(`asn1`): [`UTF8String`](../../../asn1/UTF8String/classes/UTF8String.md) \| [`BMPString`](../../../asn1/BMPString/classes/BMPString.md) \| [`PrintableString`](../../../asn1/PrintableString/classes/PrintableString.md) \| [`TeletexString`](../../../asn1/TeletexString/classes/TeletexString.md) \| [`UniversalString`](../../../asn1/UniversalString/classes/UniversalString.md)
+> **fromAsn1**(`asn1`): [`BMPString`](../../../asn1/BMPString/classes/BMPString.md) \| [`UTF8String`](../../../asn1/UTF8String/classes/UTF8String.md) \| [`PrintableString`](../../../asn1/PrintableString/classes/PrintableString.md) \| [`TeletexString`](../../../asn1/TeletexString/classes/TeletexString.md) \| [`UniversalString`](../../../asn1/UniversalString/classes/UniversalString.md)
 
 #### Parameters
 
@@ -42,7 +42,7 @@
 
 #### Returns
 
-[`UTF8String`](../../../asn1/UTF8String/classes/UTF8String.md) \| [`BMPString`](../../../asn1/BMPString/classes/BMPString.md) \| [`PrintableString`](../../../asn1/PrintableString/classes/PrintableString.md) \| [`TeletexString`](../../../asn1/TeletexString/classes/TeletexString.md) \| [`UniversalString`](../../../asn1/UniversalString/classes/UniversalString.md)
+[`BMPString`](../../../asn1/BMPString/classes/BMPString.md) \| [`UTF8String`](../../../asn1/UTF8String/classes/UTF8String.md) \| [`PrintableString`](../../../asn1/PrintableString/classes/PrintableString.md) \| [`TeletexString`](../../../asn1/TeletexString/classes/TeletexString.md) \| [`UniversalString`](../../../asn1/UniversalString/classes/UniversalString.md)
 
 ### toAsn1()
 

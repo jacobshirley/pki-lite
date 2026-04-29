@@ -322,6 +322,22 @@ A string representation for debugging
 
 ---
 
+### friendlyName()
+
+> `static` **friendlyName**(`name`): `Attribute`
+
+#### Parameters
+
+##### name
+
+`string`
+
+#### Returns
+
+`Attribute`
+
+---
+
 ### fromAsn1()
 
 > `static` **fromAsn1**(`asn1`): `Attribute`

@@ -2,9 +2,9 @@
 
 ---
 
-[PKI-Lite](../../../../../README.md) / [pki-lite](../../../../README.md) / [core/errors/UnsupportedCryptoAlgorithm](../README.md) / UnsupportedCryptoAlgorithm
+[PKI-Lite](../../../../../README.md) / [pki-lite](../../../../README.md) / [core/errors/UnsupportedCryptoAlgorithmError](../README.md) / UnsupportedCryptoAlgorithmError
 
-# Class: UnsupportedCryptoAlgorithm
+# Class: UnsupportedCryptoAlgorithmError
 
 ## Extends
 
@@ -14,7 +14,7 @@
 
 ### Constructor
 
-> **new UnsupportedCryptoAlgorithm**(`algorithm`): `UnsupportedCryptoAlgorithm`
+> **new UnsupportedCryptoAlgorithmError**(`algorithm`): `UnsupportedCryptoAlgorithmError`
 
 #### Parameters
 
@@ -24,7 +24,7 @@
 
 #### Returns
 
-`UnsupportedCryptoAlgorithm`
+`UnsupportedCryptoAlgorithmError`
 
 #### Overrides
 
@@ -34,7 +34,7 @@
 
 ### name
 
-> **name**: `string` = `'UnsupportedCryptoAlgorithm'`
+> **name**: `string` = `'UnsupportedCryptoAlgorithmError'`
 
 #### Overrides
 

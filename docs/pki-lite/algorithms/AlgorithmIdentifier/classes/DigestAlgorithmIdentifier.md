@@ -195,6 +195,18 @@ true if the objects are equal, false otherwise
 
 ---
 
+### getBlockBytes()
+
+> **getBlockBytes**(): `number`
+
+Returns the block size in bytes for this hash algorithm.
+
+#### Returns
+
+`number`
+
+---
+
 ### getEcNamedCurve()
 
 > **getEcNamedCurve**(`publicKeyInfo?`): [`NamedCurve`](../../../core/crypto/types/type-aliases/NamedCurve.md)
@@ -212,6 +224,38 @@ true if the objects are equal, false otherwise
 #### Inherited from
 
 [`AlgorithmIdentifier`](AlgorithmIdentifier.md).[`getEcNamedCurve`](AlgorithmIdentifier.md#getecnamedcurve)
+
+---
+
+### getOutputBytes()
+
+> **getOutputBytes**(): `number`
+
+Returns the output length in bytes for this hash algorithm.
+
+#### Returns
+
+`number`
+
+---
+
+### hmac()
+
+> **hmac**(`key`, `data`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
+
+#### Parameters
+
+##### key
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+##### data
+
+`Uint8Array`\<`ArrayBuffer`\> | [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`any`\>
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 ---
 

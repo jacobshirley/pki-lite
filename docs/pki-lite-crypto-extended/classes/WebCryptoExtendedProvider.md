@@ -66,7 +66,7 @@ Converts symmetric encryption algorithm parameters to a content encryption algor
 
 The symmetric encryption algorithm parameters
 
-[`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ \}
+[`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | [`PbeAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/PbeAlgorithmParams.md)
 
 #### Returns
 
@@ -184,7 +184,7 @@ The computed hash bytes
 
 #### Throws
 
-UnsupportedCryptoAlgorithm if the algorithm is not supported
+UnsupportedCryptoAlgorithmError if the algorithm is not supported
 
 #### Overrides
 

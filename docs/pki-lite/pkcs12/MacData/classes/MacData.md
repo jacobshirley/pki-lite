@@ -283,6 +283,50 @@ A string representation for debugging
 
 ---
 
+### create()
+
+> `static` **create**(`data`, `password`, `iterations`, `hash`): `Promise`\<`MacData`\>
+
+Creates a PKCS#12 MacData: HMAC over `data` keyed by a key
+derived using the PKCS#12 password-based KDF (RFC 7292 Appendix B).
+
+Note: Uses the legacy PKCS#12 KDF for MAC key derivation to maintain
+compatibility with OpenSSL and other PKCS#12 implementations.
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The data to compute MAC over
+
+##### password
+
+The password (string or bytes)
+
+`string` | `Uint8Array`\<`ArrayBuffer`\>
+
+##### iterations
+
+`number`
+
+Iteration count for KDF
+
+##### hash
+
+[`HashAlgorithm`](../../../core/crypto/types/type-aliases/HashAlgorithm.md) = `'SHA-256'`
+
+Hash algorithm to use (default: SHA-256)
+
+#### Returns
+
+`Promise`\<`MacData`\>
+
+Promise resolving to MacData instance
+
+---
+
 ### fromAsn1()
 
 > `static` **fromAsn1**(`asn1`): `MacData`

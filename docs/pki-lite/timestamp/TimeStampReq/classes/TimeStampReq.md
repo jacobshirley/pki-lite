@@ -482,19 +482,37 @@ A string representation for debugging
 
 ---
 
+### builder()
+
+> `static` **builder**(): [`TimeStampReqBuilder`](../../../core/builders/TimeStampReqBuilder/classes/TimeStampReqBuilder.md)
+
+Creates a fluent builder for constructing TimeStampReq objects.
+
+#### Returns
+
+[`TimeStampReqBuilder`](../../../core/builders/TimeStampReqBuilder/classes/TimeStampReqBuilder.md)
+
+A new TimeStampReqBuilder instance
+
+#### Example
+
+```typescript
+const tsReq = await TimeStampReq.builder()
+    .setData(documentBytes)
+    .setRandomNonce()
+    .setCertReq(true)
+    .build()
+```
+
+---
+
 ### create()
 
 > `static` **create**(`options`): `TimeStampReq`
 
-Creates a TimeStampReq with the specified options.
-
-Alternative constructor method that provides more explicit parameter naming.
-
 #### Parameters
 
 ##### options
-
-Request configuration
 
 ###### certReq?
 
@@ -523,19 +541,6 @@ Request configuration
 #### Returns
 
 `TimeStampReq`
-
-A new TimeStampReq instance
-
-#### Example
-
-```typescript
-const request = TimeStampReq.create({
-    messageImprint: messageImprint,
-    reqPolicy: '1.3.6.1.4.1.123.456.1',
-    nonce: crypto.getRandomValues(new Uint8Array(16)),
-    certReq: true,
-})
-```
 
 ---
 

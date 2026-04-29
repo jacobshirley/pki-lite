@@ -34,6 +34,6 @@ The recipient's certificate containing their public key
 
 ### keyEncryptionAlgorithm?
 
-> `optional` **keyEncryptionAlgorithm**: [`AsymmetricEncryptionAlgorithmParams`](../../../crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md)
+> `optional` **keyEncryptionAlgorithm**: [`AsymmetricEncryptionAlgorithmParams`](../../../crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md) \| [`KeyEncryptionAlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/KeyEncryptionAlgorithmIdentifier.md)
 
 Optional key encryption algorithm, defaults to RSA-OAEP with SHA-1

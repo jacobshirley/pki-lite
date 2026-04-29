@@ -6,12 +6,14 @@
 
 # Class: CertID
 
+```asn
 CertID ::= SEQUENCE {
-hashAlgorithm AlgorithmIdentifier,
-issuerNameHash OCTET STRING, -- Hash of issuer's DN
-issuerKeyHash OCTET STRING, -- Hash of issuer's key
-serialNumber CertificateSerialNumber
+    hashAlgorithm           AlgorithmIdentifier,
+    issuerNameHash          OCTET STRING, -- Hash of issuer's DN
+    issuerKeyHash           OCTET STRING, -- Hash of issuer's key
+    serialNumber            CertificateSerialNumber
 }
+```
 
 ## Extends
 
@@ -285,6 +287,40 @@ A string representation for debugging
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toString`](../../../core/PkiBase/classes/PkiBase.md#tostring)
+
+---
+
+### forCertificate()
+
+> `static` **forCertificate**(`issuerCertificate`, `subjectCertificate`, `hashAlgorithm?`): `Promise`\<`CertID`\>
+
+Creates a CertID from issuer and subject certificates.
+
+#### Parameters
+
+##### issuerCertificate
+
+[`Certificate`](../../../x509/Certificate/classes/Certificate.md)
+
+The issuer certificate
+
+##### subjectCertificate
+
+[`Certificate`](../../../x509/Certificate/classes/Certificate.md)
+
+The subject certificate
+
+##### hashAlgorithm?
+
+[`DigestAlgorithmIdentifier`](../../../algorithms/AlgorithmIdentifier/classes/DigestAlgorithmIdentifier.md)
+
+Optional hash algorithm (defaults to SHA-256)
+
+#### Returns
+
+`Promise`\<`CertID`\>
+
+Promise resolving to the CertID
 
 ---
 

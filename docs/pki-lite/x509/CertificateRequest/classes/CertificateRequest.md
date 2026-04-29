@@ -281,6 +281,32 @@ A string representation for debugging
 
 ---
 
+### builder()
+
+> `static` **builder**(): [`CertificateRequestBuilder`](../../../core/builders/CertificateRequestBuilder/classes/CertificateRequestBuilder.md)
+
+Creates a new certificate request builder.
+
+#### Returns
+
+[`CertificateRequestBuilder`](../../../core/builders/CertificateRequestBuilder/classes/CertificateRequestBuilder.md)
+
+A new CertificateRequestBuilder instance
+
+#### Example
+
+```typescript
+const csr = await CertificateRequest.builder()
+    .setSubject('CN=example.com')
+    .setPublicKey(publicKey)
+    .setPrivateKey(privateKey)
+    .addKeyUsage({ digitalSignature: true })
+    .addSubjectAltName('example.com', '*.example.com')
+    .build()
+```
+
+---
+
 ### fromAsn1()
 
 > `static` **fromAsn1**(`asn1`): `CertificateRequest`

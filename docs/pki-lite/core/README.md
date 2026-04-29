@@ -26,6 +26,12 @@ Re-exports [Asn1BaseBlock](PkiBase/type-aliases/Asn1BaseBlock.md)
 
 ---
 
+### Asn1ParseError
+
+Re-exports [Asn1ParseError](errors/Asn1ParseError/classes/Asn1ParseError.md)
+
+---
+
 ### asn1ToDer
 
 Re-exports [asn1ToDer](PkiBase/functions/asn1ToDer.md)
@@ -95,6 +101,12 @@ Re-exports [CertificateValidator](CertificateValidator/classes/CertificateValida
 ### Choice
 
 Re-exports [Choice](PkiBase/functions/Choice.md)
+
+---
+
+### CONTENT_TYPE_TO_OID
+
+Re-exports [CONTENT_TYPE_TO_OID](OIDs/variables/CONTENT_TYPE_TO_OID.md)
 
 ---
 
@@ -236,6 +248,12 @@ Re-exports [pemToDer](PkiBase/functions/pemToDer.md)
 
 ---
 
+### Pkcs7ContentType
+
+Re-exports [Pkcs7ContentType](OIDs/type-aliases/Pkcs7ContentType.md)
+
+---
+
 ### PkiArray
 
 Re-exports [PkiArray](PkiBase/classes/PkiArray.md)
@@ -314,9 +332,9 @@ Re-exports [TrustAnchor](CertificateValidator/interfaces/TrustAnchor.md)
 
 ---
 
-### UnsupportedCryptoAlgorithm
+### UnsupportedCryptoAlgorithmError
 
-Re-exports [UnsupportedCryptoAlgorithm](errors/UnsupportedCryptoAlgorithm/classes/UnsupportedCryptoAlgorithm.md)
+Re-exports [UnsupportedCryptoAlgorithmError](errors/UnsupportedCryptoAlgorithmError/classes/UnsupportedCryptoAlgorithmError.md)
 
 ---
 

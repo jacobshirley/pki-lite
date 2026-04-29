@@ -291,6 +291,50 @@ A string representation for debugging
 
 ---
 
+### create()
+
+> `static` **create**(`privateKey`, `password`, `options?`): `Promise`\<`EncryptedPrivateKeyInfo`\>
+
+Creates an encrypted private key using PBES2 (PBKDF2 + AES-256-CBC).
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKeyInfo`](../../PrivateKeyInfo/classes/PrivateKeyInfo.md)
+
+The private key to encrypt
+
+##### password
+
+The password (string or bytes)
+
+`string` | `Uint8Array`\<`ArrayBuffer`\>
+
+##### options?
+
+Optional parameters for encryption
+
+###### iterations?
+
+`number`
+
+###### iv?
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+###### salt?
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Returns
+
+`Promise`\<`EncryptedPrivateKeyInfo`\>
+
+Promise resolving to the encrypted private key
+
+---
+
 ### fromAsn1()
 
 > `static` **fromAsn1**(`asn1`): `EncryptedPrivateKeyInfo`

@@ -59,7 +59,7 @@ Optional certificates to include in originator info
 
 ### contentEncryptionAlgorithm?
 
-> `optional` **contentEncryptionAlgorithm**: [`SymmetricEncryptionAlgorithmParams`](../../../crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md)
+> `optional` **contentEncryptionAlgorithm**: [`SymmetricEncryptionAlgorithmParams`](../../../crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md) \| [`ContentEncryptionAlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/ContentEncryptionAlgorithmIdentifier.md)
 
 Algorithm used to encrypt the content
 
@@ -271,9 +271,9 @@ If not set, defaults to AES-256-CBC with a random IV.
 
 ##### algorithm
 
-[`SymmetricEncryptionAlgorithmParams`](../../../crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md)
+The content encryption algorithm parameters or ContentEncryptionAlgorithmIdentifier
 
-The content encryption algorithm parameters
+[`SymmetricEncryptionAlgorithmParams`](../../../crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md) | [`ContentEncryptionAlgorithmIdentifier`](../../../../algorithms/AlgorithmIdentifier/classes/ContentEncryptionAlgorithmIdentifier.md)
 
 #### Returns
 

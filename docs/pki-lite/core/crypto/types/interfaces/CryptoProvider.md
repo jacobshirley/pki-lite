@@ -123,7 +123,7 @@ The symmetric key to use for decryption
 
 The decryption algorithm to use
 
-[`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
+[`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md) | [`PbeAlgorithmParams`](../type-aliases/PbeAlgorithmParams.md)
 
 #### Returns
 
@@ -149,65 +149,68 @@ The password or key material to derive from
 
 ##### algorithm
 
+[`PbeAlgorithmParams`](../type-aliases/PbeAlgorithmParams.md)
+
 The key derivation algorithm parameters
-
-###### params
-
-\{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md); \}
-
-###### params.derivationAlgorithm
-
-\{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}
-
-Key derivation algorithm and parameters
-
-###### params.derivationAlgorithm.params
-
-\{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}
-
-###### params.derivationAlgorithm.params.hash
-
-[`HashAlgorithm`](../type-aliases/HashAlgorithm.md)
-
-Hash algorithm for HMAC
-
-###### params.derivationAlgorithm.params.iterationCount
-
-`number`
-
-Number of iterations
-
-###### params.derivationAlgorithm.params.keyLength?
-
-`number`
-
-Desired key length in bytes (optional)
-
-###### params.derivationAlgorithm.params.salt
-
-`Uint8Array`\<`ArrayBuffer`\>
-
-Salt value for key derivation
-
-###### params.derivationAlgorithm.type
-
-`"PBKDF2"`
-
-###### params.encryptionAlgorithm
-
-[`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md)
-
-Symmetric encryption algorithm and parameters
-
-###### type
-
-`"PBES2"`
 
 #### Returns
 
 `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
 
 Promise resolving to the derived key as a Uint8Array<ArrayBuffer>
+
+---
+
+### derivePkcs12Key()
+
+> **derivePkcs12Key**(`password`, `salt`, `iterationCount`, `keyLength`, `purpose?`, `hash?`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
+
+Derives key material using PKCS#12 password-based KDF (RFC 7292 Appendix B).
+Supports modern hash algorithms for improved security while maintaining OpenSSL compatibility.
+
+#### Parameters
+
+##### password
+
+The password (string or bytes, will be converted to BMPString format)
+
+`string` | `Uint8Array`\<`ArrayBuffer`\>
+
+##### salt
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+Salt value for key derivation
+
+##### iterationCount
+
+`number`
+
+Number of iterations for key strengthening
+
+##### keyLength
+
+`number`
+
+Desired key length in bytes
+
+##### purpose?
+
+Key purpose: 'encryption' (id=1), 'iv' (id=2), or 'mac' (id=3)
+
+`"encryption"` | `"iv"` | `"mac"`
+
+##### hash?
+
+[`HashAlgorithm`](../type-aliases/HashAlgorithm.md)
+
+Hash algorithm to use (default: SHA-1 for legacy compatibility)
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
+
+Promise resolving to the derived key bytes
 
 ---
 
@@ -317,7 +320,7 @@ The symmetric key to use for encryption
 
 The encryption algorithm to use
 
-[`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md) | \{ `params`: \{ `derivationAlgorithm`: \{ `params`: \{ `hash`: [`HashAlgorithm`](../type-aliases/HashAlgorithm.md); `iterationCount`: `number`; `keyLength?`: `number`; `salt`: `Uint8Array`\<`ArrayBuffer`\>; \}; `type`: `"PBKDF2"`; \}; `encryptionAlgorithm`: [`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md); \}; `type`: `"PBES2"`; \}
+[`SymmetricEncryptionAlgorithmParams`](../type-aliases/SymmetricEncryptionAlgorithmParams.md) | [`PbeAlgorithmParams`](../type-aliases/PbeAlgorithmParams.md)
 
 #### Returns
 
@@ -440,6 +443,40 @@ The number of random bytes to generate
 `Uint8Array`\<`ArrayBuffer`\>
 
 Array containing the random bytes
+
+---
+
+### hmac()
+
+> **hmac**(`key`, `data`, `hash`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
+
+Computes an HMAC (Hash-based Message Authentication Code) of the given data.
+
+#### Parameters
+
+##### key
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The secret key for HMAC
+
+##### data
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The data to authenticate
+
+##### hash
+
+[`HashAlgorithm`](../type-aliases/HashAlgorithm.md)
+
+The hash algorithm to use (SHA-1, SHA-256, etc.)
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
+
+Promise resolving to the HMAC bytes
 
 ---
 
