@@ -17,7 +17,7 @@ declare global {
  *
  * @example
  * ```typescript
- * import { setCryptoProvider } from 'pki-lite/core/crypto/crypto'
+ * import { setCryptoProvider } from 'pki-lite/core/crypto/provider'
  * import { WebCryptoExtendedProvider } from 'pki-lite-crypto-extended'
  *
  * // Use extended crypto provider for legacy algorithm support
@@ -42,7 +42,7 @@ export function setCryptoProvider(newProvider: CryptoProvider) {
  *
  * @example
  * ```typescript
- * import { getCryptoProvider } from 'pki-lite/core/crypto/crypto'
+ * import { getCryptoProvider } from 'pki-lite/core/crypto/provider'
  *
  * // Get the current provider
  * const provider = getCryptoProvider()

@@ -30,7 +30,7 @@ The cryptographic provider to use
 ## Example
 
 ```typescript
-import { setCryptoProvider } from 'pki-lite/core/crypto/crypto'
+import { setCryptoProvider } from 'pki-lite/core/crypto/provider'
 import { WebCryptoExtendedProvider } from 'pki-lite-crypto-extended'
 
 // Use extended crypto provider for legacy algorithm support
