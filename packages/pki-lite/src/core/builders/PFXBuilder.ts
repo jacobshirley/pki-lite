@@ -165,12 +165,12 @@ export class PFXBuilder implements AsyncBuilder<PFX> {
 
         if (certBags.length > 0) {
             const safeContents = new SafeContents(...certBags)
-            const encryptedData = await EncryptedData.create(
-                OIDs.PKCS7.DATA,
-                safeContents.toDer(),
+            const encryptedData = await EncryptedData.create({
+                contentType: 'DATA',
+                data: safeContents.toDer(),
                 password,
-                { iterations },
-            )
+                iterations,
+            })
             contentInfos.push(encryptedData.asCms())
         }
 

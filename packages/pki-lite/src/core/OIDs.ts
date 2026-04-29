@@ -360,6 +360,27 @@ export const OIDs = {
 }
 
 /**
+ * Mapping of PKCS#7 content type names to their OIDs.
+ * Used for convenient type-safe content type specification.
+ */
+export const CONTENT_TYPE_TO_OID = {
+    DATA: OIDs.PKCS7.DATA,
+    SIGNED_DATA: OIDs.PKCS7.SIGNED_DATA,
+    ENVELOPED_DATA: OIDs.PKCS7.ENVELOPED_DATA,
+    SIGNED_AND_ENVELOPED_DATA: OIDs.PKCS7.SIGNED_AND_ENVELOPED_DATA,
+    DIGESTED_DATA: OIDs.PKCS7.DIGESTED_DATA,
+    ENCRYPTED_DATA: OIDs.PKCS7.ENCRYPTED_DATA,
+    AUTHENTICATED_DATA: OIDs.PKCS7.AUTHENTICATED_DATA,
+    AUTH_ENVELOPED_DATA: OIDs.PKCS7.AUTH_ENVELOPED_DATA,
+    TST_INFO: OIDs.PKCS7.TST_INFO,
+} as const
+
+/**
+ * Type representing valid PKCS#7 content type names.
+ */
+export type Pkcs7ContentType = keyof typeof CONTENT_TYPE_TO_OID
+
+/**
  * Mapping of OIDs to their friendly names.
  * This can be used for display purposes or debugging.
  */

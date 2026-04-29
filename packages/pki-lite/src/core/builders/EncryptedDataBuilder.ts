@@ -6,6 +6,9 @@ import {
 } from '../../algorithms/AlgorithmIdentifier.js'
 import { SymmetricEncryptionAlgorithmParams } from '../crypto/types.js'
 import { AsyncBuilder } from './types.js'
+import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
+import { ObjectIdentifierString } from '../PkiBase.js'
+import { CONTENT_TYPE_TO_OID, Pkcs7ContentType } from '../OIDs.js'
 
 /**
  * Builder class for creating PKCS#7 EncryptedData structures.
@@ -17,7 +20,7 @@ import { AsyncBuilder } from './types.js'
  * ```typescript
  * // Using default PBES2 algorithm
  * const encryptedData = await EncryptedData.builder()
- *     .setContentType(OIDs.PKCS7.DATA)
+ *     .setContentType('DATA')
  *     .setData(contentBytes)
  *     .setPassword('secret')
  *     .setIterations(2048)
@@ -25,7 +28,7 @@ import { AsyncBuilder } from './types.js'
  *
  * // Using custom algorithm
  * const customEncrypted = await EncryptedData.builder()
- *     .setContentType(OIDs.PKCS7.DATA)
+ *     .setContentType('DATA')
  *     .setData(contentBytes)
  *     .setPassword('secret')
  *     .setAlgorithm({
@@ -36,7 +39,7 @@ import { AsyncBuilder } from './types.js'
  * ```
  */
 export class EncryptedDataBuilder implements AsyncBuilder<EncryptedData> {
-    private contentType?: string
+    private contentType?: ObjectIdentifier
     private data?: Uint8Array<ArrayBuffer>
     private password?: string | Uint8Array<ArrayBuffer>
     private salt?: Uint8Array<ArrayBuffer>
@@ -52,8 +55,21 @@ export class EncryptedDataBuilder implements AsyncBuilder<EncryptedData> {
      * @param contentType The content type OID
      * @returns This builder for chaining
      */
-    setContentType(contentType: string): this {
-        this.contentType = contentType
+    setContentTypeOid(type: ObjectIdentifier | ObjectIdentifierString): this {
+        this.contentType = new ObjectIdentifier({ value: type })
+        return this
+    }
+
+    /**
+     * Sets the content type using a friendly name.
+     *
+     * @param type The content type name
+     * @returns This builder for chaining
+     */
+    setContentType(type: Pkcs7ContentType): this {
+        this.contentType = new ObjectIdentifier({
+            value: CONTENT_TYPE_TO_OID[type],
+        })
         return this
     }
 

@@ -2,7 +2,7 @@ import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { EncryptedContentInfo } from './EncryptedContentInfo.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { ContentInfo } from './ContentInfo.js'
-import { OIDs } from '../core/OIDs.js'
+import { OIDs, Pkcs7ContentType } from '../core/OIDs.js'
 import { EncryptedDataBuilder } from '../core/builders/EncryptedDataBuilder.js'
 
 /**
@@ -87,30 +87,25 @@ export class EncryptedData extends PkiBase<EncryptedData> {
     /**
      * Creates an encrypted data structure using PBES2 (PBKDF2 + AES-256-CBC).
      *
-     * @param contentType The content type OID
-     * @param data The data to encrypt
-     * @param password The password (string or bytes)
-     * @param options Optional parameters for encryption
+     * @param options Configuration for creating encrypted data
      * @returns Promise resolving to the encrypted data
      */
-    static async create(
-        contentType: string,
-        data: Uint8Array<ArrayBuffer>,
-        password: string | Uint8Array<ArrayBuffer>,
-        options?: {
-            salt?: Uint8Array<ArrayBuffer>
-            iv?: Uint8Array<ArrayBuffer>
-            iterations?: number
-        },
-    ): Promise<EncryptedData> {
+    static async create(options: {
+        contentType: Pkcs7ContentType
+        data: Uint8Array<ArrayBuffer>
+        password: string | Uint8Array<ArrayBuffer>
+        salt?: Uint8Array<ArrayBuffer>
+        iv?: Uint8Array<ArrayBuffer>
+        iterations?: number
+    }): Promise<EncryptedData> {
         const builder = EncryptedData.builder()
-            .setContentType(contentType)
-            .setData(data)
-            .setPassword(password)
+            .setContentType(options.contentType)
+            .setData(options.data)
+            .setPassword(options.password)
 
-        if (options?.salt) builder.setSalt(options.salt)
-        if (options?.iv) builder.setIV(options.iv)
-        if (options?.iterations) builder.setIterations(options.iterations)
+        if (options.salt) builder.setSalt(options.salt)
+        if (options.iv) builder.setIV(options.iv)
+        if (options.iterations) builder.setIterations(options.iterations)
 
         return builder.build()
     }

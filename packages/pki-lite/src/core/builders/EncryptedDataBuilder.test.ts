@@ -10,7 +10,7 @@ describe('EncryptedDataBuilder', () => {
 
     it('builds EncryptedData with default PBES2 algorithm', async () => {
         const encryptedData = await EncryptedData.builder()
-            .setContentType(OIDs.PKCS7.DATA)
+            .setContentTypeOid(OIDs.PKCS7.DATA)
             .setData(testData)
             .setPassword(password)
             .build()
@@ -31,7 +31,7 @@ describe('EncryptedDataBuilder', () => {
         const iv = crypto.getRandomValues(new Uint8Array(16))
 
         const encryptedData = await EncryptedData.builder()
-            .setContentType(OIDs.PKCS7.DATA)
+            .setContentTypeOid(OIDs.PKCS7.DATA)
             .setData(testData)
             .setPassword(password)
             .setAlgorithm({
@@ -84,7 +84,7 @@ describe('EncryptedDataBuilder', () => {
         })
 
         const encryptedData = await EncryptedData.builder()
-            .setContentType(OIDs.PKCS7.DATA)
+            .setContentTypeOid(OIDs.PKCS7.DATA)
             .setData(testData)
             .setPassword(password)
             .setAlgorithm(algorithm)
@@ -108,7 +108,7 @@ describe('EncryptedDataBuilder', () => {
         const customIV = crypto.getRandomValues(new Uint8Array(16))
 
         const encryptedData = await EncryptedData.builder()
-            .setContentType(OIDs.PKCS7.DATA)
+            .setContentTypeOid(OIDs.PKCS7.DATA)
             .setData(testData)
             .setPassword(password)
             .setSalt(customSalt)
@@ -134,7 +134,7 @@ describe('EncryptedDataBuilder', () => {
     it('throws when data is missing', async () => {
         await expect(
             EncryptedData.builder()
-                .setContentType(OIDs.PKCS7.DATA)
+                .setContentTypeOid(OIDs.PKCS7.DATA)
                 .setPassword(password)
                 .build(),
         ).rejects.toThrow('Data is required')
@@ -143,7 +143,7 @@ describe('EncryptedDataBuilder', () => {
     it('throws when password is missing', async () => {
         await expect(
             EncryptedData.builder()
-                .setContentType(OIDs.PKCS7.DATA)
+                .setContentTypeOid(OIDs.PKCS7.DATA)
                 .setData(testData)
                 .build(),
         ).rejects.toThrow('Password is required')
