@@ -124,10 +124,8 @@ export class CertStatus extends PkiBase<CertStatus> {
             const revokedInfo = asn1.valueBlock.value[0] as asn1js.Sequence
             const revocationTimeBlock = revokedInfo.valueBlock
                 .value[0] as asn1js.GeneralizedTime
-            // Parse the date from the string value
-            const revocationTime = new Date(
-                revocationTimeBlock.valueBlock.value,
-            )
+            // Parse the date from the GeneralizedTime
+            const revocationTime = revocationTimeBlock.toDate()
 
             let revocationReason: number | undefined = undefined
             if (revokedInfo.valueBlock.value.length > 1) {

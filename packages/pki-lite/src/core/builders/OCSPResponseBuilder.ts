@@ -362,10 +362,12 @@ export class OCSPResponseBuilder implements AsyncBuilder<OCSPResponse> {
 
     private validate(): void {
         // For error responses, we don't need responder info or responses
-        if (
-            this.responseStatus !== OCSPResponseStatus.successful &&
-            typeof this.responseStatus !== 'object'
-        ) {
+        const statusValue =
+            this.responseStatus instanceof OCSPResponseStatus
+                ? this.responseStatus.value
+                : this.responseStatus
+
+        if (statusValue !== 0) {
             return
         }
 
@@ -389,10 +391,12 @@ export class OCSPResponseBuilder implements AsyncBuilder<OCSPResponse> {
         this.validate()
 
         // Handle error responses (no response bytes)
-        if (
-            this.responseStatus !== OCSPResponseStatus.successful &&
-            typeof this.responseStatus !== 'object'
-        ) {
+        const statusValue =
+            this.responseStatus instanceof OCSPResponseStatus
+                ? this.responseStatus.value
+                : this.responseStatus
+
+        if (statusValue !== 0) {
             return new OCSPResponse({
                 responseStatus: this.responseStatus,
             })

@@ -1,6 +1,6 @@
-import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier'
-import { getCryptoProvider } from './provider'
-import { HashAlgorithm } from './types'
+import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
+import { getCryptoProvider } from './provider.js'
+import type { HashAlgorithm } from './types.js'
 
 /**
  * PKCS#12 password-based key derivation (RFC 7292 Appendix B.2).

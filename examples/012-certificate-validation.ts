@@ -1,30 +1,57 @@
 // Certificate chain building and validation
 
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
 import { Certificate } from 'pki-lite/x509/Certificate.js'
 import { CertificateValidator } from 'pki-lite/core/CertificateValidator.js'
 
-// For this example, you would typically load real certificates
-// Here we show how to use the validator with placeholder certificates
-
 console.log('=== Certificate Chain Validation Example ===\n')
 
-// Example 1: Load certificates from PEM strings
-const rootCertPem = `-----BEGIN CERTIFICATE-----
-{your root CA certificate here}
------END CERTIFICATE-----`
+// Generate keys and create a certificate chain for demonstration
+console.log('Setting up certificate chain...')
 
-const intermediateCertPem = `-----BEGIN CERTIFICATE-----
-{your intermediate CA certificate here}
------END CERTIFICATE-----`
+// Generate keys for each level
+const rootKeyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
+const intermediateKeyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
+const endEntityKeyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
 
-const endEntityCertPem = `-----BEGIN CERTIFICATE-----
-{your end-entity certificate here}
------END CERTIFICATE-----`
+// Create root CA certificate
+const rootCert = await Certificate.builder()
+    .setSubject('CN=Root CA, O=Example Root CA, C=US')
+    .setPublicKey(rootKeyPair.publicKey)
+    .setPrivateKey(rootKeyPair.privateKey)
+    .setValidityDays(3650) // 10 years
+    .generateSerialNumber()
+    .addBasicConstraints(true, 2) // CA with path length 2
+    .addKeyUsage({ keyCertSign: true, cRLSign: true })
+    .selfSign()
 
-// Parse the certificates
-const rootCert = Certificate.fromPem(rootCertPem)
-const intermediateCert = Certificate.fromPem(intermediateCertPem)
-const endEntityCert = Certificate.fromPem(endEntityCertPem)
+// Create intermediate CA certificate signed by root
+const intermediateCert = await Certificate.builder()
+    .setSubject('CN=Intermediate CA, O=Example Intermediate CA, C=US')
+    .setIssuer(rootCert.tbsCertificate.subject)
+    .setPublicKey(intermediateKeyPair.publicKey)
+    .setPrivateKey(rootKeyPair.privateKey) // Signed by root
+    .setValidityDays(1825) // 5 years
+    .generateSerialNumber()
+    .addBasicConstraints(true, 0) // CA with path length 0
+    .addKeyUsage({ keyCertSign: true, cRLSign: true })
+    .build()
+
+// Create end-entity certificate signed by intermediate
+const endEntityCert = await Certificate.builder()
+    .setSubject('CN=www.example.com, O=Example Corp, C=US')
+    .setIssuer(intermediateCert.tbsCertificate.subject)
+    .setPublicKey(endEntityKeyPair.publicKey)
+    .setPrivateKey(intermediateKeyPair.privateKey) // Signed by intermediate
+    .setValidityDays(365) // 1 year
+    .generateSerialNumber()
+    .addBasicConstraints(false) // Not a CA
+    .addKeyUsage({ digitalSignature: true, keyEncipherment: true })
+    .addExtendedKeyUsage({ serverAuth: true })
+    .addSubjectAltName('www.example.com', 'example.com')
+    .build()
+
+console.log('✓ Certificate chain created\n')
 
 console.log('Loaded certificates:')
 console.log('  Root CA:', rootCert.tbsCertificate.subject.toString())
