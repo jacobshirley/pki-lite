@@ -1,16 +1,22 @@
 import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
-import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
+import {
+    AlgorithmIdentifier,
+    DigestAlgorithmIdentifier,
+} from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { Integer } from '../asn1/Integer.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { Certificate } from '../x509/Certificate.js'
 
 /**
+ * ```asn
  * CertID ::= SEQUENCE {
  *     hashAlgorithm           AlgorithmIdentifier,
  *     issuerNameHash          OCTET STRING, -- Hash of issuer's DN
  *     issuerKeyHash           OCTET STRING, -- Hash of issuer's key
  *     serialNumber            CertificateSerialNumber
  * }
+ * ```
  */
 export class CertID extends PkiBase<CertID> {
     hashAlgorithm: AlgorithmIdentifier
@@ -83,5 +89,33 @@ export class CertID extends PkiBase<CertID> {
 
     static fromDer(der: Uint8Array<ArrayBuffer>): CertID {
         return CertID.fromAsn1(derToAsn1(der))
+    }
+
+    /**
+     * Creates a CertID from issuer and subject certificates.
+     *
+     * @param issuerCertificate The issuer certificate
+     * @param subjectCertificate The subject certificate
+     * @param hashAlgorithm Optional hash algorithm (defaults to SHA-256)
+     * @returns Promise resolving to the CertID
+     */
+    static async forCertificate(
+        issuerCertificate: Certificate,
+        subjectCertificate: Certificate,
+        hashAlgorithm?: DigestAlgorithmIdentifier,
+    ): Promise<CertID> {
+        const hash =
+            hashAlgorithm ?? AlgorithmIdentifier.digestAlgorithm('SHA-256')
+
+        return new CertID({
+            hashAlgorithm: hash,
+            issuerNameHash: await hash.digest(
+                issuerCertificate.tbsCertificate.subject.toDer(),
+            ),
+            issuerKeyHash: await hash.digest(
+                issuerCertificate.tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.toDer(),
+            ),
+            serialNumber: subjectCertificate.tbsCertificate.serialNumber,
+        })
     }
 }
