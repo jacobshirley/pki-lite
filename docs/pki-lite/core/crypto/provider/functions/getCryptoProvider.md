@@ -23,7 +23,7 @@ The current cryptographic provider
 ## Example
 
 ```typescript
-import { getCryptoProvider } from 'pki-lite/core/crypto/crypto'
+import { getCryptoProvider } from 'pki-lite/core/crypto/provider'
 
 // Get the current provider
 const provider = getCryptoProvider()

@@ -178,3 +178,72 @@ export async function opensslAsn1Parse(asn1Data: Uint8Array): Promise<any> {
 
     return result.toString()
 }
+
+export async function opensslVerifyCertificate(options: {
+    certificate: Uint8Array | string
+    caCertificate?: Uint8Array | string
+    selfSigned?: boolean
+}): Promise<{
+    success: boolean
+    error?: string
+}> {
+    const { certificate, caCertificate, selfSigned } = options
+
+    const tmpFolder = getTempFolder()
+    const certPath = `${tmpFolder}/cert.pem`
+    const caCertPath = `${tmpFolder}/ca.pem`
+
+    // Write certificate
+    if (typeof certificate === 'string') {
+        fs.writeFileSync(certPath, certificate)
+    } else {
+        // Convert DER to PEM if needed
+        const pem = `-----BEGIN CERTIFICATE-----\n${Buffer.from(certificate)
+            .toString('base64')
+            .match(/.{1,64}/g)
+            ?.join('\n')}\n-----END CERTIFICATE-----\n`
+        fs.writeFileSync(certPath, pem)
+    }
+
+    // Write CA certificate if provided
+    if (caCertificate) {
+        if (typeof caCertificate === 'string') {
+            fs.writeFileSync(caCertPath, caCertificate)
+        } else {
+            const pem = `-----BEGIN CERTIFICATE-----\n${Buffer.from(
+                caCertificate,
+            )
+                .toString('base64')
+                .match(/.{1,64}/g)
+                ?.join('\n')}\n-----END CERTIFICATE-----\n`
+            fs.writeFileSync(caCertPath, pem)
+        }
+    }
+
+    const args = [
+        'verify',
+        ...(selfSigned ? ['-CAfile', certPath] : []),
+        ...(caCertificate ? ['-CAfile', caCertPath] : []),
+        certPath,
+    ]
+
+    try {
+        const output = await runOpenSSL(args, tmpFolder)
+        const result = output.toString()
+
+        // OpenSSL verify returns "<path>: OK" on success
+        if (result.includes('OK')) {
+            return { success: true }
+        }
+
+        return {
+            success: false,
+            error: result,
+        }
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+        }
+    }
+}

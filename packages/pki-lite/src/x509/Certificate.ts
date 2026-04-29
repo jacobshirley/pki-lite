@@ -37,6 +37,7 @@ import {
     CertificateValidator,
 } from '../core/CertificateValidator.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { CertificateBuilder } from '../core/builders/CertificateBuilder.js'
 
 /**
  * Represents an X.509 certificate.
@@ -241,47 +242,24 @@ export class Certificate extends PkiBase<Certificate> {
         }
         extensions?: Extension[]
     }): Promise<Certificate> {
-        const {
-            subject,
-            subjectPublicKeyInfo,
-            privateKeyInfo,
-            validity,
-            algorithm,
-        } = options
+        const builder = Certificate.builder()
+            .setSubject(options.subject)
+            .setPublicKey(options.subjectPublicKeyInfo)
+            .setPrivateKey(options.privateKeyInfo)
+            .setValidityPeriod(
+                options.validity.notBefore,
+                options.validity.notAfter,
+            )
 
-        const encryptionAlg = AlgorithmIdentifier.signatureAlgorithm(
-            algorithm ?? {
-                type: 'RSASSA_PKCS1_v1_5',
-                params: {
-                    hash: 'SHA-256',
-                },
-            },
-        )
+        if (options.algorithm) {
+            builder.setAlgorithm(options.algorithm)
+        }
 
-        const tbs = new TBSCertificate({
-            version: 2,
-            serialNumber: new Uint8Array([1, 0, 0, 0]), // Example serial number
-            signature: encryptionAlg,
-            issuer: RDNSequence.parse(subject),
-            validity: new Validity({
-                notBefore: validity.notBefore,
-                notAfter: validity.notAfter,
-            }),
-            subject: RDNSequence.parse(subject),
-            subjectPublicKeyInfo,
-            extensions: options.extensions,
-        })
+        if (options.extensions) {
+            builder.addExtensions(...options.extensions)
+        }
 
-        const signatureValue = await encryptionAlg.sign(
-            tbs.toDer(),
-            privateKeyInfo,
-        )
-
-        return new Certificate({
-            tbsCertificate: tbs,
-            signatureAlgorithm: encryptionAlg,
-            signatureValue,
-        })
+        return await builder.selfSign()
     }
 
     static async createCertificate(options: {
@@ -297,52 +275,29 @@ export class Certificate extends PkiBase<Certificate> {
         serialNumber?: Uint8Array<ArrayBuffer>
         extensions?: Extension[]
     }): Promise<Certificate> {
-        const {
-            issuer,
-            subject,
-            subjectPublicKeyInfo,
-            privateKeyInfo,
-            validity,
-            serialNumber,
-            algorithm,
-        } = options
+        const builder = Certificate.builder()
+            .setSubject(options.subject)
+            .setPublicKey(options.subjectPublicKeyInfo)
+            .setIssuer(options.issuer)
+            .setIssuerPrivateKey(options.privateKeyInfo)
+            .setValidityPeriod(
+                options.validity.notBefore,
+                options.validity.notAfter,
+            )
 
-        const encryptionAlg = AlgorithmIdentifier.signatureAlgorithm(
-            algorithm ?? {
-                type: 'RSASSA_PKCS1_v1_5',
-                params: {
-                    hash: 'SHA-256',
-                },
-            },
-        )
+        if (options.serialNumber) {
+            builder.setSerialNumber(options.serialNumber)
+        }
 
-        const tbs = new TBSCertificate({
-            version: 2,
-            serialNumber: serialNumber ?? new Uint8Array([1, 0, 0, 0]), // Example serial number
-            signature: encryptionAlg,
-            issuer:
-                issuer instanceof Certificate
-                    ? issuer.tbsCertificate.subject
-                    : RDNSequence.parse(issuer),
-            validity: new Validity({
-                notBefore: validity.notBefore,
-                notAfter: validity.notAfter,
-            }),
-            subject: RDNSequence.parse(subject),
-            subjectPublicKeyInfo,
-            extensions: options.extensions,
-        })
+        if (options.algorithm) {
+            builder.setAlgorithm(options.algorithm)
+        }
 
-        const signatureValue = await encryptionAlg.sign(
-            tbs.toDer(),
-            privateKeyInfo,
-        )
+        if (options.extensions) {
+            builder.addExtensions(...options.extensions)
+        }
 
-        return new Certificate({
-            tbsCertificate: tbs,
-            signatureAlgorithm: encryptionAlg,
-            signatureValue,
-        })
+        return await builder.sign()
     }
 
     getExtensionByOid(oid: string): Extension | undefined {
@@ -652,6 +607,23 @@ export class Certificate extends PkiBase<Certificate> {
     ): Promise<CertificateValidationResult> {
         const validator = new CertificateValidator()
         return await validator.validate(this, options)
+    }
+    /**
+     * Creates a new CertificateBuilder for constructing certificates.
+     *
+     * @returns A new CertificateBuilder instance
+     * @example
+     * ```typescript
+     * const cert = await Certificate.builder()
+     *     .setSubject('CN=Example')
+     *     .setPublicKey(publicKey)
+     *     .setPrivateKey(privateKey)
+     *     .setValidityDays(365)
+     *     .selfSign()
+     * ```
+     */
+    static builder(): CertificateBuilder {
+        return new CertificateBuilder()
     }
 
     get pemHeader(): string {

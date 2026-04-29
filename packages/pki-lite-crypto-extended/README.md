@@ -70,7 +70,7 @@ For more control, you can manually configure the provider:
 
 ```typescript
 import { WebCryptoExtendedProvider } from 'pki-lite-crypto-extended'
-import { setCryptoProvider } from 'pki-lite/core/crypto/crypto'
+import { setCryptoProvider } from 'pki-lite/core/crypto/provider'
 
 // Set up the extended provider
 const provider = new WebCryptoExtendedProvider()
@@ -80,7 +80,7 @@ setCryptoProvider(provider)
 ### Using MD5 Hashing
 
 ```typescript
-import { getCryptoProvider } from 'pki-lite/core/crypto/crypto'
+import { getCryptoProvider } from 'pki-lite/core/crypto/provider'
 
 const provider = getCryptoProvider()
 const data = new TextEncoder().encode('Hello, World!')
@@ -98,7 +98,7 @@ console.log(
 ### Using AES ECB Encryption
 
 ```typescript
-import { getCryptoProvider } from 'pki-lite/core/crypto/crypto'
+import { getCryptoProvider } from 'pki-lite/core/crypto/provider'
 
 const provider = getCryptoProvider()
 const key = new Uint8Array(16).fill(0x01) // 128-bit key
@@ -122,7 +122,7 @@ console.log('Decrypted:', new TextDecoder().decode(decrypted))
 ### Using AES CBC Without Padding
 
 ```typescript
-import { getCryptoProvider } from 'pki-lite/core/crypto/crypto'
+import { getCryptoProvider } from 'pki-lite/core/crypto/provider'
 
 const provider = getCryptoProvider()
 const key = new Uint8Array(32).fill(0x01) // 256-bit key

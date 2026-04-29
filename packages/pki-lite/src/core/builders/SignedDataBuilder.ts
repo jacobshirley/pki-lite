@@ -8,6 +8,7 @@ import { EncapsulatedContentInfo } from '../../pkcs7/EncapsulatedContentInfo.js'
 import {
     AlgorithmIdentifier,
     DigestAlgorithmIdentifier,
+    SignatureAlgorithmIdentifier,
 } from '../../algorithms/AlgorithmIdentifier.js'
 import { IssuerAndSerialNumber } from '../../pkcs7/IssuerAndSerialNumber.js'
 import { OtherCertificateFormat } from '../../x509/legacy/OtherCertificateFormat.js'
@@ -45,9 +46,11 @@ export type SignedDataBuilderSigner = {
     certificate: CertificateChoices
 
     /**
-     * Optional encryption algorithm parameters.
+     * Optional encryption algorithm parameters or SignatureAlgorithmIdentifier.
      */
-    encryptionAlgorithm?: AsymmetricEncryptionAlgorithmParams
+    encryptionAlgorithm?:
+        | AsymmetricEncryptionAlgorithmParams
+        | SignatureAlgorithmIdentifier
 
     /**
      * Optional signed attributes to include in the signature.
@@ -323,22 +326,39 @@ export class SignedDataBuilder implements AsyncBuilder<SignedData> {
                 const encryptionParams =
                     signer.encryptionAlgorithm ?? defaultEncryption
 
-                if (!('hash' in encryptionParams.params)) {
-                    throw new Error(
-                        'Hash algorithm must be specified in encryption parameters',
-                    )
-                }
-
                 if (!(signer.certificate instanceof Certificate)) {
                     throw new Error(
                         'Only X.509 certificates are currently supported for signing',
                     )
                 }
 
+                // If encryptionParams is already a SignatureAlgorithmIdentifier, extract hash from it
+                let hashAlgorithm: HashAlgorithm
+                if (encryptionParams instanceof AlgorithmIdentifier) {
+                    const asymParams = (
+                        encryptionParams as SignatureAlgorithmIdentifier
+                    ).toAsymmetricEncryptionAlgorithmParams()
+                    if (
+                        'hash' in asymParams.params &&
+                        asymParams.params.hash !== undefined
+                    ) {
+                        hashAlgorithm = asymParams.params.hash
+                    } else {
+                        throw new Error(
+                            'Hash algorithm must be specified in signature algorithm',
+                        )
+                    }
+                } else {
+                    if (!('hash' in encryptionParams.params)) {
+                        throw new Error(
+                            'Hash algorithm must be specified in encryption parameters',
+                        )
+                    }
+                    hashAlgorithm = encryptionParams.params.hash
+                }
+
                 const digestAlgorithm =
-                    DigestAlgorithmIdentifier.digestAlgorithm(
-                        encryptionParams.params.hash,
-                    )
+                    DigestAlgorithmIdentifier.digestAlgorithm(hashAlgorithm)
 
                 const digestedData = await digestAlgorithm.digest(data)
 
@@ -379,8 +399,12 @@ export class SignedDataBuilder implements AsyncBuilder<SignedData> {
                         serialNumber: certificate.tbsCertificate.serialNumber,
                     })
 
-                const signatureAlgorithm =
-                    AlgorithmIdentifier.signatureAlgorithm(encryptionParams)
+                const signatureAlgorithm: SignatureAlgorithmIdentifier =
+                    encryptionParams instanceof AlgorithmIdentifier
+                        ? (encryptionParams as SignatureAlgorithmIdentifier)
+                        : AlgorithmIdentifier.signatureAlgorithm(
+                              encryptionParams,
+                          )
 
                 const signedAttributesDer = signedAttributes.toDer()
 

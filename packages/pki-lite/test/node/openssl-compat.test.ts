@@ -6,11 +6,13 @@ import {
     opensslCmsDecrypt,
     opensslCmsToText,
     opensslValidate,
+    opensslVerifyCertificate,
 } from '../../test-fixtures/openSsl.js'
 import { PrivateKeyInfo } from '../../src/keys/PrivateKeyInfo.js'
 import { SignedData } from '../../src/pkcs7/SignedData.js'
 import { SigningCertificateV2 } from '../../src/x509/attributes/SigningCertificateV2.js'
 import { Attribute } from '../../src/x509/Attribute.js'
+import { Extension } from '../../src/x509/Extension.js'
 import { CertificateList } from '../../src/x509/CertificateList.js'
 import { OCSPResponse } from '../../src/ocsp/OCSPResponse.js'
 import { ContentInfo } from '../../src/pkcs7/ContentInfo.js'
@@ -509,6 +511,47 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                 valid: true,
                 signerInfo: signedData.signerInfos[0],
             })
+        })
+    })
+
+    describe('Certificate', () => {
+        test('self-signed certificate is valid with OpenSSL', async () => {
+            const keyPair = PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem)
+            const loadedCert = Certificate.fromPem(rsaSigningKeys.certPem)
+            const publicKey = loadedCert.tbsCertificate.subjectPublicKeyInfo
+
+            const cert = await Certificate.builder()
+                .setSubject('CN=Test Self-Signed, O=Test Org, C=US')
+                .setPublicKey(publicKey)
+                .setPrivateKey(keyPair)
+                .setValidityDays(365)
+                .addExtension(
+                    Extension.basicConstraints({
+                        cA: true,
+                    }),
+                )
+                .selfSign()
+
+            const result = await opensslVerifyCertificate({
+                certificate: cert.toPem(),
+                selfSigned: true,
+            })
+
+            expect(result.success, result.error).toBe(true)
+        })
+
+        test('non-self-signed certificate from existing CA is valid with OpenSSL', async () => {
+            // Use the pre-generated certificates which have a valid CA signature
+            const userCert = Certificate.fromPem(rsaSigningKeys.certPem)
+            const caCert = Certificate.fromPem(rsaSigningKeys.caCertPem)
+
+            // Verify the user certificate with its CA
+            const result = await opensslVerifyCertificate({
+                certificate: userCert.toPem(),
+                caCertificate: caCert.toPem(),
+            })
+
+            expect(result.success, result.error).toBe(true)
         })
     })
 })

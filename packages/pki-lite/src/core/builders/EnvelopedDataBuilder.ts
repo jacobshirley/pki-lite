@@ -36,6 +36,7 @@
 
 import {
     AlgorithmIdentifier,
+    ContentEncryptionAlgorithmIdentifier,
     KeyEncryptionAlgorithmIdentifier,
 } from '../../algorithms/AlgorithmIdentifier.js'
 import { Certificate } from '../../x509/Certificate.js'
@@ -79,7 +80,9 @@ export type EnvelopedDataBuilderRecipient = {
     /** The recipient's certificate containing their public key */
     certificate: Certificate
     /** Optional key encryption algorithm, defaults to RSA-OAEP with SHA-1 */
-    keyEncryptionAlgorithm?: AsymmetricEncryptionAlgorithmParams
+    keyEncryptionAlgorithm?:
+        | AsymmetricEncryptionAlgorithmParams
+        | KeyEncryptionAlgorithmIdentifier
 }
 
 /**
@@ -132,7 +135,9 @@ export class EnvelopedDataBuilder implements AsyncBuilder<EnvelopedData> {
     recipients: EnvelopedDataBuilderRecipient[] = []
 
     /** Algorithm used to encrypt the content */
-    contentEncryptionAlgorithm?: SymmetricEncryptionAlgorithmParams
+    contentEncryptionAlgorithm?:
+        | SymmetricEncryptionAlgorithmParams
+        | ContentEncryptionAlgorithmIdentifier
 
     /** Optional certificates to include in originator info */
     certificates?: CertificateChoices[]
@@ -190,7 +195,7 @@ export class EnvelopedDataBuilder implements AsyncBuilder<EnvelopedData> {
      * Sets the symmetric encryption algorithm used to encrypt the content.
      * If not set, defaults to AES-256-CBC with a random IV.
      *
-     * @param algorithm The content encryption algorithm parameters
+     * @param algorithm The content encryption algorithm parameters or ContentEncryptionAlgorithmIdentifier
      * @returns This builder instance for method chaining
      *
      * @example
@@ -202,7 +207,9 @@ export class EnvelopedDataBuilder implements AsyncBuilder<EnvelopedData> {
      * ```
      */
     setContentEncryptionAlgorithm(
-        algorithm: SymmetricEncryptionAlgorithmParams,
+        algorithm:
+            | SymmetricEncryptionAlgorithmParams
+            | ContentEncryptionAlgorithmIdentifier,
     ): this {
         this.contentEncryptionAlgorithm = algorithm
         return this
@@ -355,10 +362,13 @@ export class EnvelopedDataBuilder implements AsyncBuilder<EnvelopedData> {
             }
         }
 
-        const contentEncryptionAlgorithm =
-            AlgorithmIdentifier.contentEncryptionAlgorithm(
-                this.contentEncryptionAlgorithm,
-            )
+        const contentEncryptionAlgorithm: ContentEncryptionAlgorithmIdentifier =
+            this.contentEncryptionAlgorithm instanceof AlgorithmIdentifier
+                ? (this
+                      .contentEncryptionAlgorithm as ContentEncryptionAlgorithmIdentifier)
+                : AlgorithmIdentifier.contentEncryptionAlgorithm(
+                      this.contentEncryptionAlgorithm,
+                  )
 
         const contentEncryptionKey = contentEncryptionAlgorithm.generateKey()
 
@@ -377,9 +387,12 @@ export class EnvelopedDataBuilder implements AsyncBuilder<EnvelopedData> {
             this.recipients.map(async (recipient) => {
                 const keyEncryptionAlgorithm: KeyEncryptionAlgorithmIdentifier =
                     recipient.keyEncryptionAlgorithm
-                        ? AlgorithmIdentifier.keyEncryptionAlgorithm(
-                              recipient.keyEncryptionAlgorithm,
-                          )
+                        ? recipient.keyEncryptionAlgorithm instanceof
+                          AlgorithmIdentifier
+                            ? (recipient.keyEncryptionAlgorithm as KeyEncryptionAlgorithmIdentifier)
+                            : AlgorithmIdentifier.keyEncryptionAlgorithm(
+                                  recipient.keyEncryptionAlgorithm,
+                              )
                         : EnvelopedDataBuilder.DEFAULT_KEY_ENCRYPTION_ALGORITHM
 
                 const issuerAndSerialNumber = new IssuerAndSerialNumber({
