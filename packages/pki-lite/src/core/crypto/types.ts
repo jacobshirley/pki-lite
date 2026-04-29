@@ -468,6 +468,27 @@ export interface CryptoProvider {
     ): Promise<Uint8Array<ArrayBuffer>>
 
     /**
+     * Derives key material using PKCS#12 password-based KDF (RFC 7292 Appendix B).
+     * Supports modern hash algorithms for improved security while maintaining OpenSSL compatibility.
+     *
+     * @param password The password (string or bytes, will be converted to BMPString format)
+     * @param salt Salt value for key derivation
+     * @param iterationCount Number of iterations for key strengthening
+     * @param keyLength Desired key length in bytes
+     * @param purpose Key purpose: 'encryption' (id=1), 'iv' (id=2), or 'mac' (id=3)
+     * @param hash Hash algorithm to use (default: SHA-1 for legacy compatibility)
+     * @returns Promise resolving to the derived key bytes
+     */
+    derivePkcs12Key(
+        password: string | Uint8Array<ArrayBuffer>,
+        salt: Uint8Array<ArrayBuffer>,
+        iterationCount: number,
+        keyLength: number,
+        purpose?: 'encryption' | 'iv' | 'mac',
+        hash?: HashAlgorithm,
+    ): Promise<Uint8Array<ArrayBuffer>>
+
+    /**
      * Gets the EC curve parameters for a given asymmetric encryption algorithm.
      *
      * @param algorithm The asymmetric encryption algorithm parameters

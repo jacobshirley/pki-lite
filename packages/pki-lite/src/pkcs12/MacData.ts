@@ -3,8 +3,7 @@ import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { DigestInfo } from './DigestInfo.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
-import { BMPString } from '../asn1/BMPString.js'
-import { pkcs12Derive } from '../core/crypto/utils.js'
+import { getCryptoProvider } from '../core/crypto/provider.js'
 import type { HashAlgorithm } from '../core/crypto/types.js'
 
 /**
@@ -94,18 +93,18 @@ export class MacData extends PkiBase<MacData> {
         hash: HashAlgorithm = 'SHA-256',
     ): Promise<MacData> {
         const macSalt = crypto.getRandomValues(new Uint8Array(8))
-        const passwordBytes = BMPString.nullTerminated(password)
         const digestAlgorithm = AlgorithmIdentifier.digestAlgorithm(hash)
         const keyLen = digestAlgorithm.getOutputBytes()
 
         // Use PKCS#12 KDF (RFC 7292 Appendix B) for MAC key derivation
         // This is required for OpenSSL compatibility
-        const macKey = await pkcs12Derive(
-            passwordBytes,
+        const provider = getCryptoProvider()
+        const macKey = await provider.derivePkcs12Key(
+            password,
             macSalt,
-            3 /* MAC key */,
             iterations,
             keyLen,
+            'mac',
             hash,
         )
 

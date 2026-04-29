@@ -8,6 +8,7 @@ import { PBES2Params } from '../../pkcs5/PBES2Params.js'
 import { PBEParameter } from '../../pkcs5/PBEParameter.js'
 import { RSAESOAEPParams } from '../../algorithms/RSAESOAEPParams.js'
 import { RSASSAPSSParams } from '../../algorithms/RSASSAPSSParams.js'
+import { BMPString } from '../../asn1/BMPString.js'
 import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
 import { OctetString } from '../../asn1/OctetString.js'
 import type { PrivateKeyInfo } from '../../keys/PrivateKeyInfo.js'
@@ -25,6 +26,7 @@ import type {
     PbeAlgorithmParams,
 } from './types.js'
 import { PBKDF2Params } from '../../pkcs5/PBKDF2Params.js'
+import { pkcs12Derive } from './utils.js'
 
 /**
  * Cryptographic provider implementation using the Web Crypto API.
@@ -449,10 +451,103 @@ export class WebCryptoProvider implements CryptoProvider {
         return derivedKey
     }
 
+    /**
+     * Derives key material using PKCS#12 password-based KDF (RFC 7292 Appendix B).
+     * Supports modern hash algorithms for improved security while maintaining OpenSSL compatibility.
+     *
+     * @param password The password (string or bytes, will be converted to BMPString format)
+     * @param salt Salt value for key derivation
+     * @param iterationCount Number of iterations for key strengthening
+     * @param keyLength Desired key length in bytes
+     * @param purpose Key purpose: 'encryption' (id=1), 'iv' (id=2), or 'mac' (id=3)
+     * @param hash Hash algorithm to use (default: SHA-1 for legacy compatibility)
+     * @returns Promise resolving to the derived key bytes
+     *
+     * @example
+     * ```typescript
+     * // Derive a MAC key with SHA-256
+     * const macKey = await provider.derivePkcs12Key(
+     *     password,
+     *     salt,
+     *     100000,
+     *     32,
+     *     'mac',
+     *     'SHA-256'
+     * )
+     * ```
+     */
+    async derivePkcs12Key(
+        password: string | Uint8Array<ArrayBuffer>,
+        salt: Uint8Array<ArrayBuffer>,
+        iterationCount: number,
+        keyLength: number,
+        purpose: 'encryption' | 'iv' | 'mac' = 'encryption',
+        hash: HashAlgorithm = 'SHA-1',
+    ): Promise<Uint8Array<ArrayBuffer>> {
+        // Convert password to BMPString format (UTF-16BE with NUL terminator)
+        const passwordBytes = BMPString.nullTerminated(password)
+
+        // Map purpose to PKCS#12 id parameter
+        const id = purpose === 'encryption' ? 1 : purpose === 'iv' ? 2 : 3
+
+        return pkcs12Derive(
+            passwordBytes,
+            salt,
+            id,
+            iterationCount,
+            keyLength,
+            hash,
+        )
+    }
+
     async deriveKey(
         password: string | Uint8Array<ArrayBuffer> | CryptoKey,
         algorithm: PbeAlgorithmParams,
     ): Promise<Uint8Array<ArrayBuffer>> {
+        // Handle PKCS#12 PBE algorithms using derivePkcs12Key
+        if (algorithm.type !== 'PBES2') {
+            if (password instanceof CryptoKey) {
+                throw new UnsupportedCryptoAlgorithmError(
+                    `PKCS#12 PBE algorithm ${algorithm.type} requires a password, not a CryptoKey`,
+                )
+            }
+
+            const { salt, iterationCount } = algorithm.params
+
+            // Determine key length based on algorithm
+            let keyLength: number
+            switch (algorithm.type) {
+                case 'PKCS12_SHA1_RC4_128':
+                case 'PKCS12_SHA1_3DES_2KEY':
+                case 'PKCS12_SHA1_RC2_128':
+                    keyLength = 16 // 128 bits
+                    break
+                case 'PKCS12_SHA1_RC4_40':
+                case 'PKCS12_SHA1_RC2_40':
+                    keyLength = 5 // 40 bits
+                    break
+                case 'PKCS12_SHA1_3DES_3KEY':
+                    keyLength = 24 // 192 bits
+                    break
+                default:
+                    // This should never happen if all PKCS#12 algorithms are handled
+                    throw new UnsupportedCryptoAlgorithmError(
+                        `Unsupported PKCS#12 PBE algorithm: ${(algorithm as any).type}`,
+                    )
+            }
+
+            // Legacy PKCS#12 algorithms always use SHA-1
+            return this.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                keyLength,
+                'encryption',
+                'SHA-1',
+            )
+        }
+
+        // Handle PBES2 using Web Crypto API
         const cryptoKey = await this.deriveCryptoKey(password, algorithm)
         const rawKey = await this.crypto.subtle.exportKey('raw', cryptoKey)
         return new Uint8Array(rawKey)

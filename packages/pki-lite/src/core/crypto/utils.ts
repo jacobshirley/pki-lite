@@ -4,7 +4,6 @@ import { HashAlgorithm } from './types'
 
 /**
  * PKCS#12 password-based key derivation (RFC 7292 Appendix B.2).
- *
  * @param password Password as BMPString (UTF-16BE) with NUL terminator
  * @param salt Salt bytes
  * @param id 1 = encryption key, 2 = IV, 3 = MAC key
@@ -12,6 +11,7 @@ import { HashAlgorithm } from './types'
  * @param n Number of bytes to produce
  * @param hash Hash algorithm
  */
+
 export async function pkcs12Derive(
     password: Uint8Array<ArrayBuffer>,
     salt: Uint8Array<ArrayBuffer>,
@@ -23,7 +23,6 @@ export async function pkcs12Derive(
     const digestAlgorithm = AlgorithmIdentifier.digestAlgorithm(hash)
     const u = digestAlgorithm.getOutputBytes()
     const v = digestAlgorithm.getBlockBytes()
-    const provider = getCryptoProvider()
 
     // Step 1: D = ID byte repeated v times
     const D = new Uint8Array(v).fill(id)
@@ -47,14 +46,16 @@ export async function pkcs12Derive(
     const c = Math.ceil(n / u)
     const result = new Uint8Array(c * u)
 
+    const crypto = getCryptoProvider()
+
     for (let i = 0; i < c; i++) {
         // a) A_i = H^iterations(D || I)
         const di = new Uint8Array(D.length + I.length)
         di.set(D)
         di.set(I, D.length)
-        let Ai = await provider.digest(di, hash)
+        let Ai = await crypto.digest(di, hash)
         for (let j = 1; j < iterations; j++) {
-            Ai = await provider.digest(Ai, hash)
+            Ai = await crypto.digest(Ai, hash)
         }
         result.set(Ai, i * u)
 
