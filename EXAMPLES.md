@@ -822,3 +822,510 @@ console.log('  • certificate.toPem() - Export as PEM')
 console.log('  • certificate.toDer() - Export as DER')
 console.log('  • certificate.toString() - View ASN.1 structure')
 ```
+
+## Building a PKCS#12 (PFX) file with certificate and private key
+
+```typescript
+import { PFX } from 'pki-lite/pkcs12/PFX.js'
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+
+console.log('=== PFX Builder Examples ===\n')
+
+// Generate a key pair for the examples
+console.log('Generating RSA key pair...')
+const keyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
+console.log('✓ Key pair generated\n')
+
+// Create a self-signed certificate
+console.log('Creating self-signed certificate...')
+const certificate = await Certificate.builder()
+    .setSubject('CN=Example User, O=Example Org, C=US')
+    .setPublicKey(keyPair.publicKey)
+    .setPrivateKey(keyPair.privateKey)
+    .setValidityDays(365)
+    .generateSerialNumber()
+    .addKeyUsage({
+        digitalSignature: true,
+        keyEncipherment: true,
+    })
+    .selfSign()
+console.log('✓ Certificate created\n')
+
+// Example 1: Basic PFX with certificate and private key
+console.log('=== Example 1: Basic PFX with Certificate and Private Key ===')
+const basicPfx = await PFX.builder()
+    .addCertificate(certificate)
+    .addPrivateKey(keyPair.privateKey)
+    .setPassword('mySecurePassword123')
+    .build()
+
+console.log('✓ PFX created')
+console.log('  Has MAC data:', !!basicPfx.macData)
+console.log('  PFX size:', basicPfx.toDer().length, 'bytes\n')
+
+// Example 2: PFX with friendly name
+console.log('=== Example 2: PFX with Friendly Name ===')
+const namedPfx = await PFX.builder()
+    .addCertificate(certificate)
+    .addPrivateKey(keyPair.privateKey)
+    .setPassword('mySecurePassword123')
+    .setFriendlyName('My Digital Identity')
+    .setIterations(100000) // Higher iterations for better security
+    .build()
+
+console.log('✓ PFX with friendly name created')
+console.log('  Iterations:', namedPfx.macData?.iterations)
+console.log('  PFX size:', namedPfx.toDer().length, 'bytes\n')
+
+// Example 3: PFX with certificate chain
+console.log('=== Example 3: PFX with Certificate Chain ===')
+
+// Generate a CA key pair
+const caKeyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
+
+// Create a CA certificate
+const caCert = await Certificate.builder()
+    .setSubject('CN=Example CA, O=Example Org, C=US')
+    .setPublicKey(caKeyPair.publicKey)
+    .setPrivateKey(caKeyPair.privateKey)
+    .setValidityDays(3650)
+    .generateSerialNumber()
+    .addBasicConstraints(true, 2) // CA with pathLen=2
+    .addKeyUsage({
+        keyCertSign: true,
+        cRLSign: true,
+    })
+    .selfSign()
+
+// Create an end-entity certificate signed by CA
+const endEntityKeyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
+const endEntityCert = await Certificate.builder()
+    .setSubject('CN=End Entity, O=Example Org, C=US')
+    .setIssuer(caCert.tbsCertificate.subject)
+    .setPublicKey(endEntityKeyPair.publicKey)
+    .setPrivateKey(caKeyPair.privateKey) // Signed by CA
+    .setValidityDays(365)
+    .generateSerialNumber()
+    .addKeyUsage({
+        digitalSignature: true,
+        keyEncipherment: true,
+    })
+    .addExtendedKeyUsage({
+        clientAuth: true,
+        emailProtection: true,
+    })
+    .build()
+
+// Build PFX with certificate chain
+const chainPfx = await PFX.builder()
+    .addCertificate(endEntityCert) // End entity cert first
+    .addCertificate(caCert) // CA cert for chain
+    .addPrivateKey(endEntityKeyPair.privateKey)
+    .setPassword('mySecurePassword123')
+    .setFriendlyName('My Identity with Chain')
+    .setIterations(100000)
+    .build()
+
+console.log('✓ PFX with certificate chain created')
+console.log('  Certificates in chain: 2')
+console.log('  PFX size:', chainPfx.toDer().length, 'bytes\n')
+
+// Example 4: Export and verify PFX
+console.log('=== Example 4: Export and Verify PFX ===')
+
+// Export to PEM format
+const pfxPem = basicPfx.toPem()
+console.log('✓ PFX exported to PEM format')
+console.log('  PEM preview:', pfxPem.substring(0, 50) + '...\n')
+
+// Verify by parsing and extracting contents
+const password = 'mySecurePassword123'
+const parsedPfx = PFX.fromPem(pfxPem)
+
+const extractedCerts = await parsedPfx.getX509Certificates(password)
+const extractedKeys = await parsedPfx.getPrivateKeys(password)
+
+console.log('✓ PFX verified successfully')
+console.log('  Extracted certificates:', extractedCerts.length)
+console.log('  Extracted private keys:', extractedKeys.length)
+console.log(
+    '  Certificate subject:',
+    extractedCerts[0].tbsCertificate.subject.toString(),
+)
+
+// Example 5: Using PFX.create() shorthand
+console.log('\n=== Example 5: Using PFX.create() Shorthand ===')
+const shorthandPfx = await PFX.create({
+    certificates: [certificate],
+    privateKeys: [keyPair.privateKey],
+    password: 'mySecurePassword123',
+    friendlyName: 'Quick Identity',
+})
+
+console.log('✓ PFX created using shorthand method')
+console.log('  PFX size:', shorthandPfx.toDer().length, 'bytes')
+```
+
+## Building encrypted data using the EncryptedData builder
+
+```typescript
+import { EncryptedData } from 'pki-lite/pkcs7/EncryptedData.js'
+import { OIDs } from 'pki-lite/core/OIDs.js'
+import { getCryptoProvider } from 'pki-lite/core/crypto/provider.js'
+
+console.log('=== EncryptedData Builder Examples ===\n')
+
+const secretMessage = new TextEncoder().encode(
+    'This is a secret message that needs to be encrypted!',
+)
+const password = 'mySecurePassword123'
+
+// Example 1: Basic encryption with default settings (PBES2)
+console.log('=== Example 1: Basic Encryption with Default Settings ===')
+const basicEncrypted = await EncryptedData.builder()
+    .setContentType('DATA')
+    .setData(secretMessage)
+    .setPassword(password)
+    .build()
+
+console.log('✓ Data encrypted with default PBES2 algorithm')
+console.log('  Version:', basicEncrypted.version)
+console.log(
+    '  Content type:',
+    basicEncrypted.encryptedContentInfo.contentType.value,
+)
+console.log(
+    '  Encrypted size:',
+    basicEncrypted.encryptedContentInfo.encryptedContent?.bytes.length,
+    'bytes',
+)
+console.log(
+    '  Algorithm:',
+    basicEncrypted.encryptedContentInfo.contentEncryptionAlgorithm.friendlyName,
+)
+
+// Decrypt to verify
+const provider = getCryptoProvider()
+const algorithm1 = provider.toSymmetricEncryptionAlgorithmParams(
+    basicEncrypted.encryptedContentInfo.contentEncryptionAlgorithm,
+)
+const decrypted1 = await provider.decryptSymmetric(
+    basicEncrypted.encryptedContentInfo.encryptedContent!.bytes,
+    password as any, // Type definitions need updating to accept string
+    algorithm1,
+)
+console.log('✓ Decrypted successfully:', new TextDecoder().decode(decrypted1))
+console.log()
+
+// Example 2: Encryption with custom PBKDF2 iterations
+console.log('=== Example 2: Custom Iterations for PBKDF2 ===')
+const customIterations = await EncryptedData.builder()
+    .setContentType('DATA')
+    .setData(secretMessage)
+    .setPassword(password)
+    .setAlgorithm({
+        type: 'PBES2',
+        params: {
+            derivationAlgorithm: {
+                type: 'PBKDF2',
+                params: {
+                    salt: crypto.getRandomValues(new Uint8Array(16)),
+                    iterationCount: 100000, // Higher security
+                    hash: 'SHA-256',
+                },
+            },
+            encryptionAlgorithm: {
+                type: 'AES_256_CBC',
+                params: {
+                    nonce: crypto.getRandomValues(new Uint8Array(16)),
+                },
+            },
+        },
+    })
+    .build()
+
+console.log('✓ Data encrypted with 100,000 PBKDF2 iterations')
+console.log(
+    '  Algorithm:',
+    customIterations.encryptedContentInfo.contentEncryptionAlgorithm
+        .friendlyName,
+)
+console.log()
+
+// Example 3: Encryption with SHA-512 hash
+console.log('=== Example 3: Using SHA-512 for Key Derivation ===')
+const sha512Encrypted = await EncryptedData.builder()
+    .setContentType('DATA')
+    .setData(secretMessage)
+    .setPassword(password)
+    .setAlgorithm({
+        type: 'PBES2',
+        params: {
+            derivationAlgorithm: {
+                type: 'PBKDF2',
+                params: {
+                    salt: crypto.getRandomValues(new Uint8Array(16)),
+                    iterationCount: 50000,
+                    hash: 'SHA-512', // More secure hash
+                },
+            },
+            encryptionAlgorithm: {
+                type: 'AES_256_CBC',
+                params: {
+                    nonce: crypto.getRandomValues(new Uint8Array(16)),
+                },
+            },
+        },
+    })
+    .build()
+
+console.log('✓ Data encrypted using SHA-512 for key derivation')
+console.log(
+    '  Algorithm:',
+    sha512Encrypted.encryptedContentInfo.contentEncryptionAlgorithm
+        .friendlyName,
+)
+console.log()
+
+// Example 4: Encryption with AES-128 (smaller key size)
+console.log('=== Example 4: Using AES-128-CBC ===')
+const aes128Encrypted = await EncryptedData.builder()
+    .setContentType('DATA')
+    .setData(secretMessage)
+    .setPassword(password)
+    .setAlgorithm({
+        type: 'PBES2',
+        params: {
+            derivationAlgorithm: {
+                type: 'PBKDF2',
+                params: {
+                    salt: crypto.getRandomValues(new Uint8Array(16)),
+                    iterationCount: 10000,
+                    hash: 'SHA-256',
+                },
+            },
+            encryptionAlgorithm: {
+                type: 'AES_128_CBC',
+                params: {
+                    nonce: crypto.getRandomValues(new Uint8Array(16)),
+                },
+            },
+        },
+    })
+    .build()
+
+console.log('✓ Data encrypted with AES-128-CBC')
+console.log()
+
+// Example 5: Using EncryptedData.create() shorthand
+console.log('=== Example 5: Using EncryptedData.create() Shorthand ===')
+const shorthand = await EncryptedData.create({
+    contentType: 'DATA',
+    data: secretMessage,
+    password,
+    iterations: 50000,
+})
+
+console.log('✓ Data encrypted using shorthand method')
+console.log('  Encrypted size:', shorthand.toDer().length, 'bytes')
+console.log()
+
+// Example 6: Export to DER and convert to CMS
+console.log('=== Example 6: Export and Convert to CMS ===')
+const der = basicEncrypted.toDer()
+console.log('✓ Encrypted data exported to DER')
+console.log('  DER size:', der.length, 'bytes')
+
+// Convert to CMS ContentInfo
+const cms = basicEncrypted.asCms()
+console.log('✓ Converted to CMS ContentInfo')
+console.log('  Content type:', cms.contentType.value)
+console.log('  CMS size:', cms.toDer().length, 'bytes')
+```
+
+## Building a Certificate Revocation List (CRL) using the CertificateList builder
+
+```typescript
+import { CertificateList } from 'pki-lite/x509/CertificateList.js'
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+import { Extension } from 'pki-lite/x509/Extension.js'
+import { OIDs } from 'pki-lite/core/OIDs.js'
+
+console.log('=== CRL Builder Examples ===\n')
+
+// First, create a CA certificate and key pair
+console.log('Setting up CA...')
+const caKeyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
+const caCert = await Certificate.builder()
+    .setSubject('CN=Example CA, O=Example Org, C=US')
+    .setPublicKey(caKeyPair.publicKey)
+    .setPrivateKey(caKeyPair.privateKey)
+    .setValidityDays(3650)
+    .generateSerialNumber()
+    .addBasicConstraints(true, 2)
+    .addKeyUsage({
+        keyCertSign: true,
+        cRLSign: true,
+    })
+    .selfSign()
+console.log('✓ CA certificate created\n')
+
+// Create some end-entity certificates to revoke
+console.log('Creating certificates to revoke...')
+const cert1KeyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
+const cert1 = await Certificate.builder()
+    .setSubject('CN=User 1, O=Example Org, C=US')
+    .setIssuer(caCert.tbsCertificate.subject)
+    .setPublicKey(cert1KeyPair.publicKey)
+    .setPrivateKey(caKeyPair.privateKey)
+    .setValidityDays(365)
+    .setSerialNumber(1001)
+    .addKeyUsage({
+        digitalSignature: true,
+        keyEncipherment: true,
+    })
+    .build()
+
+const cert2KeyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
+const cert2 = await Certificate.builder()
+    .setSubject('CN=User 2, O=Example Org, C=US')
+    .setIssuer(caCert.tbsCertificate.subject)
+    .setPublicKey(cert2KeyPair.publicKey)
+    .setPrivateKey(caKeyPair.privateKey)
+    .setValidityDays(365)
+    .setSerialNumber(1002)
+    .addKeyUsage({
+        digitalSignature: true,
+        keyEncipherment: true,
+    })
+    .build()
+
+console.log('✓ Test certificates created\n')
+
+// Example 1: Basic CRL with revoked certificates
+console.log('=== Example 1: Basic CRL with Revoked Certificates ===')
+const basicCrl = await CertificateList.builder()
+    .setIssuerFromCertificate(caCert)
+    .setPrivateKey(caKeyPair.privateKey)
+    .setThisUpdate(new Date())
+    .setNextUpdate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) // 30 days
+    .addRevokedCertificate({
+        serialNumber: 1001,
+        revocationDate: new Date(),
+    })
+    .addRevokedCertificate({
+        serialNumber: 1002,
+        revocationDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+    })
+    .build()
+
+console.log('✓ Basic CRL created')
+console.log('  Issuer:', basicCrl.tbsCertList.issuer.toString())
+console.log('  This Update:', basicCrl.tbsCertList.thisUpdate)
+console.log('  Next Update:', basicCrl.tbsCertList.nextUpdate)
+console.log(
+    '  Revoked Certificates:',
+    basicCrl.tbsCertList.revokedCertificates?.length || 0,
+)
+console.log('  CRL size:', basicCrl.toDer().length, 'bytes\n')
+
+// Example 2: Revoking certificates by reference
+console.log('=== Example 2: Revoking Certificates by Reference ===')
+const referenceCrl = await CertificateList.builder()
+    .setIssuerFromCertificate(caCert)
+    .setPrivateKey(caKeyPair.privateKey)
+    .revokeCertificate(cert1) // Revokes using current time
+    .revokeCertificate(cert2, new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)) // 14 days ago
+    .build()
+
+console.log('✓ CRL created by revoking certificate references')
+console.log(
+    '  Revoked Certificates:',
+    referenceCrl.tbsCertList.revokedCertificates?.length || 0,
+)
+console.log()
+
+// Example 3: CRL with CRL Number extension
+console.log('=== Example 3: CRL with CRL Number Extension ===')
+const crlNumberExtension = new Extension({
+    extnID: OIDs.EXTENSION.CRL_NUMBER,
+    critical: false,
+    extnValue: new Uint8Array([0x02, 0x01, 0x01]), // Integer 1 (ASN.1 DER encoded)
+})
+
+const numberedCrl = await CertificateList.builder()
+    .setIssuerFromCertificate(caCert)
+    .setPrivateKey(caKeyPair.privateKey)
+    .addExtension(crlNumberExtension)
+    .revokeCertificate(cert1)
+    .build()
+
+console.log('✓ CRL with CRL Number extension created')
+console.log('  Extensions:', numberedCrl.tbsCertList.extensions?.length || 0)
+console.log(
+    '  CRL version:',
+    numberedCrl.tbsCertList.version === 1 ? 'v2' : 'v1',
+)
+console.log()
+
+// Example 4: Empty CRL (no revoked certificates)
+console.log('=== Example 4: Empty CRL ===')
+const emptyCrl = await CertificateList.builder()
+    .setIssuerFromCertificate(caCert)
+    .setPrivateKey(caKeyPair.privateKey)
+    .setThisUpdate(new Date())
+    .setNextUpdate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)) // 7 days
+    .build()
+
+console.log('✓ Empty CRL created (no revoked certificates)')
+console.log(
+    '  Revoked Certificates:',
+    emptyCrl.tbsCertList.revokedCertificates?.length || 0,
+)
+console.log('  CRL version:', emptyCrl.tbsCertList.version === 1 ? 'v2' : 'v1')
+console.log()
+
+// Example 5: Export and parse CRL
+console.log('=== Example 5: Export and Parse CRL ===')
+
+// Export to PEM
+const crlPem = basicCrl.toPem()
+console.log('✓ CRL exported to PEM format')
+console.log('  PEM preview:', crlPem.substring(0, 50) + '...')
+
+// Parse back from PEM
+const parsedCrl = CertificateList.fromPem(crlPem)
+console.log('✓ CRL parsed from PEM')
+console.log(
+    '  Issuer matches:',
+    parsedCrl.tbsCertList.issuer.toString() ===
+        basicCrl.tbsCertList.issuer.toString(),
+)
+console.log(
+    '  Revoked count matches:',
+    parsedCrl.tbsCertList.revokedCertificates?.length ===
+        basicCrl.tbsCertList.revokedCertificates?.length,
+)
+console.log()
+
+// Example 6: Checking if a certificate is revoked
+console.log('=== Example 6: Checking Revocation Status ===')
+const serialToCheck = cert1.tbsCertificate.serialNumber.toString()
+const isRevoked = basicCrl.tbsCertList.revokedCertificates?.some(
+    (revoked) => revoked.userCertificate.toString() === serialToCheck,
+)
+
+console.log(
+    `Certificate with serial ${serialToCheck}:`,
+    isRevoked ? 'REVOKED' : 'Valid',
+)
+
+if (isRevoked) {
+    const revokedEntry = basicCrl.tbsCertList.revokedCertificates?.find(
+        (revoked) => revoked.userCertificate.toString() === serialToCheck,
+    )
+    console.log('  Revocation Date:', revokedEntry?.revocationDate)
+}
+```
