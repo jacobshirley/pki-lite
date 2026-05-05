@@ -9,18 +9,20 @@ import {
 } from 'pki-lite/core/crypto/index.js'
 import { SubjectPublicKeyInfo } from 'pki-lite/keys/SubjectPublicKeyInfo.js'
 import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
-import forge from 'node-forge'
 import { getPbeAlgorithm } from './pbeAlgorithms.js'
 import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
 import { OIDs } from 'pki-lite/core/OIDs.js'
 import { PBEParameter } from 'pki-lite/pkcs5/PBEParameter.js'
+import { RSAPublicKey } from 'pki-lite/keys/RSAPublicKey.js'
+import { RSAPrivateKey } from 'pki-lite/keys/RSAPrivateKey.js'
+import { rsaEncrypt, rsaDecrypt } from './rsa.js'
 
 /**
  * Extended WebCryptoProvider that adds support for additional algorithms
  * such as MD5 hashing, AES ECB mode, and certain PBE algorithms.
  *
- * Note: This implementation uses the 'node-forge' library for RSA encryption/decryption
- * with PKCS#1 v1.5 padding, as WebCrypto does not support this mode directly.
+ * This implementation includes custom RSASSA-PKCS1-v1_5 encryption/decryption
+ * with proper block type 0x02 and random non-zero padding.
  *
  * Caution: MD5 is considered cryptographically weak and should be used with caution.
  * This provider is intended for compatibility with legacy systems and not for secure applications.
@@ -128,18 +130,13 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
         algorithm: AsymmetricEncryptionAlgorithmParams,
     ): Promise<Uint8Array<ArrayBuffer>> {
         if (algorithm.type === 'RSASSA_PKCS1_v1_5') {
-            const publicKeyPem = forge.pki.publicKeyFromPem(
-                publicKeyInfo.getPublicKey().toPem(),
-            )
-
-            const encrypted = publicKeyPem.encrypt(
-                forge.util.binary.raw.encode(data),
-            )
-            if (!encrypted) {
-                throw new Error('Encryption failed')
+            // Parse RSA public key
+            const publicKey = publicKeyInfo.getPublicKey()
+            if (!(publicKey instanceof RSAPublicKey)) {
+                throw new Error('Public key must be an RSAPublicKey')
             }
 
-            return new Uint8Array(forge.util.binary.raw.decode(encrypted))
+            return rsaEncrypt(data, publicKey)
         }
 
         return super.encrypt(data, publicKeyInfo, algorithm)
@@ -150,20 +147,14 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
         privateKeyInfo: PrivateKeyInfo,
         algorithm: AsymmetricEncryptionAlgorithmParams,
     ): Promise<Uint8Array<ArrayBuffer>> {
-        // Currently only RSA-OAEP is supported for asymmetric encryption in WebCrypto
         if (algorithm.type === 'RSASSA_PKCS1_v1_5') {
-            const privateKeyPem = forge.pki.privateKeyFromPem(
-                privateKeyInfo.getPrivateKey().toPem(),
-            )
-
-            const decrypted = privateKeyPem.decrypt(
-                forge.util.binary.raw.encode(data),
-            )
-            if (!decrypted) {
-                throw new Error('Decryption failed')
+            // Parse RSA private key
+            const privateKey = privateKeyInfo.getPrivateKey()
+            if (!(privateKey instanceof RSAPrivateKey)) {
+                throw new Error('Private key must be an RSAPrivateKey')
             }
 
-            return new Uint8Array(forge.util.binary.raw.decode(decrypted))
+            return rsaDecrypt(data, privateKey)
         }
 
         return super.decrypt(data, privateKeyInfo, algorithm)
