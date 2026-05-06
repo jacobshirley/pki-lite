@@ -160,6 +160,27 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
         return super.decrypt(data, privateKeyInfo, algorithm)
     }
 
+    toAsymmetricEncryptionAlgorithmParams(
+        algorithm: AlgorithmIdentifier,
+        publicKeyInfo?: SubjectPublicKeyInfo,
+    ): AsymmetricEncryptionAlgorithmParams {
+        // Handle RSA ENCRYPTION OID (1.2.840.113549.1.1.1) which is used by OpenSSL
+        // for PKCS#1 v1.5 encryption without explicit hash algorithm
+        if (algorithm.algorithm.value === OIDs.RSA.ENCRYPTION) {
+            return {
+                type: 'RSASSA_PKCS1_v1_5',
+                params: {
+                    hash: 'SHA-256', // Default hash for PKCS#1 v1.5
+                },
+            }
+        }
+
+        return super.toAsymmetricEncryptionAlgorithmParams(
+            algorithm,
+            publicKeyInfo,
+        )
+    }
+
     toSymmetricEncryptionAlgorithmParams(
         algorithm: AlgorithmIdentifier,
     ): SymmetricEncryptionAlgorithmParams {

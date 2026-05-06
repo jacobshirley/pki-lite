@@ -2,6 +2,18 @@ import { RSAPublicKey } from 'pki-lite/keys/RSAPublicKey.js'
 import { RSAPrivateKey } from 'pki-lite/keys/RSAPrivateKey.js'
 
 /**
+ * Get modulus bytes without leading zeros
+ */
+function stripLeadingZeros(modulus: Uint8Array): Uint8Array {
+    let start = 0
+    while (start < modulus.length && modulus[start] === 0x00) {
+        start++
+    }
+    if (start === 0) return modulus
+    return modulus.slice(start)
+}
+
+/**
  * Convert a Uint8Array to a bigint (big-endian)
  */
 export function bytesToBigInt(bytes: Uint8Array): bigint {
@@ -165,9 +177,11 @@ export function rsaEncrypt(
     data: Uint8Array<ArrayBuffer>,
     publicKey: RSAPublicKey,
 ): Uint8Array<ArrayBuffer> {
-    const modulus = bytesToBigInt(publicKey.modulus)
+    // Strip leading zeros from modulus (ASN.1 may add 0x00 prefix for positive integers)
+    const modulusBytes = stripLeadingZeros(publicKey.modulus)
+    const modulus = bytesToBigInt(modulusBytes)
     const exponent = bytesToBigInt(publicKey.publicExponent)
-    const modulusLength = publicKey.modulus.length
+    const modulusLength = modulusBytes.length
 
     // Apply PKCS#1 v1.5 padding (block type 0x02)
     const padded = rsaesPkcs1v15Pad(data, modulusLength)
@@ -192,9 +206,11 @@ export function rsaDecrypt(
     data: Uint8Array<ArrayBuffer>,
     privateKey: RSAPrivateKey,
 ): Uint8Array<ArrayBuffer> {
-    const modulus = bytesToBigInt(privateKey.modulus)
+    // Strip leading zeros from modulus (ASN.1 may add 0x00 prefix for positive integers)
+    const modulusBytes = stripLeadingZeros(privateKey.modulus)
+    const modulus = bytesToBigInt(modulusBytes)
     const exponent = bytesToBigInt(privateKey.privateExponent)
-    const modulusLength = privateKey.modulus.length
+    const modulusLength = modulusBytes.length
 
     // Convert ciphertext to bigint
     const c = bytesToBigInt(data)
