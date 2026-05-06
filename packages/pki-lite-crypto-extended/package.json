@@ -43,8 +43,7 @@
     "license": "MIT",
     "packageManager": "pnpm@10.33.2",
     "dependencies": {
-        "@noble/ciphers": "2.2.0",
-        "@noble/hashes": "2.2.0"
+        "@noble/ciphers": "2.2.0"
     },
     "peerDependencies": {
         "pki-lite": "^1.0.0"

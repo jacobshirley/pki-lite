@@ -1,4 +1,3 @@
-import { md5 as _md5 } from '@noble/hashes/legacy.js'
 import { ecb, cbc } from '@noble/ciphers/aes.js'
 import {
     WebCryptoProvider,
@@ -7,6 +6,7 @@ import {
     AsymmetricEncryptionAlgorithmParams,
     PbeAlgorithmParams,
 } from 'pki-lite/core/crypto/index.js'
+import { md5 } from './md5.js'
 import { SubjectPublicKeyInfo } from 'pki-lite/keys/SubjectPublicKeyInfo.js'
 import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
 import { getPbeAlgorithm } from './pbeAlgorithms.js'
@@ -41,7 +41,7 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
         algorithm: HashAlgorithm,
     ): Promise<Uint8Array<ArrayBuffer>> {
         if (algorithm === 'MD5') {
-            return new Uint8Array(_md5(data))
+            return md5(data)
         }
         return super.digest(data, algorithm)
     }
