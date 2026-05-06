@@ -74,7 +74,7 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
             algorithm.type === 'SHA1_3DES_3KEY_CBC'
         ) {
             const algo = getPbeAlgorithm(algorithm.type)
-            return algo.encrypt(
+            return await algo.encrypt(
                 data,
                 key,
                 algorithm.params.salt,
@@ -113,7 +113,7 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
             algorithm.type === 'SHA1_3DES_3KEY_CBC'
         ) {
             const algo = getPbeAlgorithm(algorithm.type)
-            return algo.decrypt(
+            return await algo.decrypt(
                 data,
                 key,
                 algorithm.params.salt,
