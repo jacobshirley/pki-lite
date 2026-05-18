@@ -154,6 +154,20 @@ describe('Validity', () => {
         `)
     })
 
+    test('should use GeneralizedTime to represent dates > 2049', () => {
+        const notBefore = new Date('2024-01-01T00:00:00.000Z')
+        const notAfter = new Date('2050-01-01T00:00:00.000Z')
+        const validity = new Validity({
+            notBefore: notBefore,
+            notAfter: notAfter,
+        })
+        expect(validity.toString()).toMatchInlineSnapshot(`
+          "[Validity] SEQUENCE :
+            UTCTime : 2024-01-01T00:00:00.000Z
+            GeneralizedTime : 2050-01-01T00:00:00.000Z"
+        `)
+    })
+
     test('toPem snapshot', () => {
         const notBefore = new Date('2024-01-01T00:00:00.000Z')
         const notAfter = new Date('2025-01-01T00:00:00.000Z')

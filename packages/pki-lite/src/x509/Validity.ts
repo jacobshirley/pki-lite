@@ -29,15 +29,23 @@ export class Validity extends PkiBase<Validity> {
      * Converts the validity period to an ASN.1 structure.
      */
     toAsn1(): Asn1BaseBlock {
+        // The X.509 spec says: "In no case shall UTCTime be used for
+        // representing dates beyond 2049". This is because UTCTime only uses
+        // two digits to encode the year, making it impossible to know whether
+        // for instance 50 means 1950 or 2050 (or indeed 3050).
+        // Hence, encode post-2049 Dates as GeneralizedTime.
+        const utcTimeCutoff = new Date('2050-01-01T00:00:00.000Z')
+        const notBefore =
+            this.notBefore < utcTimeCutoff
+                ? new asn1js.UTCTime({ valueDate: this.notBefore })
+                : new asn1js.GeneralizedTime({ valueDate: this.notBefore })
+        const notAfter =
+            this.notAfter < utcTimeCutoff
+                ? new asn1js.UTCTime({ valueDate: this.notAfter })
+                : new asn1js.GeneralizedTime({ valueDate: this.notAfter })
+
         return new asn1js.Sequence({
-            value: [
-                new asn1js.UTCTime({
-                    valueDate: this.notBefore,
-                }),
-                new asn1js.UTCTime({
-                    valueDate: this.notAfter,
-                }),
-            ],
+            value: [notBefore, notAfter],
         })
     }
 
