@@ -98,8 +98,4 @@ async function demonstrateUsage() {
     )
 }
 
-// Execute the demonstration
-demonstrateUsage().catch(console.error)
-
-// Run the demonstration
-demonstrateUsage().catch(console.error)
+await demonstrateUsage()

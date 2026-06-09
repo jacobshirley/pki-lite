@@ -2,18 +2,9 @@
 
 exports[`Examples > usage 1`] = `
 "=== MD5 Hashing ===
-=== MD5 Hashing ===
 MD5: 65a8e27d8879283831b664bd8b7f0ad4
 
 === AES ECB Encryption ===
-MD5: 65a8e27d8879283831b664bd8b7f0ad4
-
-=== AES ECB Encryption ===
-Original: Secret message!!
-Decrypted: Secret message!!
-Match: true
-
-=== AES CBC (No Padding) ===
 Original: Secret message!!
 Decrypted: Secret message!!
 Match: true
@@ -24,12 +15,6 @@ Decrypted length: 16
 Data match: true
 
 === Standard Algorithms (Fallback) ===
-Original length: 16
-Decrypted length: 16
-Data match: true
-
-=== Standard Algorithms (Fallback) ===
-SHA-256: dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f
 SHA-256: dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f
 "
 `;
