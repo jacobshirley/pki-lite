@@ -1,7 +1,7 @@
 {
     "name": "pki-lite",
     "type": "module",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -59,7 +59,7 @@
     "devDependencies": {
         "@types/node": "^24.3.3",
         "@vitest/browser-playwright": "^3.2.4",
-        "playwright": "^1.55.0",
+        "playwright": "^1.60.0",
         "typescript": "6.0.3",
         "vitest": "^4.0.3"
     }

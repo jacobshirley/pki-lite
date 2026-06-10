@@ -1,6 +1,6 @@
 {
     "name": "pki-lite-monorepo",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "description": "Lightweight, modular, and extensible Public Key Infrastructure (PKI) library for JavaScript and TypeScript.",
     "type": "module",
     "private": true,
@@ -39,16 +39,16 @@
         }
     },
     "dependencies": {
-        "pki-lite": "^1.2.0",
-        "pki-lite-crypto-extended": "^1.2.0"
+        "pki-lite": "^1.2.1",
+        "pki-lite-crypto-extended": "^1.2.1"
     },
     "devDependencies": {
-        "@commitlint/cli": "^20.0.0",
-        "@commitlint/config-conventional": "^20.0.0",
+        "@commitlint/cli": "^21.0.0",
+        "@commitlint/config-conventional": "^21.0.0",
         "@types/node": "^24.5.2",
         "husky": "^9.1.7",
         "lint-staged": "^17.0.0",
-        "playwright": "^1.55.0",
+        "playwright": "^1.60.0",
         "prettier": "^3.6.2",
         "typedoc": "^0.28.13",
         "typedoc-plugin-markdown": "^4.9.0",
