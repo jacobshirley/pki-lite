@@ -67,18 +67,17 @@ export class ReasonFlags extends PkiBase<ReasonFlags> {
             this.aACompromise,
         ]
         // Always encode all 9 bits (ReasonFlags flags)
-        const unusedBits = (8 - ((bits.length - 1) % 8)) % 8
         const byteLength = Math.ceil(bits.length / 8)
-        const bytes = new Uint8Array(byteLength + 1) // +1 for unused bits byte
-        bytes[0] = unusedBits
+        const unusedBits = byteLength * 8 - bits.length
+        const bytes = new Uint8Array(byteLength)
         for (let i = 0; i < bits.length; i++) {
             if (bits[i] === true) {
-                const byteIndex = Math.floor(i / 8) + 1 // +1 for unused bits byte
+                const byteIndex = Math.floor(i / 8)
                 const bitIndex = 7 - (i % 8)
                 bytes[byteIndex] |= 1 << bitIndex
             }
         }
-        return new asn1js.BitString({ valueHex: bytes.buffer })
+        return new asn1js.BitString({ valueHex: bytes.buffer, unusedBits })
     }
 
     static fromAsn1(asn1: Asn1BaseBlock): ReasonFlags {
@@ -93,12 +92,12 @@ export class ReasonFlags extends PkiBase<ReasonFlags> {
             throw new Asn1ParseError('ReasonFlags: BitString has no content')
         }
 
-        const unusedBits = bytes[0]
-        const totalBits = (bytes.length - 1) * 8 - unusedBits
+        const unusedBits = asn1.valueBlock.unusedBits
+        const totalBits = bytes.length * 8 - unusedBits
 
         const bits: (0 | 1)[] = []
         for (let i = 0; i < totalBits; i++) {
-            const byteIndex = Math.floor(i / 8) + 1 // +1 for unused bits byte
+            const byteIndex = Math.floor(i / 8)
             const bitIndex = 7 - (i % 8)
             const bit = (bytes[byteIndex] >> bitIndex) & 1
             bits.push(bit as 0 | 1)

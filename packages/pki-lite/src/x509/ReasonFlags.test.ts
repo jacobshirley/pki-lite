@@ -61,6 +61,36 @@ describe('ReasonFlags', () => {
         expect(decoded.aACompromise).toEqual(false)
     })
 
+    it('should encode unusedBits correctly', () => {
+        const flags = new ReasonFlags({
+            certificateHold: true,
+            aACompromise: true,
+        })
+
+        const asn1 = flags.toAsn1()
+
+        expect(asn1).toBeInstanceOf(asn1js.BitString)
+        const bitString = asn1 as asn1js.BitString
+        expect(bitString.valueBlock.unusedBits).toEqual(7)
+        expect(Array.from(bitString.valueBlock.valueHexView)).toEqual([
+            0b0000_0010, 0b1000_0000,
+        ])
+    })
+
+    it('should decode unusedBits correctly', () => {
+        const asn1 = new asn1js.BitString({
+            valueHex: new Uint8Array([0b0000_0010, 0b1000_0000]).buffer,
+            unusedBits: 7,
+        })
+
+        const decoded = ReasonFlags.fromAsn1(asn1)
+
+        expect(decoded.cessationOfOperation).toEqual(false)
+        expect(decoded.certificateHold).toEqual(true)
+        expect(decoded.privilegeWithdrawn).toEqual(false)
+        expect(decoded.aACompromise).toEqual(true)
+    })
+
     it('should throw if ASN.1 is not a BitString', () => {
         expect(() => ReasonFlags.fromAsn1(new asn1js.Null())).toThrow(
             'ReasonFlags: Expected BitString for ReasonFlags',

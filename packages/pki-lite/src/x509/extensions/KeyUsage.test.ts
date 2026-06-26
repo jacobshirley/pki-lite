@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { KeyUsage } from './KeyUsage.js'
+import { asn1js } from '../../core/PkiBase.js'
 
 describe('KeyUsage', () => {
     it('should create a KeyUsage with correct properties', () => {
@@ -78,6 +79,37 @@ describe('KeyUsage', () => {
         expect(decoded.keyAgreement).toEqual(false)
         expect(decoded.keyCertSign).toEqual(false)
         expect(decoded.cRLSign).toEqual(false)
+        expect(decoded.encipherOnly).toEqual(false)
+        expect(decoded.decipherOnly).toEqual(false)
+    })
+
+    it('should encode unusedBits correctly', () => {
+        const usage = new KeyUsage({
+            cRLSign: true,
+            keyCertSign: true,
+        })
+
+        const asn1 = usage.toAsn1()
+
+        expect(asn1).toBeInstanceOf(asn1js.BitString)
+        const bitString = asn1 as asn1js.BitString
+        expect(bitString.valueBlock.unusedBits).toEqual(7)
+        expect(Array.from(bitString.valueBlock.valueHexView)).toEqual([
+            0b0000_0110, 0b0000_0000,
+        ])
+    })
+
+    it('should decode unusedBits correctly', () => {
+        const asn1 = new asn1js.BitString({
+            valueHex: new Uint8Array([0b0000_0110, 0b0000_0000]).buffer,
+            unusedBits: 7,
+        })
+
+        const decoded = KeyUsage.fromAsn1(asn1)
+
+        expect(decoded.keyAgreement).toEqual(false)
+        expect(decoded.cRLSign).toEqual(true)
+        expect(decoded.keyCertSign).toEqual(true)
         expect(decoded.encipherOnly).toEqual(false)
         expect(decoded.decipherOnly).toEqual(false)
     })
