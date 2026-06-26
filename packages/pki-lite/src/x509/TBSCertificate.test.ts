@@ -391,7 +391,7 @@ describe('TBSCertificate', () => {
                 SEQUENCE :
                   OBJECT IDENTIFIER : 2.5.29.15
                   BOOLEAN: TRUE
-                  OCTET STRING : 03040000a000
+                  OCTET STRING : 030307a000
                 SEQUENCE :
                   OBJECT IDENTIFIER : 2.5.29.19
                   BOOLEAN: TRUE
