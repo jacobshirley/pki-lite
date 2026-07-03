@@ -357,7 +357,7 @@ export const OIDs = {
         REVOCATION_INFO_ARCHIVAL: '1.2.840.113583.1.1.8',
     },
     getOidFriendlyName,
-}
+} as const
 
 /**
  * Mapping of PKCS#7 content type names to their OIDs.
