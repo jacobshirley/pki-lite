@@ -357,7 +357,7 @@ export const OIDs = {
         REVOCATION_INFO_ARCHIVAL: '1.2.840.113583.1.1.8',
     },
     getOidFriendlyName,
-}
+} as const
 
 /**
  * Mapping of PKCS#7 content type names to their OIDs.
@@ -484,7 +484,6 @@ export const OIDToFriendlyName: Record<string, string> = {
     [OIDs.DN.EMAIL]: 'Email Address',
 
     // PKCS#9 Attributes
-    [OIDs.PKCS9.EMAIL_ADDRESS]: 'Email Address',
     [OIDs.PKCS9.CONTENT_TYPE]: 'Content Type',
     [OIDs.PKCS9.MESSAGE_DIGEST]: 'Message Digest',
     [OIDs.PKCS9.SIGNING_TIME]: 'Signing Time',
