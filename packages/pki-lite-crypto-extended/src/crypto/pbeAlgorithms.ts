@@ -1,5 +1,7 @@
-import forge from 'node-forge'
+import { WebCryptoProvider } from 'pki-lite/core/crypto/index.js'
 import { PbeAlgorithmMap } from './types.js'
+import { tripleDesEncrypt, tripleDesDecrypt } from './des.js'
+import { rc2Encrypt, rc2Decrypt } from './rc2.js'
 
 type PbeAlgorithm = {
     encrypt: (
@@ -7,314 +9,248 @@ type PbeAlgorithm = {
         password: string | Uint8Array<ArrayBuffer>,
         salt: Uint8Array<ArrayBuffer>,
         iterationCount: number,
-    ) => Uint8Array<ArrayBuffer>
+    ) => Promise<Uint8Array<ArrayBuffer>>
     decrypt: (
         ciphertext: Uint8Array<ArrayBuffer>,
         password: string | Uint8Array<ArrayBuffer>,
         salt: Uint8Array<ArrayBuffer>,
         iterationCount: number,
-    ) => Uint8Array<ArrayBuffer>
+    ) => Promise<Uint8Array<ArrayBuffer>>
 }
 
-const getPassword = (password: string | Uint8Array<ArrayBuffer>): string => {
-    if (typeof password === 'string') {
-        return password
-    } else {
-        return forge.util.binary.raw.encode(password)
-    }
-}
+const provider = new WebCryptoProvider()
 
 const pbeAlgorithms: { [name in keyof PbeAlgorithmMap]: PbeAlgorithm } = {
     SHA1_3DES_2KEY_CBC: {
-        encrypt: (
+        encrypt: async (
             plaintext: Uint8Array<ArrayBuffer>,
             password: string | Uint8Array<ArrayBuffer>,
             salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array<ArrayBuffer> => {
-            const key = forge.pkcs12.generateKey(
-                getPassword(password),
-                forge.util.createBuffer(forge.util.binary.raw.encode(salt)),
-                1,
+        ): Promise<Uint8Array<ArrayBuffer>> => {
+            // Derive key (16 bytes for 2-key 3DES)
+            const key = await provider.derivePkcs12Key(
+                password,
+                salt,
                 iterationCount,
-                16, // 2-key 3DES = 16 bytes
-            )
-            const iv = forge.pkcs12.generateKey(
-                getPassword(password),
-                forge.util.createBuffer(forge.util.binary.raw.encode(salt)),
-                2,
-                iterationCount,
-                8, // 8-byte IV
+                16,
+                'encryption',
+                'SHA-1',
             )
 
-            const cipher = forge.rc2.createEncryptionCipher(key, 40)
-            cipher.start(iv)
-            cipher.update(
-                forge.util.createBuffer(
-                    forge.util.binary.raw.encode(plaintext),
-                ),
+            // Derive IV (8 bytes)
+            const iv = await provider.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                8,
+                'iv',
+                'SHA-1',
             )
-            cipher.finish()
-            return new Uint8Array(
-                forge.util.binary.raw.decode(cipher.output.getBytes()),
-            )
+
+            return tripleDesEncrypt(plaintext, key, iv)
         },
-        decrypt: (
+        decrypt: async (
             ciphertext: Uint8Array<ArrayBuffer>,
             password: string | Uint8Array<ArrayBuffer>,
             salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array<ArrayBuffer> => {
-            const key = forge.pkcs12.generateKey(
-                getPassword(password),
-                forge.util.createBuffer(forge.util.binary.raw.encode(salt)),
-                1,
+        ): Promise<Uint8Array<ArrayBuffer>> => {
+            // Derive key (16 bytes for 2-key 3DES)
+            const key = await provider.derivePkcs12Key(
+                password,
+                salt,
                 iterationCount,
-                16, // 2-key 3DES = 16 bytes
-            )
-            const iv = forge.pkcs12.generateKey(
-                getPassword(password),
-                forge.util.createBuffer(forge.util.binary.raw.encode(salt)),
-                2,
-                iterationCount,
-                8, // 8-byte IV
+                16,
+                'encryption',
+                'SHA-1',
             )
 
-            const decipher = forge.rc2.createDecryptionCipher(key, 40)
-            decipher.start(iv)
-            decipher.update(
-                forge.util.createBuffer(
-                    forge.util.binary.raw.encode(ciphertext),
-                ),
+            // Derive IV (8 bytes)
+            const iv = await provider.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                8,
+                'iv',
+                'SHA-1',
             )
-            decipher.finish()
-            return new Uint8Array(
-                forge.util.binary.raw.decode(decipher.output.getBytes()),
-            )
+
+            return tripleDesDecrypt(ciphertext, key, iv)
         },
     },
     SHA1_3DES_3KEY_CBC: {
-        encrypt: (
+        encrypt: async (
             plaintext: Uint8Array<ArrayBuffer>,
             password: string | Uint8Array<ArrayBuffer>,
             salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array<ArrayBuffer> => {
-            const saltBuffer = forge.util.createBuffer()
-            saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
-
-            const key = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                1,
+        ): Promise<Uint8Array<ArrayBuffer>> => {
+            // Derive key (24 bytes for 3-key 3DES)
+            const key = await provider.derivePkcs12Key(
+                password,
+                salt,
                 iterationCount,
                 24,
-            )
-            const iv = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                2,
-                iterationCount,
-                8,
+                'encryption',
+                'SHA-1',
             )
 
-            const cipher = forge.cipher.createCipher('3DES-CBC', key)
-            cipher.start({
-                iv,
-            })
-            cipher.update(
-                forge.util.createBuffer(
-                    forge.util.binary.raw.encode(plaintext),
-                ),
+            // Derive IV (8 bytes)
+            const iv = await provider.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                8,
+                'iv',
+                'SHA-1',
             )
-            cipher.finish()
-            return new Uint8Array(
-                forge.util.binary.raw.decode(cipher.output.getBytes()),
-            )
+
+            return tripleDesEncrypt(plaintext, key, iv)
         },
-        decrypt: (
+        decrypt: async (
             ciphertext: Uint8Array<ArrayBuffer>,
             password: string | Uint8Array<ArrayBuffer>,
             salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array<ArrayBuffer> => {
-            const saltBuffer = forge.util.createBuffer()
-            saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
-
-            const key = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                1,
+        ): Promise<Uint8Array<ArrayBuffer>> => {
+            // Derive key (24 bytes for 3-key 3DES)
+            const key = await provider.derivePkcs12Key(
+                password,
+                salt,
                 iterationCount,
                 24,
-            )
-            const iv = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                2,
-                iterationCount,
-                8,
+                'encryption',
+                'SHA-1',
             )
 
-            const decipher = forge.cipher.createDecipher('3DES-CBC', key)
-            decipher.start({
-                iv: iv,
-            })
-            decipher.update(
-                forge.util.createBuffer(
-                    forge.util.binary.raw.encode(ciphertext),
-                ),
+            // Derive IV (8 bytes)
+            const iv = await provider.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                8,
+                'iv',
+                'SHA-1',
             )
-            decipher.finish()
-            return new Uint8Array(
-                forge.util.binary.raw.decode(decipher.output.getBytes()),
-            )
+
+            return tripleDesDecrypt(ciphertext, key, iv)
         },
     },
     SHA1_RC2_40_CBC: {
-        encrypt: (
+        encrypt: async (
             plaintext: Uint8Array<ArrayBuffer>,
             password: string | Uint8Array<ArrayBuffer>,
             salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array<ArrayBuffer> => {
-            const saltBuffer = forge.util.createBuffer()
-            saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
-
-            const key = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                1,
+        ): Promise<Uint8Array<ArrayBuffer>> => {
+            // Derive key (5 bytes for 40-bit RC2)
+            const key = await provider.derivePkcs12Key(
+                password,
+                salt,
                 iterationCount,
                 5,
-            )
-            const iv = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                2,
-                iterationCount,
-                8,
+                'encryption',
+                'SHA-1',
             )
 
-            const cipher = forge.rc2.createEncryptionCipher(key, 40)
-            cipher.start(iv)
-            cipher.update(
-                forge.util.createBuffer(
-                    forge.util.binary.raw.encode(plaintext),
-                ),
+            // Derive IV (8 bytes)
+            const iv = await provider.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                8,
+                'iv',
+                'SHA-1',
             )
-            cipher.finish()
-            return new Uint8Array(
-                forge.util.binary.raw.decode(cipher.output.getBytes()),
-            )
+
+            return rc2Encrypt(plaintext, key, iv, 40)
         },
-        decrypt: (
+        decrypt: async (
             ciphertext: Uint8Array<ArrayBuffer>,
             password: string | Uint8Array<ArrayBuffer>,
             salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array<ArrayBuffer> => {
-            const saltBuffer = forge.util.createBuffer()
-            saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
-            const key = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                1,
+        ): Promise<Uint8Array<ArrayBuffer>> => {
+            // Derive key (5 bytes for 40-bit RC2)
+            const key = await provider.derivePkcs12Key(
+                password,
+                salt,
                 iterationCount,
                 5,
-            )
-            const iv = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                2,
-                iterationCount,
-                8,
+                'encryption',
+                'SHA-1',
             )
 
-            const decipher = forge.rc2.createDecryptionCipher(key, 40)
-            decipher.start(iv)
-            decipher.update(
-                forge.util.createBuffer(
-                    forge.util.binary.raw.encode(ciphertext),
-                ),
+            // Derive IV (8 bytes)
+            const iv = await provider.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                8,
+                'iv',
+                'SHA-1',
             )
-            decipher.finish()
-            return new Uint8Array(
-                forge.util.binary.raw.decode(decipher.output.getBytes()),
-            )
+
+            return rc2Decrypt(ciphertext, key, iv, 40)
         },
     },
     SHA1_RC2_128_CBC: {
-        encrypt: (
+        encrypt: async (
             plaintext: Uint8Array<ArrayBuffer>,
             password: string | Uint8Array<ArrayBuffer>,
             salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array<ArrayBuffer> => {
-            const saltBuffer = forge.util.createBuffer()
-            saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
-
-            const key = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                1,
+        ): Promise<Uint8Array<ArrayBuffer>> => {
+            // Derive key (16 bytes for 128-bit RC2)
+            const key = await provider.derivePkcs12Key(
+                password,
+                salt,
                 iterationCount,
                 16,
-            )
-            const iv = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                2,
-                iterationCount,
-                8,
+                'encryption',
+                'SHA-1',
             )
 
-            const cipher = forge.rc2.createEncryptionCipher(key, 128)
-            cipher.start(iv)
-            cipher.update(
-                forge.util.createBuffer(
-                    forge.util.binary.raw.encode(plaintext),
-                ),
+            // Derive IV (8 bytes)
+            const iv = await provider.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                8,
+                'iv',
+                'SHA-1',
             )
-            cipher.finish()
-            return new Uint8Array(
-                forge.util.binary.raw.decode(cipher.output.getBytes()),
-            )
+
+            return rc2Encrypt(plaintext, key, iv, 128)
         },
-        decrypt: (
+        decrypt: async (
             ciphertext: Uint8Array<ArrayBuffer>,
             password: string | Uint8Array<ArrayBuffer>,
             salt: Uint8Array<ArrayBuffer>,
             iterationCount: number,
-        ): Uint8Array<ArrayBuffer> => {
-            const saltBuffer = forge.util.createBuffer()
-            saltBuffer.putBytes(forge.util.binary.raw.encode(salt))
-            const key = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                1,
+        ): Promise<Uint8Array<ArrayBuffer>> => {
+            // Derive key (16 bytes for 128-bit RC2)
+            const key = await provider.derivePkcs12Key(
+                password,
+                salt,
                 iterationCount,
                 16,
-            )
-            const iv = forge.pkcs12.generateKey(
-                getPassword(password),
-                saltBuffer,
-                2,
-                iterationCount,
-                8,
+                'encryption',
+                'SHA-1',
             )
 
-            const decipher = forge.rc2.createDecryptionCipher(key, 128)
-            decipher.start(iv)
-            decipher.update(
-                forge.util.createBuffer(
-                    forge.util.binary.raw.encode(ciphertext),
-                ),
+            // Derive IV (8 bytes)
+            const iv = await provider.derivePkcs12Key(
+                password,
+                salt,
+                iterationCount,
+                8,
+                'iv',
+                'SHA-1',
             )
-            decipher.finish()
-            return new Uint8Array(
-                forge.util.binary.raw.decode(decipher.output.getBytes()),
-            )
+
+            return rc2Decrypt(ciphertext, key, iv, 128)
         },
     },
 }
