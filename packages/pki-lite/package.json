@@ -21,6 +21,7 @@
         "EXAMPLES.md"
     ],
     "scripts": {
+        "prepare": "tsc -p tsconfig.prod.json",
         "compile": "pnpm compile:validate && tsc -p tsconfig.prod.json",
         "compile:validate": "tsc -p tsconfig.json --noEmit",
         "watch": "tsc -watch -p tsconfig.prod.json",
