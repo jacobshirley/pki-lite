@@ -110,10 +110,10 @@ importers:
     dependencies:
       pki-lite:
         specifier: ^1.2.3
-        version: link:packages/pki-lite
+        version: 1.2.3
       pki-lite-crypto-extended:
         specifier: ^1.2.3
-        version: link:packages/pki-lite-crypto-extended
+        version: 1.2.3(pki-lite@1.2.3)
     devDependencies:
       '@commitlint/cli':
         specifier: ^21.0.0
@@ -182,9 +182,6 @@ importers:
       node-forge:
         specifier: ^1.3.1
         version: 1.3.1
-      pki-lite:
-        specifier: ^1.0.0
-        version: link:../pki-lite
     devDependencies:
       '@types/node':
         specifier: ^24.5.1
@@ -195,6 +192,9 @@ importers:
       '@vitest/browser-playwright':
         specifier: ^4.0.13
         version: 4.0.13(playwright@1.60.0)(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.4))(vitest@4.0.13)
+      pki-lite:
+        specifier: workspace:*
+        version: link:../pki-lite
       playwright:
         specifier: ^1.60.0
         version: 1.60.0
@@ -853,6 +853,7 @@ packages:
   git-raw-commits@5.0.1:
     resolution: {integrity: sha512-Y+csSm2GD/PCSh6Isd/WiMjNAydu0VBiG9J7EdQsNA5P9uXvLayqjmTsNlK5Gs9IhblFZqOU0yid5Il5JPoLiQ==}
     engines: {node: '>=18'}
+    deprecated: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
     hasBin: true
 
   global-directory@5.0.0:
@@ -993,6 +994,14 @@ packages:
   pixelmatch@7.1.0:
     resolution: {integrity: sha512-1wrVzJ2STrpmONHKBy228LM1b84msXDUoAzVEl0R8Mz4Ce6EPr+IVtxm8+yvrqLYMHswREkjYFaMxnyGnaY3Ng==}
     hasBin: true
+
+  pki-lite-crypto-extended@1.2.3:
+    resolution: {integrity: sha512-gFVGZyX+6amO1FDEfkacEAyqy/bQ18iuXRIgRI270Yqm+jJNxsP6dKrW+pyL6LwFtw6S2sYeCtm+l9CvmpkjGQ==}
+    peerDependencies:
+      pki-lite: ^1.0.0
+
+  pki-lite@1.2.3:
+    resolution: {integrity: sha512-cXVvus+P8JmWxCM3ttytfxSS/oJbEnCpnz59Gyq4e1hOTSSmpyg+BtAhwTtJK1bipSO/sqxxiz2difHOxSRs0Q==}
 
   playwright-core@1.60.0:
     resolution: {integrity: sha512-9bW6zvX/m0lEbgTKJ6YppOKx8H3VOPBMOCFh2irXFOT4BbHgrx5hPjwJYLT40Lu+4qtD36qKc/Hn56StUW57IA==}
@@ -1831,9 +1840,9 @@ snapshots:
 
   fast-uri@3.1.0: {}
 
-  fdir@6.5.0(picomatch@4.0.3):
+  fdir@6.5.0(picomatch@4.0.4):
     optionalDependencies:
-      picomatch: 4.0.3
+      picomatch: 4.0.4
 
   fsevents@2.3.2:
     optional: true
@@ -1979,6 +1988,17 @@ snapshots:
     dependencies:
       pngjs: 7.0.0
 
+  pki-lite-crypto-extended@1.2.3(pki-lite@1.2.3):
+    dependencies:
+      '@noble/ciphers': 2.2.0
+      '@noble/hashes': 2.2.0
+      node-forge: 1.3.1
+      pki-lite: 1.2.3
+
+  pki-lite@1.2.3:
+    dependencies:
+      asn1js: 3.0.10
+
   playwright-core@1.60.0: {}
 
   playwright@1.60.0:
@@ -2099,8 +2119,8 @@ snapshots:
 
   tinyglobby@0.2.15:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.3)
-      picomatch: 4.0.3
+      fdir: 6.5.0(picomatch@4.0.4)
+      picomatch: 4.0.4
 
   tinyrainbow@3.0.3: {}
 
@@ -2130,8 +2150,8 @@ snapshots:
   vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.4):
     dependencies:
       esbuild: 0.25.10
-      fdir: 6.5.0(picomatch@4.0.3)
-      picomatch: 4.0.3
+      fdir: 6.5.0(picomatch@4.0.4)
+      picomatch: 4.0.4
       postcss: 8.5.6
       rollup: 4.52.0
       tinyglobby: 0.2.15
