@@ -30,14 +30,6 @@
         "url": "git+ssh://git@github.com/jacobshirley/pki-lite.git"
     },
     "readme": "README.md",
-    "pnpm": {
-        "overrides": {
-            "vitest": "$vitest",
-            "@vitest/browser-playwright": "$vitest",
-            "typescript": "$typescript",
-            "playwright": "$playwright"
-        }
-    },
     "dependencies": {
         "pki-lite": "^1.2.3",
         "pki-lite-crypto-extended": "^1.2.3"
