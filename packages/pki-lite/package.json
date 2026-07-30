@@ -21,6 +21,7 @@
         "EXAMPLES.md"
     ],
     "scripts": {
+        "prepare": "tsc -p tsconfig.prod.json",
         "compile": "pnpm compile:validate && tsc -p tsconfig.prod.json",
         "compile:validate": "tsc -p tsconfig.json --noEmit",
         "watch": "tsc -watch -p tsconfig.prod.json",
@@ -52,7 +53,7 @@
     "readme": "pki-lite is a lightweight JavaScript/TypeScript library for working with PKI (Public Key Infrastructure) concepts such as X.509 certificates, certificate signing requests (CSR), and PEM/PKCS12 formats. It is designed for use in Node.js and browser environments, providing crypto operations with a minimal dependency footprint.",
     "author": "Jacob Shirley",
     "license": "MIT",
-    "packageManager": "pnpm@10.33.2",
+    "packageManager": "pnpm@11.17.0",
     "dependencies": {
         "asn1js": "3.0.10"
     },

@@ -1,2 +1,11 @@
 packages:
     - 'packages/*'
+
+overrides:
+    vitest: $vitest
+    '@vitest/browser-playwright': $vitest
+    typescript: $typescript
+    playwright: $playwright
+
+allowBuilds:
+    esbuild: true
