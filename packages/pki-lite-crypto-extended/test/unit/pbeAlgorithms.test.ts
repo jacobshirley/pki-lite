@@ -16,14 +16,14 @@ function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
 describe('PBE Algorithms', () => {
     for (const algName of algs) {
         describe(algName, () => {
-            it('encrypts known value (OpenSSL test vector)', () => {
+            it('encrypts known value (OpenSSL test vector)', async () => {
                 const algo = getPbeAlgorithm(algName)
                 const password = 'password'
                 const salt = hexToBytes('1234567890abcdef')
                 const iterationCount = 1000
                 const plaintext = new Uint8Array([0x01, 0x02, 0x03, 0x04])
                 // No official test vector, but should not throw and output should be Uint8Array<ArrayBuffer>
-                const encrypted = algo.encrypt(
+                const encrypted = await algo.encrypt(
                     plaintext,
                     password,
                     salt,
@@ -32,7 +32,7 @@ describe('PBE Algorithms', () => {
                 expect(encrypted).toBeInstanceOf(Uint8Array<ArrayBuffer>)
                 expect(encrypted.length).toBeGreaterThan(0)
 
-                const decrypted = algo.decrypt(
+                const decrypted = await algo.decrypt(
                     encrypted,
                     password,
                     salt,
