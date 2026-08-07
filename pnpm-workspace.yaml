@@ -1,6 +1,9 @@
 packages:
     - 'packages/*'
 
+# Only install package versions published at least 30 days ago
+minimumReleaseAge: 43200
+
 overrides:
     vitest: $vitest
     '@vitest/browser-playwright': $vitest
