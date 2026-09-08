@@ -24,7 +24,7 @@
     "keywords": [],
     "author": "Jacob Shirley",
     "license": "MIT",
-    "packageManager": "pnpm@11.17.0",
+    "packageManager": "pnpm@11.21.0",
     "repository": {
         "type": "git",
         "url": "git+ssh://git@github.com/jacobshirley/pki-lite.git"
