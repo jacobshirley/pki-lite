@@ -37,22 +37,22 @@ jobs:
                     - ${{ github.ref_name }}
         steps:
             - name: Checkout ${{ matrix.version }}
-              uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+              uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
               with:
                   ref: ${{ matrix.version }}
             - name: Get formatted ref name
               id: formatted-ref-name
               run: echo "formatted_ref_name=${{ matrix.version }}" | sed 's/\//_/g' >> $GITHUB_OUTPUT
-            - uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6
+            - uses: pnpm/action-setup@08c4be7e2e672a47d11bd04269e27e5f3e8529cb # v6.0.0
               with:
                   run_install: true
-            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
                   node-version: '24'
                   cache: 'pnpm'
             - name: Setup Pages
               id: pages
-              uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+              uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
             - name: Compile TypeScript
               run: pnpm compile
             - name: Build docs
@@ -79,7 +79,7 @@ jobs:
                   merge-multiple: true
                   path: ./docs-html
             - name: Upload combined artifact
-              uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+              uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
               with:
                   path: ./docs-html
                   retention-days: 1
@@ -92,4 +92,4 @@ jobs:
         steps:
             - name: Deploy to GitHub Pages
               id: deployment
-              uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
+              uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

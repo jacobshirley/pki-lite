@@ -8,7 +8,8 @@
         "schedule:weekly",
         "group:recommended",
         "group:monorepos",
-        "workarounds:all"
+        "workarounds:all",
+        "helpers:pinGitHubActionDigestsToSemver"
     ],
     "labels": ["deps"],
     "dependencyDashboard": true,
