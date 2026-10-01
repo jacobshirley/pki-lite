@@ -71,7 +71,7 @@ jobs:
               run: VERSION_FILE=$(ls *.tgz | head -n 1) && echo "version=$(echo $VERSION_FILE | sed -E 's/^pki-lite-(.*)\.tgz$/\1/')" >> $GITHUB_OUTPUT
             - name: Create Release
               id: create_release
-              uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
+              uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
               with:
                   draft: false
                   prerelease: ${{ contains(steps.get_release_version.outputs.version, '-') }}
