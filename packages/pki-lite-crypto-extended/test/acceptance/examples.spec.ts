@@ -54,7 +54,7 @@ function captureLogs() {
     }
 }
 
-describe.sequential('Examples', () => {
+describe('Examples', () => {
     for (const exampleFile of examples) {
         test(`${exampleFile}`, async () => {
             const { restore, getLogs } = captureLogs()
