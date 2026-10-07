@@ -131,9 +131,9 @@ OCSP;URI.1 = http://localhost:8080/ocsp-backup
 """ > cert-ext.cnf
 
 # Generate certificates
-openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 3650 -out rootCA.crt -subj "/C=US/ST=Test/L=Local/O=MyOrg/OU=CA/CN=MyRootCA"
+openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 2900000 -out rootCA.crt -subj "/C=US/ST=Test/L=Local/O=MyOrg/OU=CA/CN=MyRootCA"
 openssl req -new -key signer.key -out signer.csr -subj "/C=US/ST=Test/L=Local/O=MyOrg/OU=Signing/CN=John Doe"
-openssl x509 -req -in signer.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out signer.crt -days 365 -sha256 -extfile cert-ext.cnf
+openssl x509 -req -in signer.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out signer.crt -days 2800000 -sha256 -extfile cert-ext.cnf
 
 # Create OCSP responder certificate
 if [ "$KEY_TYPE" == "rsa" ]; then
@@ -153,10 +153,10 @@ extendedKeyUsage = OCSPSigning
 
 openssl req -new -key ocsp.key -out ocsp.csr -subj "/C=US/ST=Test/L=Local/O=MyOrg/OU=OCSP/CN=OCSP Responder"
 openssl x509 -req -in ocsp.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial \
-  -out ocsp.crt -days 10000 -sha256 -extfile ocsp-ext.cnf
+  -out ocsp.crt -days 2800000 -sha256 -extfile ocsp-ext.cnf
 
 # Get CRL from CA
-openssl ca -gencrl -keyfile rootCA.key -cert rootCA.crt -out ca.crl
+openssl ca -gencrl -crldays 8000 -keyfile rootCA.key -cert rootCA.crt -out ca.crl
 
 # create an OCSP request for signer.crt
 openssl ocsp \
