@@ -91,7 +91,7 @@ describe('AuthEnvelopedData', () => {
                           SEQUENCE :
                             OBJECT IDENTIFIER : 2.5.4.3
                             UTF8String : 'MyRootCA'
-                      INTEGER : 40829422232738761675369452088356448433387579930
+                      INTEGER : 529545515032761543446203827434351444233499481065
                     SEQUENCE :
                       OBJECT IDENTIFIER : 1.2.840.113549.1.1.1
                     OCTET STRING : 0a141e28

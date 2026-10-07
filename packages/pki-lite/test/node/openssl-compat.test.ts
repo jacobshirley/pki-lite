@@ -129,39 +129,39 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                     d.certificate: 
                       cert_info: 
                         version: 2
-                        serialNumber: 0x0726DAC7F46E2747C424C4225CB43FDDD2AFAA1A
+                        serialNumber: 0x5CC1A4638F8BA92232262F95191EC815A98093E9
                         signature: 
                           algorithm: sha256WithRSAEncryption (1.2.840.113549.1.1.11)
                           parameter: NULL
                         issuer:           C=US, ST=Test, L=Local, O=MyOrg, OU=CA, CN=MyRootCA
                         validity: 
-                          notBefore: Oct  1 19:05:30 2025 GMT
-                          notAfter: Oct  1 19:05:30 2026 GMT
+                          notBefore: Oct  7 17:03:25 2026 GMT
+                          notAfter: Nov 26 17:03:25 9692 GMT
                         subject:           C=US, ST=Test, L=Local, O=MyOrg, OU=Signing, CN=John Doe
                         key:           X509_PUBKEY: 
                           algor: 
                             algorithm: rsaEncryption (1.2.840.113549.1.1.1)
                             parameter: NULL
                           public_key:  (0 unused bits)
-                            0000 - 30 82 01 0a 02 82 01 01-00 b8 90 bb 63 13   0...........c.
-                            000e - f3 5e 51 19 31 bd 50 cf-9f 18 27 f9 2d 2e   .^Q.1.P...'.-.
-                            001c - 19 b2 17 0b a8 df c0 9e-bb b5 bc ff e3 ea   ..............
-                            002a - 5e 84 a0 00 53 71 b7 07-60 40 c4 9d 94 c9   ^...Sq..\`@....
-                            0038 - 8b 68 09 17 62 9d 10 59-f6 75 02 95 6c 83   .h..b..Y.u..l.
-                            0046 - b5 2f c8 de 84 9f 01 90-85 36 96 db 7a 38   ./.......6..z8
-                            0054 - eb 0f 32 6b e6 b2 1d 0f-7b 92 51 a8 e8 c5   ..2k....{.Q...
-                            0062 - 2e a6 3a d3 9f 0c a7 99-8b 89 2a ed 71 62   ..:.......*.qb
-                            0070 - 67 bd 62 7b 08 87 e0 7d-d1 0d 16 67 5d bb   g.b{...}...g].
-                            007e - 13 91 52 e5 0c aa fb 1c-69 26 77 af c1 aa   ..R.....i&w...
-                            008c - 49 0c 1c 07 c7 e3 be 24-a0 99 54 4b 5f 74   I......$..TK_t
-                            009a - 65 70 50 eb c2 b9 63 d4-9f 35 bf 8c bc d4   epP...c..5....
-                            00a8 - 1c 47 f3 bb cb 72 83 1a-ab f0 24 ee 4f b8   .G...r....$.O.
-                            00b6 - 7d d6 39 57 4c b9 63 e0-d9 24 52 a8 c5 11   }.9WL.c..$R...
-                            00c4 - 74 f0 09 8f 10 c2 2c aa-ea 4d e9 6f 77 04   t.....,..M.ow.
-                            00d2 - 1f 98 38 86 cb 6a 63 36-44 87 c2 80 f0 31   ..8..jc6D....1
-                            00e0 - f6 6c d2 f7 f2 13 fb b1-e5 15 e0 71 29 85   .l.........q).
-                            00ee - 76 9f 10 92 1e a0 cf bb-49 ce dc ee 21 d3   v.......I...!.
-                            00fc - 99 51 3d 65 9b 79 cb 3e-b0 4b 7e f0 87 02   .Q=e.y.>.K~...
+                            0000 - 30 82 01 0a 02 82 01 01-00 d5 2d 07 98 41   0.........-..A
+                            000e - b4 92 32 fb 76 10 57 90-74 11 64 33 1e 85   ..2.v.W.t.d3..
+                            001c - 2e 7e 8a 17 a6 4e 24 d2-98 70 c9 f9 0e 8e   .~...N$..p....
+                            002a - be d8 be 1e 2b f7 46 5b-06 ac 5d ee a0 96   ....+.F[..]...
+                            0038 - 2d be d4 bd 53 eb 02 3f-fe c0 45 1e 1c d5   -...S..?..E...
+                            0046 - 8a d2 8f 07 db e2 c3 aa-54 74 c4 71 59 46   ........Tt.qYF
+                            0054 - 15 09 0f 3d ce 11 74 78-2b 52 aa 21 bf 38   ...=..tx+R.!.8
+                            0062 - 1a 3b b5 cd 4c 62 19 f6-04 15 12 8d 4a c9   .;..Lb......J.
+                            0070 - b5 9f 8a 43 1f 28 21 8b-18 d8 d5 2b 18 4c   ...C.(!....+.L
+                            007e - ee 58 a7 4c 77 25 80 d4-62 cc 43 3b d0 13   .X.Lw%..b.C;..
+                            008c - 73 14 d7 f1 78 57 44 8b-9c d8 01 5d 1d d2   s...xWD....]..
+                            009a - a8 2a 4a f4 4e 02 99 0d-ae 2d c6 08 48 6f   .*J.N....-..Ho
+                            00a8 - 36 8c e8 9a d8 63 88 9c-e1 02 e5 4f ae 3e   6....c.....O.>
+                            00b6 - b1 2f d1 a7 8d 2a 58 aa-a3 b9 8d b5 b3 84   ./...*X.......
+                            00c4 - 58 72 0f 88 b5 f1 a6 d0-1b 3a 2b 76 97 57   Xr.......:+v.W
+                            00d2 - 27 44 ea 93 6c fa 8e 46-9e 00 10 ad 0b e9   'D..l..F......
+                            00e0 - b7 04 a5 cd 40 be 9c 66-0a 1e b7 4e bd 29   ....@..f...N.)
+                            00ee - d1 01 c8 b5 9c 56 aa 43-a3 53 40 7e 54 88   .....V.C.S@~T.
+                            00fc - 61 bd 09 71 d2 72 da c4-c4 60 00 5c d9 02   a..q.r...\`.\\..
                             010a - 03 01 00 01                                 ....
                         issuerUID: <ABSENT>
                         subjectUID: <ABSENT>
@@ -207,53 +207,53 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                             object: X509v3 Subject Key Identifier (2.5.29.14)
                             critical: FALSE
                             value: 
-                              0000 - 04 14 b2 66 14 17 61 8a-03 ef 86 7c 09   ...f..a....|.
-                              000d - 2a 15 4b 31 22 4b 7a b5-37               *.K1"Kz.7
+                              0000 - 04 14 ae 63 77 21 3c ee-c1 4f 5e fb 97   ...cw!<..O^..
+                              000d - 4c b3 fb 0c d7 c7 fa 2d-71               L......-q
 
                             object: X509v3 Authority Key Identifier (2.5.29.35)
                             critical: FALSE
                             value: 
-                              0000 - 30 16 80 14 10 21 ab 93-d5 b7 99 9f 76   0....!......v
-                              000d - e0 42 ef 98 1e 78 a7 e5-42 21 f5         .B...x..B!.
+                              0000 - 30 16 80 14 86 17 4e b6-4c 96 1d a9 f9   0.....N.L....
+                              000d - e5 7c fc 8b 62 c9 4a e3-cd 29 08         .|..b.J..).
                       sig_alg: 
                         algorithm: sha256WithRSAEncryption (1.2.840.113549.1.1.11)
                         parameter: NULL
                       signature:  (0 unused bits)
-                        0000 - 3c 0a 31 2c 37 79 ed 79-c1 99 e1 38 b4 e6 29   <.1,7y.y...8..)
-                        000f - b9 53 f5 57 76 33 c4 cf-0a fb c0 a8 d3 17 12   .S.Wv3.........
-                        001e - 07 1f 3a 23 8f 02 33 4c-48 f0 28 d6 26 13 e0   ..:#..3LH.(.&..
-                        002d - 0e 6b 4b b0 85 b8 7f ae-8a e0 29 82 80 f9 63   .kK.......)...c
-                        003c - 45 f7 96 6d a5 f4 0f 19-05 92 8e c7 5a 04 59   E..m........Z.Y
-                        004b - d6 28 9d 49 6e d9 37 15-48 80 a5 69 2f c1 79   .(.In.7.H..i/.y
-                        005a - 82 34 48 2c 6b c6 43 8f-89 a4 d2 09 fd 39 19   .4H,k.C......9.
-                        0069 - 60 9a 11 36 03 f8 e4 d6-67 9e 6c fd 57 21 9a   \`..6....g.l.W!.
-                        0078 - c7 af 6c c0 63 04 2f 65-e0 78 d9 76 33 60 44   ..l.c./e.x.v3\`D
-                        0087 - f4 58 73 62 15 fe 7c 97-be 0d 31 10 8a cb c6   .Xsb..|...1....
-                        0096 - 32 70 64 04 6f 65 1e 7f-ab 83 a1 75 43 10 82   2pd.oe.....uC..
-                        00a5 - 81 8d 78 23 51 21 bc 8e-c4 9a 93 c6 a0 e2 be   ..x#Q!.........
-                        00b4 - 79 f2 40 ad 44 0c 01 2e-6b a8 45 39 6e cc 67   y.@.D...k.E9n.g
-                        00c3 - 33 4d 2e 8d c7 4d 65 a8-62 d4 d5 c7 59 c7 a8   3M...Me.b...Y..
-                        00d2 - f7 a7 3f 14 ff db 17 db-31 89 da 28 12 71 8e   ..?.....1..(.q.
-                        00e1 - a2 1d 47 25 2c 28 f5 21-9e c5 a4 3a 0b 6a e4   ..G%,(.!...:.j.
-                        00f0 - e6 b5 d0 2a 21 17 1a 21-f0 25 56 d3 33 b3 d3   ...*!..!.%V.3..
-                        00ff - 90 ab 7f 87 8d c1 ea 2f-a6 88 0f 7f 4a c8 18   ......./....J..
-                        010e - 02 2b 53 d5 2a 53 96 05-b7 06 8f 81 b6 96 b6   .+S.*S.........
-                        011d - c3 c3 f5 74 84 8f 79 0d-f0 17 3e 14 77 30 d5   ...t..y...>.w0.
-                        012c - 4a e6 d8 ba b7 4b d8 55-f4 67 18 fc 37 98 fd   J....K.U.g..7..
-                        013b - 50 c9 04 02 f6 09 9f 39-8d 47 e0 d2 d3 59 01   P......9.G...Y.
-                        014a - b0 4c 1c 6a ca 0c bc c7-3f ef 47 b7 88 7f 97   .L.j....?.G....
-                        0159 - 1c 7f 56 a6 43 2f e5 53-40 57 dc 49 26 7a 1a   ..V.C/.S@W.I&z.
-                        0168 - 6f cf 92 c0 75 8c b4 ee-e0 77 58 c5 44 c5 49   o...u....wX.D.I
-                        0177 - c8 b7 be 25 aa 3a d9 8d-0d 9c 96 a9 7f bd b4   ...%.:.........
-                        0186 - 12 66 10 cf 9c c5 8f 37-43 f0 1e cd 26 39 7f   .f.....7C...&9.
-                        0195 - 3f 12 60 8c a8 0e 65 32-ee 07 f3 c2 19 f4 cb   ?.\`...e2.......
-                        01a4 - 38 28 0c fc 3f 62 7a 18-09 a5 69 cf 30 6b 2c   8(..?bz...i.0k,
-                        01b3 - f5 42 70 d1 29 39 bf e4-23 5b 28 8e e4 3f 20   .Bp.)9..#[(..? 
-                        01c2 - a6 ab d7 31 0d f3 24 7b-2b d0 7d 2d 8a a4 fb   ...1..\${+.}-...
-                        01d1 - e9 61 f5 67 26 df 49 d3-0c 87 b4 ce 15 d5 0f   .a.g&.I........
-                        01e0 - 86 a3 e0 e7 78 0c 2b ba-d7 e5 20 33 79 d9 46   ....x.+... 3y.F
-                        01ef - c5 38 fd ed 54 c1 9f 29-f9 b7 91 bd 10 33 bc   .8..T..).....3.
-                        01fe - ba 75                                          .u
+                        0000 - ac ac 91 a1 44 e5 cc 92-7f 82 7d 8f 25 6a d0   ....D.....}.%j.
+                        000f - b5 f3 90 0b de 5a 79 ff-5c 15 da e1 fb d2 a9   .....Zy.\\......
+                        001e - e3 27 34 85 b0 c3 41 1f-1c eb 11 e5 e6 51 cc   .'4...A......Q.
+                        002d - 7a d8 2c ad 46 30 67 2f-45 26 8c 09 45 0d 5f   z.,.F0g/E&..E._
+                        003c - 01 ff 37 08 03 cb db f8-57 f3 bd b5 b7 89 93   ..7.....W......
+                        004b - b5 d0 cc 5a 6b 52 a9 e4-b9 b9 2c 1c fe ec 5e   ...ZkR....,...^
+                        005a - 0c 24 70 6b 52 55 67 eb-d7 df e5 e9 31 fa 0f   .$pkRUg.....1..
+                        0069 - 18 b5 b6 f8 09 ff 35 b7-73 b7 04 77 75 d4 51   ......5.s..wu.Q
+                        0078 - fb a0 e5 91 84 3f 26 de-d7 e9 f7 57 79 65 f0   .....?&....Wye.
+                        0087 - 31 af d2 66 08 76 fc 67-e7 10 ca 44 33 de ed   1..f.v.g...D3..
+                        0096 - 88 db 8d d0 05 3d aa a6-f6 0a d6 28 ae aa 81   .....=.....(...
+                        00a5 - 40 57 9a 48 f6 ad b1 c3-cc 0a 48 bd 00 70 6e   @W.H......H..pn
+                        00b4 - d5 fe ed ce 94 93 d1 7e-82 3e 6c 82 d3 8d 96   .......~.>l....
+                        00c3 - 19 88 82 51 43 78 2e de-81 b3 f6 f3 6d 7a 1c   ...QCx......mz.
+                        00d2 - ef ca df 89 d0 99 03 57-1f 8e 7e 9a 18 6c 0c   .......W..~..l.
+                        00e1 - 58 3d 2e 29 c3 2d ce 5e-a3 db ca 21 68 9d a8   X=.).-.^...!h..
+                        00f0 - ab f2 1e 64 5a 89 bd 0d-30 ec b0 69 c0 0a 84   ...dZ...0..i...
+                        00ff - 16 5e 4b 55 a0 64 ab 30-5a 3d 08 69 6d 82 cc   .^KU.d.0Z=.im..
+                        010e - bd e0 5e 32 54 fd 8a fb-a6 90 00 18 16 c3 d1   ..^2T..........
+                        011d - 9e 8a c4 f9 fa 6f 60 2e-44 93 8d 4e 0d 22 e2   .....o\`.D..N.".
+                        012c - 59 82 46 54 73 68 2d 7d-22 10 10 55 0f a1 97   Y.FTsh-}"..U...
+                        013b - 49 9b e3 1c 38 7a b8 2a-6d da bb 5f c1 e0 5b   I...8z.*m.._..[
+                        014a - e2 36 5d 2a 15 e1 06 e8-ce bb db a1 ad 59 41   .6]*.........YA
+                        0159 - 24 b1 62 39 a7 f6 57 3f-32 e1 f1 5c 54 5b fb   $.b9..W?2..\\T[.
+                        0168 - a0 44 82 38 bc 39 68 36-7d d7 4f 2b dd 33 4c   .D.8.9h6}.O+.3L
+                        0177 - 62 94 ba e2 51 2b 90 1b-bf 15 b4 0e 8d 3c 5f   b...Q+.......<_
+                        0186 - 22 6e e8 18 4e bb c0 c6-5d c4 3b 7b e7 c6 66   "n..N...].;{..f
+                        0195 - c2 20 b0 76 33 8d e7 0f-8b 62 9d 9f da f5 49   . .v3....b....I
+                        01a4 - 9a eb 59 41 b8 bb 53 e4-7b 49 d6 f3 63 6d b2   ..YA..S.{I..cm.
+                        01b3 - 54 d3 c9 19 0f ac 7e f2-e5 ae 5e bb bf 69 23   T.....~...^..i#
+                        01c2 - f3 36 e0 2a 2a 8b 6e 22-f5 5b 6d 05 82 60 7c   .6.**.n".[m..\`|
+                        01d1 - 6b b2 15 af d9 db 09 1b-91 71 34 d2 b8 ad 60   k........q4...\`
+                        01e0 - 58 6f 6d 2f 22 65 59 c5-88 7d 82 54 87 79 72   Xom/"eY..}.T.yr
+                        01ef - d6 19 30 f5 5c 95 0e 7a-87 c3 d4 6f 18 ce 2c   ..0.\\..z...o..,
+                        01fe - f8 cb                                          ..
                   crls:
                     d.crl: 
                       crl: 
@@ -262,8 +262,8 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                           algorithm: sha256WithRSAEncryption (1.2.840.113549.1.1.11)
                           parameter: NULL
                         issuer:           C=US, ST=Test, L=Local, O=MyOrg, OU=CA, CN=MyRootCA
-                        lastUpdate: Oct  1 19:05:30 2025 GMT
-                        nextUpdate: Oct 31 19:05:30 2025 GMT
+                        lastUpdate: Oct  7 17:03:25 2026 GMT
+                        nextUpdate: Sep  1 17:03:25 2048 GMT
                         revoked:
                           <ABSENT>
                         extensions:
@@ -275,41 +275,41 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                         algorithm: sha256WithRSAEncryption (1.2.840.113549.1.1.11)
                         parameter: NULL
                       signature:  (0 unused bits)
-                        0000 - 71 c4 7d f2 40 72 09 bd-0b b0 c4 83 49 a8 1f   q.}.@r......I..
-                        000f - 2d b2 95 ff 82 ea 8c b1-49 e0 b1 fe df d1 3c   -.......I.....<
-                        001e - 38 63 fc 66 67 58 5b 05-72 10 b3 85 b2 21 0a   8c.fgX[.r....!.
-                        002d - 52 67 5d 94 43 d8 e3 5b-1b 4c af 57 4f e7 0f   Rg].C..[.L.WO..
-                        003c - c6 93 f0 a2 64 d9 6d 36-65 f7 b3 65 72 7e 25   ....d.m6e..er~%
-                        004b - fc 52 13 86 31 21 4a 91-55 7e 3a 46 7f b1 eb   .R..1!J.U~:F...
-                        005a - 6d 30 f7 dc 8e 46 60 c1-88 ae 3c b1 ff 2d 4a   m0...F\`...<..-J
-                        0069 - 80 87 cc 46 ae 6d 19 23-d8 90 ac 18 60 93 38   ...F.m.#....\`.8
-                        0078 - 19 dd 71 9e db f2 f8 9b-c4 4a 33 20 4b b8 27   ..q......J3 K.'
-                        0087 - 7f e4 31 b7 51 fc fc b1-11 79 91 11 dc 8c 5b   ..1.Q....y....[
-                        0096 - 56 4e 60 ae 17 84 65 04-31 1b 44 fc f0 30 a4   VN\`...e.1.D..0.
-                        00a5 - 2d ea 9b 1b 77 c6 15 e1-ce 90 92 30 ca 6b a5   -...w......0.k.
-                        00b4 - 50 b5 f6 8e 83 03 e1 86-4d e3 86 28 1e c7 fd   P.......M..(...
-                        00c3 - 3c 71 ca ba 81 d2 30 f8-f1 a3 81 fe d1 2e 36   <q....0.......6
-                        00d2 - 6a f3 8b 19 c5 3a 06 6c-78 62 c5 e8 f9 f4 ea   j....:.lxb.....
-                        00e1 - 9c 39 4f ce a2 2a f9 e2-57 38 73 55 97 74 eb   .9O..*..W8sU.t.
-                        00f0 - a5 37 85 4a 7f 5c a5 c1-26 79 b6 20 7e 21 23   .7.J.\\..&y. ~!#
-                        00ff - 31 13 bb b4 b1 b9 af e6-d6 9c 78 27 7b 8c 98   1.........x'{..
-                        010e - 71 19 36 df fd 51 d8 f5-de e2 f9 a0 15 ce 8a   q.6..Q.........
-                        011d - 6d 2e ab 95 8e 56 32 34-4c 4c c2 1f 9a 68 9b   m....V24LL...h.
-                        012c - c8 56 58 e6 1b f2 fc 3e-09 94 96 04 0b 05 87   .VX....>.......
-                        013b - cc e2 9f ee 33 ae a1 3d-ca b0 2f 86 ed 0e d0   ....3..=../....
-                        014a - 0a be 21 4f 48 60 8a 5f-b1 eb a6 f6 aa 73 f8   ..!OH\`._.....s.
-                        0159 - 23 4c 13 45 3c 6b c6 08-ef 05 7d 5e d1 1a f3   #L.E<k....}^...
-                        0168 - 1d 36 bc 65 2e 4d aa 18-fc 21 60 b8 56 2c b5   .6.e.M...!\`.V,.
-                        0177 - 47 e2 09 06 36 a3 ae 4c-87 de c6 6e af c8 71   G...6..L...n..q
-                        0186 - 8c f8 48 15 9f 0e 4f 2f-04 5f 0e 7a 55 e9 b5   ..H...O/._.zU..
-                        0195 - 79 39 1c ff 76 9e 3e 1d-9b 33 89 8e 1d e6 45   y9..v.>..3....E
-                        01a4 - 10 79 11 78 33 0d b6 f6-df 5f 37 d7 4a ff 55   .y.x3...._7.J.U
-                        01b3 - 7c 03 b4 d7 79 16 7f 2f-87 08 f1 5e 68 22 96   |...y../...^h".
-                        01c2 - e5 f3 53 01 14 82 90 96-39 6c aa 3f a3 cb cb   ..S.....9l.?...
-                        01d1 - c4 1b 7a 69 85 00 fa b9-1a 2b 8c dc ab 0e 36   ..zi.....+....6
-                        01e0 - 90 a7 07 0b 09 5d 10 28-2a 8c 48 69 d0 b4 c6   .....].(*.Hi...
-                        01ef - 1c 4c 83 2f 04 54 8f 72-50 e7 aa bb a6 0f c2   .L./.T.rP......
-                        01fe - a3 e3                                          ..
+                        0000 - 7b a8 1c 76 47 bb 4c 80-8f c7 6f eb 41 a4 26   {..vG.L...o.A.&
+                        000f - 74 8b 2d 81 af d7 fb 53-b6 ce 37 c8 cc 49 64   t.-....S..7..Id
+                        001e - f6 df bc 61 68 18 f6 b9-2c d9 b2 02 22 cb d4   ...ah...,..."..
+                        002d - 65 9e 11 89 ba fd 91 74-9a 4f 04 4f ea 97 a2   e......t.O.O...
+                        003c - 5e dd 81 b1 cd f4 ad b8-c0 ed a8 d4 95 f0 56   ^.............V
+                        004b - 3b 6b 5b 2b a2 d6 7b 6f-bd 5e 1f 83 5f 2b a0   ;k[+..{o.^.._+.
+                        005a - c5 43 82 bb ae 51 2b fe-42 50 28 b9 d8 f8 11   .C...Q+.BP(....
+                        0069 - 42 aa e4 0d a1 15 4d 0d-10 0d 66 3e c5 08 df   B.....M...f>...
+                        0078 - 15 61 b3 72 12 d9 8f 08-bd 06 d0 b1 e7 fa 57   .a.r..........W
+                        0087 - 24 49 56 44 86 30 8b ab-c9 4b 2b fe 32 93 a7   $IVD.0...K+.2..
+                        0096 - 0e ad ff 24 7e a7 7b de-1f c1 f5 b9 67 cb 8d   ...$~.{.....g..
+                        00a5 - 4b d1 42 f4 e6 be 11 13-50 b8 3a 43 e6 b4 a9   K.B.....P.:C...
+                        00b4 - c3 ef 82 8c d5 3d 42 50-25 fb 0f f1 d1 0b e1   .....=BP%......
+                        00c3 - bc dd 60 44 27 4f 2e 7d-77 c5 18 23 4c 78 40   ..\`D'O.}w..#Lx@
+                        00d2 - 68 b9 ec 40 e0 bb 0f d8-af 59 15 72 01 eb b2   h..@.....Y.r...
+                        00e1 - ab 8b 30 a8 35 ce 02 1c-1c 8a e8 8e dd c7 b5   ..0.5..........
+                        00f0 - a9 5f 95 69 1b dd 91 0b-d0 38 d1 66 21 9a 37   ._.i.....8.f!.7
+                        00ff - 1e f4 31 8a cf b4 1b e7-99 bd d5 f7 54 90 63   ..1.........T.c
+                        010e - 48 3b 29 20 d9 ad 72 43-d9 ec c6 a1 a5 2f e4   H;) ..rC...../.
+                        011d - bf 93 48 6b 08 e9 f1 06-fb 26 4a 0f 77 59 90   ..Hk.....&J.wY.
+                        012c - cc 58 e9 1c 73 61 3d 35-a3 b0 a7 dd 35 2b 97   .X..sa=5....5+.
+                        013b - 59 fd 30 1d 7a e4 da 86-df c6 7e b9 ea 1a 65   Y.0.z.....~...e
+                        014a - 8a 94 1a 64 2e bf 2a 36-13 52 ab fe af 99 c1   ...d..*6.R.....
+                        0159 - cc b9 50 bc 16 70 49 7e-c2 b3 41 ac e3 91 91   ..P..pI~..A....
+                        0168 - 7a 38 1c ec 66 8c 6f 48-94 50 9b 8a 40 c9 8b   z8..f.oH.P..@..
+                        0177 - 53 47 59 25 98 c1 a3 74-96 01 1c 4d e2 0c e4   SGY%...t...M...
+                        0186 - ff 8f 9b 1f d9 22 cf 6b-1f 56 47 11 55 55 7c   .....".k.VG.UU|
+                        0195 - bd c9 ca 16 38 33 04 9e-d6 ed b6 76 87 21 be   ....83.....v.!.
+                        01a4 - 33 21 ff f2 3e c3 3b 87-ec 86 90 5a d7 f4 75   3!..>.;....Z..u
+                        01b3 - a9 46 8a 67 39 10 73 19-95 0b 85 4b 0d aa da   .F.g9.s....K...
+                        01c2 - 8e 6d 7e 87 fc 27 54 a4-81 f0 a1 f6 53 f9 b0   .m~..'T.....S..
+                        01d1 - 30 01 a0 ab 91 89 01 d4-ea 50 d5 06 61 8c 50   0........P..a.P
+                        01e0 - b9 6e a7 ec f3 3b 88 36-50 9b 10 0d 17 fa 92   .n...;.6P......
+                        01ef - da e2 ae 8a 16 43 14 26-4d 51 98 4e b9 02 72   .....C.&MQ.N..r
+                        01fe - d2 6f                                          .o
 
                     d.other: 
                       otherRevInfoFormat: undefined (1.3.6.1.5.5.7.16.2)
@@ -319,12 +319,12 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                   7:d=1  hl=4 l=1790 cons:  cont [ 0 ]        
                  11:d=2  hl=4 l=1786 cons:   SEQUENCE          
                  15:d=3  hl=2 l=   9 prim:    OBJECT            :Basic OCSP Response
-                 26:d=3  hl=4 l=1771 prim:    OCTET STRING      [HEX DUMP]:308206E730820104A1663064310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310D300B060355040B0C044F4353503117301506035504030C0E4F43535020526573706F6E646572180F32303235313030313139303533305A30643062304D300906052B0E03021A05000414C3015D4847D542630BDFE6900831B54D0686BDF604141021AB93D5B7999F76E042EF981E78A7E54221F502140726DAC7F46E2747C424C4225CB43FDDD2AFAA1A8200180F32303235313030313139303533305AA1233021301F06092B060105050730010204120410043674E832CDE57EC3B22590FC759490300D06092A864886F70D01010B0500038201010031E3D574696839F3B3852FE7E5C3B30BF88F8AD6D03A55A05A53FEE21A2675433B68C484832B0C11CD21214ADF750027664967740F4666D97FDFC991684F27DB4A5C2EF932722D631433AF356D3B6023EA6BF4C60D7B2B890FF7E7C7EF8CE77191000634A83462DFF916C32237AC2E7B3AA682AF8CBC5A082EB8388054197CC86D18AD2418EA903E67A757A32E3787E17686BC28484747F646A8C752CA71218BC8DC71DC9318C072EA569CFCF629BAD07544B9157F1092B37A9C0CF18099D0CA4AAA19FFD98984C63F25803F542A0FEE0CEAF58FE1731B370CC85899D097C9BEC8CB7E1851FB80F875800E7691C1215CF4F40245E716466029FB09574A84F781A08204C7308204C3308204BF308202A7A00302010202140726DAC7F46E2747C424C4225CB43FDDD2AFAA1B300D06092A864886F70D01010B0500305C310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310B3009060355040B0C0243413111300F06035504030C084D79526F6F7443413020170D3235313030313139303533305A180F32303533303231363139303533305A3064310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310D300B060355040B0C044F4353503117301506035504030C0E4F43535020526573706F6E64657230820122300D06092A864886F70D01010105000382010F003082010A0282010100B408DE563DE2F8B6C3DCC8ADE84609DD0AAD7DBE50BAFB69BAB9387A51B419FA67130610D99C27F5FB7C77F93B2B46BCF2760662A991A3E3DE553C5E83E76F358820BB4E5E844073D76252ECDE28D6E33AAF6ED183C7968369317A5A2C0AD445E6FB9299AB852AA75862D2ECF880ACFB9027F289C9600E67A6C60B1671D0C1A92C3FCB4384B8662B2CD6486FDFD87F26423CD2724532B697DE60910E3567C7A4412FFA921619D7D5810AD3E05FC1F3DE6336C739D44847A84419A1583A69F151DB8AB968DA8699D4A92F7FB4069206B17D71B7A25F89341266872127F5D1C3230B5B077072D5867DD04155806842428421A8554D73DDD4A1A684F09A84FCE47D0203010001A36F306D30090603551D1304023000300B0603551D0F04040302078030130603551D25040C300A06082B06010505070309301D0603551D0E04160414D85C086804FEA7E50FF156781C09064EBE214191301F0603551D230418301680141021AB93D5B7999F76E042EF981E78A7E54221F5300D06092A864886F70D01010B050003820201003CF6A479AC51A2F33712A1F4D0EDB008217C0F8AB4F69473005929D3B8E724A7F4E8D3F97B3FC4754643FF4AAA646EAB53156B7C25C57EB1C19756794682D73C6ED164891F80315908DC06C0F9DD9ED6870EBDF64F142698615C8741F067713720A1D05E205F685C0108C86D91318B2752B63E7A2BD3D38349A0B1C4D88269777A5DF5A799E9AE0A34A1B09C9A9EBCA432821D67F5D4771DE6F9AA02FB747453D0BE4C37470CEF6178F9E0DBAF491D134DD7CFF343F4AE22236043607B204A1E454FE253B98DBB3677612127BFA479C42EB0FBDB857AC02F797796602EF3A1AD78DF8629D5BBB83ABFAF7630521308BAE4423DF035D06B2C41D1D6BA157494C1384D3D4F7EBA61319835A002A880FAB97336B4BF19B653D0FF29F41DCBFFA38C8E753519E7712835176E046B8D0CCD5E92865D800CFFDD2EC6C65ADCD7A5470F086199E56FA6CE076C205D5E1EE93FCA15ADD60D76B2BD174684448090D4D9EEFB3C72859ADE835EFD5787CC1B8FA55119940DD8FFB131CF16D42E2664D043E3810682F14ED50782E4DAAAB646D09731A8914FB23F1971E31668F6563CBBD6050F8905101F848EA812C3EC6F69CF6797834C3F9EDC533A84C62E21F9E369BE8AC918F7B8A71527C0CBD284DECC02CB08E772936C1BBF57196EA9E2B9E4DCE1BCF5888C1AC8D52AE7D34854D7892895AA4A575232B78FF11E048F740F5D5D0C40
+                 26:d=3  hl=4 l=1771 prim:    OCTET STRING      [HEX DUMP]:308206E730820104A1663064310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310D300B060355040B0C044F4353503117301506035504030C0E4F43535020526573706F6E646572180F32303236313030373137303332355A30643062304D300906052B0E03021A05000414C3015D4847D542630BDFE6900831B54D0686BDF6041486174EB64C961DA9F9E57CFC8B62C94AE3CD290802145CC1A4638F8BA92232262F95191EC815A98093E98200180F32303236313030373137303332355AA1233021301F06092B0601050507300102041204107FEBFA49ECFC424FC42FAD1C16A208E9300D06092A864886F70D01010B050003820101009AD650DF60F9DC6EEA33EF130CA302B75B1D4B26BFCB7D0FF174ED33B71524E6DDFC2A0ABC7279C547DD266F27C23894199FDA04EDAD324EF99574FFBB737F0FFBB882739D273BDD9EEAD65A56D2CA2A3CDB6470E2AE62BEF9902ABD67C4D855CDA613A0D73D7FE2B24B41857D2DBAE967B5DF36422AF3312CA85B1F6D8069A5D07996FAFAE05875B06DDEACFEDF1ECBBDA000F5D36319946AB32A53B464976CEE3B75AD3C0135C255F3752AC5F40A0D315585BCFDA47A45DC162A9637E822042A0186A3D4C8AEB1F6348D74BC109EF6DD2951B28B49C83F921BED6CA14447BBEC03B1B44E1AEC079CECFF127166104C051E705CD6ED2658A9F534ACFCF68EF6A08204C7308204C3308204BF308202A7A00302010202145CC1A4638F8BA92232262F95191EC815A98093EA300D06092A864886F70D01010B0500305C310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310B3009060355040B0C0243413111300F06035504030C084D79526F6F7443413020170D3236313030373137303332355A180F39363932313132363137303332355A3064310B3009060355040613025553310D300B06035504080C0454657374310E300C06035504070C054C6F63616C310E300C060355040A0C054D794F7267310D300B060355040B0C044F4353503117301506035504030C0E4F43535020526573706F6E64657230820122300D06092A864886F70D01010105000382010F003082010A0282010100BD46B26EE97F0540138993A2AEC1668E9CCA3A323B115F4B48304160E806D5D6E847874E95C6F02D691167F6D0CCCFBA4C25F716922E9D46DD4847A35C189603417342902F9AC87EE1432809E5A5516A4FE519BF84E7A340B478BDCB951615219FA077F166F55040E2D063059837D6FFECFCF521D9FD675EB4466D2A480E2CB8F7BD9D3077B2CA22B4C018D5659F816C756164024DCF5B72DDC5B18B820A779886FD2282C427F559044F31BBEB6169077958D9BD6C0DA6C85B9CF1A12A3AB41DCF74960EB782AAA6616853AC5BB208ABC618A356402967EE3A9309C168EE4AC81ED13C7E6EF98D2AB288E0527BFE1CF6C990388A2BE34DD644E215BEB2625DC90203010001A36F306D30090603551D1304023000300B0603551D0F04040302078030130603551D25040C300A06082B06010505070309301D0603551D0E04160414E117B144BCA62C5D6AE36F260C44788167F7D390301F0603551D2304183016801486174EB64C961DA9F9E57CFC8B62C94AE3CD2908300D06092A864886F70D01010B050003820201001D75E4B35C8F617178A0036125E138DB8C0A770B4E690D188F5DD8A4E2CA5504C5537BFD48D9AE22D03F8C6A4FDB1938F5CFCDC77A18975B463EEC4D20DFAD3C8938DF0C7BF35D5C8D14198843DF89A5A48780CFF8F3F1108153BA57BC6131155DED0D1E83A0AA8CE0D035D2334B021F8A4726A1E1BCFCE6D02214402731F615AE25CE2C846E47BEB76776352BFBFFBE2383385157EDC94C43EB3C2E8734E33563CA3CA7A104D615A452D46B087D42139D5AB9F8FEAC9F6843374AE917BC24D89C2D7BF16ECCDF0761281F3046A5D729A3A894991A023C63A42385893AC0902C2E4936260CCD39F0E5969BDA7E2AF8716A821E2CEE5E0CE81B996F8A2596F23D9A98EE31E55F2F8BB7F2290E8C0036A39C29BEBC1C29E76033FD1F5EE069DA1167C99340692E8D2BA50E16C945A16E613C404CDB9A2E72401DBE566E83F42259E433B150E832B0CE88AF14365A21F62A9654383168DD2B951776DE2601E4E06AE2949E3C1B1B786F8915AB85337303DD84D95AE3C091BABF482F14BAE89BB7675D0C2CBBCCB9A484FF45C6EFA9FB6474FC5E1FC49D4E534D4805FA4EBC30C4E4A106B4FE315E98B187C2060995F87DD2B0706430BFE849CD9FF872C7F76CEF4C196299E0A89DC272FB37895B52145DDF824439D3F136E8A5188C083EF0FC4D55732BCA4B5ADAAA7B304D2F26667A9130B906EBEF228798D3EFB410A0B5274C4F
                   signerInfos:
                       version: 1
                       d.issuerAndSerialNumber: 
                         issuer:           C=US, ST=Test, L=Local, O=MyOrg, OU=CA, CN=MyRootCA
-                        serialNumber: 0x0726DAC7F46E2747C424C4225CB43FDDD2AFAA1A
+                        serialNumber: 0x5CC1A4638F8BA92232262F95191EC815A98093E9
                       digestAlgorithm: 
                         algorithm: sha256 (2.16.840.1.101.3.4.2.1)
                         parameter: <ABSENT>
@@ -353,7 +353,7 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                   6:d=2  hl=3 l= 169 cons:   SEQUENCE          
                   9:d=3  hl=2 l=  11 cons:    SEQUENCE          
                  11:d=4  hl=2 l=   9 prim:     OBJECT            :sha256
-                 22:d=3  hl=2 l=  32 prim:    OCTET STRING      [HEX DUMP]:FA94CADCEC73C914AD79475737731C4C1E1A8575030DD3511DA992264708A69C
+                 22:d=3  hl=2 l=  32 prim:    OCTET STRING      [HEX DUMP]:DB43762D61ACF6DC9505569D8BA762BACDA0B7AE5C73E0ED3F88A71B09C53B5B
                  56:d=3  hl=2 l= 120 cons:    SEQUENCE          
                  58:d=4  hl=2 l=  96 cons:     SEQUENCE          
                  60:d=5  hl=2 l=  94 cons:      cont [ 4 ]        
@@ -382,7 +382,7 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                 139:d=8  hl=2 l=  15 cons:         SEQUENCE          
                 141:d=9  hl=2 l=   3 prim:          OBJECT            :commonName
                 146:d=9  hl=2 l=   8 prim:          UTF8STRING        :MyRootCA
-                156:d=4  hl=2 l=  20 prim:     INTEGER           :0726DAC7F46E2747C424C4225CB43FDDD2AFAA1A
+                156:d=4  hl=2 l=  20 prim:     INTEGER           :5CC1A4638F8BA92232262F95191EC815A98093E9
 
                           object: messageDigest (1.2.840.113549.1.9.4)
                           set:
@@ -398,24 +398,24 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                         algorithm: sha256WithRSAEncryption (1.2.840.113549.1.1.11)
                         parameter: NULL
                       signature: 
-                        0000 - 23 63 00 c1 1d ba 8a c3-29 23 33 04 ca 7a df   #c......)#3..z.
-                        000f - 46 69 ed 5c b5 f3 54 91-67 9e 2e 0c 77 ce a4   Fi.\\..T.g...w..
-                        001e - 94 0e 1e 93 56 73 89 ee-49 4f 80 b5 cf 7d 9e   ....Vs..IO...}.
-                        002d - d7 d0 2c 9d 7f 3f c1 cb-d3 f0 1d c6 d6 82 3c   ..,..?........<
-                        003c - cc 2b 18 1a 03 7c e1 a5-74 69 d1 6c e4 68 cb   .+...|..ti.l.h.
-                        004b - d2 39 d6 66 c6 bf 22 19-6d f1 d5 93 e5 aa e8   .9.f..".m......
-                        005a - 5a ec bf bb 19 a3 cd ed-eb 43 dd fd f9 9e 61   Z........C....a
-                        0069 - 4a d6 f0 00 0d 31 a7 c7-48 2a a8 7b c9 a0 31   J....1..H*.{..1
-                        0078 - 3d e7 f4 fd 3b 28 33 f3-44 63 b2 dd a6 b1 ff   =...;(3.Dc.....
-                        0087 - 0e 9d b1 81 e0 6b 52 cd-bf fe 59 e6 24 da 0a   .....kR...Y.$..
-                        0096 - 4c 58 75 5d d9 06 c6 e6-6d 60 cc d2 1f 65 5b   LXu]....m\`...e[
-                        00a5 - 61 f7 e1 77 80 a0 44 a9-3d ad bc 9c 92 8d cf   a..w..D.=......
-                        00b4 - 9d 87 d8 28 40 7f c3 f5-7a f1 51 4e 3d db 07   ...(@...z.QN=..
-                        00c3 - e7 7f e4 c3 04 63 2d b1-8f 33 41 bb ef 14 54   .....c-..3A...T
-                        00d2 - ed b2 96 2f 53 42 31 c2-b9 a2 79 62 60 b9 9f   .../SB1...yb\`..
-                        00e1 - b7 24 3b cb d3 2c 23 a4-0f 64 86 75 68 b7 9d   .$;..,#..d.uh..
-                        00f0 - c4 d8 30 d3 47 91 90 88-27 63 d5 bc 9b 7f 6b   ..0.G...'c....k
-                        00ff - bc                                             .
+                        0000 - 22 bd 92 fa 5b 08 4c 5a-63 02 7e 4c fb 7d 1f   "...[.LZc.~L.}.
+                        000f - 6d 8b b5 9e 70 16 e3 b8-cb 5c 6c ce 13 7d 04   m...p....\\l..}.
+                        001e - d2 98 58 30 8b f3 15 1f-f2 af 3b b9 2a 84 ce   ..X0......;.*..
+                        002d - b0 9a bf ab 38 e5 3d 63-dd 1c 1c b4 0a 51 86   ....8.=c.....Q.
+                        003c - b7 b6 cf dc 0d 9b 18 d8-be 4e 6f 25 00 68 9b   .........No%.h.
+                        004b - 27 9b b2 b7 57 03 d9 be-b7 12 3e c0 5c c5 12   '...W.....>.\\..
+                        005a - ff 88 ab f2 e6 6c 0e 34-87 92 e5 34 98 1c 97   .....l.4...4...
+                        0069 - 42 5f 43 20 bb 8c 6d 4e-fd ac 14 dd 6c 23 84   B_C ..mN....l#.
+                        0078 - 8e ff fc 96 04 59 d8 6d-27 60 45 40 8c 2f 33   .....Y.m'\`E@./3
+                        0087 - cd 51 d7 14 9a a8 34 d6-b4 6d c4 2a d7 8f 59   .Q....4..m.*..Y
+                        0096 - aa 52 33 9c 86 dd 66 e5-bb ca 6b 6f ca e9 62   .R3...f...ko..b
+                        00a5 - 80 ee bc 1d 10 c7 5e bc-1a 57 d4 e2 ab d6 ae   ......^..W.....
+                        00b4 - 92 01 7e 8b 02 70 1f 1a-45 0e 16 5c e5 30 65   ..~..p..E..\\.0e
+                        00c3 - f8 a5 a5 4c 76 9a fc 42-be 9f e6 f8 68 f5 14   ...Lv..B....h..
+                        00d2 - 64 d4 bc 4d 48 d8 7b 15-8a ff 7f 35 27 c6 43   d..MH.{....5'.C
+                        00e1 - 2d ac d8 04 d2 2d b3 5f-9f c3 09 99 cd cc 5f   -....-._......_
+                        00f0 - 79 ff 60 a0 91 ca 62 c6-80 bd 15 c0 5c 13 47   y.\`...b.....\\.G
+                        00ff - d9                                             .
                       unsignedAttrs:
                         <ABSENT>
               "
