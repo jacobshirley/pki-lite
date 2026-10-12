@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { EnvelopedData } from '../../pkcs7/EnvelopedData.js'
 import { Certificate } from '../../x509/Certificate.js'
 import { PrivateKeyInfo } from '../../keys/PrivateKeyInfo.js'
@@ -130,6 +130,53 @@ describe('EnvelopedDataBuilder', () => {
         const parsed = EnvelopedData.fromCms(cms)
         expect(parsed).toBeInstanceOf(EnvelopedData)
         expect(parsed.recipientInfos).toHaveLength(1)
+    })
+
+    test('decrypts when the matching recipient is not first, without logging', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        try {
+            const envelopedData = await EnvelopedData.builder()
+                .setData('Test data')
+                .addRecipient(
+                    {
+                        certificate: Certificate.fromPem(
+                            rsaSigningKeys.caCertPem,
+                        ),
+                    },
+                    {
+                        certificate: Certificate.fromPem(
+                            rsaSigningKeys.certPem,
+                        ),
+                    },
+                )
+                .build()
+
+            const decrypted = await envelopedData.decrypt(
+                PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem),
+            )
+
+            expect(new TextDecoder().decode(decrypted)).toBe('Test data')
+            expect(errorSpy).not.toHaveBeenCalled()
+        } finally {
+            errorSpy.mockRestore()
+        }
+    })
+
+    test('throws with cause when no recipient matches the private key', async () => {
+        const envelopedData = await EnvelopedData.builder()
+            .setData('Test data')
+            .addRecipient({
+                certificate: Certificate.fromPem(rsaSigningKeys.caCertPem),
+            })
+            .build()
+
+        const error = await envelopedData
+            .decrypt(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+            .catch((e) => e)
+
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toBe('Failed to decrypt key')
+        expect(error.cause).toBeDefined()
     })
 
     test('throws error when no data is set', async () => {
