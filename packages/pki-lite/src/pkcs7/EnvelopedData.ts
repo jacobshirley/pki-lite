@@ -303,24 +303,25 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
         }
 
         let decryptedKey: Uint8Array<ArrayBuffer> | undefined
+        let lastError: unknown
         for (const recipientInfo of this.recipientInfos) {
-            try {
-                if (recipientInfo instanceof KeyTransRecipientInfo) {
-                    const encryptedKey = recipientInfo.encryptedKey
+            if (!(recipientInfo instanceof KeyTransRecipientInfo)) continue
 
-                    decryptedKey =
-                        await recipientInfo.keyEncryptionAlgorithm.decrypt(
-                            encryptedKey,
-                            privateKey,
-                        )
-                }
+            try {
+                decryptedKey =
+                    await recipientInfo.keyEncryptionAlgorithm.decrypt(
+                        recipientInfo.encryptedKey,
+                        privateKey,
+                    )
+                break
             } catch (e) {
-                console.error('Error decrypting key:', e)
+                // Expected when the recipient belongs to a different key
+                lastError = e
             }
         }
 
         if (!decryptedKey) {
-            throw new Error('Failed to decrypt key')
+            throw new Error('Failed to decrypt key', { cause: lastError })
         }
 
         const originalContent =
