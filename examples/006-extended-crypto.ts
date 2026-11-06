@@ -3,7 +3,7 @@
 // Make sure to import the extended crypto module to enable these algorithms
 import 'pki-lite-crypto-extended'
 
-import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
+import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
 
 const algorithm = AlgorithmIdentifier.contentEncryptionAlgorithm({
     type: 'SHA1_3DES_3KEY_CBC',

@@ -1,8 +1,8 @@
 // Create a CMS EnvelopedData structure with a recipient
 
 import { KeyGen } from 'pki-lite/core/KeyGen.js'
-import { EnvelopedData } from 'pki-lite/pkcs7/EnvelopedData'
-import { Certificate } from 'pki-lite/x509/Certificate'
+import { EnvelopedData } from 'pki-lite/pkcs7/EnvelopedData.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
 
 console.log('=== Enveloped Data Example ===\n')
 
