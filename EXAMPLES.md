@@ -174,7 +174,7 @@ if (!ocsp) {
 // Make sure to import the extended crypto module to enable these algorithms
 import 'pki-lite-crypto-extended'
 
-import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier'
+import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
 
 const algorithm = AlgorithmIdentifier.contentEncryptionAlgorithm({
     type: 'SHA1_3DES_3KEY_CBC',
@@ -202,9 +202,9 @@ console.log('Decrypted data:', new TextDecoder().decode(decrypted))
 ## Create a CMS SignedData structure with a signer
 
 ```typescript
-import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo'
-import { SignedData } from 'pki-lite/pkcs7/SignedData'
-import { Certificate } from 'pki-lite/x509/Certificate'
+import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
+import { SignedData } from 'pki-lite/pkcs7/SignedData.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
 
 const certPem = `-----BEGIN CERTIFICATE-----{your certificate here}-----END CERTIFICATE-----`
 const keyPem = `-----BEGIN PRIVATE KEY-----{your private key here}-----END PRIVATE KEY-----`
@@ -231,8 +231,8 @@ console.log(signedData.toCms())
 
 ```typescript
 import { KeyGen } from 'pki-lite/core/KeyGen.js'
-import { EnvelopedData } from 'pki-lite/pkcs7/EnvelopedData'
-import { Certificate } from 'pki-lite/x509/Certificate'
+import { EnvelopedData } from 'pki-lite/pkcs7/EnvelopedData.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
 
 console.log('=== Enveloped Data Example ===\n')
 

@@ -1,8 +1,8 @@
 // Create a CMS SignedData structure with a signer
 
-import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo'
-import { SignedData } from 'pki-lite/pkcs7/SignedData'
-import { Certificate } from 'pki-lite/x509/Certificate'
+import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
+import { SignedData } from 'pki-lite/pkcs7/SignedData.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
 
 const certPem = `-----BEGIN CERTIFICATE-----{your certificate here}-----END CERTIFICATE-----`
 const keyPem = `-----BEGIN PRIVATE KEY-----{your private key here}-----END PRIVATE KEY-----`
