@@ -471,9 +471,11 @@ Sets the serial number for the certificate.
 
 ##### serialNumber
 
-Serial number as bytes, number, or string
+Serial number as unsigned big-endian bytes, a number,
+a bigint, or a numeric string (decimal or 0x-prefixed hex). Must be
+positive; the value is normalised to a minimal DER INTEGER.
 
-`string` | `number` | `Uint8Array`\<`ArrayBuffer`\>
+`string` | `number` | `bigint` | `Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 
