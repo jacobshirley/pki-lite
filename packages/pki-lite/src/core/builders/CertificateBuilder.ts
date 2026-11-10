@@ -3,6 +3,7 @@ import {
     SignatureAlgorithmIdentifier,
 } from '../../algorithms/AlgorithmIdentifier.js'
 import { Certificate } from '../../x509/Certificate.js'
+import { Integer } from '../../asn1/Integer.js'
 import { Extension } from '../../x509/Extension.js'
 import { Name } from '../../x509/Name.js'
 import { SubjectPublicKeyInfo } from '../../keys/SubjectPublicKeyInfo.js'
@@ -151,22 +152,54 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
     /**
      * Sets the serial number for the certificate.
      *
-     * @param serialNumber Serial number as bytes, number, or string
+     * @param serialNumber Serial number as unsigned big-endian bytes, a number,
+     * a bigint, or a numeric string (decimal or 0x-prefixed hex). Must be
+     * positive; the value is normalised to a minimal DER INTEGER.
      * @returns This builder for chaining
      */
     setSerialNumber(
-        serialNumber: Uint8Array<ArrayBuffer> | number | string,
+        serialNumber: Uint8Array<ArrayBuffer> | number | string | bigint,
     ): this {
         if (
-            typeof serialNumber === 'number' ||
-            typeof serialNumber === 'string'
+            (typeof serialNumber === 'number' ||
+                typeof serialNumber === 'bigint') &&
+            serialNumber < 0
         ) {
-            // Convert to Uint8Array - this will be handled by Integer constructor
-            this.serialNumber = new Uint8Array([1, 0, 0, 0]) // Placeholder
-            // Store the actual value to pass to TBSCertificate
-        } else {
-            this.serialNumber = serialNumber
+            throw new Error('Serial number must be a positive integer')
         }
+        if (
+            typeof serialNumber === 'string' &&
+            serialNumber.trim()[0] === '-'
+        ) {
+            throw new Error('Serial number must be a positive integer')
+        }
+
+        const bytes =
+            serialNumber instanceof Uint8Array
+                ? new Uint8Array(serialNumber)
+                : new Integer({ value: serialNumber }).bytes
+
+        // Normalise to a minimal, positive DER INTEGER (no redundant leading
+        // 0x00, and a 0x00 prefix if the high bit is set). OpenSSL rejects
+        // certificates whose serial is not minimally encoded.
+        let start = 0
+        while (start < bytes.length - 1 && bytes[start] === 0) {
+            start++
+        }
+        let normalized = bytes.slice(start)
+        if (normalized.length === 0) {
+            throw new Error('Serial number must not be empty')
+        }
+        if (normalized[0] & 0x80) {
+            const prefixed = new Uint8Array(normalized.length + 1)
+            prefixed.set(normalized, 1)
+            normalized = prefixed
+        }
+        if (normalized.every((b) => b === 0)) {
+            throw new Error('Serial number must be a positive integer')
+        }
+
+        this.serialNumber = normalized
         return this
     }
 
@@ -178,10 +211,11 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
     generateSerialNumber(): this {
         const serial = new Uint8Array(20)
         crypto.getRandomValues(serial)
-        // Ensure positive number by clearing the high bit
+        // Clear the high bit so setSerialNumber() doesn't add a sign byte
+        // (RFC 5280 limits serials to 20 octets); it also strips a leading
+        // 0x00 so the result is always a minimal DER INTEGER.
         serial[0] &= 0x7f
-        this.serialNumber = serial
-        return this
+        return this.setSerialNumber(serial)
     }
 
     /**
