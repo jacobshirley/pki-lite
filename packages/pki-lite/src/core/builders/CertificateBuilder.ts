@@ -211,12 +211,11 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
     generateSerialNumber(): this {
         const serial = new Uint8Array(20)
         crypto.getRandomValues(serial)
-        // Ensure a positive INTEGER (clear the high bit) with a non-zero
-        // leading byte: DER forbids redundant leading 0x00 octets, which
-        // OpenSSL rejects as a malformed certificate.
-        serial[0] = (serial[0] & 0x7f) | 0x40
-        this.serialNumber = serial
-        return this
+        // Clear the high bit so setSerialNumber() doesn't add a sign byte
+        // (RFC 5280 limits serials to 20 octets); it also strips a leading
+        // 0x00 so the result is always a minimal DER INTEGER.
+        serial[0] &= 0x7f
+        return this.setSerialNumber(serial)
     }
 
     /**

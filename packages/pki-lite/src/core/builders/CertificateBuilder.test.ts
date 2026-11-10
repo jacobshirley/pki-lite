@@ -278,9 +278,8 @@ describe('CertificateBuilder', () => {
                 const serial = (
                     builder as unknown as { serialNumber: Uint8Array }
                 ).serialNumber
-                expect(serial.length).toBe(20)
-                expect(serial[0]).not.toBe(0)
-                expect(serial[0] & 0x80).toBe(0)
+                // Leading zero stripped (19 bytes), never a 21-byte sign-padded one
+                expect(serial).toEqual(new Uint8Array(19).fill(0x11))
             } finally {
                 spy.mockRestore()
             }
