@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { CertificateBuilder } from './CertificateBuilder.js'
 import { Certificate } from '../../x509/Certificate.js'
 import { PrivateKeyInfo } from '../../keys/PrivateKeyInfo.js'
@@ -260,5 +260,30 @@ describe('CertificateBuilder', () => {
             .selfSign()
 
         expect(cert.tbsCertificate.extensions?.length).toBe(2)
+    })
+
+    test('generateSerialNumber never yields a non-minimal DER integer', () => {
+        // Force the worst case: random bytes that start with 0x00 / 0x80
+        for (const first of [0x00, 0x80]) {
+            const spy = vi
+                .spyOn(crypto, 'getRandomValues')
+                .mockImplementation((array) => {
+                    const bytes = array as unknown as Uint8Array
+                    bytes.fill(0x11)
+                    bytes[0] = first
+                    return array
+                })
+            try {
+                const builder = new CertificateBuilder().generateSerialNumber()
+                const serial = (
+                    builder as unknown as { serialNumber: Uint8Array }
+                ).serialNumber
+                expect(serial.length).toBe(20)
+                expect(serial[0]).not.toBe(0)
+                expect(serial[0] & 0x80).toBe(0)
+            } finally {
+                spy.mockRestore()
+            }
+        }
     })
 })

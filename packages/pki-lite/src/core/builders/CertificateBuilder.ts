@@ -178,8 +178,10 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
     generateSerialNumber(): this {
         const serial = new Uint8Array(20)
         crypto.getRandomValues(serial)
-        // Ensure positive number by clearing the high bit
-        serial[0] &= 0x7f
+        // Ensure a positive INTEGER (clear the high bit) with a non-zero
+        // leading byte: DER forbids redundant leading 0x00 octets, which
+        // OpenSSL rejects as a malformed certificate.
+        serial[0] = (serial[0] & 0x7f) | 0x40
         this.serialNumber = serial
         return this
     }
