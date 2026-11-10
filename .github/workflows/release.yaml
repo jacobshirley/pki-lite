@@ -11,13 +11,31 @@ permissions:
     contents: read
 
 jobs:
+    gate:
+        runs-on: ubuntu-latest
+        name: Check release trigger
+        outputs:
+            run: ${{ steps.gate.outputs.run }}
+        steps:
+            - name: Gate on release commit
+              id: gate
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  MSG: ${{ github.event.head_commit.message }}
+              run: |
+                  if [[ "$EVENT_NAME" == workflow_dispatch ]] || [[ "$MSG" =~ ^release\(.*\): ]]; then
+                      echo "run=true" >> $GITHUB_OUTPUT
+                  else
+                      echo "run=false" >> $GITHUB_OUTPUT
+                  fi
     publish:
         runs-on: ubuntu-latest
         name: Publish to npm
+        needs: gate
         permissions:
             contents: write
             id-token: write
-        if: github.event_name == 'workflow_dispatch' || startsWith( github.event.head_commit.message, 'release(' )
+        if: needs.gate.outputs.run == 'true'
         steps:
             - name: Checkout repository
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
