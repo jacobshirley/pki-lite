@@ -286,4 +286,65 @@ describe('CertificateBuilder', () => {
             }
         }
     })
+
+    describe('setSerialNumber', () => {
+        const serialBytes = (
+            v: Parameters<CertificateBuilder['setSerialNumber']>[0],
+        ) =>
+            (
+                new CertificateBuilder().setSerialNumber(v) as unknown as {
+                    serialNumber: Uint8Array
+                }
+            ).serialNumber
+
+        test('honours number, bigint and string values', () => {
+            expect(serialBytes(5)).toEqual(new Uint8Array([5]))
+            expect(serialBytes(255)).toEqual(new Uint8Array([0, 255]))
+            expect(serialBytes(65536)).toEqual(new Uint8Array([1, 0, 0]))
+            expect(serialBytes(2n ** 64n)).toEqual(
+                new Uint8Array([1, 0, 0, 0, 0, 0, 0, 0, 0]),
+            )
+            expect(serialBytes('4660')).toEqual(new Uint8Array([0x12, 0x34]))
+            expect(serialBytes('0x1234')).toEqual(new Uint8Array([0x12, 0x34]))
+        })
+
+        test('normalises bytes to a minimal positive DER integer', () => {
+            expect(serialBytes(new Uint8Array([0, 0, 1, 2]))).toEqual(
+                new Uint8Array([1, 2]),
+            )
+            expect(serialBytes(new Uint8Array([0x80, 1]))).toEqual(
+                new Uint8Array([0, 0x80, 1]),
+            )
+            expect(serialBytes(new Uint8Array([0, 0x80, 1]))).toEqual(
+                new Uint8Array([0, 0x80, 1]),
+            )
+        })
+
+        test('rejects zero, negative and empty serials', () => {
+            expect(() => serialBytes(0)).toThrow()
+            expect(() => serialBytes(-1)).toThrow()
+            expect(() => serialBytes(-1n)).toThrow()
+            expect(() => serialBytes('-5')).toThrow()
+            expect(() => serialBytes(new Uint8Array([]))).toThrow()
+            expect(() => serialBytes(new Uint8Array([0, 0]))).toThrow()
+        })
+
+        test('a number serial ends up in the built certificate', async () => {
+            const keyPair = PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem)
+            const publicKey = Certificate.fromPem(rsaSigningKeys.certPem)
+                .tbsCertificate.subjectPublicKeyInfo
+
+            const cert = await Certificate.builder()
+                .setSubject('CN=Test')
+                .setPublicKey(publicKey)
+                .setPrivateKey(keyPair)
+                .setValidityDays(365)
+                .setSerialNumber(123456789)
+                .selfSign()
+
+            expect(cert.tbsCertificate.serialNumber.bytes).toEqual(
+                new Uint8Array([0x07, 0x5b, 0xcd, 0x15]),
+            )
+        })
+    })
 })
