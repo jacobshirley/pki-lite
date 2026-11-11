@@ -91,12 +91,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             /ed_rsa_gcm|authenveloped/.test(t),
     },
     {
-        id: 'CMS-BER-INDEFINITE-LENGTH',
-        why: 'Indefinite-length / constructed-OCTET-STRING BER (openssl cms -stream) is not handled: the eContent digest is computed over the wrong bytes.',
-        match: (t, c) =>
-            /_stream/.test(t) && /verify|decrypt|roundtrip/.test(c),
-    },
-    {
         id: 'CMS-RSA-PKCS1V15-KEY-TRANSPORT',
         why: 'EnvelopedData.decrypt cannot unwrap RSA PKCS#1 v1.5 key transport (rsaEncryption), the OpenSSL default.',
         match: (t, c) =>
@@ -321,11 +315,14 @@ describe('OpenSSL corpus: CMS', () => {
             register('cms', file, 'envelopedData:parse', () => {
                 ContentInfo.fromDer(der).parseContentAs(EnvelopedData)
             })
-            register('cms', file, 'envelopedData:roundtrip', () => {
-                const ed =
-                    ContentInfo.fromDer(der).parseContentAs(EnvelopedData)
-                expectRoundtrip(ed.toCms(), der)
-            })
+            // BER (indefinite length) input is re-written as DER, so it cannot round-trip
+            if (!/_stream/.test(file)) {
+                register('cms', file, 'envelopedData:roundtrip', () => {
+                    const ed =
+                        ContentInfo.fromDer(der).parseContentAs(EnvelopedData)
+                    expectRoundtrip(ed.toCms(), der)
+                })
+            }
             if (/^ed_(rsa|stream|empty)/.test(file)) {
                 register('cms', file, 'envelopedData:decrypt', async () => {
                     const ed =

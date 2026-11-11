@@ -1,3 +1,4 @@
+import { contentOctets } from '../core/tagging.js'
 import {
     Asn1BaseBlock,
     asn1js,
@@ -66,7 +67,34 @@ export class OctetString extends PkiBase<OctetString> {
             )
         }
 
-        return new OctetString({ bytes: asn1.valueBlock.valueHexView })
+        return new OctetString({ bytes: OctetString.contentBytes(asn1) })
+    }
+
+    /**
+     * The value bytes of an OCTET STRING. BER allows a *constructed* encoding (what
+     * indefinite-length streaming writers such as `openssl cms -stream` produce): a
+     * sequence of OCTET STRING chunks whose contents are concatenated.
+     */
+    static contentBytes(asn1: Asn1BaseBlock): Uint8Array {
+        if (asn1.idBlock.isConstructed) {
+            const chunks = (asn1.valueBlock as { value?: Asn1BaseBlock[] })
+                .value
+            if (chunks && chunks.length > 0) {
+                const parts = chunks.map((chunk) =>
+                    OctetString.contentBytes(chunk),
+                )
+                const out = new Uint8Array(
+                    parts.reduce((total, part) => total + part.length, 0),
+                )
+                let offset = 0
+                for (const part of parts) {
+                    out.set(part, offset)
+                    offset += part.length
+                }
+                return out
+            }
+        }
+        return contentOctets(asn1)
     }
 
     static fromDer(der: Uint8Array<ArrayBuffer>): OctetString {
