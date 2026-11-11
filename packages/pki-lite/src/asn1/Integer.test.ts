@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { Integer } from './Integer.js'
-import * as asn1js from 'asn1js'
 
 describe('Integer', () => {
     // Small number tests
@@ -62,7 +62,7 @@ describe('Integer', () => {
             const asn1 = integer.toAsn1()
 
             // Check that the ASN.1 object is correct
-            expect(asn1).toBeInstanceOf(asn1js.Integer)
+            expect(asn1.is(UniversalTag.Integer)).toBe(true)
 
             // Round-trip conversion
             const decoded = Integer.fromAsn1(asn1)
@@ -72,9 +72,7 @@ describe('Integer', () => {
 
     // fromAsn1 with invalid type
     test('fromAsn1 should throw error for non-INTEGER ASN.1 types', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([42]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([42]))
         expect(() => Integer.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected INTEGER',
         )

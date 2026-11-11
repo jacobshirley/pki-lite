@@ -1,5 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
-import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { Asn1Node, der, PkiBase } from '../core/PkiBase.js'
 
 /**
  * Represents an ASN.1 BIT STRING value.
@@ -32,19 +31,28 @@ export class BitString extends PkiBase<BitString> {
     bytes: Uint8Array<ArrayBuffer>
 
     /**
+     * Number of unused bits (0-7) at the end of the last byte.
+     */
+    unusedBits: number
+
+    /**
      * Creates a new BitString instance.
      *
      * @param options Configuration object
      * @param options.value The value as string, bytes, BitString, or PKI object
+     * @param options.unusedBits Unused bits at the end of the last byte (default 0)
      */
     constructor(options: {
         value: string | Uint8Array<ArrayBuffer> | BitString | PkiBase
+        unusedBits?: number
     }) {
         super()
         const { value } = options
+        this.unusedBits = options.unusedBits ?? 0
 
         if (value instanceof BitString) {
             this.bytes = value.bytes
+            this.unusedBits = options.unusedBits ?? value.unusedBits
         } else if (value instanceof Uint8Array) {
             this.bytes = value
         } else if (value instanceof PkiBase) {
@@ -59,10 +67,8 @@ export class BitString extends PkiBase<BitString> {
      *
      * @returns The ASN.1 BIT STRING structure
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.BitString({
-            valueHex: this.bytes,
-        })
+    toAsn1(): Asn1Node {
+        return der.bitString(this.bytes, this.unusedBits)
     }
 
     /**
@@ -72,25 +78,9 @@ export class BitString extends PkiBase<BitString> {
      * @returns A new BitString instance
      * @throws Asn1ParseError if the ASN.1 structure is invalid
      */
-    static fromAsn1(asn1: Asn1BaseBlock): BitString {
-        if (!(asn1 instanceof asn1js.BitString)) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected BIT STRING',
-            )
-        }
-
-        // Get the binary data from the ASN.1 structure
-        const valueHex =
-            asn1.valueBlock.valueHexView ||
-            asn1.valueBlock.valueBeforeDecodeView
-
-        if (!valueHex) {
-            throw new Asn1ParseError(
-                'Could not extract value from ASN.1 BIT STRING',
-            )
-        }
-
-        return new BitString({ value: new Uint8Array(valueHex) })
+    static fromAsn1(asn1: Asn1Node): BitString {
+        const { bytes, unusedBits } = der.readBitString(asn1)
+        return new BitString({ value: bytes, unusedBits })
     }
 
     /**

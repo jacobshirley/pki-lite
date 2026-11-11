@@ -1,5 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
-import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 
 /**
  * Represents an ASN.1 BMPString value.
@@ -57,33 +56,17 @@ export class BMPString extends PkiBase<BMPString> {
         return result
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.BmpString({
-            valueHex: this.bytes,
-        })
+    toAsn1(): Asn1Node {
+        return der.primitive(UniversalTag.BMPString, this.bytes)
     }
 
     /**
      * Creates a BMPString from an ASN.1 BMPString structure
      */
-    static fromAsn1(asn1: Asn1BaseBlock): BMPString {
-        if (!(asn1 instanceof asn1js.BmpString)) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected BMPString',
-            )
-        }
-
-        // Get the decoded string value from the ASN.1 structure
-        const value = asn1.valueBlock.value
-
-        if (!value) {
-            throw new Asn1ParseError(
-                'Could not extract value from ASN.1 BMPString',
-            )
-        }
-
-        // Pass the string directly - constructor will handle UTF-16BE encoding
-        return new BMPString({ value })
+    static fromAsn1(asn1: Asn1Node): BMPString {
+        return new BMPString({
+            value: asn1.expect(UniversalTag.BMPString, 'BMPString').bytes(),
+        })
     }
 
     toString() {

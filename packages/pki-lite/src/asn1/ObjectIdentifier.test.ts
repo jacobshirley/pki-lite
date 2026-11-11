@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
+import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { ObjectIdentifier } from './ObjectIdentifier.js'
-import * as asn1js from 'asn1js'
 
 describe('ObjectIdentifier', () => {
     test('should create ObjectIdentifier from string value', () => {
@@ -76,16 +77,15 @@ describe('ObjectIdentifier', () => {
         const oid = new ObjectIdentifier({ value: oidString })
         const asn1 = oid.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.ObjectIdentifier)
+        expect(asn1.is(UniversalTag.ObjectIdentifier)).toBe(true)
 
         // Verify the value is preserved in ASN.1
-        const asn1Oid = asn1 as asn1js.ObjectIdentifier
-        expect(asn1Oid.valueBlock.toString()).toEqual(oidString)
+        expect(der.readOid(asn1)).toEqual(oidString)
     })
 
     test('should parse from ASN.1 structure correctly', () => {
         const oidString = '2.5.29.14'
-        const asn1 = new asn1js.ObjectIdentifier({ value: oidString })
+        const asn1 = der.oid(oidString)
 
         const oid = ObjectIdentifier.fromAsn1(asn1)
 
@@ -95,9 +95,7 @@ describe('ObjectIdentifier', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => ObjectIdentifier.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected OBJECT IDENTIFIER',
@@ -105,14 +103,12 @@ describe('ObjectIdentifier', () => {
     })
 
     test('fromAsn1 should throw error for empty OID value', () => {
-        // Create a mock ASN.1 ObjectIdentifier with no value
-        const mockAsn1 = new asn1js.ObjectIdentifier()
-        // Mock the valueBlock.toString to return empty string
-        mockAsn1.valueBlock.toString = () => ''
-
-        expect(() => ObjectIdentifier.fromAsn1(mockAsn1)).toThrow(
-            'Invalid ObjectIdentifier: no value found in ASN.1 structure',
+        const empty = der.primitive(
+            UniversalTag.ObjectIdentifier,
+            new Uint8Array(0),
         )
+
+        expect(() => ObjectIdentifier.fromAsn1(empty)).toThrow(Asn1ParseError)
     })
 
     test('should handle round-trip conversion through ASN.1', () => {

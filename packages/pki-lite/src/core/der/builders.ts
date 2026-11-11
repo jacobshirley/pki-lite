@@ -1,8 +1,14 @@
 import { Asn1ParseError } from '../errors/Asn1ParseError.js'
 import { Asn1Node, TagClass, UniversalTag } from './Asn1Node.js'
 
-const primitive = (tag: number, content: Uint8Array<ArrayBuffer>) =>
-    new Asn1Node({ tag, content })
+/** A primitive node with the given (universal by default) tag and raw content. */
+export function primitive(
+    tag: number,
+    content: Uint8Array,
+    tagClass: TagClass = TagClass.Universal,
+): Asn1Node {
+    return new Asn1Node({ tagClass, tag, content: new Uint8Array(content) })
+}
 
 /** SEQUENCE / SEQUENCE OF. `undefined` entries (absent OPTIONAL fields) are skipped. */
 export function sequence(

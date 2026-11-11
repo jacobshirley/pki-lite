@@ -1,5 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
-import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 
 /**
  * Represents an ASN.1 UniversalString value.
@@ -27,34 +26,19 @@ export class UniversalString extends PkiBase<UniversalString> {
         }
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.UniversalString({
-            valueHex: this.bytes,
-        })
+    toAsn1(): Asn1Node {
+        return der.primitive(UniversalTag.UniversalString, this.bytes)
     }
 
     /**
      * Creates a UniversalString from an ASN.1 UniversalString structure
      */
-    static fromAsn1(asn1: Asn1BaseBlock): UniversalString {
-        if (!(asn1 instanceof asn1js.UniversalString)) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected UniversalString',
-            )
-        }
-
-        // Get the binary data from the ASN.1 structure
-        const valueHex =
-            asn1.valueBlock.valueHexView ||
-            asn1.valueBlock.valueBeforeDecodeView
-
-        if (!valueHex) {
-            throw new Asn1ParseError(
-                'Could not extract value from ASN.1 UniversalString',
-            )
-        }
-
-        return new UniversalString({ value: new Uint8Array(valueHex) })
+    static fromAsn1(asn1: Asn1Node): UniversalString {
+        return new UniversalString({
+            value: asn1
+                .expect(UniversalTag.UniversalString, 'UniversalString')
+                .bytes(),
+        })
     }
 
     toString() {

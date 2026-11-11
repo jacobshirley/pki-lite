@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
 /**
@@ -141,7 +141,7 @@ export class Integer extends PkiBase<Integer> {
     /**
      * Converts the Integer to an ASN.1 INTEGER structure
      */
-    toAsn1(): asn1js.Integer {
+    toAsn1(): Asn1Node {
         // For ASN.1 encoding, check if we need to add padding for high bit values
         let valueHex = this.bytes
 
@@ -154,22 +154,14 @@ export class Integer extends PkiBase<Integer> {
             valueHex.set(this.bytes, 1)
         }
 
-        return new asn1js.Integer({ valueHex })
+        return der.primitive(UniversalTag.Integer, valueHex)
     }
 
     /**
      * Creates an Integer from an ASN.1 INTEGER structure
      */
-    static fromAsn1(asn1: Asn1BaseBlock): Integer {
-        if (!(asn1 instanceof asn1js.Integer)) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected INTEGER',
-            )
-        }
-
-        return new Integer({
-            value: new Uint8Array(asn1.valueBlock.valueHexView),
-        })
+    static fromAsn1(asn1: Asn1Node): Integer {
+        return new Integer({ value: der.readIntegerBytes(asn1) })
     }
 
     /**
