@@ -198,4 +198,13 @@ describe('Any', () => {
         expect(any.derBytes).toEqual(largeBytes)
         expect(any.derBytes!.length).toEqual(1000)
     })
+
+    test('toDer returns the stored bytes unchanged', () => {
+        // Not a single TLV: re-parsing used to turn this into 05 00 (NULL)
+        const bytes = new Uint8Array([5, 4, 3, 2, 1])
+        expect(new Any({ derBytes: bytes }).toDer()).toEqual(bytes)
+        expect(new Any({ derBytes: null }).toDer()).toEqual(
+            new Uint8Array([5, 0]),
+        )
+    })
 })
