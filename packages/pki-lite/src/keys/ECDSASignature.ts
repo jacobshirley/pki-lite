@@ -1,5 +1,11 @@
 import { padUint8Array } from '../core/utils.js'
-import { asn1js, derToAsn1, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { Integer } from '../asn1/Integer.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -32,24 +38,21 @@ export class ECDSASignature extends PkiBase<ECDSASignature> {
      * are padded with a leading 0x00 byte to ensure they're interpreted as positive.
      * This is handled by the Integer class.
      */
-    toAsn1(): asn1js.Sequence {
-        return new asn1js.Sequence({
-            value: [this.r.toAsn1(), this.s.toAsn1()],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([this.r.toAsn1(), this.s.toAsn1()])
     }
 
     /**
      * Parse from ASN.1 structure.
      */
-    static fromAsn1(asn1: asn1js.AsnType): ECDSASignature {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): ECDSASignature {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        // Access valueBlock.value (need to cast due to type limitations)
-        const values = (asn1 as any).valueBlock.value
+        const values = asn1.children
         if (values.length !== 2) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 2 elements',
@@ -59,13 +62,13 @@ export class ECDSASignature extends PkiBase<ECDSASignature> {
         const rAsn1 = values[0]
         const sAsn1 = values[1]
 
-        if (!(rAsn1 instanceof asn1js.Integer)) {
+        if (!rAsn1.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: r must be INTEGER',
             )
         }
 
-        if (!(sAsn1 instanceof asn1js.Integer)) {
+        if (!sAsn1.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: s must be INTEGER',
             )

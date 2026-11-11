@@ -1,6 +1,12 @@
 import { OctetString } from '../asn1/OctetString.js'
 import { OIDs } from '../core/OIDs.js'
-import { Asn1BaseBlock, asn1js, bytesToHexString } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    bytesToHexString,
+    derToAsn1,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { Certificate } from '../x509/Certificate.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -13,19 +19,19 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class SubjectKeyIdentifier extends OctetString {
-    static fromAsn1(asn1: Asn1BaseBlock): SubjectKeyIdentifier {
-        if (asn1 instanceof asn1js.OctetString) {
+    static fromAsn1(asn1: Asn1Node): SubjectKeyIdentifier {
+        if (asn1.is(UniversalTag.OctetString)) {
             return new SubjectKeyIdentifier({
-                bytes: asn1.valueBlock.valueHexView,
+                bytes: asn1.bytes(),
             })
         }
 
         // `subjectKeyIdentifier [0] SubjectKeyIdentifier` in CMS (SignerIdentifier,
         // RecipientIdentifier, ...) is IMPLICIT, so DER parsing yields a primitive
         // context-specific value rather than a universal OCTET STRING.
-        if (asn1 instanceof asn1js.Primitive && asn1.idBlock.tagClass === 3) {
+        if (!asn1.constructed && asn1.tagClass === TagClass.Context) {
             return new SubjectKeyIdentifier({
-                bytes: new Uint8Array(asn1.valueBlock.valueHexView),
+                bytes: asn1.bytes(),
             })
         }
 
@@ -35,7 +41,7 @@ export class SubjectKeyIdentifier extends OctetString {
     }
 
     static fromDer(der: Uint8Array<ArrayBuffer>): SubjectKeyIdentifier {
-        return SubjectKeyIdentifier.fromAsn1(asn1js.fromBER(der).result)
+        return SubjectKeyIdentifier.fromAsn1(derToAsn1(der))
     }
 
     matchesCertificate(cert: Certificate): boolean {

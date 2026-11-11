@@ -1,9 +1,10 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     derToAsn1,
     pemToDer,
     PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -110,20 +111,18 @@ export class RSAPrivateKey extends PkiBase<RSAPrivateKey> {
     /**
      * Converts the RSA private key to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: this.version }),
-                new asn1js.Integer({ valueHex: this.modulus }),
-                new asn1js.Integer({ valueHex: this.publicExponent }),
-                new asn1js.Integer({ valueHex: this.privateExponent }),
-                new asn1js.Integer({ valueHex: this.prime1 }),
-                new asn1js.Integer({ valueHex: this.prime2 }),
-                new asn1js.Integer({ valueHex: this.exponent1 }),
-                new asn1js.Integer({ valueHex: this.exponent2 }),
-                new asn1js.Integer({ valueHex: this.coefficient }),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            der.integer(this.version),
+            der.primitive(UniversalTag.Integer, this.modulus),
+            der.primitive(UniversalTag.Integer, this.publicExponent),
+            der.primitive(UniversalTag.Integer, this.privateExponent),
+            der.primitive(UniversalTag.Integer, this.prime1),
+            der.primitive(UniversalTag.Integer, this.prime2),
+            der.primitive(UniversalTag.Integer, this.exponent1),
+            der.primitive(UniversalTag.Integer, this.exponent2),
+            der.primitive(UniversalTag.Integer, this.coefficient),
+        ])
     }
 
     /**
@@ -146,14 +145,14 @@ export class RSAPrivateKey extends PkiBase<RSAPrivateKey> {
      * @param asn1 The ASN.1 structure
      * @returns A new RSAPrivateKey instance
      */
-    static fromAsn1(asn1: Asn1BaseBlock): RSAPrivateKey {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RSAPrivateKey {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const values = (asn1 as any).valueBlock.value
+        const values = asn1.children
         if (values.length < 9) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected at least 9 elements, got ${values.length}`,
@@ -161,29 +160,22 @@ export class RSAPrivateKey extends PkiBase<RSAPrivateKey> {
         }
 
         // Version
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0].is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: version must be INTEGER',
             )
         }
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
 
         // Check that all other elements are Integers
         const components: Uint8Array<ArrayBuffer>[] = []
         for (let i = 1; i < 9; i++) {
-            if (!(values[i] instanceof asn1js.Integer)) {
+            if (!values[i].is(UniversalTag.Integer)) {
                 throw new Asn1ParseError(
                     `Invalid ASN.1 structure: element at index ${i} must be INTEGER`,
                 )
             }
-            // Access the value through valueBlock
-            const integerBlock = values[i].valueBlock as any // Using any to bypass TypeScript checks
-            components.push(
-                new Uint8Array(
-                    integerBlock.valueHexView ||
-                        integerBlock.valueBeforeDecodeView,
-                ),
-            )
+            components.push(der.readIntegerBytes(values[i]))
         }
 
         return new RSAPrivateKey({
