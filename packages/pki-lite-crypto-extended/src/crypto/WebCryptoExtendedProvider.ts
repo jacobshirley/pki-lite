@@ -14,6 +14,35 @@ import { getPbeAlgorithm } from './pbeAlgorithms.js'
 import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
 import { OIDs } from 'pki-lite/core/OIDs.js'
 import { PBEParameter } from 'pki-lite/pkcs5/PBEParameter.js'
+import { asn1js } from 'pki-lite/core/PkiBase.js'
+import { OctetString } from 'pki-lite/asn1/OctetString.js'
+
+const toForgeBuffer = (bytes: Uint8Array) =>
+    forge.util.createBuffer(forge.util.binary.raw.encode(bytes))
+
+/** Triple DES (EDE3) in CBC mode with PKCS#7 padding, via node-forge. */
+function des3Cbc(
+    mode: 'encrypt' | 'decrypt',
+    data: Uint8Array,
+    key: Uint8Array,
+    iv: Uint8Array,
+): Uint8Array<ArrayBuffer> {
+    if (key.length !== 24) {
+        throw new Error(`3DES needs a 24-byte key, got ${key.length}`)
+    }
+    const cipher =
+        mode === 'encrypt'
+            ? forge.cipher.createCipher('3DES-CBC', toForgeBuffer(key))
+            : forge.cipher.createDecipher('3DES-CBC', toForgeBuffer(key))
+    cipher.start({ iv: toForgeBuffer(iv) })
+    cipher.update(toForgeBuffer(data))
+    if (!cipher.finish()) {
+        throw new Error('3DES-CBC: bad padding or corrupt data')
+    }
+    return new Uint8Array(
+        forge.util.binary.raw.decode(cipher.output.getBytes()),
+    )
+}
 
 /**
  * Extended WebCryptoProvider that adds support for additional algorithms
@@ -66,6 +95,8 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
             algorithm.type === 'AES_256_ECB'
         ) {
             return new Uint8Array(ecb(key).encrypt(data))
+        } else if (algorithm.type === 'DES_EDE3_CBC') {
+            return des3Cbc('encrypt', data, key, algorithm.params.nonce)
         } else if (
             algorithm.type === 'SHA1_3DES_2KEY_CBC' ||
             algorithm.type === 'SHA1_RC2_40_CBC' ||
@@ -105,6 +136,8 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
             algorithm.type === 'AES_256_ECB'
         ) {
             return new Uint8Array(ecb(key).decrypt(data))
+        } else if (algorithm.type === 'DES_EDE3_CBC') {
+            return des3Cbc('decrypt', data, key, algorithm.params.nonce)
         } else if (
             algorithm.type === 'SHA1_3DES_2KEY_CBC' ||
             algorithm.type === 'SHA1_RC2_40_CBC' ||
@@ -169,10 +202,57 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
         return super.decrypt(data, privateKeyInfo, algorithm)
     }
 
+    /**
+     * `rsaEncryption` as a key encryption algorithm (CMS key transport, RFC 3370 4.2.1)
+     * is RSAES-PKCS1-v1_5, which WebCrypto cannot do; it is handled by `encrypt` /
+     * `decrypt` above. The hash is not used by that scheme.
+     */
+    toAsymmetricEncryptionAlgorithmParams(
+        algorithm: AlgorithmIdentifier,
+        publicKeyInfo?: SubjectPublicKeyInfo,
+    ): AsymmetricEncryptionAlgorithmParams {
+        if (algorithm.algorithm.value === OIDs.RSA.ENCRYPTION) {
+            return { type: 'RSASSA_PKCS1_v1_5', params: { hash: 'SHA-1' } }
+        }
+        return super.toAsymmetricEncryptionAlgorithmParams(
+            algorithm,
+            publicKeyInfo,
+        )
+    }
+
+    keyEncryptionAlgorithm(
+        encryptionParams: AsymmetricEncryptionAlgorithmParams,
+    ): AlgorithmIdentifier {
+        if (encryptionParams.type === 'RSASSA_PKCS1_v1_5') {
+            // As a key encryption algorithm this is rsaEncryption, not a signature OID
+            return new AlgorithmIdentifier({
+                algorithm: OIDs.RSA.ENCRYPTION,
+                parameters: new asn1js.Null(),
+            })
+        }
+        return super.keyEncryptionAlgorithm(encryptionParams)
+    }
+
+    generateSymmetricKey(
+        algorithm: SymmetricEncryptionAlgorithmParams,
+    ): Uint8Array<ArrayBuffer> {
+        if (algorithm.type === 'DES_EDE3_CBC') {
+            return this.getRandomValues(24)
+        }
+        return super.generateSymmetricKey(algorithm)
+    }
+
     toSymmetricEncryptionAlgorithmParams(
         algorithm: AlgorithmIdentifier,
     ): SymmetricEncryptionAlgorithmParams {
         switch (algorithm.algorithm.value) {
+            case OIDs.ENCRYPTION.DES_EDE3_CBC: {
+                const nonce = algorithm.parameters?.parseAs(OctetString)?.bytes
+                if (!nonce) {
+                    throw new Error('Missing IV for DES-EDE3-CBC')
+                }
+                return { type: 'DES_EDE3_CBC', params: { nonce } }
+            }
             case OIDs.PKCS12.PBE.SHA1_3DES_2KEY_CBC: {
                 const params = algorithm.parameters?.parseAs(PBEParameter)
                 if (!params) {
@@ -226,6 +306,13 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
             | PbeAlgorithmParams,
     ): AlgorithmIdentifier {
         switch (encryptionParams.type) {
+            case 'DES_EDE3_CBC':
+                return new AlgorithmIdentifier({
+                    algorithm: OIDs.ENCRYPTION.DES_EDE3_CBC,
+                    parameters: new OctetString({
+                        bytes: encryptionParams.params.nonce,
+                    }),
+                })
             case 'SHA1_3DES_2KEY_CBC':
                 return new AlgorithmIdentifier({
                     algorithm: OIDs.PKCS12.PBE.SHA1_3DES_2KEY_CBC,

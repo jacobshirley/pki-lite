@@ -20,8 +20,19 @@ export type PbeAlgorithmMap = {
     }
 }
 
+/**
+ * Parameters for the other legacy ciphers this package adds
+ */
+export type LegacyCipherMap = {
+    /** Triple DES (EDE, three keys) in CBC mode: des-ede3-cbc, 1.2.840.113549.3.7 */
+    DES_EDE3_CBC: {
+        nonce: Uint8Array<ArrayBuffer>
+    }
+}
+
 declare module 'pki-lite/core/crypto/index.js' {
-    // Extensible interface for PBE algorithms
+    // Extensible interface for PBE algorithms and legacy ciphers
     export interface SymmetricEncryptionAlgorithmParamsMap
-        extends PbeAlgorithmMap {}
+        extends PbeAlgorithmMap,
+            LegacyCipherMap {}
 }

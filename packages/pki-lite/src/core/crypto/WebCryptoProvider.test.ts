@@ -4,6 +4,9 @@ import { rsaSigningKeys } from '../../../test-fixtures/signing-keys/rsa-2048/ind
 import { PrivateKeyInfo } from '../../keys/PrivateKeyInfo.js'
 import { ecP256SigningKeys } from '../../../test-fixtures/signing-keys/ec-p256/index.js'
 import { Certificate } from '../../x509/Certificate.js'
+import { OIDs } from '../OIDs.js'
+import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
+import { OctetString } from '../../asn1/OctetString.js'
 import {
     AsymmetricEncryptionAlgorithmParams,
     PbeAlgorithmParams,
@@ -273,4 +276,30 @@ describe('WebCryptoProvider', () => {
             expect(bytesToString(decrypted)).toBe('test')
         })
     })
+})
+
+describe('toSymmetricEncryptionAlgorithmParams AES key sizes', () => {
+    const provider = new WebCryptoProvider()
+    const iv = new OctetString({ bytes: new Uint8Array(16) }).toAsn1()
+
+    for (const bits of [128, 192, 256] as const) {
+        it(`reports AES-${bits}-CBC as AES_${bits}_CBC, not AES_256_CBC`, () => {
+            const params = provider.toSymmetricEncryptionAlgorithmParams(
+                new AlgorithmIdentifier({
+                    algorithm: OIDs.ENCRYPTION[`AES_${bits}_CBC`],
+                    parameters: iv,
+                }),
+            )
+            expect(params.type).toBe(`AES_${bits}_CBC`)
+        })
+
+        it(`reports AES-${bits}-ECB as AES_${bits}_ECB, not AES_256_ECB`, () => {
+            const params = provider.toSymmetricEncryptionAlgorithmParams(
+                new AlgorithmIdentifier({
+                    algorithm: OIDs.ENCRYPTION[`AES_${bits}_ECB`],
+                }),
+            )
+            expect(params.type).toBe(`AES_${bits}_ECB`)
+        })
+    }
 })

@@ -28,6 +28,15 @@ import type {
 import { PBKDF2Params } from '../../pkcs5/PBKDF2Params.js'
 import { pkcs12Derive } from './utils.js'
 
+/** The AES key size, in bits, that each AES content-encryption OID stands for. */
+const AES_KEY_BITS: Record<string, 128 | 192 | 256> = Object.fromEntries(
+    (['CBC', 'ECB', 'GCM', 'CCM'] as const).flatMap((mode) =>
+        ([128, 192, 256] as const).map(
+            (bits) => [OIDs.ENCRYPTION[`AES_${bits}_${mode}`], bits] as const,
+        ),
+    ),
+)
+
 /**
  * Cryptographic provider implementation using the Web Crypto API.
  *
@@ -1243,11 +1252,9 @@ export class WebCryptoProvider implements CryptoProvider {
 
         switch (algorithm.algorithm.toString()) {
             case OIDs.ENCRYPTION.AES_128_CBC:
-                type = 'AES_128_CBC'
             case OIDs.ENCRYPTION.AES_192_CBC:
-                type = 'AES_192_CBC'
             case OIDs.ENCRYPTION.AES_256_CBC: {
-                type = 'AES_256_CBC'
+                type = `AES_${AES_KEY_BITS[algorithm.algorithm.toString()]}_CBC`
                 const iv = algorithm.parameters?.parseAs(OctetString)?.bytes
                 if (!iv) {
                     throw new Error(
@@ -1262,11 +1269,9 @@ export class WebCryptoProvider implements CryptoProvider {
             }
 
             case OIDs.ENCRYPTION.AES_128_GCM:
-                type = 'AES_128_GCM'
             case OIDs.ENCRYPTION.AES_192_GCM:
-                type = 'AES_192_GCM'
             case OIDs.ENCRYPTION.AES_256_GCM: {
-                type = 'AES_256_GCM'
+                type = `AES_${AES_KEY_BITS[algorithm.algorithm.toString()]}_GCM`
                 const gcmParams = algorithm.parameters?.parseAs(GCMParameters)
                 if (!gcmParams) {
                     throw new Error(
@@ -1285,11 +1290,9 @@ export class WebCryptoProvider implements CryptoProvider {
             }
 
             case OIDs.ENCRYPTION.AES_128_CCM:
-                type = 'AES_128_CCM'
             case OIDs.ENCRYPTION.AES_192_CCM:
-                type = 'AES_192_CCM'
             case OIDs.ENCRYPTION.AES_256_CCM: {
-                type = 'AES_256_CCM'
+                type = `AES_${AES_KEY_BITS[algorithm.algorithm.toString()]}_CCM`
                 const ccmParams = algorithm.parameters?.parseAs(CCMParameters)
                 if (!ccmParams) {
                     throw new Error(
@@ -1306,11 +1309,9 @@ export class WebCryptoProvider implements CryptoProvider {
                 }
             }
             case OIDs.ENCRYPTION.AES_128_ECB:
-                type = 'AES_128_ECB'
             case OIDs.ENCRYPTION.AES_192_ECB:
-                type = 'AES_192_ECB'
             case OIDs.ENCRYPTION.AES_256_ECB: {
-                type = 'AES_256_ECB'
+                type = `AES_${AES_KEY_BITS[algorithm.algorithm.toString()]}_ECB`
                 return {
                     type,
                     params: {

@@ -32,6 +32,16 @@ The extended provider seamlessly integrates with the existing PKI-Lite infrastru
 - Required for certain legacy systems and specialized protocols
 - Supports all standard AES key sizes with custom initialization vectors
 
+### Triple DES (3DES)
+
+- `DES_EDE3_CBC` content encryption (`des-ede3-cbc`), as written by `openssl cms -encrypt -des3`
+- PKCS#12 password-based encryption with `pbeWithSHAAnd3-KeyTripleDES-CBC` (and the 2-key and RC2 variants)
+
+### RSA PKCS#1 v1.5 key transport
+
+- `rsaEncryption` as a CMS key encryption algorithm (`RSASSA_PKCS1_v1_5` in the provider's parameters), which is OpenSSL's default for `cms -encrypt` and which WebCrypto cannot do
+- Provided by [node-forge](https://github.com/digitalbazaar/forge). **This is not constant-time**: use it only for interoperability, and never expose whether a decryption succeeded to an untrusted party (a Bleichenbacher-style oracle). Prefer RSA-OAEP where the peer allows it.
+
 ### Graceful Fallback
 
 - Automatically falls back to the base WebCryptoProvider for unsupported algorithms

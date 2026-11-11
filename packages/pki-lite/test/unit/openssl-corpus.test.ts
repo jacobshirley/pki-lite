@@ -83,10 +83,9 @@ const KNOWN_ISSUES: KnownIssue[] = [
     {
         id: 'CMS-RSA-PKCS1V15-KEY-TRANSPORT',
         why:
-            'Unsupported feature: EnvelopedData.decrypt cannot unwrap RSA PKCS#1 v1.5 key transport ' +
-            '(rsaEncryption), the OpenSSL default. WebCrypto only offers RSA-OAEP; doing it here would mean ' +
-            'implementing raw RSA decryption and padding checks in JavaScript, which is easy to get wrong ' +
-            '(Bleichenbacher), so it is deliberately left out.',
+            'Not available to the default provider: WebCrypto only offers RSA-OAEP, and raw RSA decryption ' +
+            'plus padding checks should not be hand-rolled here. pki-lite-crypto-extended provides it (via ' +
+            'node-forge) and runs these same fixtures in its own openssl-corpus test.',
         match: (t, c) =>
             c === 'envelopedData:decrypt' &&
             /ed_rsa_(3des|aes128|aes256|keyid)|ed_stream|ed_empty/.test(t),
@@ -94,8 +93,8 @@ const KNOWN_ISSUES: KnownIssue[] = [
     {
         id: 'PKCS12-3DES-UNSUPPORTED',
         why:
-            'Unsupported feature: PKCS#12 pbeWithSHAAnd3-KeyTripleDES-CBC (legacy 3DES) is not supported; ' +
-            'WebCrypto has no 3DES.',
+            'Not available to the default provider (WebCrypto has no 3DES). pki-lite-crypto-extended ' +
+            'provides it and runs this fixture in its own openssl-corpus test.',
         match: (t, c) => c === 'extractItems' && t === 'p12/legacy_3des.p12',
     },
 ]
