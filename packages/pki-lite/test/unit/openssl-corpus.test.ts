@@ -73,12 +73,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             /^ext:(crlDistributionPoints|freshestCRL):roundtrip$/.test(c),
     },
     {
-        id: 'KEYUSAGE-NOT-MINIMAL-DER',
-        why: 'KeyUsage always encodes a two-byte BIT STRING; DER requires trailing zero bits of a named bit list to be dropped (03 02 07 80, not 03 03 07 80 00).',
-        match: (t, c) =>
-            c === 'ext:keyUsage:roundtrip' && !/decipherOnly/.test(t),
-    },
-    {
         id: 'CRLDP-PARSE',
         why: 'CRLDistributionPoints cannot parse a DistributionPoint with reasons / cRLIssuer / relativeName.',
         match: (t, c) =>

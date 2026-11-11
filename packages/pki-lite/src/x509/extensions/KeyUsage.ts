@@ -67,11 +67,13 @@ export class KeyUsage extends PkiBase<KeyUsage> {
             this.encipherOnly,
             this.decipherOnly,
         ]
-        // Always encode all 9 bits (KeyUsage flags)
-        const byteLength = Math.ceil(bits.length / 8)
-        const unusedBits = byteLength * 8 - bits.length
+        // DER (X.690 11.2.2): a named bit list drops its trailing zero bits, so the
+        // BIT STRING is only as long as the highest bit that is set.
+        const bitLength = bits.lastIndexOf(true) + 1
+        const byteLength = Math.ceil(bitLength / 8)
+        const unusedBits = byteLength * 8 - bitLength
         const bytes = new Uint8Array(byteLength)
-        for (let i = 0; i < bits.length; i++) {
+        for (let i = 0; i < bitLength; i++) {
             if (bits[i] === true) {
                 const byteIndex = Math.floor(i / 8)
                 const bitIndex = 7 - (i % 8)
@@ -86,10 +88,8 @@ export class KeyUsage extends PkiBase<KeyUsage> {
             throw new Asn1ParseError('Expected BitString for KeyUsage')
         }
 
+        // An empty BIT STRING (03 01 00) is how DER writes "no bits set"
         const bytes = new Uint8Array(asn1.valueBlock.valueHexView)
-        if (bytes.length === 0) {
-            throw new Asn1ParseError('BitString has no content')
-        }
 
         const unusedBits = asn1.valueBlock.unusedBits
         const totalBits = bytes.length * 8 - unusedBits
