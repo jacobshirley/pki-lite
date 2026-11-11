@@ -1,5 +1,6 @@
 import { Asn1ParseError } from '../errors/Asn1ParseError.js'
-import { Asn1Node, TagClass, UniversalTag } from './Asn1Node.js'
+import type { Asn1Node } from './Asn1Node.js'
+import { TagClass, UniversalTag } from './tags.js'
 
 /** Reads a BOOLEAN. Any non-zero octet is TRUE (BER). */
 export function readBoolean(node: Asn1Node): boolean {

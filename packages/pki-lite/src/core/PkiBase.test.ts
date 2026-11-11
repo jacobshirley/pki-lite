@@ -55,7 +55,7 @@ describe('PkiBase', () => {
 
     it('includes the type and ASN.1 dump in toString', () => {
         expect(new TestPkiItem('a').toString()).toBe(
-            '[TestPkiItem] OCTET STRING 61',
+            '[TestPkiItem] OCTET STRING : 61',
         )
     })
 })
