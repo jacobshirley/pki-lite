@@ -22,6 +22,11 @@ import { KeyIdentifier } from '../pkcs7/recipients/KeyIdentifier.js'
 import { ExtKeyCommonNames, ExtKeyUsage } from './extensions/ExtKeyUsage.js'
 import { KeyUsage, KeyUsageOptions } from './extensions/KeyUsage.js'
 import { SubjectAltName } from './extensions/SubjectAltName.js'
+import { CertificatePolicies } from './extensions/CertificatePolicies.js'
+import { InhibitAnyPolicy } from './extensions/InhibitAnyPolicy.js'
+import { PolicyMapping, PolicyMappings } from './extensions/PolicyMappings.js'
+import { PolicyConstraints } from './extensions/PolicyConstraints.js'
+import { PolicyInformation } from './PolicyInformation.js'
 import { GeneralName } from './GeneralName.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -188,6 +193,63 @@ export class Extension extends PkiBase<Extension> {
             extnID: OIDs.EXTENSION.BASIC_CONSTRAINTS,
             critical: true,
             extnValue: new BasicConstraints(options),
+        })
+    }
+
+    static certificatePolicies(
+        policies: (string | PolicyInformation)[],
+    ): Extension {
+        return new Extension({
+            extnID: OIDs.EXTENSION.CERTIFICATE_POLICIES,
+            critical: false,
+            extnValue: new CertificatePolicies(
+                ...policies.map((policy) =>
+                    policy instanceof PolicyInformation
+                        ? policy
+                        : new PolicyInformation({ policyIdentifier: policy }),
+                ),
+            ),
+        })
+    }
+
+    static policyMappings(
+        mappings: (
+            | PolicyMapping
+            | {
+                  issuerDomainPolicy: ObjectIdentifierString
+                  subjectDomainPolicy: ObjectIdentifierString
+              }
+        )[],
+    ): Extension {
+        return new Extension({
+            extnID: OIDs.EXTENSION.POLICY_MAPPINGS,
+            critical: false,
+            extnValue: new PolicyMappings(
+                ...mappings.map((mapping) =>
+                    mapping instanceof PolicyMapping
+                        ? mapping
+                        : new PolicyMapping(mapping),
+                ),
+            ),
+        })
+    }
+
+    static policyConstraints(options: {
+        requireExplicitPolicy?: number
+        inhibitPolicyMapping?: number
+    }): Extension {
+        return new Extension({
+            extnID: OIDs.EXTENSION.POLICY_CONSTRAINTS,
+            critical: true,
+            extnValue: new PolicyConstraints(options),
+        })
+    }
+
+    static inhibitAnyPolicy(skipCerts: number): Extension {
+        return new Extension({
+            extnID: OIDs.EXTENSION.INHIBIT_ANY_POLICY,
+            critical: true,
+            extnValue: new InhibitAnyPolicy({ skipCerts }),
         })
     }
 

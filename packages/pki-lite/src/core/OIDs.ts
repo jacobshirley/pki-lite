@@ -190,6 +190,14 @@ export const OIDs = {
         CRL_DISTRIBUTION_POINTS: '2.5.29.31',
         /** Certificate Policies */
         CERTIFICATE_POLICIES: '2.5.29.32',
+        /** The special policy that stands for every policy */
+        ANY_POLICY: '2.5.29.32.0',
+        /** Policy Mappings */
+        POLICY_MAPPINGS: '2.5.29.33',
+        /** Policy Constraints */
+        POLICY_CONSTRAINTS: '2.5.29.36',
+        /** Inhibit anyPolicy */
+        INHIBIT_ANY_POLICY: '2.5.29.54',
         /** Authority Key Identifier */
         AUTHORITY_KEY_IDENTIFIER: '2.5.29.35',
         /** Extended Key Usage */
@@ -463,6 +471,10 @@ export const OIDToFriendlyName: Record<string, string> = {
     [OIDs.EXTENSION.CRL_NUMBER]: 'CRL Number',
     [OIDs.EXTENSION.CRL_DISTRIBUTION_POINTS]: 'CRL Distribution Points',
     [OIDs.EXTENSION.CERTIFICATE_POLICIES]: 'Certificate Policies',
+    [OIDs.EXTENSION.ANY_POLICY]: 'Any Policy',
+    [OIDs.EXTENSION.POLICY_MAPPINGS]: 'Policy Mappings',
+    [OIDs.EXTENSION.POLICY_CONSTRAINTS]: 'Policy Constraints',
+    [OIDs.EXTENSION.INHIBIT_ANY_POLICY]: 'Inhibit Any Policy',
     [OIDs.EXTENSION.AUTHORITY_KEY_IDENTIFIER]: 'Authority Key Identifier',
     [OIDs.EXTENSION.EXTENDED_KEY_USAGE]: 'Extended Key Usage',
     [OIDs.EXTENSION.AUTHORITY_INFO_ACCESS]: 'Authority Information Access',
