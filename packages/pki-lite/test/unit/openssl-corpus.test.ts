@@ -61,11 +61,6 @@ type KnownIssue = {
 
 const KNOWN_ISSUES: KnownIssue[] = [
     {
-        id: 'NAMECONSTRAINTS-NO-PARSER',
-        why: 'NameConstraints has no fromAsn1/fromDer, so it cannot be parsed from a certificate.',
-        match: (_t, c) => /^ext:nameConstraints:(parse|roundtrip)$/.test(c),
-    },
-    {
         id: 'SIGNATURE-ALGORITHMS-UNSUPPORTED',
         why: 'isSelfSigned/verify does not support Ed25519, Ed448 or RSA-PSS keys.',
         match: (t, c) =>
