@@ -76,12 +76,8 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
     }
 
     static fromAsn1(asn1: Asn1BaseBlock): AuthorityKeyIdentifier {
+        // All three fields are OPTIONAL, so an empty SEQUENCE is valid
         const sequence = asn1 as asn1js.Sequence
-        if (sequence.valueBlock.value.length === 0) {
-            throw new Asn1ParseError(
-                'AuthorityKeyIdentifier sequence has no elements',
-            )
-        }
 
         let keyIdentifier: KeyIdentifier | undefined
         let authorityCertIssuer: GeneralNames | undefined

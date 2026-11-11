@@ -178,12 +178,14 @@ describe('AuthorityKeyIdentifier', () => {
         expect(aki.authorityCertSerialNumber!.toInteger()).toEqual(123)
     })
 
-    test('fromAsn1 should throw error for empty sequence', () => {
+    test('fromAsn1 should accept an empty sequence (all fields optional)', () => {
         const asn1 = new asn1js.Sequence({ value: [] })
 
-        expect(() => AuthorityKeyIdentifier.fromAsn1(asn1)).toThrow(
-            'AuthorityKeyIdentifier sequence has no elements',
-        )
+        const aki = AuthorityKeyIdentifier.fromAsn1(asn1)
+        expect(aki.keyIdentifier).toBeUndefined()
+        expect(aki.authorityCertIssuer).toBeUndefined()
+        expect(aki.authorityCertSerialNumber).toBeUndefined()
+        expect(Buffer.from(aki.toDer()).toString('hex')).toBe('3000')
     })
 
     test('should handle round-trip conversion through ASN.1', () => {
