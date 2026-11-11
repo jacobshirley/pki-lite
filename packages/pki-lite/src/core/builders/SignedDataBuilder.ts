@@ -27,7 +27,7 @@ import {
 import { OCSPResponse } from '../../ocsp/OCSPResponse.js'
 import { OctetString } from '../../asn1/OctetString.js'
 import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
-import { ObjectIdentifierString } from '../PkiBase.js'
+import { bytesToHexString, ObjectIdentifierString } from '../PkiBase.js'
 import { TimeStampReq } from '../../timestamp/TimeStampReq.js'
 import { MessageImprint } from '../../timestamp/MessageImprint.js'
 
@@ -231,11 +231,22 @@ export class SignedDataBuilder implements AsyncBuilder<SignedData> {
         return this
     }
 
+    /**
+     * The certificates to embed: the signers' certificates followed by the additional ones,
+     * each only once. A certificate that is both a signer's and added with
+     * `addCertificate`, or shared by several signers, would otherwise be written twice.
+     */
     get allCertificates(): CertificateChoices[] {
+        const seen = new Set<string>()
         return [
             ...this.signers.map((signer) => signer.certificate),
             ...this.additionalCertificates,
-        ]
+        ].filter((certificate) => {
+            const key = bytesToHexString(certificate.toDer())
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+        })
     }
 
     /**
