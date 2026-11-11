@@ -9,8 +9,8 @@
  * Cases that currently fail are registered in `KNOWN_ISSUES` and run with `test.fails`:
  * CI stays green, and as soon as the gap is closed the matching tests start failing with
  * "expected to fail", pointing at the entry to delete. What is left there are unsupported
- * features (EdDSA/RSA-PSS keys, RSA PKCS#1 v1.5 key transport, 3DES PBE, explicit EC
- * parameters), not encoding defects.
+ * algorithms that only pki-lite-crypto-extended provides (RSA PKCS#1 v1.5, 3DES, Ed448), which
+ * its own corpus test covers.
  */
 import { describe, expect, test } from 'vitest'
 import { opensslCorpus } from '../../test-fixtures/openssl-corpus/corpus.js'
@@ -63,14 +63,11 @@ type KnownIssue = {
 
 const KNOWN_ISSUES: KnownIssue[] = [
     {
-        id: 'SIGNATURE-ALGORITHMS-UNSUPPORTED',
+        id: 'ED448-NEEDS-EXTENDED-PROVIDER',
         why:
-            'Unsupported feature: isSelfSigned/verify does not support Ed25519, Ed448 or RSA-PSS keys. ' +
-            'Needs new algorithm types and key models in the crypto provider (and Ed448 has no WebCrypto support).',
-        match: (t, c) =>
-            (c === 'isSelfSigned' &&
-                /key_ed25519|key_ed448|key_rsapss/.test(t)) ||
-            (c === 'signedData:verify' && /sd_ed25519/.test(t)),
+            'Not available to the default provider: WebCrypto has no Ed448 (Ed25519 and RSA-PSS keys are ' +
+            'supported). pki-lite-crypto-extended provides it and runs this fixture in its own openssl-corpus test.',
+        match: (t, c) => c === 'isSelfSigned' && /key_ed448/.test(t),
     },
     {
         id: 'CMS-RSA-PKCS1V15-KEY-TRANSPORT',

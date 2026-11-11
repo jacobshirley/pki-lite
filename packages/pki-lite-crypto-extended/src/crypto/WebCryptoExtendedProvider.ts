@@ -1,4 +1,5 @@
 import { md5 as _md5 } from '@noble/hashes/legacy.js'
+import { ed448 } from '@noble/curves/ed448.js'
 import { ecb, cbc } from '@noble/ciphers/aes.js'
 import {
     WebCryptoProvider,
@@ -71,6 +72,39 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
             return new Uint8Array(_md5(data))
         }
         return super.digest(data, algorithm)
+    }
+
+    /** Ed448 is not in WebCrypto, so it is done with @noble/curves. */
+    async sign(
+        data: Uint8Array<ArrayBuffer>,
+        privateKeyInfo: PrivateKeyInfo,
+        algorithm: AsymmetricEncryptionAlgorithmParams,
+    ): Promise<Uint8Array<ArrayBuffer>> {
+        if (algorithm.type === 'ED448') {
+            // RFC 8410 7: privateKey is an OCTET STRING holding the CurvePrivateKey,
+            // itself an OCTET STRING of the 57 raw key bytes
+            const rawKey = OctetString.fromDer(
+                privateKeyInfo.privateKey.bytes,
+            ).bytes
+            return new Uint8Array(ed448.sign(data, rawKey))
+        }
+        return super.sign(data, privateKeyInfo, algorithm)
+    }
+
+    async verify(
+        data: Uint8Array<ArrayBuffer>,
+        publicKeyInfo: SubjectPublicKeyInfo,
+        signature: Uint8Array<ArrayBuffer>,
+        algorithm: AsymmetricEncryptionAlgorithmParams,
+    ): Promise<boolean> {
+        if (algorithm.type === 'ED448') {
+            return ed448.verify(
+                signature,
+                data,
+                publicKeyInfo.subjectPublicKey.bytes,
+            )
+        }
+        return super.verify(data, publicKeyInfo, signature, algorithm)
     }
 
     async encryptSymmetric(

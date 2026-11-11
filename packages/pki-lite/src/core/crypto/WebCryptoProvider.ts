@@ -16,6 +16,7 @@ import type { SubjectPublicKeyInfo } from '../../keys/SubjectPublicKeyInfo.js'
 import { UnsupportedCryptoAlgorithmError } from '../errors/UnsupportedCryptoAlgorithmError.js'
 import { OIDs } from '../OIDs.js'
 import type { Asn1Any, ObjectIdentifierString } from '../PkiBase.js'
+import { asn1js } from '../PkiBase.js'
 import type {
     AsymmetricEncryptionAlgorithmParams,
     CryptoProvider,
@@ -145,8 +146,15 @@ export class WebCryptoProvider implements CryptoProvider {
         | RsaPssParams
         | EcKeyImportParams
         | RsaOaepParams
-        | RsaHashedKeyAlgorithm {
+        | RsaHashedKeyAlgorithm
+        | Algorithm {
         switch (algorithm.type) {
+            case 'ED25519':
+                return { name: 'Ed25519' }
+            case 'ED448':
+                throw new UnsupportedCryptoAlgorithmError(
+                    'Ed448 is not supported by WebCrypto; use pki-lite-crypto-extended',
+                )
             case 'RSA_PSS':
                 return {
                     name: 'RSA-PSS',
@@ -183,6 +191,36 @@ export class WebCryptoProvider implements CryptoProvider {
                     `Unsupported algorithm type: ${_exhaustiveCheck}`,
                 )
         }
+    }
+
+    /**
+     * The DER of a public key as WebCrypto accepts it. A key restricted to RSA-PSS or
+     * RSA-OAEP (RFC 4055) is an RSA key whose SubjectPublicKeyInfo names `id-RSASSA-PSS`
+     * or `id-RSAES-OAEP`; WebCrypto only imports RSA keys labelled `rsaEncryption`, and the
+     * key bits are the same, so relabel it.
+     */
+    toWebCryptoSpki(
+        publicKeyInfo: SubjectPublicKeyInfo,
+    ): Uint8Array<ArrayBuffer> {
+        const oid = publicKeyInfo.algorithm.algorithm.value
+        if (oid !== OIDs.RSA.RSASSA_PSS && oid !== OIDs.RSA.RSAES_OAEP) {
+            return publicKeyInfo.toDer()
+        }
+        return new Uint8Array(
+            new asn1js.Sequence({
+                value: [
+                    new asn1js.Sequence({
+                        value: [
+                            new asn1js.ObjectIdentifier({
+                                value: OIDs.RSA.ENCRYPTION,
+                            }),
+                            new asn1js.Null(),
+                        ],
+                    }),
+                    publicKeyInfo.subjectPublicKey.toAsn1(),
+                ],
+            }).toBER(),
+        )
     }
 
     async sign(
@@ -224,7 +262,7 @@ export class WebCryptoProvider implements CryptoProvider {
 
         const importedKey = await this.crypto.subtle.importKey(
             'spki',
-            publicKeyInfo.toDer(),
+            this.toWebCryptoSpki(publicKeyInfo),
             webCryptoParams,
             false,
             ['verify'],
@@ -617,7 +655,7 @@ export class WebCryptoProvider implements CryptoProvider {
 
         const cryptoKey = await this.crypto.subtle.importKey(
             'spki',
-            publicKeyInfo.toDer(),
+            this.toWebCryptoSpki(publicKeyInfo),
             params,
             false,
             ['encrypt'],
@@ -807,6 +845,19 @@ export class WebCryptoProvider implements CryptoProvider {
     ): AlgorithmIdentifier {
         if (encryptionParams.type === 'ECDH') {
             throw new Error(`ECDH is not a signature algorithm`)
+        }
+
+        if (
+            encryptionParams.type === 'ED25519' ||
+            encryptionParams.type === 'ED448'
+        ) {
+            // RFC 8410 3: the parameters field MUST be absent
+            return new AlgorithmIdentifier({
+                algorithm:
+                    encryptionParams.type === 'ED25519'
+                        ? OIDs.CURVES.ED25519
+                        : OIDs.CURVES.ED448,
+            })
         }
 
         const digestAlgorithm = this.digestAlgorithm(
@@ -1379,6 +1430,10 @@ export class WebCryptoProvider implements CryptoProvider {
                     },
                 }
 
+            case OIDs.CURVES.ED25519:
+                return { type: 'ED25519', params: {} }
+            case OIDs.CURVES.ED448:
+                return { type: 'ED448', params: {} }
             case OIDs.RSA.SHA1_WITH_RSA:
                 return {
                     type: 'RSASSA_PKCS1_v1_5',

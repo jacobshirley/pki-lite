@@ -21,7 +21,6 @@ import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 import { SubjectPublicKeyInfo } from '../keys/SubjectPublicKeyInfo.js'
 import { BitString } from '../asn1/BitString.js'
 import { ECDSASignature } from '../keys/ECDSASignature.js'
-import { ECPublicKey } from '../keys/ECPublicKey.js'
 import { ECPrivateKey } from '../keys/ECPrivateKey.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -383,8 +382,11 @@ export class SignatureAlgorithmIdentifier extends AlgorithmIdentifier {
                   ? signature.bytes
                   : signature.toDer()
 
+        // ECDSA signatures are DER in certificates/CMS but raw r||s for WebCrypto. Decide
+        // from the key's algorithm: getPublicKey() would throw for key types it does not
+        // model (Ed25519, RSA-PSS, ...).
         signature =
-            publicKeyInfo.getPublicKey() instanceof ECPublicKey
+            publicKeyInfo.algorithm.algorithm.value === OIDs.EC.PUBLIC_KEY
                 ? ECDSASignature.fromDer(signatureBytes).toRaw()
                 : signatureBytes
 

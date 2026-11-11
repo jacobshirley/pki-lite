@@ -4,6 +4,7 @@ import { rsaSigningKeys } from '../../../test-fixtures/signing-keys/rsa-2048/ind
 import { PrivateKeyInfo } from '../../keys/PrivateKeyInfo.js'
 import { ecP256SigningKeys } from '../../../test-fixtures/signing-keys/ec-p256/index.js'
 import { Certificate } from '../../x509/Certificate.js'
+import { opensslCorpus } from '../../../test-fixtures/openssl-corpus/corpus.js'
 import { OIDs } from '../OIDs.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../../asn1/OctetString.js'
@@ -335,5 +336,59 @@ describe('AES-GCM additional authenticated data', () => {
         await expect(
             provider.decryptSymmetric(sealed, key, params()),
         ).rejects.toThrow()
+    })
+})
+
+describe('Ed25519', () => {
+    const provider = new WebCryptoProvider()
+    const algorithm = { type: 'ED25519' as const, params: {} }
+
+    it('signs and verifies, and detects tampering', async () => {
+        const key = PrivateKeyInfo.fromDer(
+            Uint8Array.from(atob(opensslCorpus.key['pkcs8_ed25519.der']), (c) =>
+                c.charCodeAt(0),
+            ),
+        )
+        const cert = Certificate.fromDer(
+            Uint8Array.from(atob(opensslCorpus.cert['key_ed25519.der']), (c) =>
+                c.charCodeAt(0),
+            ),
+        )
+        const spki = cert.getSubjectPublicKeyInfo()
+        const data = new TextEncoder().encode('sign me')
+
+        const signature = await provider.sign(data, key, algorithm)
+        expect(signature).toHaveLength(64)
+        expect(await provider.verify(data, spki, signature, algorithm)).toBe(
+            true,
+        )
+        expect(
+            await provider.verify(
+                new TextEncoder().encode('tampered'),
+                spki,
+                signature,
+                algorithm,
+            ),
+        ).toBe(false)
+    })
+
+    it('uses the RFC 8410 algorithm identifier without parameters', () => {
+        const identifier = provider.signatureAlgorithm(algorithm)
+        expect(identifier.algorithm.value).toBe('1.3.101.112')
+        expect(identifier.parameters).toBeUndefined()
+    })
+
+    it('reports Ed448 as needing the extended provider', async () => {
+        const spki = Certificate.fromDer(
+            Uint8Array.from(atob(opensslCorpus.cert['key_ed448.der']), (c) =>
+                c.charCodeAt(0),
+            ),
+        ).getSubjectPublicKeyInfo()
+        await expect(
+            provider.verify(new Uint8Array(1), spki, new Uint8Array(114), {
+                type: 'ED448',
+                params: {},
+            }),
+        ).rejects.toThrow('pki-lite-crypto-extended')
     })
 })
