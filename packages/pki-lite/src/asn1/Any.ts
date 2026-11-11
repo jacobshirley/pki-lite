@@ -67,6 +67,11 @@ export class Any extends PkiBase<Any> {
         return derToAsn1(this.derBytes)
     }
 
+    /** The stored bytes as-is (NULL when empty); they are not re-parsed. */
+    toDer(): Uint8Array<ArrayBuffer> {
+        return this.derBytes ?? der.nullValue().encode()
+    }
+
     /**
      * Returns the value as a string: character strings are decoded, OCTET STRING
      * content is read as UTF-8, anything else gives its ASN.1 dump.
