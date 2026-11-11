@@ -7,7 +7,7 @@ import { OCSPSignature } from './OCSPSignature.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { Extension } from '../x509/Extension.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, derToAsn1 } from '../core/PkiBase.js'
 import { Name } from '../x509/Name.js'
 import { RDNSequence } from '../x509/RDNSequence.js'
 
@@ -125,7 +125,7 @@ describe('OCSPRequest', () => {
             der.byteOffset,
             der.byteOffset + der.byteLength,
         )
-        const asn1 = asn1js.fromBER(arrayBuffer as ArrayBuffer).result
+        const asn1 = derToAsn1(arrayBuffer as ArrayBuffer)
         const parsed = OCSPRequest.fromAsn1(asn1)
 
         expect(parsed.tbsRequest.version).toEqual(0) // v1

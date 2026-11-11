@@ -1,4 +1,11 @@
-import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 import { ResponseBytes } from './ResponseBytes.js'
 import { BasicOCSPResponse } from './BasicOCSPResponse.js'
@@ -40,55 +47,40 @@ export class OCSPResponse extends PkiBase<OCSPResponse> {
         this.responseBytes = options.responseBytes
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: asn1js.AsnType[] = [this.responseStatus.toAsn1()]
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [this.responseStatus.toAsn1()]
 
         if (this.responseBytes) {
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [this.responseBytes.toAsn1()],
-                }),
-            )
+            values.push(der.constructed(0, [this.responseBytes.toAsn1()]))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): OCSPResponse {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): OCSPResponse {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const sequence = asn1 as asn1js.Sequence
-        if (
-            sequence.valueBlock.value.length < 1 ||
-            sequence.valueBlock.value.length > 2
-        ) {
+        const sequence = asn1
+        if (sequence.children.length < 1 || sequence.children.length > 2) {
             throw new Asn1ParseError(
                 'Invalid OCSPResponse: expected 1 or 2 elements',
             )
         }
 
-        const responseStatusBlock = sequence.valueBlock
-            .value[0] as asn1js.Enumerated
-        const responseStatus = responseStatusBlock.valueBlock.valueDec
+        const responseStatusBlock = sequence.children[0]
+        const responseStatus = der.readEnumerated(responseStatusBlock)
 
         let responseBytes: ResponseBytes | undefined = undefined
 
-        if (sequence.valueBlock.value.length === 2) {
-            const responseBytesContainer = sequence.valueBlock
-                .value[1] as asn1js.Constructed
+        if (sequence.children.length === 2) {
+            const responseBytesContainer = sequence.children[1]
             if (
-                responseBytesContainer.idBlock.tagClass !== 3 ||
-                responseBytesContainer.idBlock.tagNumber !== 0
+                responseBytesContainer.tagClass !== TagClass.Context ||
+                responseBytesContainer.tag !== 0
             ) {
                 throw new Asn1ParseError(
                     'Invalid OCSPResponse: expected [0] tag for responseBytes',
@@ -96,7 +88,7 @@ export class OCSPResponse extends PkiBase<OCSPResponse> {
             }
 
             responseBytes = ResponseBytes.fromAsn1(
-                responseBytesContainer.valueBlock.value[0],
+                responseBytesContainer.children[0],
             )
         }
 
