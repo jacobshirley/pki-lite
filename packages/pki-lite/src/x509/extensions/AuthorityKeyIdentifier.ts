@@ -51,14 +51,7 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
             values.push(implicitTag(this.keyIdentifier.toAsn1(), 0))
         }
         if (this.authorityCertIssuer) {
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 1 },
-                    value: (
-                        this.authorityCertIssuer.toAsn1() as asn1js.Sequence
-                    ).valueBlock.value,
-                }),
-            )
+            values.push(this.authorityCertIssuer.toImplicitAsn1(1))
         }
         if (this.authorityCertSerialNumber !== undefined) {
             values.push(implicitTag(this.authorityCertSerialNumber.toAsn1(), 2))
@@ -100,15 +93,7 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
                             'Invalid AuthorityKeyIdentifier: authorityCertIssuer must be constructed',
                         )
                     }
-                    authorityCertIssuer =
-                        explicit instanceof asn1js.Sequence
-                            ? // explicit form written by earlier versions
-                              GeneralNames.fromAsn1(explicit)
-                            : new GeneralNames(
-                                  ...element.valueBlock.value.map((name) =>
-                                      GeneralName.fromAsn1(name),
-                                  ),
-                              )
+                    authorityCertIssuer = GeneralNames.fromImplicitAsn1(element)
                     break
                 case 2: // authorityCertSerialNumber [2] IMPLICIT INTEGER
                     if (explicit) {

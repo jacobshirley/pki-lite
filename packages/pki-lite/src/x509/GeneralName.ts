@@ -422,6 +422,41 @@ export const GeneralName = Choice('GeneralName', {
 })
 
 export class GeneralNames extends PkiSequence<GeneralName> {
+    /**
+     * Encodes these names as an implicitly tagged `[tagNumber] GeneralNames`: a
+     * constructed `[tagNumber]` holding the GeneralName elements directly (no SEQUENCE).
+     */
+    toImplicitAsn1(tagNumber: number): asn1js.Constructed {
+        return new asn1js.Constructed({
+            idBlock: { tagClass: 3, tagNumber },
+            value: (this.toAsn1() as asn1js.Sequence).valueBlock.value,
+        })
+    }
+
+    /**
+     * Reads an implicitly tagged `[n] GeneralNames` as written by `toImplicitAsn1`.
+     * The explicit form written by earlier versions (the SEQUENCE wrapped in [n]) is
+     * accepted too.
+     */
+    static fromImplicitAsn1(asn1: Asn1BaseBlock): GeneralNames {
+        if (!(asn1 instanceof asn1js.Constructed)) {
+            throw new Asn1ParseError(
+                'Invalid GeneralNames ASN.1 structure. Expected Constructed but got ' +
+                    asn1.constructor.name,
+            )
+        }
+        const [first] = asn1.valueBlock.value
+        if (
+            asn1.valueBlock.value.length === 1 &&
+            first instanceof asn1js.Sequence
+        ) {
+            return GeneralNames.fromAsn1(first)
+        }
+        return new GeneralNames(
+            ...asn1.valueBlock.value.map((v) => GeneralName.fromAsn1(v)),
+        )
+    }
+
     static fromAsn1(asn1: Asn1BaseBlock): GeneralNames {
         if (asn1 instanceof asn1js.Primitive) {
             return new GeneralNames(GeneralName.fromAsn1(asn1))

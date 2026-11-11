@@ -1,4 +1,4 @@
-import { Asn1BaseBlock } from './PkiBase.js'
+import { Asn1BaseBlock, asn1js } from './PkiBase.js'
 
 /**
  * Re-tags a block with a context-specific tag, i.e. applies an IMPLICIT tag.
@@ -23,3 +23,21 @@ export const isContextTag = (asn1: Asn1BaseBlock, tagNumber: number) =>
 /** The content octets of a primitive (implicitly tagged) block. */
 export const contentOctets = (asn1: Asn1BaseBlock): Uint8Array =>
     (asn1.valueBlock as unknown as { valueHexView: Uint8Array }).valueHexView
+
+/**
+ * Turns a parsed implicitly tagged primitive, e.g. `[1] 'ab'`, back into the universal
+ * type it stands for (OCTET STRING, BIT STRING, INTEGER, ...), so that the usual
+ * `fromAsn1` of that type can read it. `universalTag` is the universal tag number.
+ */
+export function withUniversalTag(
+    block: Asn1BaseBlock,
+    universalTag: number,
+): Asn1BaseBlock {
+    const bytes = new Uint8Array(block.toBER())
+    bytes[0] = (bytes[0] & 0x20) | universalTag // keep the constructed bit
+    const { result, offset } = asn1js.fromBER(bytes)
+    if (offset === -1) {
+        throw new Error('Failed to re-read implicitly tagged value')
+    }
+    return result
+}
