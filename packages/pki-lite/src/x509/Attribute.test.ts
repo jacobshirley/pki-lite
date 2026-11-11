@@ -1,5 +1,5 @@
 import { describe, it, expect, assert } from 'vitest'
-import { asn1js } from '../core/PkiBase.js'
+import { UniversalTag } from '../core/PkiBase.js'
 import { Attribute } from './Attribute.js'
 import { Integer } from '../asn1/Integer.js'
 import { Any } from '../asn1/Any.js'
@@ -43,26 +43,19 @@ describe('Attribute', () => {
 
         const asn1 = contentType.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect((asn1 as any).valueBlock.value.length).toEqual(2)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toEqual(2)
 
         // First element should be ObjectIdentifier
-        expect((asn1 as any).valueBlock.value[0]).toBeInstanceOf(
-            asn1js.ObjectIdentifier,
-        )
-        assert(
-            (asn1 as any).valueBlock.value[0] instanceof
-                asn1js.ObjectIdentifier,
-        )
-        expect((asn1 as any).valueBlock.value[0].toString()).toEqual(
+        expect(asn1.children[0].is(UniversalTag.ObjectIdentifier)).toBe(true)
+        assert(asn1.children[0]?.is(UniversalTag.ObjectIdentifier))
+        expect(asn1.children[0].toString()).toEqual(
             'OBJECT IDENTIFIER : 1.2.840.113549.1.9.3',
         )
 
         // Second element should be Set containing the values
-        expect((asn1 as any).valueBlock.value[1]).toBeInstanceOf(asn1js.Set)
-        expect(
-            (asn1 as any).valueBlock.value[1].valueBlock.value.length,
-        ).toEqual(1)
+        expect(asn1.children[1].is(UniversalTag.Set)).toBe(true)
+        expect(asn1.children[1].children.length).toEqual(1)
         // We're not checking the exact type here since the string handling may vary
     })
 
@@ -70,7 +63,7 @@ describe('Attribute', () => {
         const mixedAttribute = new Attribute({
             type: '2.5.29.17',
             values: [
-                new Uint8Array([1, 2, 3]),
+                new Uint8Array([0x02, 0x01, 0x03]), // pre-encoded INTEGER 3
                 new Integer({ value: 123 }),
                 'test string',
             ],
@@ -78,10 +71,8 @@ describe('Attribute', () => {
 
         const asn1 = mixedAttribute.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(
-            (asn1 as any).valueBlock.value[1].valueBlock.value.length,
-        ).toEqual(3)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children[1].children.length).toEqual(3)
 
         // We're checking the value conversion happened but not enforcing specific ASN.1 types
         // as that implementation detail might change

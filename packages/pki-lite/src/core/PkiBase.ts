@@ -47,12 +47,11 @@ const ORIGINAL_DER = new WeakMap<
  */
 export function keepOriginalDer(
     target: object & { toDer(): Uint8Array<ArrayBuffer> },
-    parsed: Asn1BaseBlock,
+    parsed: Asn1Node,
 ): void {
-    const view = parsed.valueBeforeDecodeView
-    if (!view || view.byteLength === 0) return
+    // a parsed node encodes as the exact bytes it was parsed from
     ORIGINAL_DER.set(target, {
-        der: new Uint8Array(view),
+        der: parsed.encode(),
         reencoded: target.toDer(),
     })
 }

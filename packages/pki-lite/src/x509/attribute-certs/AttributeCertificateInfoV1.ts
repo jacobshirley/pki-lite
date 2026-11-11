@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { Attribute } from '../Attribute.js'
 import { Extension } from '../Extension.js'
@@ -87,43 +87,31 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
     /**
      * Converts the AttributeCertificateInfoV1 to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        const value: asn1js.BaseBlock[] = [
-            new asn1js.Integer({ value: this.version }),
+    toAsn1(): Asn1Node {
+        const value: Asn1Node[] = [
+            der.integer(this.version),
             // Simplified subject representation
-            new asn1js.OctetString({ valueHex: this.subject }),
+            der.octetString(this.subject),
             // Simplified issuer representation
-            new asn1js.OctetString({ valueHex: this.issuer }),
+            der.octetString(this.issuer),
             this.signature.toAsn1(),
-            new asn1js.Integer({ valueHex: this.serialNumber }),
-            new asn1js.Sequence({
-                value: [
-                    new asn1js.GeneralizedTime({
-                        valueDate: this.validityPeriod.notBefore,
-                    }),
-                    new asn1js.GeneralizedTime({
-                        valueDate: this.validityPeriod.notAfter,
-                    }),
-                ],
-            }),
-            new asn1js.Sequence({
-                value: this.attributes.map((attr) => attr.toAsn1()),
-            }),
+            der.primitive(UniversalTag.Integer, this.serialNumber),
+            der.sequence([
+                der.generalizedTime(this.validityPeriod.notBefore),
+                der.generalizedTime(this.validityPeriod.notAfter),
+            ]),
+            der.sequence(this.attributes.map((attr) => attr.toAsn1())),
         ]
 
         if (this.issuerUniqueID) {
-            value.push(new asn1js.BitString({ valueHex: this.issuerUniqueID }))
+            value.push(der.bitString(this.issuerUniqueID))
         }
 
         if (this.extensions && this.extensions.length > 0) {
-            value.push(
-                new asn1js.Sequence({
-                    value: this.extensions.map((ext) => ext.toAsn1()),
-                }),
-            )
+            value.push(der.sequence(this.extensions.map((ext) => ext.toAsn1())))
         }
 
-        return new asn1js.Sequence({ value })
+        return der.sequence(value)
     }
 
     /**
@@ -132,8 +120,8 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
      * @param asn1 The ASN.1 structure
      * @returns The AttributeCertificateInfoV1
      */
-    static fromAsn1(asn1: Asn1BaseBlock): AttributeCertificateInfoV1 {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): AttributeCertificateInfoV1 {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
@@ -142,12 +130,7 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
         // For this obsolete structure, we use a simplified implementation
         // that just captures the binary representation
 
-        // Define a type for the valueBlock structure we need to access
-        interface ValueBlock {
-            value: asn1js.BaseBlock[]
-        }
-
-        const values = (asn1.valueBlock as unknown as ValueBlock).value
+        const values = asn1.children
         if (values.length < 7) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected at least 7 elements',
@@ -155,21 +138,21 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
         }
 
         // Extract version
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected INTEGER for version',
             )
         }
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
 
         // Extract subject (simplified)
-        const subject = new Uint8Array(values[1].toBER(false))
+        const subject = values[1].encode()
 
         // Extract issuer (simplified)
-        const issuer = new Uint8Array(values[2].toBER(false))
+        const issuer = values[2].encode()
 
         // Extract signature algorithm
-        if (!(values[3] instanceof asn1js.Sequence)) {
+        if (!values[3]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for signature',
             )
@@ -177,22 +160,21 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
         const signature = AlgorithmIdentifier.fromAsn1(values[3])
 
         // Extract serial number
-        if (!(values[4] instanceof asn1js.Integer)) {
+        if (!values[4]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected INTEGER for serialNumber',
             )
         }
-        const serialNumber = new Uint8Array(values[4].valueBlock.valueHexView)
+        const serialNumber = values[4].bytes()
 
         // Extract validity period
-        if (!(values[5] instanceof asn1js.Sequence)) {
+        if (!values[5]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for validityPeriod',
             )
         }
 
-        const validityValues = (values[5].valueBlock as unknown as ValueBlock)
-            .value
+        const validityValues = values[5].children
         if (validityValues.length !== 2) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 2 elements in validityPeriod',
@@ -200,8 +182,8 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
         }
 
         if (
-            !(validityValues[0] instanceof asn1js.GeneralizedTime) ||
-            !(validityValues[1] instanceof asn1js.GeneralizedTime)
+            !validityValues[0]?.is(UniversalTag.GeneralizedTime) ||
+            !validityValues[1]?.is(UniversalTag.GeneralizedTime)
         ) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected GeneralizedTime for validity dates',
@@ -209,19 +191,18 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
         }
 
         const validityPeriod = {
-            notBefore: validityValues[0].toDate(),
-            notAfter: validityValues[1].toDate(),
+            notBefore: der.readTime(validityValues[0]),
+            notAfter: der.readTime(validityValues[1]),
         }
 
         // Extract attributes
-        if (!(values[6] instanceof asn1js.Sequence)) {
+        if (!values[6]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for attributes',
             )
         }
 
-        const attributesValues = (values[6].valueBlock as unknown as ValueBlock)
-            .value
+        const attributesValues = values[6].children
         const attributes = attributesValues.map((attr) =>
             Attribute.fromAsn1(attr),
         )
@@ -231,17 +212,13 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
         let extensions: Extension[] | undefined
 
         if (values.length > 7) {
-            if (values[7] instanceof asn1js.BitString) {
-                issuerUniqueID = new Uint8Array(
-                    values[7].valueBlock.valueHexView,
-                )
+            if (values[7]?.is(UniversalTag.BitString)) {
+                issuerUniqueID = der.readBitString(values[7]).bytes
             }
 
             // Extract optional extensions if present
-            if (values.length > 8 && values[8] instanceof asn1js.Sequence) {
-                const extensionsValues = (
-                    values[8].valueBlock as unknown as ValueBlock
-                ).value
+            if (values.length > 8 && values[8]?.is(UniversalTag.Sequence)) {
+                const extensionsValues = values[8].children
                 extensions = extensionsValues.map((ext) =>
                     Extension.fromAsn1(ext),
                 )

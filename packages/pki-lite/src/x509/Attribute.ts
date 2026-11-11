@@ -6,12 +6,13 @@ import { OctetString } from '../asn1/OctetString.js'
 import { UTCTime } from '../asn1/UTCTime.js'
 import { OIDs } from '../core/OIDs.js'
 import {
-    Asn1BaseBlock,
     Asn1Any,
-    asn1js,
-    PkiBase,
-    ObjectIdentifierString,
+    Asn1Node,
+    der,
     derToAsn1,
+    ObjectIdentifierString,
+    PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { ContentInfo } from '../pkcs7/ContentInfo.js'
 import { RevocationValues } from './attributes/RevocationValues.js'
@@ -53,15 +54,11 @@ export class Attribute extends PkiBase<Attribute> {
     /**
      * Converts the attribute to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                this.type.toAsn1(),
-                new asn1js.Set({
-                    value: this.values.map((value) => value.toAsn1()),
-                }),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            this.type.toAsn1(),
+            der.set(this.values.map((value) => value.toAsn1())),
+        ])
     }
 
     /**
@@ -70,34 +67,34 @@ export class Attribute extends PkiBase<Attribute> {
      * @param asn1 The ASN.1 structure
      * @returns The attribute
      */
-    static fromAsn1(asn1: Asn1BaseBlock): Attribute {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): Attribute {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE but got ' +
-                    asn1.constructor.name,
+                    asn1.describe(),
             )
         }
 
-        if (asn1.valueBlock.value.length !== 2) {
+        if (asn1.children.length !== 2) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 2 elements',
             )
         }
 
-        const [typeAsn1, valuesAsn1] = asn1.valueBlock.value
+        const [typeAsn1, valuesAsn1] = asn1.children
 
-        if (!(typeAsn1 instanceof asn1js.ObjectIdentifier)) {
+        if (!typeAsn1.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OBJECT IDENTIFIER',
             )
         }
 
-        if (!(valuesAsn1 instanceof asn1js.Set)) {
+        if (!valuesAsn1.is(UniversalTag.Set)) {
             throw new Asn1ParseError('Invalid ASN.1 structure: expected SET')
         }
 
-        const type = typeAsn1.valueBlock.toString()
-        const values: Asn1Any[] = valuesAsn1.valueBlock.value.map(
+        const type = der.readOid(typeAsn1)
+        const values: Asn1Any[] = valuesAsn1.children.map(
             (x) => new Any({ derBytes: x }),
         )
 
@@ -181,7 +178,7 @@ export class Attribute extends PkiBase<Attribute> {
     static commitmentTypeIndication(reason: string): Attribute {
         return new Attribute({
             type: OIDs.PKCS9.ETS_COMMITMENT_TYPE_INDICATION,
-            values: [new asn1js.Utf8String({ value: reason })],
+            values: [der.utf8String(reason)],
         })
     }
 

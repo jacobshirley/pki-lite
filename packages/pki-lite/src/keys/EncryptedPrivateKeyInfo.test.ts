@@ -142,8 +142,8 @@ describe('EncryptedPrivateKeyInfo', () => {
         })
 
         // Convert to DER and back
-        const der = original.toDer()
-        const parsed = EncryptedPrivateKeyInfo.fromDer(der)
+        const encoded = original.toDer()
+        const parsed = EncryptedPrivateKeyInfo.fromDer(encoded)
 
         expect(parsed.encryptionAlgorithm.algorithm.toString()).toEqual(
             original.encryptionAlgorithm.algorithm.toString(),

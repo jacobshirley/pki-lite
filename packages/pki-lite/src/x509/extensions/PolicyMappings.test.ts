@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { PolicyMapping, PolicyMappings } from './PolicyMappings.js'
-import { asn1js, derToAsn1 } from '../../core/PkiBase.js'
+import { der, derToAsn1 } from '../../core/PkiBase.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 
 const hex = (b: Uint8Array) =>
@@ -25,13 +25,11 @@ describe('PolicyMapping', () => {
     })
 
     test('rejects a SEQUENCE without exactly two policies', () => {
-        const one = new asn1js.Sequence({
-            value: [new asn1js.ObjectIdentifier({ value: '1.2.3.4' })],
-        })
+        const one = der.sequence([der.oid('1.2.3.4')])
         expect(() => PolicyMapping.fromAsn1(one)).toThrow(Asn1ParseError)
-        expect(() =>
-            PolicyMapping.fromAsn1(new asn1js.Integer({ value: 1 })),
-        ).toThrow(Asn1ParseError)
+        expect(() => PolicyMapping.fromAsn1(der.integer(1))).toThrow(
+            Asn1ParseError,
+        )
     })
 })
 
@@ -47,12 +45,12 @@ describe('PolicyMappings', () => {
                 subjectDomainPolicy: '1.2.3.6',
             }),
         )
-        const der = mappings.toDer()
-        const parsed = PolicyMappings.fromAsn1(derToAsn1(der))
+        const encoded = mappings.toDer()
+        const parsed = PolicyMappings.fromAsn1(derToAsn1(encoded))
 
         expect(parsed).toHaveLength(2)
         expect(parsed[1].subjectDomainPolicy.toString()).toBe('1.2.3.6')
-        expect(hex(parsed.toDer())).toBe(hex(der))
+        expect(hex(parsed.toDer())).toBe(hex(encoded))
     })
 
     test('exposes PolicyMapping', () => {
@@ -60,8 +58,8 @@ describe('PolicyMappings', () => {
     })
 
     test('rejects anything but a SEQUENCE', () => {
-        expect(() =>
-            PolicyMappings.fromAsn1(new asn1js.Integer({ value: 1 })),
-        ).toThrow(Asn1ParseError)
+        expect(() => PolicyMappings.fromAsn1(der.integer(1))).toThrow(
+            Asn1ParseError,
+        )
     })
 })

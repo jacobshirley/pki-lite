@@ -63,8 +63,8 @@ describe('PBES2Params', () => {
         })
 
         const asn1 = original.toAsn1()
-        const der = asn1.encode()
-        const parsed = PBES2Params.fromDer(new Uint8Array(der))
+        const encoded = asn1.encode()
+        const parsed = PBES2Params.fromDer(new Uint8Array(encoded))
 
         expect(parsed).toBeInstanceOf(PBES2Params)
         expect(parsed.keyDerivationFunc.algorithm.value).toEqual(

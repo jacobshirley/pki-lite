@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { asn1js } from '../../core/PkiBase.js'
+import { der } from '../../core/PkiBase.js'
 import { SigningCertificate, ESSCertID } from './SigningCertificate.js'
 import { PolicyInformation, PolicyQualifierInfo } from '../PolicyInformation.js'
 import { Name } from '../Name.js'
@@ -8,7 +8,7 @@ import { UTF8String } from '../../asn1/UTF8String.js'
 import { IssuerSerial } from '../IssuerSerial.js'
 
 function makeIssuerSerial(): IssuerSerial {
-    const emptyRdn = new asn1js.Sequence({ value: [] })
+    const emptyRdn = der.sequence([])
     const name = Name.fromAsn1(emptyRdn)
     return new IssuerSerial({
         issuer: name,
@@ -37,9 +37,7 @@ describe('ESSCertID', () => {
     })
 
     it('throws when certHash is not OCTET STRING', () => {
-        const bad = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 5 })],
-        })
+        const bad = der.sequence([der.integer(5)])
         expect(() => ESSCertID.fromAsn1(bad)).toThrow(
             'Invalid ESSCertID: expected OCTET STRING for certHash',
         )
@@ -77,15 +75,13 @@ describe('SigningCertificate', () => {
     })
 
     it('throws for non-sequence', () => {
-        expect(() => SigningCertificate.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => SigningCertificate.fromAsn1(der.nullValue())).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
     })
 
     it('throws when certs is not a sequence', () => {
-        const bad = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 1 })],
-        })
+        const bad = der.sequence([der.integer(1)])
         expect(() => SigningCertificate.fromAsn1(bad)).toThrow(
             'Invalid SigningCertificate: expected SEQUENCE for certs',
         )
@@ -93,12 +89,7 @@ describe('SigningCertificate', () => {
 
     it('throws when policies is not a sequence', () => {
         const ess = new ESSCertID({ certHash: new Uint8Array([3]) })
-        const bad = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [ess.toAsn1()] }),
-                new asn1js.Integer({ value: 2 }),
-            ],
-        })
+        const bad = der.sequence([der.sequence([ess.toAsn1()]), der.integer(2)])
         expect(() => SigningCertificate.fromAsn1(bad)).toThrow(
             'Invalid SigningCertificate: expected SEQUENCE for policies',
         )

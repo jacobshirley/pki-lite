@@ -20,9 +20,8 @@ import { RDNSequence } from './RDNSequence.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
 import { OIDs } from '../core/OIDs.js'
-import * as asn1js from 'asn1js'
 import { DirectoryString } from './DirectoryString.js'
-import { derToAsn1 } from '../core/PkiBase.js'
+import { der, derToAsn1, TagClass, UniversalTag } from '../core/PkiBase.js'
 
 describe('AnotherName', () => {
     test('should create AnotherName with string typeID', () => {
@@ -53,26 +52,22 @@ describe('AnotherName', () => {
         })
 
         const asn1 = anotherName.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toEqual(2)
     })
 
     test('should parse from ASN.1 structure', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '1.2.3.4.5' }),
-                new asn1js.Utf8String({ value: 'test value' }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.oid('1.2.3.4.5'),
+            der.utf8String('test value'),
+        ])
 
         const anotherName = AnotherName.fromAsn1(asn1)
         expect(anotherName.typeID.value).toEqual('1.2.3.4.5')
     })
 
     test('fromAsn1 should throw error for invalid structure', () => {
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [new asn1js.ObjectIdentifier({ value: '1.2.3' })], // Missing value
-        })
+        const invalidAsn1 = der.sequence([der.oid('1.2.3')]) // Missing value
 
         expect(() => AnotherName.fromAsn1(invalidAsn1)).toThrow(
             'Invalid AnotherName ASN.1 structure',
@@ -85,18 +80,18 @@ describe('DirectoryString', () => {
         const utf8String = new UTF8String({ value: 'Test String' })
         const asn1 = DirectoryString.toAsn1(utf8String)
 
-        expect(asn1).toBeInstanceOf(asn1js.Utf8String)
+        expect(asn1.is(UniversalTag.UTF8String)).toBe(true)
     })
 
     test('should create DirectoryString from PrintableString', () => {
         const printableString = new PrintableString({ value: 'Test String' })
         const asn1 = DirectoryString.toAsn1(printableString)
 
-        expect(asn1).toBeInstanceOf(asn1js.PrintableString)
+        expect(asn1.is(UniversalTag.PrintableString)).toBe(true)
     })
 
     test('should parse DirectoryString from ASN.1', () => {
-        const asn1 = new asn1js.Utf8String({ value: 'Test String' })
+        const asn1 = der.utf8String('Test String')
         const directoryString = DirectoryString.fromAsn1(asn1)
 
         expect(directoryString).toBeInstanceOf(UTF8String)
@@ -104,7 +99,7 @@ describe('DirectoryString', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1', () => {
-        const invalidAsn1 = new asn1js.Integer({ value: 123 })
+        const invalidAsn1 = der.integer(123)
 
         expect(() => DirectoryString.fromAsn1(invalidAsn1)).toThrow(
             'Invalid DirectoryString ASN.1 structure',
@@ -141,8 +136,8 @@ describe('EDIPartyName', () => {
         })
 
         const asn1 = ediPartyName.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2) // nameAssigner + partyName
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toEqual(2) // nameAssigner + partyName
     })
 })
 
@@ -157,9 +152,9 @@ describe('GeneralName types', () => {
 
         const asn1 = dnsName.toAsn1()
         // IMPLICIT tagging: a primitive context-specific value, not a wrapper
-        expect(asn1.idBlock.isConstructed).toBe(false)
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(2) // [2]
+        expect(asn1.constructed).toBe(false)
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.tag).toEqual(2) // [2]
         expect(toHex(dnsName.toDer())).toEqual('820b6578616d706c652e636f6d')
     })
 
@@ -170,9 +165,9 @@ describe('GeneralName types', () => {
 
         const asn1 = emailName.toAsn1()
         // IMPLICIT tagging: a primitive context-specific value, not a wrapper
-        expect(asn1.idBlock.isConstructed).toBe(false)
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(1) // [1]
+        expect(asn1.constructed).toBe(false)
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.tag).toEqual(1) // [1]
         expect(toHex(emailName.toDer())).toEqual(
             '811074657374406578616d706c652e636f6d',
         )
@@ -187,9 +182,9 @@ describe('GeneralName types', () => {
 
         const asn1 = uri.toAsn1()
         // IMPLICIT tagging: a primitive context-specific value, not a wrapper
-        expect(asn1.idBlock.isConstructed).toBe(false)
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(6) // [6]
+        expect(asn1.constructed).toBe(false)
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.tag).toEqual(6) // [6]
         expect(toHex(uri.toDer())).toEqual(
             '861368747470733a2f2f6578616d706c652e636f6d',
         )
@@ -204,9 +199,9 @@ describe('GeneralName types', () => {
 
         const asn1 = ipAddress.toAsn1()
         // IMPLICIT tagging: a primitive context-specific value, not a wrapper
-        expect(asn1.idBlock.isConstructed).toBe(false)
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(7) // [7]
+        expect(asn1.constructed).toBe(false)
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.tag).toEqual(7) // [7]
         expect(toHex(ipAddress.toDer())).toEqual('8704c0a80101')
     })
 
@@ -217,9 +212,9 @@ describe('GeneralName types', () => {
 
         const asn1 = regId.toAsn1()
         // IMPLICIT tagging: a primitive context-specific value, not a wrapper
-        expect(asn1.idBlock.isConstructed).toBe(false)
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(8) // [8]
+        expect(asn1.constructed).toBe(false)
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.tag).toEqual(8) // [8]
         expect(toHex(regId.toDer())).toEqual('88052a03040506')
     })
 
@@ -238,9 +233,9 @@ describe('GeneralName types', () => {
         expect(dirName.length).toEqual(1)
 
         const asn1 = dirName.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(4) // [4]
+        expect(asn1.constructed).toBe(true)
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.tag).toEqual(4) // [4]
     })
 })
 
@@ -249,15 +244,12 @@ describe('GeneralName Choice', () => {
         const dnsName = new dNSName({ value: 'example.com' })
         const asn1 = GeneralName.toAsn1(dnsName)
 
-        expect(asn1.idBlock.isConstructed).toBe(false)
-        expect(asn1.idBlock.tagNumber).toEqual(2) // dNSName tag
+        expect(asn1.constructed).toBe(false)
+        expect(asn1.tag).toEqual(2) // dNSName tag
     })
 
     test('should parse GeneralName from ASN.1 dNSName', () => {
-        const asn1 = new asn1js.Constructed({
-            idBlock: { tagClass: 3, tagNumber: 2 }, // [2] dNSName
-            value: [new asn1js.IA5String({ value: 'example.com' })],
-        })
+        const asn1 = der.constructed(2, [der.ia5String('example.com')])
 
         const generalName = GeneralName.fromAsn1(asn1)
         expect(generalName).toBeInstanceOf(dNSName)
@@ -265,10 +257,7 @@ describe('GeneralName Choice', () => {
     })
 
     test('should parse GeneralName from ASN.1 rfc822Name', () => {
-        const asn1 = new asn1js.Constructed({
-            idBlock: { tagClass: 3, tagNumber: 1 }, // [1] rfc822Name
-            value: [new asn1js.IA5String({ value: 'test@example.com' })],
-        })
+        const asn1 = der.constructed(1, [der.ia5String('test@example.com')])
 
         const generalName = GeneralName.fromAsn1(asn1)
         expect(generalName).toBeInstanceOf(rfc822Name)
@@ -276,10 +265,7 @@ describe('GeneralName Choice', () => {
     })
 
     test('fromAsn1 should throw error for unknown tag number', () => {
-        const asn1 = new asn1js.Constructed({
-            idBlock: { tagClass: 3, tagNumber: 99 }, // Invalid tag
-            value: [],
-        })
+        const asn1 = der.constructed(99, [])
 
         expect(() => GeneralName.fromAsn1(asn1)).toThrow(
             'Invalid GeneralName ASN.1 structure: unknown tag number 99',
@@ -287,7 +273,7 @@ describe('GeneralName Choice', () => {
     })
 
     test('fromAsn1 should throw error for non-constructed type', () => {
-        const asn1 = new asn1js.Integer({ value: 123 })
+        const asn1 = der.integer(123)
 
         expect(() => GeneralName.fromAsn1(asn1)).toThrow(
             'Invalid GeneralName ASN.1 structure: not a constructed or primitive type',
@@ -319,25 +305,15 @@ describe('GeneralNames', () => {
         const generalNames = new GeneralNames(dnsName, emailName)
 
         const asn1 = generalNames.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
     })
 
     test('should parse from ASN.1 sequence', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 2 }, // [2] dNSName
-                    value: [new asn1js.IA5String({ value: 'example.com' })],
-                }),
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 1 }, // [1] rfc822Name
-                    value: [
-                        new asn1js.IA5String({ value: 'test@example.com' }),
-                    ],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.constructed(2, [der.ia5String('example.com')]),
+            der.constructed(1, [der.ia5String('test@example.com')]),
+        ])
 
         const generalNames = GeneralNames.fromAsn1(asn1)
         expect(generalNames.length).toEqual(2)
@@ -346,7 +322,7 @@ describe('GeneralNames', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1', () => {
-        const invalidAsn1 = new asn1js.Integer({ value: 123 })
+        const invalidAsn1 = der.integer(123)
 
         expect(() => GeneralNames.fromAsn1(invalidAsn1)).toThrow(
             'Invalid GeneralNames ASN.1 structure',
@@ -382,16 +358,16 @@ describe('GeneralName encoding (RFC 5280, IMPLICIT TAGS)', () => {
     test('otherName is [0] { type-id, [0] EXPLICIT value }', () => {
         const name = new otherName({
             typeID: '1.3.6.1.4.1.311.20.2.3',
-            value: new asn1js.Utf8String({ value: 'user@example.com' }),
+            value: der.utf8String('user@example.com'),
         })
-        const der = toHex(name.toDer())
+        const encoded = toHex(name.toDer())
         // A0 len 06 0A <oid> A0 12 0C 10 <utf8>
-        expect(der.startsWith('a0')).toBe(true)
-        expect(der).toContain('a0120c10')
-        const parsed = parse(der) as otherName
+        expect(encoded.startsWith('a0')).toBe(true)
+        expect(encoded).toContain('a0120c10')
+        const parsed = parse(encoded) as otherName
         expect(parsed).toBeInstanceOf(otherName)
         expect(parsed.typeID.value).toBe('1.3.6.1.4.1.311.20.2.3')
-        expect(toHex(parsed.toDer())).toBe(der)
+        expect(toHex(parsed.toDer())).toBe(encoded)
     })
 
     test('ediPartyName tags nameAssigner [0] and partyName [1] and round-trips', () => {
@@ -399,10 +375,10 @@ describe('GeneralName encoding (RFC 5280, IMPLICIT TAGS)', () => {
             nameAssigner: 'assigner',
             partyName: 'party',
         })
-        const der = name.toDer()
-        const parsed = GeneralName.fromAsn1(derToAsn1(der)) as ediPartyName
+        const encoded = name.toDer()
+        const parsed = GeneralName.fromAsn1(derToAsn1(encoded)) as ediPartyName
         expect(parsed).toBeInstanceOf(ediPartyName)
-        expect(toHex(parsed.toDer())).toBe(toHex(der))
-        expect(der[0]).toBe(0xa5) // [5] constructed, IMPLICIT
+        expect(toHex(parsed.toDer())).toBe(toHex(encoded))
+        expect(encoded[0]).toBe(0xa5) // [5] constructed, IMPLICIT
     })
 })

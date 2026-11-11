@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { KeyUsage } from './KeyUsage.js'
-import { asn1js } from '../../core/PkiBase.js'
+import { der, UniversalTag } from '../../core/PkiBase.js'
 
 describe('KeyUsage', () => {
     it('should create a KeyUsage with correct properties', () => {
@@ -91,20 +91,20 @@ describe('KeyUsage', () => {
 
         const asn1 = usage.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.BitString)
-        const bitString = asn1 as asn1js.BitString
+        expect(asn1.is(UniversalTag.BitString)).toBe(true)
+        const bitString = asn1
         // DER drops trailing zero bits: bits 0-6 are used, so 1 bit is unused
-        expect(bitString.valueBlock.unusedBits).toEqual(1)
-        expect(Array.from(bitString.valueBlock.valueHexView)).toEqual([
+        expect(der.readBitString(bitString).unusedBits).toEqual(1)
+        expect(Array.from(der.readBitString(bitString).bytes)).toEqual([
             0b0000_0110,
         ])
     })
 
     it('should decode unusedBits correctly', () => {
-        const asn1 = new asn1js.BitString({
-            valueHex: new Uint8Array([0b0000_0110, 0b0000_0000]).buffer,
-            unusedBits: 7,
-        })
+        const asn1 = der.bitString(
+            new Uint8Array([0b0000_0110, 0b0000_0000]),
+            7,
+        )
 
         const decoded = KeyUsage.fromAsn1(asn1)
 
@@ -116,7 +116,7 @@ describe('KeyUsage', () => {
     })
 
     it('should throw if ASN.1 is not a BitString', () => {
-        expect(() => KeyUsage.fromAsn1({} as any)).toThrow(
+        expect(() => KeyUsage.fromAsn1(der.integer(1))).toThrow(
             `Expected BitString for KeyUsage`,
         )
     })

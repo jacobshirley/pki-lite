@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from 'vitest'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
-import { asn1js, asn1ToDer } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('AttributeTypeAndValue', () => {
     test('can be created', () => {
@@ -20,21 +20,19 @@ describe('AttributeTypeAndValue', () => {
         })
         const asn1 = atv.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.ObjectIdentifier)
-        assert(asn1.valueBlock.value[0] instanceof asn1js.ObjectIdentifier)
+        expect(asn1.children[0].is(UniversalTag.ObjectIdentifier)).toBe(true)
+        assert(asn1.children[0]?.is(UniversalTag.ObjectIdentifier))
         // The toString() method includes "OBJECT IDENTIFIER : " prefix
-        expect(asn1.valueBlock.value[0].toString()).toEqual(
+        expect(asn1.children[0].toString()).toEqual(
             'OBJECT IDENTIFIER : 2.5.4.3',
         )
 
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.PrintableString)
-        assert(asn1.valueBlock.value[1] instanceof asn1js.PrintableString)
-        expect(asn1.valueBlock.value[1].valueBlock.value).toEqual(
-            'Test Common Name',
-        )
+        expect(asn1.children[1].is(UniversalTag.PrintableString)).toBe(true)
+        assert(asn1.children[1]?.is(UniversalTag.PrintableString))
+        expect(der.readString(asn1.children[1])).toEqual('Test Common Name')
     })
 
     test('can convert common OIDs to shortnames', () => {
@@ -81,12 +79,10 @@ describe('AttributeTypeAndValue', () => {
     })
 
     test('can be converted from ASN.1', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '2.5.4.3' }),
-                new asn1js.PrintableString({ value: 'Test Common Name' }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.oid('2.5.4.3'),
+            der.printableString('Test Common Name'),
+        ])
 
         const atv = AttributeTypeAndValue.fromAsn1(asn1)
         expect(atv).toBeInstanceOf(AttributeTypeAndValue)

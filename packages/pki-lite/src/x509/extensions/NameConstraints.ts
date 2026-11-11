@@ -1,8 +1,9 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     PkiBase,
     PkiSequence,
+    UniversalTag,
 } from '../../core/PkiBase.js'
 import { GeneralName } from '../GeneralName.js'
 import { RDNSequence } from '../RDNSequence.js'
@@ -54,30 +55,24 @@ export class GeneralSubtree extends PkiBase<GeneralSubtree> {
         // minimum [0] and maximum [1] are IMPLICIT INTEGERs; minimum is DEFAULT 0, so
         // DER omits it when it is 0.
         if (this.minimum !== 0) {
-            values.push(
-                implicitTag(new asn1js.Integer({ value: this.minimum }), 0),
-            )
+            values.push(implicitTag(der.integer(this.minimum), 0))
         }
 
         if (this.maximum !== undefined) {
-            values.push(
-                implicitTag(new asn1js.Integer({ value: this.maximum }), 1),
-            )
+            values.push(implicitTag(der.integer(this.maximum), 1))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): GeneralSubtree {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): GeneralSubtree {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for GeneralSubtree',
             )
         }
 
-        const [baseAsn1, ...rest] = asn1.valueBlock.value
+        const [baseAsn1, ...rest] = asn1.children
         if (!baseAsn1) {
             throw new Asn1ParseError(
                 'Invalid GeneralSubtree: missing base GeneralName',
@@ -85,15 +80,11 @@ export class GeneralSubtree extends PkiBase<GeneralSubtree> {
         }
 
         // minimum [0] and maximum [1] are IMPLICIT INTEGERs
-        const distance = (element: Asn1BaseBlock): number => {
-            const integer =
-                element instanceof asn1js.Integer
-                    ? element
-                    : new asn1js.Integer({
-                          valueHex: (element as asn1js.Primitive).valueBlock
-                              .valueHexView,
-                      })
-            return integer.valueBlock.valueDec
+        const distance = (element: Asn1Node): number => {
+            const integer = element.is(UniversalTag.Integer)
+                ? element
+                : element.retag(UniversalTag.Integer)
+            return der.readNumber(integer)
         }
 
         let minimum: number | undefined
@@ -232,62 +223,56 @@ export class NameConstraints extends PkiBase<NameConstraints> {
 
         if (this.permittedSubtrees) {
             values.push(
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 0 }, // [0]
-                    value: this.permittedSubtrees.map((subtree) =>
-                        subtree.toAsn1(),
-                    ),
-                }),
+                der.constructed(
+                    0,
+                    this.permittedSubtrees.map((subtree) => subtree.toAsn1()),
+                ),
             )
         }
 
         if (this.excludedSubtrees) {
             values.push(
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 1 }, // [1]
-                    value: this.excludedSubtrees.map((subtree) =>
-                        subtree.toAsn1(),
-                    ),
-                }),
+                der.constructed(
+                    1,
+                    this.excludedSubtrees.map((subtree) => subtree.toAsn1()),
+                ),
             )
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): NameConstraints {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): NameConstraints {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for NameConstraints',
             )
         }
 
-        const subtrees = (element: Asn1BaseBlock): GeneralSubtree[] => {
-            if (!(element instanceof asn1js.Constructed)) {
+        const subtrees = (element: Asn1Node): GeneralSubtree[] => {
+            if (!element?.constructed) {
                 throw new Asn1ParseError(
                     'Invalid NameConstraints: subtrees must be constructed',
                 )
             }
-            let children = element.valueBlock.value
+            let children = element.children
             // Earlier versions wrapped the subtrees in an extra SEQUENCE: [n] { SEQUENCE
             // { GeneralSubtree... } }. A GeneralSubtree's base is context-tagged, a
             // wrapped one starts with a SEQUENCE instead.
             const [first] = children
             if (
                 children.length === 1 &&
-                first instanceof asn1js.Sequence &&
-                first.valueBlock.value[0] instanceof asn1js.Sequence
+                first.is(UniversalTag.Sequence) &&
+                first.children[0]?.is(UniversalTag.Sequence)
             ) {
-                children = first.valueBlock.value
+                children = first.children
             }
             return children.map((child) => GeneralSubtree.fromAsn1(child))
         }
 
         let permittedSubtrees: GeneralSubtree[] | undefined
         let excludedSubtrees: GeneralSubtree[] | undefined
-        for (const element of asn1.valueBlock.value) {
+        for (const element of asn1.children) {
             if (isContextTag(element, 0)) {
                 permittedSubtrees = subtrees(element)
             } else if (isContextTag(element, 1)) {

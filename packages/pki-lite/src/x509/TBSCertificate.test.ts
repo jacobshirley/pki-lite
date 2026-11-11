@@ -8,7 +8,7 @@ import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Name } from './Name.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { TagClass, UniversalTag } from '../core/PkiBase.js'
 import { Extension } from './Extension.js'
 import { KeyUsage } from './extensions/KeyUsage.js'
 import { BasicConstraints } from './extensions/BasicConstraints.js'
@@ -216,20 +216,18 @@ describe('TBSCertificate', () => {
 
         const asn1 = tbsCert.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(7) // version, subjectUniqueID, serialNumber, extensions, signature, issuer, validity, subject, spki
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(7) // version, subjectUniqueID, serialNumber, extensions, signature, issuer, validity, subject, spki
 
         // First element should be version
-        const versionBlock = asn1.valueBlock.value[0]
-        expect(versionBlock).toBeInstanceOf(asn1js.Constructed)
-        expect((versionBlock as asn1js.Constructed).idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect((versionBlock as asn1js.Constructed).idBlock.tagNumber).toEqual(
-            0,
-        ) // [0]
+        const versionBlock = asn1.children[0]
+        expect(versionBlock.constructed).toBe(true)
+        expect(versionBlock.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(versionBlock.tag).toEqual(0) // [0]
 
         // Second element should be serialNumber
-        const serialNumberBlock = asn1.valueBlock.value[1]
-        expect(serialNumberBlock).toBeInstanceOf(asn1js.Integer)
+        const serialNumberBlock = asn1.children[1]
+        expect(serialNumberBlock.is(UniversalTag.Integer)).toBe(true)
     })
 
     test('can be converted to ASN.1 with all fields', () => {
@@ -288,18 +286,14 @@ describe('TBSCertificate', () => {
 
         const asn1 = tbsCert.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(10) // version, serialNumber, signature, issuer, validity, subject, spki, issuerUniqueID, subjectUniqueID, extensions
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(10) // version, serialNumber, signature, issuer, validity, subject, spki, issuerUniqueID, subjectUniqueID, extensions
 
         // Last element should be extensions
-        const extensionsBlock = asn1.valueBlock.value[9]
-        expect(extensionsBlock).toBeInstanceOf(asn1js.Constructed)
-        expect(
-            (extensionsBlock as asn1js.Constructed).idBlock.tagClass,
-        ).toEqual(3) // CONTEXT-SPECIFIC
-        expect(
-            (extensionsBlock as asn1js.Constructed).idBlock.tagNumber,
-        ).toEqual(3) // [3]
+        const extensionsBlock = asn1.children[9]
+        expect(extensionsBlock.constructed).toBe(true)
+        expect(extensionsBlock.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(extensionsBlock.tag).toEqual(3) // [3]
     })
 
     test('a negative serial number survives a DER round trip', () => {
@@ -415,8 +409,8 @@ describe('TBSCertificate', () => {
               SEQUENCE :
                 OBJECT IDENTIFIER : 1.2.840.113549.1.1.1
               BIT STRING : 0000000100000010000000110000010000000101
-            PRIMITIVE : 
-            PRIMITIVE : 
+            [1] : 0a0b0c
+            [2] : 0d0e0f
             [3] :
               SEQUENCE :
                 SEQUENCE :

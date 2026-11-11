@@ -3,7 +3,7 @@ import { AuthorityInfoAccess } from './AuthorityInfoAccess.js'
 import { AccessDescription } from './AuthorityInfoAccess.js'
 import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
 import { GeneralName, uniformResourceIdentifier } from '../GeneralName.js'
-import { asn1js } from '../../core/PkiBase.js'
+import { der } from '../../core/PkiBase.js'
 
 function makeAccessDescription() {
     return new AccessDescription({
@@ -38,7 +38,7 @@ describe('AuthorityInfoAccess', () => {
     })
 
     it('should throw if ASN.1 is not a sequence', () => {
-        expect(() => AuthorityInfoAccess.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => AuthorityInfoAccess.fromAsn1(der.nullValue())).toThrow(
             'ASN.1 structure should be a sequence',
         )
     })

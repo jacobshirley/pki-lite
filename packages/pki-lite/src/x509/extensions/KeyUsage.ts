@@ -1,5 +1,5 @@
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 
 export interface KeyUsageOptions {
     digitalSignature?: boolean
@@ -55,7 +55,7 @@ export class KeyUsage extends PkiBase<KeyUsage> {
         this.decipherOnly = options?.decipherOnly ?? false
     }
 
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         const bits = [
             this.digitalSignature,
             this.nonRepudiation,
@@ -80,18 +80,16 @@ export class KeyUsage extends PkiBase<KeyUsage> {
                 bytes[byteIndex] |= 1 << bitIndex
             }
         }
-        return new asn1js.BitString({ valueHex: bytes.buffer, unusedBits })
+        return der.bitString(bytes, unusedBits)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): KeyUsage {
-        if (!(asn1 instanceof asn1js.BitString)) {
+    static fromAsn1(asn1: Asn1Node): KeyUsage {
+        if (!asn1.is(UniversalTag.BitString)) {
             throw new Asn1ParseError('Expected BitString for KeyUsage')
         }
 
         // An empty BIT STRING (03 01 00) is how DER writes "no bits set"
-        const bytes = new Uint8Array(asn1.valueBlock.valueHexView)
-
-        const unusedBits = asn1.valueBlock.unusedBits
+        const { bytes, unusedBits } = der.readBitString(asn1)
         const totalBits = bytes.length * 8 - unusedBits
 
         const bits: (0 | 1)[] = []

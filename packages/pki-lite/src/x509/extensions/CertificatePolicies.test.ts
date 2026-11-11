@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { CertificatePolicies } from './CertificatePolicies.js'
 import { PolicyInformation, PolicyQualifierInfo } from '../PolicyInformation.js'
-import { asn1js, derToAsn1 } from '../../core/PkiBase.js'
+import { der, derToAsn1 } from '../../core/PkiBase.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 
 const hex = (b: Uint8Array) =>
@@ -25,31 +25,31 @@ describe('CertificatePolicies', () => {
     })
 
     test('round-trips through DER, qualifiers included', () => {
-        const cps = new asn1js.IA5String({ value: 'https://example.com/cps' })
+        const cps = der.ia5String('https://example.com/cps')
         const policies = new CertificatePolicies(
             new PolicyInformation({
                 policyIdentifier: '1.2.3.4',
                 policyQualifiers: [
                     new PolicyQualifierInfo({
                         policyQualifierId: '1.3.6.1.5.5.7.2.1', // id-qt-cps
-                        qualifier: cps.toBER(false) as never,
+                        qualifier: cps.encode() as never,
                     }),
                 ],
             }),
             new PolicyInformation({ policyIdentifier: '1.2.3.5' }),
         )
-        const der = policies.toDer()
-        const parsed = CertificatePolicies.fromAsn1(derToAsn1(der))
+        const encoded = policies.toDer()
+        const parsed = CertificatePolicies.fromAsn1(derToAsn1(encoded))
 
         expect(parsed.policyIdentifiers).toEqual(['1.2.3.4', '1.2.3.5'])
         expect(parsed[0].policyQualifiers).toHaveLength(1)
         expect(parsed[1].policyQualifiers).toBeUndefined()
-        expect(hex(parsed.toDer())).toBe(hex(der))
+        expect(hex(parsed.toDer())).toBe(hex(encoded))
     })
 
     test('rejects anything but a SEQUENCE', () => {
-        expect(() =>
-            CertificatePolicies.fromAsn1(new asn1js.Integer({ value: 1 })),
-        ).toThrow(Asn1ParseError)
+        expect(() => CertificatePolicies.fromAsn1(der.integer(1))).toThrow(
+            Asn1ParseError,
+        )
     })
 })

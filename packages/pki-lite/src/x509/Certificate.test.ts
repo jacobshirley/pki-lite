@@ -6,7 +6,7 @@ import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Name } from './Name.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { UniversalTag } from '../core/PkiBase.js'
 import { pkitsFiles } from '../../test-fixtures/pkits/pkits.js'
 
 /**
@@ -92,17 +92,17 @@ describe('Certificate', () => {
         const cert = createSampleCertificate()
         const asn1 = cert.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3)
 
         // First element should be the tbsCertificate (a Sequence)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[0].is(UniversalTag.Sequence)).toBe(true)
 
         // Second element should be the signatureAlgorithm (a Sequence)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[1].is(UniversalTag.Sequence)).toBe(true)
 
         // Third element should be the signatureValue (a BitString)
-        expect(asn1.valueBlock.value[2]).toBeInstanceOf(asn1js.BitString)
+        expect(asn1.children[2].is(UniversalTag.BitString)).toBe(true)
     })
 
     test('can be converted into ASN.1 and back', async () => {

@@ -52,8 +52,8 @@ describe('SubjectKeyIdentifier', () => {
         })
 
         // Explicitly encode to DER and then decode back to ASN.1
-        const der = originalSubjectKeyIdentifier.toDer()
-        const asn1 = derToAsn1(der)
+        const encoded = originalSubjectKeyIdentifier.toDer()
+        const asn1 = derToAsn1(encoded)
 
         // Now decode the ASN.1 to a SubjectKeyIdentifier
         const decodedSubjectKeyIdentifier = SubjectKeyIdentifier.fromAsn1(asn1)
@@ -76,17 +76,17 @@ describe('SubjectKeyIdentifier', () => {
             bytes: keyIdentifier,
         })
 
-        const der = subjectKeyIdentifier.toDer()
+        const encoded = subjectKeyIdentifier.toDer()
 
-        expect(der).toBeInstanceOf(Uint8Array<ArrayBuffer>)
-        expect(der.length).toBeGreaterThan(0)
+        expect(encoded).toBeInstanceOf(Uint8Array<ArrayBuffer>)
+        expect(encoded.length).toBeGreaterThan(0)
 
         // The DER encoding of an OCTET STRING starts with tag 0x04
-        expect(der[0]).toEqual(0x04)
+        expect(encoded[0]).toEqual(0x04)
 
         // Check length byte and content
-        expect(der[1]).toEqual(keyIdentifier.length)
-        expect(Array.from(der.slice(2, 2 + keyIdentifier.length))).toEqual(
+        expect(encoded[1]).toEqual(keyIdentifier.length)
+        expect(Array.from(encoded.slice(2, 2 + keyIdentifier.length))).toEqual(
             Array.from(keyIdentifier),
         )
     })

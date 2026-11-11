@@ -33,7 +33,7 @@ export class PBEParameter extends PkiBase<PBEParameter> {
         if (!asn1.is(UniversalTag.Sequence)) {
             throw new Error(
                 'Invalid ASN.1 structure: expected Sequence but got ' +
-                    asn1.constructor.name,
+                    asn1.describe(),
             )
         }
 
