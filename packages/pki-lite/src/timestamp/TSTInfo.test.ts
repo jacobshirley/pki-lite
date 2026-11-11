@@ -5,6 +5,8 @@ import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Extension } from '../x509/Extension.js'
 import { GeneralName } from '../x509/GeneralName.js'
 import { asn1js } from '../core/PkiBase.js'
+const hex = (b: Uint8Array) =>
+    Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
 
 describe('Accuracy', () => {
     test('can be created with all fields', () => {
@@ -68,13 +70,26 @@ describe('Accuracy', () => {
         assert(asn1.valueBlock.value[0] instanceof asn1js.Integer)
         expect(asn1.valueBlock.value[0].valueBlock.valueDec).toEqual(1)
 
-        // Millis [0]
-        assert(asn1.valueBlock.value[1] instanceof asn1js.Constructed)
+        // Millis [0] and micros [1]: IMPLICIT (primitive), as in the RFC 3161 module
+        expect(asn1.valueBlock.value[1].idBlock.tagClass).toEqual(3)
         expect(asn1.valueBlock.value[1].idBlock.tagNumber).toEqual(0)
-
-        // Micros [1]
-        assert(asn1.valueBlock.value[2] instanceof asn1js.Constructed)
+        expect(asn1.valueBlock.value[1].idBlock.isConstructed).toBe(false)
+        expect(asn1.valueBlock.value[2].idBlock.tagClass).toEqual(3)
         expect(asn1.valueBlock.value[2].idBlock.tagNumber).toEqual(1)
+        expect(asn1.valueBlock.value[2].idBlock.isConstructed).toBe(false)
+        expect(hex(accuracy.toDer())).toBe('300b020101800201f4810200fa')
+    })
+
+    test('reads the explicitly tagged form older versions wrote', () => {
+        const explicit = new asn1js.Sequence({
+            value: [
+                new asn1js.Constructed({
+                    idBlock: { tagClass: 3, tagNumber: 0 },
+                    value: [new asn1js.Integer({ value: 500 })],
+                }),
+            ],
+        })
+        expect(Accuracy.fromAsn1(explicit).millis).toBe(500)
     })
 
     test('can be created from ASN.1', () => {

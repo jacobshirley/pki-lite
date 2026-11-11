@@ -7,7 +7,7 @@ import {
     PKIFreeText,
 } from './TimeStampResp.js'
 import { ContentInfo } from '../pkcs7/ContentInfo.js'
-import { asn1js } from '../core/PkiBase.js'
+import { asn1js, derToAsn1 } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 
 describe('PKIFreeText', () => {
@@ -88,6 +88,29 @@ describe('PKIStatusInfo', () => {
 
         expect(statusInfo.status).toEqual(PKIStatus.REJECTION)
         expect(statusInfo.failInfo).toEqual(PKIFailureInfo.BAD_DATA_FORMAT)
+    })
+
+    test('failInfo is a DER named bit list: the bit numbered by the failure', () => {
+        const hex = (b: Uint8Array) =>
+            Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
+        const cases: [PKIFailureInfo, string][] = [
+            [PKIFailureInfo.BAD_ALG, '03020780'], // bit 0
+            [PKIFailureInfo.BAD_DATA_FORMAT, '03020204'], // bit 5
+            [PKIFailureInfo.UNACCEPTED_POLICY, '0303000001'], // bit 15
+            [PKIFailureInfo.SYSTEM_FAILURE, '03050600000040'], // bit 25
+        ]
+        for (const [failInfo, bitString] of cases) {
+            const info = new PKIStatusInfo({
+                status: PKIStatus.REJECTION,
+                failInfo,
+            })
+            expect(hex(info.toDer())).toBe(
+                `30${(3 + bitString.length / 2).toString(16).padStart(2, '0')}020102${bitString}`,
+            )
+            expect(
+                PKIStatusInfo.fromAsn1(derToAsn1(info.toDer())).failInfo,
+            ).toBe(failInfo)
+        }
     })
 
     test('isSuccess returns correct values', () => {
