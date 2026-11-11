@@ -280,6 +280,24 @@ export class SignerInfo extends PkiBase<SignerInfo> {
         )
     }
 
+    /**
+     * The algorithm to verify the signature with.
+     *
+     * RFC 5652 5.3 and RFC 3370 3.2: RSA PKCS#1 v1.5 signatures are identified by
+     * `rsaEncryption` alone (this is what OpenSSL and most CMS writers emit); the hash is
+     * the one named by `digestAlgorithm`. Combine them into the explicit
+     * `shaNWithRSAEncryption` form that the crypto provider understands.
+     */
+    private getVerificationAlgorithm(): SignatureAlgorithmIdentifier {
+        if (this.signatureAlgorithm.algorithm.value === OIDs.RSA.ENCRYPTION) {
+            return AlgorithmIdentifier.signatureAlgorithm({
+                type: 'RSASSA_PKCS1_v1_5',
+                params: { hash: this.digestAlgorithm.toHashAlgorithm() },
+            })
+        }
+        return this.signatureAlgorithm
+    }
+
     async verify(options: {
         data: Uint8Array<ArrayBuffer>
         publicKeyInfo: SubjectPublicKeyInfo
@@ -340,7 +358,7 @@ export class SignerInfo extends PkiBase<SignerInfo> {
                 }
             }
 
-            const valid = await this.signatureAlgorithm.verify(
+            const valid = await this.getVerificationAlgorithm().verify(
                 this.getSignatureData(options.data),
                 this.signature,
                 options.publicKeyInfo,
