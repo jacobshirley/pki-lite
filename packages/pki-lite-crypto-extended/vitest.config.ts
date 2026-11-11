@@ -30,6 +30,12 @@ export default defineConfig({
                             },
                             launchOptions: {
                                 args: ['--disable-web-security'],
+                                // Set by the nix dev shell (flake.nix), where Playwright's
+                                // downloaded browsers cannot run; unset everywhere else.
+                                executablePath:
+                                    process.env
+                                        .PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||
+                                    undefined,
                             },
                         }),
                         enabled: true,
