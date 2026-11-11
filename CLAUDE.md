@@ -23,6 +23,10 @@ the tooling enforce, plus conventions the existing code follows.
 
 ## Code
 
+- Placement: the standard folders (`x509/`, `x509/extensions/`, `pkcs7/`, `asn1/`,
+  `keys/`, ...) hold only PKI/ASN.1 structures. Everything else (validation logic,
+  helpers, builders, crypto providers) goes under `src/core/`, e.g.
+  `core/NameConstraintsChecker.ts` next to `core/CertificateValidator.ts`.
 - Every class for an ASN.1 structure has the ASN.1 definition in its JSDoc under `@asn`
   (fenced as `asn`).
 - Class layout: public ASN.1 fields, constructor taking an options object, static
