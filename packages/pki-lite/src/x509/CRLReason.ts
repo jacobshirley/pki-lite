@@ -50,6 +50,6 @@ export class CRLReason extends PkiBase<CRLReason> {
                     asn1.describe(),
             )
         }
-        return new CRLReason(der.readNumber(asn1))
+        return new CRLReason(der.readEnumerated(asn1))
     }
 }
