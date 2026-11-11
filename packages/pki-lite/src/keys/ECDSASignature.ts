@@ -85,12 +85,16 @@ export class ECDSASignature extends PkiBase<ECDSASignature> {
     }
 
     /**
-     * Convert to raw format (r || s)
+     * Convert to raw format (r || s), as used by WebCrypto.
+     *
+     * @param componentLength The byte length of r and s, i.e. of the curve order (32 for
+     *   P-256, 48 for P-384, 66 for P-521). Pass it whenever it is known: r and s are often
+     *   shorter than that, and without it they are only padded to the longer of the two.
      */
-    toRaw(): Uint8Array<ArrayBuffer> {
+    toRaw(componentLength?: number): Uint8Array<ArrayBuffer> {
         let r = this.r.toUnsigned()
         let s = this.s.toUnsigned()
-        const fixedLength = Math.max(r.length, s.length)
+        const fixedLength = Math.max(r.length, s.length, componentLength ?? 0)
 
         // Pad with leading zeros
         r = padUint8Array(r, fixedLength)

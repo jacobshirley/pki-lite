@@ -387,10 +387,16 @@ export class SignatureAlgorithmIdentifier extends AlgorithmIdentifier {
         // ECDSA signatures are DER in certificates/CMS but raw r||s for WebCrypto. Decide
         // from the key's algorithm: getPublicKey() would throw for key types it does not
         // model (Ed25519, RSA-PSS, ...).
-        signature =
-            publicKeyInfo.algorithm.algorithm.value === OIDs.EC.PUBLIC_KEY
-                ? ECDSASignature.fromDer(signatureBytes).toRaw()
-                : signatureBytes
+        if (publicKeyInfo.algorithm.algorithm.value === OIDs.EC.PUBLIC_KEY) {
+            // r and s are as long as a coordinate of the public point (04 || X || Y, or
+            // 02/03 || X compressed); DER drops their leading zero bytes
+            const point = publicKeyInfo.subjectPublicKey.bytes
+            const coordinate =
+                point[0] === 0x04 ? (point.length - 1) / 2 : point.length - 1
+            signature = ECDSASignature.fromDer(signatureBytes).toRaw(coordinate)
+        } else {
+            signature = signatureBytes
+        }
 
         return await crypto.verify(
             data instanceof Uint8Array ? data : data.toDer(),

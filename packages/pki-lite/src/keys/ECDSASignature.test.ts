@@ -138,6 +138,18 @@ describe('ECDSASignature', () => {
         expect(raw.slice(r.length)).toEqual(s)
     })
 
+    test('toRaw pads r and s to the curve size when given', () => {
+        // P-521: 66-byte components; DER drops leading zero bytes from both
+        const short = new Uint8Array(65).fill(0x11)
+        const signature = new ECDSASignature({ r: short, s: short })
+        expect(signature.toRaw().length).toBe(130) // only as long as the longer value
+        const raw = signature.toRaw(66)
+        expect(raw.length).toBe(132)
+        expect(raw[0]).toBe(0)
+        expect(raw[66]).toBe(0)
+        expect(raw.slice(1, 66)).toEqual(short)
+    })
+
     test('fromRaw correctly parses concatenated format', () => {
         // Create raw signature (r || s)
         const raw = new Uint8Array(r.length + s.length)
