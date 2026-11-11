@@ -74,11 +74,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             (c === 'signedData:verify' && /sd_ed25519/.test(t)),
     },
     {
-        id: 'CRL-GENERALIZEDTIME-ROUNDTRIP',
-        why: 'A CRL whose thisUpdate/nextUpdate are GeneralizedTime (year >= 2050) is re-encoded differently.',
-        match: (t, c) => c === 'roundtrip' && t === 'crl/crl_gentime.der',
-    },
-    {
         id: 'ECPRIVATEKEY-EXPLICIT-PARAMS',
         why: 'ECPrivateKey cannot parse explicit (non-namedCurve) EC parameters.',
         match: (t, c) =>

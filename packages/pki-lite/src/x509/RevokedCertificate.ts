@@ -1,3 +1,4 @@
+import { encodeTime } from './Time.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { Extension } from './Extension.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -50,11 +51,7 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
         )
 
         // Revocation Date
-        values.push(
-            new asn1js.UTCTime({
-                valueDate: this.revocationDate,
-            }),
-        )
+        values.push(encodeTime(this.revocationDate))
 
         // CRL Entry Extensions (optional)
         if (this.crlEntryExtensions && this.crlEntryExtensions.length > 0) {

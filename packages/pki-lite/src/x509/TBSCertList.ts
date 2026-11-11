@@ -1,3 +1,4 @@
+import { encodeTime } from './Time.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Name } from './Name.js'
@@ -74,19 +75,11 @@ export class TBSCertList extends PkiBase<TBSCertList> {
         tbsValues.push(this.issuer.toAsn1())
 
         // ThisUpdate
-        tbsValues.push(
-            new asn1js.UTCTime({
-                valueDate: this.thisUpdate,
-            }),
-        )
+        tbsValues.push(encodeTime(this.thisUpdate))
 
         // NextUpdate (optional)
         if (this.nextUpdate) {
-            tbsValues.push(
-                new asn1js.UTCTime({
-                    valueDate: this.nextUpdate,
-                }),
-            )
+            tbsValues.push(encodeTime(this.nextUpdate))
         }
 
         // RevokedCertificates (optional)
