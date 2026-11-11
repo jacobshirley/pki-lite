@@ -93,6 +93,7 @@ export class CCMParameters extends PkiBase<CCMParameters> {
      * @returns The ASN.1 representation of the CCMParameters
      */
     toAsn1(): Asn1BaseBlock {
+        // aes-ICVlen is written even at its DEFAULT of 12: OpenSSL requires it
         const sequence = new asn1js.Sequence()
 
         // Add nonce

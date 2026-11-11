@@ -18,7 +18,7 @@ describe('GCMParameters', () => {
 
         // Verify properties
         expect(decoded.aesNonce.bytes).toEqual(nonce)
-        expect(decoded.aesICVlen.get()).toEqual(12) // Default value is not encoded
+        expect(decoded.aesICVlen.get()).toEqual(12)
     })
 
     test('GCMParameters should create and encode parameters with explicit ICV length', () => {
@@ -108,5 +108,24 @@ describe('GCMParameters', () => {
         expect(
             () => new GCMParameters({ aesNonce: validNonce, aesICVlen: 17 }),
         ).toThrow(/ICV length must be one of/)
+    })
+
+    test('writes aes-ICVlen even at its DEFAULT of 12', () => {
+        // RFC 5084 makes aes-ICVlen DEFAULT 12, which DER would omit, but OpenSSL
+        // decodes these parameters with a fixed OCTET STRING + INTEGER template
+        // and rejects them without it (see test/node/openssl-compat.test.ts)
+        const nonce = new Uint8Array(12)
+        expect(new GCMParameters({ aesNonce: nonce }).toDer()).toEqual(
+            new Uint8Array([
+                0x30,
+                0x11,
+                0x04,
+                0x0c,
+                ...nonce,
+                0x02,
+                0x01,
+                0x0c,
+            ]),
+        )
     })
 })
