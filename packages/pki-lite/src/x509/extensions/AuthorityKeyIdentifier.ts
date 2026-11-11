@@ -84,8 +84,9 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
                     } else {
                         keyIdentifier = new KeyIdentifier({
                             bytes: new Uint8Array(
-                                (element as asn1js.Primitive).valueBlock
-                                    .valueHexView,
+                                (
+                                    element as asn1js.Primitive
+                                ).valueBlock.valueHexView,
                             ),
                         })
                     }
@@ -107,8 +108,9 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
                     } else {
                         authorityCertSerialNumber = new Integer({
                             value: new Uint8Array(
-                                (element as asn1js.Primitive).valueBlock
-                                    .valueHexView,
+                                (
+                                    element as asn1js.Primitive
+                                ).valueBlock.valueHexView,
                             ),
                         })
                     }

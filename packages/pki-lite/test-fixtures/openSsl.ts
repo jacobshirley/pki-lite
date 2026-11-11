@@ -130,6 +130,8 @@ export async function opensslCmsDecrypt(options: {
     recipientPrivateKeyPem: string
 }): Promise<{
     success: boolean
+    /** The decrypted content, when decryption succeeded */
+    plaintext?: Uint8Array
     error?: string
 }> {
     const { envelopedData, recipientCertificatePem, recipientPrivateKeyPem } =
@@ -160,10 +162,13 @@ export async function opensslCmsDecrypt(options: {
     ]
 
     try {
-        const output = await runOpenSSL(args, tmpFolder)
+        await runOpenSSL(args, tmpFolder)
 
         return {
             success: true,
+            plaintext: new Uint8Array(
+                fs.readFileSync(`${tmpFolder}/decrypted.bin`),
+            ),
         }
     } catch (error) {
         return {

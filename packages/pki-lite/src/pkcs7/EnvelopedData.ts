@@ -270,7 +270,7 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
             // e.g. AuthEnvelopedData (RFC 5083), whose `mac` follows the content info.
             // Parsing it as EnvelopedData would silently drop that data.
             throw new Asn1ParseError(
-                'Invalid ASN.1 structure: unexpected element after EnvelopedData fields (is this an AuthEnvelopedData? that type is not supported)',
+                'Invalid ASN.1 structure: unexpected element after EnvelopedData fields (if this is an AuthEnvelopedData, parse it with AuthEnvelopedData)',
             )
         }
 

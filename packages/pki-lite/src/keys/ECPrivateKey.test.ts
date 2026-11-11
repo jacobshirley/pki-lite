@@ -274,4 +274,34 @@ describe('ECPrivateKey', () => {
             'Invalid EC private key version: expected 1, got 2',
         )
     })
+
+    describe('parameters that are not a named curve', () => {
+        const key = (parameters: asn1js.BaseBlock) =>
+            new asn1js.Sequence({
+                value: [
+                    new asn1js.Integer({ value: 1 }),
+                    new asn1js.OctetString({
+                        valueHex: new Uint8Array([1, 2, 3]),
+                    }),
+                    new asn1js.Constructed({
+                        idBlock: { tagClass: 3, tagNumber: 0 },
+                        value: [parameters],
+                    }),
+                ],
+            })
+
+        test('keeps implicitCurve NULL so the key round-trips', () => {
+            const asn1 = key(new asn1js.Null())
+            const parsed = ECPrivateKey.fromAsn1(asn1)
+            expect(parsed.namedCurve).toBeUndefined()
+            expect(parsed.otherParameters).toBeDefined()
+            expect(parsed.toDer()).toEqual(new Uint8Array(asn1.toBER()))
+        })
+
+        test('rejects parameters of any other type', () => {
+            expect(() =>
+                ECPrivateKey.fromAsn1(key(new asn1js.Integer({ value: 5 }))),
+            ).toThrow('parameters must be an OBJECT IDENTIFIER')
+        })
+    })
 })

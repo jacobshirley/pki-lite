@@ -373,4 +373,70 @@ describe('WebCryptoExtendedProvider', () => {
             expect(decrypted).toBeInstanceOf(Uint8Array<ArrayBuffer>)
         })
     })
+
+    describe('DES-EDE3-CBC', () => {
+        const key = new Uint8Array(24).map((_, i) => i + 1)
+        const nonce = new Uint8Array(8).map((_, i) => 0xa0 + i)
+
+        it('round-trips and pads to the 8-byte block size', async () => {
+            const data = new TextEncoder().encode('triple des in cbc mode')
+            const params = {
+                type: 'DES_EDE3_CBC' as const,
+                params: { nonce },
+            }
+            const encrypted = await provider.encryptSymmetric(data, key, params)
+            expect(encrypted.length % 8).toBe(0)
+            expect(encrypted.length).toBeGreaterThan(data.length)
+            expect(
+                await provider.decryptSymmetric(encrypted, key, params),
+            ).toEqual(data)
+        })
+
+        it('rejects a key that is not 24 bytes', async () => {
+            await expect(
+                provider.encryptSymmetric(
+                    new Uint8Array(8),
+                    new Uint8Array(16),
+                    {
+                        type: 'DES_EDE3_CBC',
+                        params: { nonce },
+                    },
+                ),
+            ).rejects.toThrow('24-byte key')
+        })
+
+        it('generates 24-byte keys', () => {
+            expect(
+                provider.generateSymmetricKey({
+                    type: 'DES_EDE3_CBC',
+                    params: { nonce },
+                }),
+            ).toHaveLength(24)
+        })
+
+        it('maps to and from the des-ede3-cbc algorithm identifier', () => {
+            const identifier = provider.contentEncryptionAlgorithm({
+                type: 'DES_EDE3_CBC',
+                params: { nonce },
+            })
+            expect(identifier.algorithm.value).toBe('1.2.840.113549.3.7')
+            expect(
+                provider.toSymmetricEncryptionAlgorithmParams(identifier),
+            ).toEqual({ type: 'DES_EDE3_CBC', params: { nonce } })
+        })
+    })
+
+    describe('rsaEncryption key transport', () => {
+        it('maps the rsaEncryption OID to the PKCS#1 v1.5 scheme', () => {
+            const identifier = provider.keyEncryptionAlgorithm({
+                type: 'RSASSA_PKCS1_v1_5',
+                params: { hash: 'SHA-256' },
+            })
+            // rsaEncryption, not a signature OID such as sha256WithRSAEncryption
+            expect(identifier.algorithm.value).toBe('1.2.840.113549.1.1.1')
+            expect(
+                provider.toAsymmetricEncryptionAlgorithmParams(identifier).type,
+            ).toBe('RSASSA_PKCS1_v1_5')
+        })
+    })
 })

@@ -6,9 +6,14 @@ import {
     pemToDer,
 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { Any } from '../asn1/Any.js'
 
 /**
  * Represents an EC private key according to RFC 5915.
+ *
+ * Only named curves are interpreted. Explicit (`specifiedCurve`) or `implicitCurve`
+ * parameters, which RFC 5480 deprecates, are kept as-is in {@link otherParameters} so the
+ * key can still be read and written back unchanged.
  *
  * ASN.1 Structure:
  * ```
@@ -38,6 +43,12 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
     namedCurve?: string
 
     /**
+     * The `parameters` value when it is not a named curve OID: an explicit
+     * `SpecifiedECDomain` SEQUENCE or `implicitCurve NULL`. Not interpreted.
+     */
+    otherParameters?: Any
+
+    /**
      * The key component (if included)
      */
     publicKey?: Uint8Array<ArrayBuffer>
@@ -52,12 +63,14 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
     constructor(options: {
         privateKey: Uint8Array<ArrayBuffer>
         namedCurve?: string
+        otherParameters?: Any
         publicKey?: Uint8Array<ArrayBuffer>
     }) {
         super()
-        const { privateKey, namedCurve, publicKey } = options
+        const { privateKey, namedCurve, otherParameters, publicKey } = options
         this.privateKey = privateKey
         this.namedCurve = namedCurve
+        this.otherParameters = otherParameters
         this.publicKey = publicKey
     }
 
@@ -70,18 +83,18 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
             new asn1js.OctetString({ valueHex: this.privateKey }),
         ]
 
-        // Add [0] parameters (namedCurve) if present
-        if (this.namedCurve) {
-            const namedCurveAsn1 = new asn1js.ObjectIdentifier({
-                value: this.namedCurve,
-            })
+        // Add [0] parameters if present: a named curve OID, or kept-as-is other parameters
+        const parameters = this.namedCurve
+            ? new asn1js.ObjectIdentifier({ value: this.namedCurve })
+            : this.otherParameters?.toAsn1()
+        if (parameters) {
             result.push(
                 new asn1js.Constructed({
                     idBlock: {
                         tagClass: 3, // CONTEXT-SPECIFIC
                         tagNumber: 0, // [0]
                     },
-                    value: [namedCurveAsn1],
+                    value: [parameters],
                 }),
             )
         }
@@ -151,6 +164,7 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
         const privateKey = new Uint8Array(values[1].valueBlock.valueHexView)
 
         let namedCurve: string | undefined
+        let otherParameters: Any | undefined
         let publicKey: Uint8Array<ArrayBuffer> | undefined
 
         // Optional parameters and publicKey
@@ -175,13 +189,19 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
                 }
 
                 const curveParam = value.valueBlock.value[0]
-                if (!(curveParam instanceof asn1js.ObjectIdentifier)) {
+                if (curveParam instanceof asn1js.ObjectIdentifier) {
+                    namedCurve = curveParam.valueBlock.toString()
+                } else if (
+                    curveParam instanceof asn1js.Sequence ||
+                    curveParam instanceof asn1js.Null
+                ) {
+                    // specifiedCurve / implicitCurve: keep, but do not interpret
+                    otherParameters = new Any({ derBytes: curveParam })
+                } else {
                     throw new Asn1ParseError(
-                        'Invalid ASN.1 structure: namedCurve must be an OBJECT IDENTIFIER',
+                        'Invalid ASN.1 structure: parameters must be an OBJECT IDENTIFIER (namedCurve), a SEQUENCE (specifiedCurve) or NULL (implicitCurve)',
                     )
                 }
-
-                namedCurve = curveParam.valueBlock.toString()
             } else if (tagNumber === 1) {
                 // [1] publicKey
                 // Parse the key bit string
@@ -206,7 +226,12 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
             }
         }
 
-        return new ECPrivateKey({ privateKey, namedCurve, publicKey })
+        return new ECPrivateKey({
+            privateKey,
+            namedCurve,
+            otherParameters,
+            publicKey,
+        })
     }
 
     /**

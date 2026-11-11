@@ -1,333 +1,270 @@
-import { Asn1BaseBlock, asn1js, PkiBase, PkiSet } from '../core/PkiBase.js'
-import { RecipientInfo } from './recipients/RecipientInfo.js'
-import { OriginatorInfo } from './recipients/OriginatorInfo.js'
-import { Attribute } from '../x509/Attribute.js'
-import { EncryptedContentInfo } from './EncryptedContentInfo.js'
-import { CMSVersion } from './CMSVersion.js'
+import { Asn1BaseBlock, asn1js, derToAsn1, PkiBase } from '../core/PkiBase.js'
 import { ContentInfo } from './ContentInfo.js'
 import { OIDs } from '../core/OIDs.js'
+import { OriginatorInfo } from './recipients/OriginatorInfo.js'
+import { RecipientInfo } from './recipients/RecipientInfo.js'
+import { KeyTransRecipientInfo } from './recipients/KeyTransRecipientInfo.js'
+import { EnvelopedData } from './EnvelopedData.js'
+import { EncryptedContentInfo } from './EncryptedContentInfo.js'
+import { Attribute } from '../x509/Attribute.js'
 import { Attributes } from '../x509/Attributes.js'
+import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
+import { CMSVersion } from './CMSVersion.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
-import { MessageAuthenticationCode } from './MessageAuthenticationCode.js'
+import { implicitTag, isContextTag } from '../core/tagging.js'
+import { getCryptoProvider } from '../core/crypto/provider.js'
+import { AuthEnvelopedDataBuilder } from '../core/builders/AuthEnvelopedDataBuilder.js'
 
 /**
- * Represents a set of authenticated attributes.
- *
- * @asn
- * ```asn
- * AuthAttributes ::= SET SIZE (1..MAX) OF Attribute
- * ```
- */
-const AuthAttributes = Attributes
-type AuthAttributes = Attributes
-
-/**
- * Represents a set of unauthenticated attributes.
- *
- * @asn
- * ```asn
- * UnauthAttributes ::= SET SIZE (1..MAX) OF Attribute
- * ```
- */
-const UnauthAttributes = Attributes
-type UnauthAttributes = Attributes
-
-/**
- * Represents a set of RecipientInfo structures.
- *
- * @asn
- * ```asn
- * RecipientInfos ::= SET SIZE (1..MAX) OF RecipientInfo
- * ```
- */
-class RecipientInfos extends PkiSet<RecipientInfo> {
-    static fromAsn1(asn1: Asn1BaseBlock): RecipientInfos {
-        if (!(asn1 instanceof asn1js.Set)) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected Set for RecipientInfos',
-            )
-        }
-
-        const recipients = asn1.valueBlock.value.map((recAsn1) =>
-            RecipientInfo.fromAsn1(recAsn1),
-        )
-
-        return new RecipientInfos(...recipients)
-    }
-}
-
-/**
- * Authenticated Enveloped Data
+ * Represents a CMS AuthEnvelopedData structure (RFC 5083), what
+ * `openssl cms -encrypt -aes-256-gcm` writes: EnvelopedData whose content is encrypted
+ * with an authenticated cipher (AES-GCM or AES-CCM). The authentication tag is the
+ * `mac` field and is not part of the encrypted content.
  *
  * @asn
  * ```asn
  * AuthEnvelopedData ::= SEQUENCE {
- *     version CMSVersion,
- *     originatorInfo [0] IMPLICIT OriginatorInfo OPTIONAL,
- *     recipientInfos RecipientInfos,
- *     authEncryptedContentInfo EncryptedContentInfo,
- *     authAttrs [1] IMPLICIT AuthAttributes OPTIONAL,
- *     mac MessageAuthenticationCode,
- *     unauthAttrs [2] IMPLICIT UnauthAttributes OPTIONAL
+ *      version CMSVersion,
+ *      originatorInfo [0] IMPLICIT OriginatorInfo OPTIONAL,
+ *      recipientInfos RecipientInfos,
+ *      authEncryptedContentInfo EncryptedContentInfo,
+ *      authAttrs [1] IMPLICIT AuthAttributes OPTIONAL,
+ *      mac MessageAuthenticationCode,
+ *      unauthAttrs [2] IMPLICIT UnauthAttributes OPTIONAL
  * }
  * ```
  */
 export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
-    /**
-     * Internal RecipientInfos class
-     */
-    static RecipientInfos = RecipientInfos
-
-    /**
-     * Internal AuthAttributes class
-     */
-    static AuthAttributes = AuthAttributes
-
-    /**
-     * Internal UnauthAttributes class
-     */
-    static UnauthAttributes = UnauthAttributes
-
-    /**
-     * Internal MessageAuthenticationCode class
-     */
-    static MessageAuthenticationCode = MessageAuthenticationCode
-
-    /**
-     * The version of the AuthEnvelopedData structure.
-     */
+    /** Always 0 (RFC 5083 2.1) */
     version: CMSVersion
-
-    /**
-     * Optional information about the originator.
-     */
     originatorInfo?: OriginatorInfo
-
-    /**
-     * A collection of per-recipient information.
-     */
-    recipientInfos: RecipientInfos
-
-    /**
-     * The authenticated encrypted content and associated parameters.
-     */
+    recipientInfos: InstanceType<typeof EnvelopedData.RecipientInfos>
+    /** The content, encrypted without its authentication tag */
     authEncryptedContentInfo: EncryptedContentInfo
+    /** Authenticated attributes: covered by the tag as additional authenticated data */
+    authAttrs?: Attributes
+    /** The authentication tag */
+    mac: Uint8Array<ArrayBuffer>
+    unauthAttrs?: Attributes
 
-    /**
-     * Optional authenticated attributes.
-     */
-    authAttrs?: AuthAttributes
-
-    /**
-     * The message authentication code.
-     */
-    mac: MessageAuthenticationCode
-
-    /**
-     * Optional unauthenticated attributes.
-     */
-    unauthAttrs?: UnauthAttributes
-
-    /**
-     * Creates a new AuthEnvelopedData instance.
-     */
     constructor(options: {
-        version: CMSVersion
+        version?: CMSVersion
         recipientInfos: RecipientInfo[]
         authEncryptedContentInfo: EncryptedContentInfo
-        mac: Uint8Array<ArrayBuffer> | MessageAuthenticationCode
+        mac: Uint8Array<ArrayBuffer>
         originatorInfo?: OriginatorInfo
         authAttrs?: Attribute[]
         unauthAttrs?: Attribute[]
     }) {
         super()
-
-        const {
-            version,
-            recipientInfos,
-            authEncryptedContentInfo,
-            mac,
-            originatorInfo,
-            authAttrs,
-            unauthAttrs,
-        } = options
-
-        this.version = version
-        this.recipientInfos = new RecipientInfos(...recipientInfos)
-        this.authEncryptedContentInfo = authEncryptedContentInfo
-        this.mac = new MessageAuthenticationCode({ bytes: mac })
-        this.originatorInfo = originatorInfo
-        this.authAttrs =
-            authAttrs && authAttrs.length > 0
-                ? new AuthAttributes(...authAttrs)
-                : undefined
-        this.unauthAttrs =
-            unauthAttrs && unauthAttrs.length > 0
-                ? new UnauthAttributes(...unauthAttrs)
-                : undefined
+        this.version = options.version ?? 0
+        this.originatorInfo = options.originatorInfo
+        this.recipientInfos = new EnvelopedData.RecipientInfos(
+            ...options.recipientInfos,
+        )
+        this.authEncryptedContentInfo = options.authEncryptedContentInfo
+        this.authAttrs = options.authAttrs?.length
+            ? new Attributes(...options.authAttrs)
+            : undefined
+        this.mac = options.mac
+        this.unauthAttrs = options.unauthAttrs?.length
+            ? new Attributes(...options.unauthAttrs)
+            : undefined
     }
 
-    /**
-     * Converts the AuthEnvelopedData to an ASN.1 structure.
-     */
     toAsn1(): Asn1BaseBlock {
-        const values = []
-
-        // Version is always present
-        values.push(new asn1js.Integer({ value: this.version }))
-
-        // Add originatorInfo if present
+        const values: Asn1BaseBlock[] = [
+            new asn1js.Integer({ value: this.version }),
+        ]
         if (this.originatorInfo) {
-            const asn1 = this.originatorInfo.toAsn1()
-            asn1.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            asn1.idBlock.tagNumber = 0 // [0]
-            values.push(asn1)
+            values.push(implicitTag(this.originatorInfo.toAsn1(), 0))
         }
-
-        // RecipientInfos is always present
         values.push(this.recipientInfos.toAsn1())
-
-        // AuthEncryptedContentInfo is always present
         values.push(this.authEncryptedContentInfo.toAsn1())
-
-        // Add authAttrs if present
-        if (this.authAttrs && this.authAttrs.length > 0) {
-            const asn1 = this.authAttrs.toAsn1()
-            asn1.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            asn1.idBlock.tagNumber = 1 // [1]
-            values.push(asn1)
+        if (this.authAttrs) {
+            values.push(implicitTag(this.authAttrs.toAsn1(), 1))
         }
-
-        // MAC is always present
-        values.push(this.mac.toAsn1())
-
-        // Add unauthAttrs if present
-        if (this.unauthAttrs && this.unauthAttrs.length > 0) {
-            const asn1 = this.unauthAttrs.toAsn1()
-            asn1.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            asn1.idBlock.tagNumber = 2 // [2]
-            values.push(asn1)
+        values.push(new asn1js.OctetString({ valueHex: this.mac }))
+        if (this.unauthAttrs) {
+            values.push(implicitTag(this.unauthAttrs.toAsn1(), 2))
         }
-
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return new asn1js.Sequence({ value: values })
     }
 
-    /**
-     * Creates an AuthEnvelopedData from an ASN.1 structure.
-     */
     static fromAsn1(asn1: Asn1BaseBlock): AuthEnvelopedData {
         if (!(asn1 instanceof asn1js.Sequence)) {
             throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected Sequence',
+                'Invalid ASN.1 structure: expected Sequence for AuthEnvelopedData',
             )
         }
-
         const values = asn1.valueBlock.value
-        if (values.length < 4) {
-            throw new Asn1ParseError(
-                `Invalid ASN.1 structure: expected at least 4 elements, got ${values.length}`,
-            )
-        }
+        let index = 0
 
-        let currentIndex = 0
-
-        // Version - always first
-        if (!(values[currentIndex] instanceof asn1js.Integer)) {
+        const version = values[index]
+        if (!(version instanceof asn1js.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Integer for version',
             )
         }
+        index++
 
-        const version = (values[currentIndex] as asn1js.Integer).valueBlock
-            .valueDec
-
-        currentIndex++
-
-        // OriginatorInfo - optional [0]
         let originatorInfo: OriginatorInfo | undefined
-        if (
-            currentIndex < values.length &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
-            values[currentIndex].idBlock.tagNumber === 0 // [0]
-        ) {
-            const originatorInfoAsn1 = (
-                values[currentIndex] as asn1js.Constructed
-            ).valueBlock.value[0]
-            originatorInfo = OriginatorInfo.fromAsn1(originatorInfoAsn1)
-            currentIndex++
+        if (values[index] && isContextTag(values[index], 0)) {
+            // originatorInfo [0] IMPLICIT OriginatorInfo (a SEQUENCE)
+            originatorInfo = OriginatorInfo.fromAsn1(
+                new asn1js.Sequence({
+                    value: (values[index] as asn1js.Constructed).valueBlock
+                        .value,
+                }),
+            )
+            index++
         }
 
-        // RecipientInfos - required
-        const recipientInfosSet = values[currentIndex]
-        const recipientInfos = RecipientInfos.fromAsn1(recipientInfosSet)
-        currentIndex++
-
-        // AuthEncryptedContentInfo - required
-        if (currentIndex >= values.length) {
+        if (!values[index]) {
             throw new Asn1ParseError(
-                'Invalid ASN.1 structure: missing authEncryptedContentInfo',
+                'AuthEnvelopedData: missing recipientInfos',
+            )
+        }
+        const recipientInfos = EnvelopedData.RecipientInfos.fromAsn1(
+            values[index++],
+        )
+
+        if (!values[index]) {
+            throw new Asn1ParseError(
+                'AuthEnvelopedData: missing authEncryptedContentInfo',
             )
         }
         const authEncryptedContentInfo = EncryptedContentInfo.fromAsn1(
-            values[currentIndex],
+            values[index++],
         )
-        currentIndex++
 
-        // AuthAttrs - optional [1]
-        let authAttrs: AuthAttributes | undefined
-        if (
-            currentIndex < values.length &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
-            values[currentIndex].idBlock.tagNumber === 1 // [1]
-        ) {
-            const authAttrsAsn1 = (values[currentIndex] as asn1js.Constructed)
-                .valueBlock.value[0]
-            authAttrs = AuthAttributes.fromAsn1(authAttrsAsn1)
-            currentIndex++
+        let authAttrs: Attributes | undefined
+        if (values[index] && isContextTag(values[index], 1)) {
+            authAttrs = Attributes.fromAsn1(values[index++])
         }
 
-        // MAC - required
-        if (currentIndex >= values.length) {
-            throw new Asn1ParseError('Invalid ASN.1 structure: missing mac')
+        const macBlock = values[index++]
+        if (!(macBlock instanceof asn1js.OctetString)) {
+            throw new Asn1ParseError(
+                'AuthEnvelopedData: expected an OCTET STRING for mac',
+            )
         }
-        const mac = MessageAuthenticationCode.fromAsn1(values[currentIndex])
-        currentIndex++
+        const mac = new Uint8Array(macBlock.valueBlock.valueHexView)
 
-        // UnauthAttrs - optional [2]
-        let unauthAttrs: UnauthAttributes | undefined
-        if (
-            currentIndex < values.length &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
-            values[currentIndex].idBlock.tagNumber === 2 // [2]
-        ) {
-            const unauthAttrsAsn1 = (values[currentIndex] as asn1js.Constructed)
-                .valueBlock.value[0]
-            unauthAttrs = UnauthAttributes.fromAsn1(unauthAttrsAsn1)
+        let unauthAttrs: Attributes | undefined
+        if (values[index] && isContextTag(values[index], 2)) {
+            unauthAttrs = Attributes.fromAsn1(values[index++])
+        }
+
+        if (index < values.length) {
+            throw new Asn1ParseError(
+                'Invalid ASN.1 structure: unexpected element after AuthEnvelopedData fields',
+            )
         }
 
         return new AuthEnvelopedData({
-            version,
-            recipientInfos,
-            authEncryptedContentInfo,
-            mac,
+            version: version.valueBlock.valueDec,
             originatorInfo,
-            authAttrs,
-            unauthAttrs,
+            recipientInfos: [...recipientInfos],
+            authEncryptedContentInfo,
+            authAttrs: authAttrs ? [...authAttrs] : undefined,
+            mac,
+            unauthAttrs: unauthAttrs ? [...unauthAttrs] : undefined,
         })
     }
 
-    /**
-     * Wraps this AuthEnvelopedData in a ContentInfo structure.
-     */
+    static fromDer(der: Uint8Array<ArrayBuffer>): AuthEnvelopedData {
+        return AuthEnvelopedData.fromAsn1(derToAsn1(der))
+    }
+
+    static fromCms(
+        cms: ContentInfo | Uint8Array<ArrayBuffer>,
+    ): AuthEnvelopedData {
+        if (cms instanceof Uint8Array) {
+            cms = ContentInfo.fromDer(cms)
+        }
+        if (cms.contentType.toString() !== OIDs.PKCS7.AUTH_ENVELOPED_DATA) {
+            throw new Asn1ParseError(
+                `Invalid content type: expected ${OIDs.PKCS7.AUTH_ENVELOPED_DATA}, got ${cms.contentType}`,
+            )
+        }
+        if (!cms.content) {
+            throw new Error('ContentInfo has no content')
+        }
+        return cms.content.parseAs(AuthEnvelopedData)
+    }
+
+    static builder() {
+        return new AuthEnvelopedDataBuilder()
+    }
+
     toCms(): ContentInfo {
         return new ContentInfo({
             contentType: OIDs.PKCS7.AUTH_ENVELOPED_DATA,
             content: this,
         })
+    }
+
+    /**
+     * Decrypts and authenticates the content with the key of a key-transport recipient.
+     * Fails if the authentication tag does not match.
+     */
+    async decrypt(
+        privateKey: PrivateKeyInfo,
+    ): Promise<Uint8Array<ArrayBuffer>> {
+        const ciphertext = this.authEncryptedContentInfo.encryptedContent
+        if (!ciphertext) {
+            throw new Error('Failed to retrieve encrypted content')
+        }
+
+        let contentKey: Uint8Array<ArrayBuffer> | undefined
+        let lastError: unknown
+        for (const recipientInfo of this.recipientInfos) {
+            if (!(recipientInfo instanceof KeyTransRecipientInfo)) continue
+            try {
+                contentKey = await recipientInfo.keyEncryptionAlgorithm.decrypt(
+                    recipientInfo.encryptedKey,
+                    privateKey,
+                )
+                break
+            } catch (e) {
+                // Expected when the recipient belongs to a different key
+                lastError = e
+            }
+        }
+        if (!contentKey) {
+            throw new Error('Failed to decrypt key', { cause: lastError })
+        }
+
+        const algorithm =
+            this.authEncryptedContentInfo.contentEncryptionAlgorithm.toSymmetricEncryptionAlgorithmParams()
+        if (
+            algorithm.type !== 'AES_128_GCM' &&
+            algorithm.type !== 'AES_192_GCM' &&
+            algorithm.type !== 'AES_256_GCM'
+        ) {
+            throw new Error(
+                `Unsupported authenticated content encryption: ${algorithm.type} (only AES-GCM is supported)`,
+            )
+        }
+
+        // RFC 5083 2.2: the authenticated attributes, as a DER SET, are the AAD
+        const additionalData = this.authAttrs
+            ? this.authAttrs.toDer()
+            : undefined
+
+        // WebCrypto expects the tag appended to the ciphertext
+        const sealed = new Uint8Array(ciphertext.bytes.length + this.mac.length)
+        sealed.set(ciphertext.bytes, 0)
+        sealed.set(this.mac, ciphertext.bytes.length)
+
+        return await getCryptoProvider().decryptSymmetric(sealed, contentKey, {
+            type: algorithm.type,
+            params: {
+                ...algorithm.params,
+                icvLen: this.mac.length,
+                ...(additionalData ? { additionalData } : {}),
+            },
+        } as typeof algorithm)
     }
 }
