@@ -1,4 +1,5 @@
-import { Asn1BaseBlock } from './PkiBase.js'
+import { Asn1BaseBlock, asn1js } from './PkiBase.js'
+import { Asn1ParseError } from './errors/Asn1ParseError.js'
 
 /**
  * Re-tags a block with a context-specific tag, i.e. applies an IMPLICIT tag.
@@ -24,3 +25,17 @@ export function implicitTag<T extends Asn1BaseBlock>(
 /** Whether a block carries the context-specific tag `[tagNumber]`. */
 export const isContextTag = (asn1: Asn1BaseBlock, tagNumber: number) =>
     asn1.idBlock.tagClass === 3 && asn1.idBlock.tagNumber === tagNumber
+
+/**
+ * Reads an IMPLICIT `[n]` tag over a SEQUENCE type back as the SEQUENCE: the parsed
+ * context-tagged block is a plain constructed block holding the SEQUENCE's elements.
+ */
+export function implicitSequence(block: Asn1BaseBlock): asn1js.Sequence {
+    const value = (block.valueBlock as { value?: Asn1BaseBlock[] }).value
+    if (!block.idBlock.isConstructed || !Array.isArray(value)) {
+        throw new Asn1ParseError(
+            'Invalid ASN.1 structure: expected a constructed value',
+        )
+    }
+    return new asn1js.Sequence({ value })
+}

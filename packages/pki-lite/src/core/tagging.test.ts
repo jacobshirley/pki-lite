@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { implicitTag, isContextTag } from './tagging.js'
+import { implicitSequence, implicitTag, isContextTag } from './tagging.js'
 import { asn1js, derToAsn1 } from './PkiBase.js'
 
 const hex = (b: ArrayBuffer | Uint8Array) =>
@@ -52,14 +52,30 @@ describe('isContextTag', () => {
     })
 
     test('recognises parsed implicit and explicit tags', () => {
-        expect(isContextTag(derToAsn1(new Uint8Array([0x80, 0x01, 0x05])), 0)).toBe(
-            true,
-        )
+        expect(
+            isContextTag(derToAsn1(new Uint8Array([0x80, 0x01, 0x05])), 0),
+        ).toBe(true)
         expect(
             isContextTag(
                 derToAsn1(new Uint8Array([0xa2, 0x03, 0x02, 0x01, 0x05])),
                 2,
             ),
         ).toBe(true)
+    })
+})
+
+describe('implicitSequence', () => {
+    test('reads a parsed [n] IMPLICIT SEQUENCE back as a SEQUENCE', () => {
+        // [3] IMPLICIT SEQUENCE { INTEGER 5 }
+        const parsed = derToAsn1(new Uint8Array([0xa3, 0x03, 0x02, 0x01, 0x05]))
+        const seq = implicitSequence(parsed)
+        expect(seq).toBeInstanceOf(asn1js.Sequence)
+        expect(hex(seq.toBER(false))).toBe('3003020105')
+    })
+
+    test('rejects a primitive', () => {
+        expect(() =>
+            implicitSequence(derToAsn1(new Uint8Array([0x83, 0x01, 0x05]))),
+        ).toThrow('expected a constructed value')
     })
 })
