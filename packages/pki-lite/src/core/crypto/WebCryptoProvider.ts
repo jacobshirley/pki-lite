@@ -29,15 +29,7 @@ import type {
 } from './types.js'
 import { PBKDF2Params } from '../../pkcs5/PBKDF2Params.js'
 import { pkcs12Derive } from './utils.js'
-
-/** A non-negative integer as big-endian bytes (for WebCrypto's publicExponent). */
-function bigEndianBytes(value: number): Uint8Array<ArrayBuffer> {
-    const bytes: number[] = []
-    for (let rest = value; rest > 0; rest = Math.floor(rest / 256)) {
-        bytes.unshift(rest % 256)
-    }
-    return new Uint8Array(bytes.length ? bytes : [0])
-}
+import { bigEndianBytes } from '../utils.js'
 
 /** The AES key size, in bits, that each AES content-encryption OID stands for. */
 const AES_KEY_BITS: Record<string, 128 | 192 | 256> = Object.fromEntries(

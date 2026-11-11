@@ -25,6 +25,21 @@ export function padUint8Array(
 }
 
 /**
+ * Converts a non-negative integer to its minimal big-endian bytes (0 -> [0]), e.g. for
+ * WebCrypto's publicExponent: 65537 -> [0x01, 0x00, 0x01].
+ *
+ * @param value The integer to convert
+ * @returns The big-endian bytes
+ */
+export function bigEndianBytes(value: number): Uint8Array<ArrayBuffer> {
+    const bytes: number[] = []
+    for (let rest = value; rest > 0; rest = Math.floor(rest / 256)) {
+        bytes.unshift(rest % 256)
+    }
+    return new Uint8Array(bytes.length ? bytes : [0])
+}
+
+/**
  * Converts a hex string to a Uint8Array<ArrayBuffer>
  *
  * @param hex The hex string to convert (can optionally start with '0x')
