@@ -4,7 +4,7 @@ import { CertID } from './CertID.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { Extension } from '../x509/Extension.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der } from '../core/PkiBase.js'
 
 describe('Request', () => {
     const createTestCertID = () => {
@@ -136,7 +136,7 @@ describe('Request', () => {
     })
 
     it('should throw error on invalid ASN.1 structure', () => {
-        const invalidAsn1 = {} as any
+        const invalidAsn1 = der.integer(1) // not a SEQUENCE
 
         expect(() => Request.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -144,13 +144,11 @@ describe('Request', () => {
     })
 
     it('should throw error on wrong number of elements', () => {
-        const invalidAsn1 = {
-            constructor: asn1js.Sequence,
-            valueBlock: {
-                value: [1, 2, 3], // 3 elements instead of 1 or 2
-            },
-        } as any
-        Object.setPrototypeOf(invalidAsn1, asn1js.Sequence.prototype)
+        const invalidAsn1 = der.sequence([
+            der.integer(1),
+            der.integer(2),
+            der.integer(3),
+        ]) // 3 elements instead of 1 or 2
 
         expect(() => Request.fromAsn1(invalidAsn1)).toThrow(
             'Invalid Request: expected 1 or 2 elements',
@@ -161,17 +159,14 @@ describe('Request', () => {
         const certID = createTestCertID()
         const validCertIDAsn1 = certID.toAsn1()
 
-        const invalidExtensionsContainer = new asn1js.Constructed({
-            idBlock: {
-                tagClass: 3, // CONTEXT-SPECIFIC
-                tagNumber: 1, // [1] - wrong tag, should be [0]
-            },
-            value: [new asn1js.Sequence({ value: [] })],
-        })
+        const invalidExtensionsContainer = der.constructed(1, [
+            der.sequence([]),
+        ])
 
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [validCertIDAsn1, invalidExtensionsContainer],
-        })
+        const invalidAsn1 = der.sequence([
+            validCertIDAsn1,
+            invalidExtensionsContainer,
+        ])
 
         expect(() => Request.fromAsn1(invalidAsn1)).toThrow(
             'Invalid Request: expected [0] tag for singleRequestExtensions',
@@ -190,7 +185,7 @@ describe('Request', () => {
 
         // When converting to ASN.1, empty extensions should not be included
         const asn1 = request.toAsn1()
-        const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value).toHaveLength(1) // Only certID, no extensions
+        const sequence = asn1
+        expect(sequence.children).toHaveLength(1) // Only certID, no extensions
     })
 })

@@ -92,7 +92,7 @@ describe('CertStatus', () => {
         it('still parses the SEQUENCE-wrapped form written by earlier versions', () => {
             // [1] { SEQUENCE { GeneralizedTime } }
             const legacy =
-                'a111' +
+                'a113' +
                 '3011' +
                 '180f' +
                 toHex(new TextEncoder().encode('20261111124129Z'))

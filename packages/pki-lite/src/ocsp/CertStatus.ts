@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
 /**
@@ -52,107 +58,78 @@ export class CertStatus extends PkiBase<CertStatus> {
         })
     }
 
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         if (this.status === 'good') {
-            return new asn1js.Primitive({
-                idBlock: {
-                    tagClass: 3, // CONTEXT-SPECIFIC
-                    tagNumber: 0, // [0]
-                },
-                lenBlock: { length: 1 },
-            })
+            // good [0] IMPLICIT NULL
+            return der.nullValue().implicit(0)
         } else if (this.status === 'revoked') {
-            const values: asn1js.AsnType[] = [
-                new asn1js.GeneralizedTime({
-                    valueDate: this.revocationTime || new Date(),
-                }),
+            const values: Asn1Node[] = [
+                der.generalizedTime(this.revocationTime || new Date()),
             ]
 
             if (this.revocationReason !== undefined) {
                 values.push(
-                    new asn1js.Constructed({
-                        idBlock: {
-                            tagClass: 3, // CONTEXT-SPECIFIC
-                            tagNumber: 0, // [0]
-                        },
-                        value: [
-                            new asn1js.Enumerated({
-                                value: this.revocationReason,
-                            }),
-                        ],
-                    }),
+                    der.constructed(0, [der.enumerated(this.revocationReason)]),
                 )
             }
 
             // revoked [1] IMPLICIT RevokedInfo: the RevokedInfo fields sit directly
             // inside the [1], there is no SEQUENCE in between.
-            return new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // CONTEXT-SPECIFIC
-                    tagNumber: 1, // [1]
-                },
-                value: values,
-            })
+            return der.constructed(1, values)
         } else {
             // unknown
-            return new asn1js.Primitive({
-                idBlock: {
-                    tagClass: 3, // CONTEXT-SPECIFIC
-                    tagNumber: 2, // [2]
-                },
-                lenBlock: { length: 1 },
-            })
+            // unknown [2] IMPLICIT NULL
+            return der.nullValue().implicit(2)
         }
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): CertStatus {
+    static fromAsn1(asn1: Asn1Node): CertStatus {
         if (
-            asn1 instanceof asn1js.Primitive &&
-            asn1.idBlock.tagClass === 3 &&
-            asn1.idBlock.tagNumber === 0
+            !asn1.constructed &&
+            asn1.tagClass === TagClass.Context &&
+            asn1.tag === 0
         ) {
             // good
             return CertStatus.createGood()
         } else if (
-            asn1 instanceof asn1js.Constructed &&
-            asn1.idBlock.tagClass === 3 &&
-            asn1.idBlock.tagNumber === 1
+            asn1?.constructed &&
+            asn1.tagClass === TagClass.Context &&
+            asn1.tag === 1
         ) {
             // revoked
             // The RevokedInfo fields are the children of [1]. Earlier versions of this
             // library wrapped them in an extra SEQUENCE, so accept that too.
-            const children = asn1.valueBlock.value
+            const children = asn1.children
             const [first] = children
             const fields =
-                children.length === 1 && first instanceof asn1js.Sequence
-                    ? first.valueBlock.value
+                children.length === 1 && first.is(UniversalTag.Sequence)
+                    ? first.children
                     : children
             const revocationTimeBlock = fields[0]
-            if (!(revocationTimeBlock instanceof asn1js.GeneralizedTime)) {
+            if (!revocationTimeBlock.is(UniversalTag.GeneralizedTime)) {
                 throw new Asn1ParseError(
                     'Invalid ASN.1 structure for CertStatus: revocationTime must be a GeneralizedTime',
                 )
             }
-            const revocationTime = revocationTimeBlock.toDate()
+            const revocationTime = der.readTime(revocationTimeBlock)
 
             let revocationReason: number | undefined = undefined
             if (fields.length > 1) {
-                const reasonContainer = fields[1] as asn1js.Constructed
+                const reasonContainer = fields[1]
                 if (
-                    reasonContainer.idBlock.tagClass === 3 &&
-                    reasonContainer.idBlock.tagNumber === 0
+                    reasonContainer.tagClass === TagClass.Context &&
+                    reasonContainer.tag === 0
                 ) {
-                    const reasonValue = reasonContainer.valueBlock
-                        .value[0] as asn1js.Enumerated
-                    revocationReason = reasonValue.valueBlock.valueDec
+                    const reasonValue = reasonContainer.children[0]
+                    revocationReason = der.readEnumerated(reasonValue)
                 }
             }
 
             return CertStatus.createRevoked(revocationTime, revocationReason)
         } else if (
-            asn1 instanceof asn1js.Primitive &&
-            asn1.idBlock.tagClass === 3 &&
-            asn1.idBlock.tagNumber === 2
+            !asn1.constructed &&
+            asn1.tagClass === TagClass.Context &&
+            asn1.tag === 2
         ) {
             // unknown
             return CertStatus.createUnknown()

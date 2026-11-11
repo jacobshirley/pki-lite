@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { OCSPResponse } from './OCSPResponse.js'
 import { ResponseBytes } from './ResponseBytes.js'
 import { OCSPResponseStatus } from './OCSPResponseStatus.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, derToAsn1 } from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { BasicOCSPResponse } from './BasicOCSPResponse.js'
 import { ResponseData } from './ResponseData.js'
@@ -73,7 +73,7 @@ describe('OCSPResponse', () => {
             der.byteOffset,
             der.byteOffset + der.byteLength,
         )
-        const asn1 = asn1js.fromBER(arrayBuffer as ArrayBuffer).result
+        const asn1 = derToAsn1(arrayBuffer as ArrayBuffer)
         const parsed = OCSPResponse.fromAsn1(asn1)
 
         expect(parsed.responseStatus).toEqual(responseStatus)
