@@ -1,9 +1,9 @@
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
     derToAsn1,
     PkiSequence,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { SafeBag } from './SafeBag.js'
 
@@ -16,14 +16,13 @@ import { SafeBag } from './SafeBag.js'
  * ```
  */
 export class SafeContents extends PkiSequence<SafeBag> {
-    static fromAsn1(asn1: Asn1BaseBlock): SafeContents {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): SafeContents {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
-                'SafeContents: expected SEQUENCE but got ' +
-                    asn1.constructor.name,
+                'SafeContents: expected SEQUENCE but got ' + asn1.describe(),
             )
         }
-        const bags = asn1.valueBlock.value.map((x) => SafeBag.fromAsn1(x))
+        const bags = asn1.children.map((x) => SafeBag.fromAsn1(x))
         return new SafeContents(...bags)
     }
 

@@ -1,10 +1,11 @@
 import { ContentInfo } from '../pkcs7/ContentInfo.js'
 import {
-    Asn1BaseBlock,
-    asn1js,
-    PkiBase,
+    Asn1Node,
+    der,
     derToAsn1,
     pemToDer,
+    PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { MacData } from './MacData.js'
@@ -105,31 +106,31 @@ export class PFX extends PkiBase<PFX> {
      *
      * @returns The ASN.1 SEQUENCE structure
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
-            new asn1js.Integer({ value: this.version }),
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [
+            der.integer(this.version),
             this.authSafe.toAsn1(),
         ]
         if (this.macData) {
             values.push(this.macData.toAsn1())
         }
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): PFX {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): PFX {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('PFX: expected SEQUENCE')
         }
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 2 || values.length > 3) {
             throw new Asn1ParseError('PFX: expected 2 or 3 elements')
         }
         const ver = values[0]
         const ci = values[1]
-        if (!(ver instanceof asn1js.Integer)) {
+        if (!ver.is(UniversalTag.Integer)) {
             throw new Asn1ParseError('PFX: version must be INTEGER')
         }
-        const version = ver.valueBlock.valueDec
+        const version = der.readNumber(ver)
         const authSafe = ContentInfo.fromAsn1(ci)
         let macData: MacData | undefined
         if (values.length === 3) {
