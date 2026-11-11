@@ -69,6 +69,17 @@ class UnauthAttributes extends PkiSet<Attribute> {
  * ```
  */
 class RecipientInfos extends PkiSet<RecipientInfo> {
+    /**
+     * Encodes each RecipientInfo through its CHOICE so that kari [1], kekri [2],
+     * pwri [3] and ori [4] get their context tag (a bare SEQUENCE would be read as
+     * a KeyTransRecipientInfo).
+     */
+    toAsn1(): asn1js.Set {
+        return new asn1js.Set({
+            value: this.map((recipient) => RecipientInfo.toAsn1(recipient)),
+        })
+    }
+
     static fromAsn1(asn1: Asn1BaseBlock): RecipientInfos {
         if (!(asn1 instanceof asn1js.Set)) {
             throw new Asn1ParseError(

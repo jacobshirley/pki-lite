@@ -97,12 +97,25 @@ describe('ReasonFlags', () => {
         )
     })
 
-    it('should throw if BitString has no content', () => {
+    it('reads an empty BitString as no flags set', () => {
         const emptyBitString = new asn1js.BitString({
             valueHex: new ArrayBuffer(0),
         })
-        expect(() => ReasonFlags.fromAsn1(emptyBitString)).toThrow(
-            'ReasonFlags: BitString has no content',
-        )
+        const flags = ReasonFlags.fromAsn1(emptyBitString)
+        expect(flags.keyCompromise).toBe(false)
+        expect(flags.aACompromise).toBe(false)
+    })
+
+    it('encodes minimal DER: trailing zero bits are dropped', () => {
+        const hex = (f: ReasonFlags) =>
+            Array.from(f.toDer(), (b) => b.toString(16).padStart(2, '0')).join(
+                '',
+            )
+        // keyCompromise (bit 1) -> 03 02 06 40
+        expect(hex(new ReasonFlags({ keyCompromise: true }))).toBe('03020640')
+        // aACompromise is bit 8, so a second byte is needed -> 03 03 07 00 80
+        expect(hex(new ReasonFlags({ aACompromise: true }))).toBe('0303070080')
+        // no bits -> empty BIT STRING
+        expect(hex(new ReasonFlags({}))).toBe('030100')
     })
 })

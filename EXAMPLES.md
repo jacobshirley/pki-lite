@@ -1599,3 +1599,990 @@ console.log(
     parsed.responseStatus.value === goodResponse.responseStatus.value,
 )
 ```
+
+## Authenticated encryption with CMS AuthEnvelopedData (AES-GCM)
+
+```typescript
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { asn1js } from 'pki-lite/core/PkiBase.js'
+import { AuthEnvelopedData } from 'pki-lite/pkcs7/AuthEnvelopedData.js'
+import { Attribute } from 'pki-lite/x509/Attribute.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+
+console.log('=== AuthEnvelopedData Example ===\n')
+
+// The recipient: an RSA key pair and a certificate
+const keyPair = await KeyGen.generateRsaPair({ keySize: 2048 })
+const certificate = await Certificate.builder()
+    .setSubject('CN=Recipient, O=Example Org')
+    .setPublicKey(keyPair.publicKey)
+    .setPrivateKey(keyPair.privateKey)
+    .setValidityDays(365)
+    .generateSerialNumber()
+    .selfSign()
+
+// Encrypt. Unlike EnvelopedData, the content is encrypted with AES-GCM, so any change
+// to it is detected on decryption. The default is AES-256-GCM with a 16-byte tag.
+const message = 'Confidential and tamper-evident'
+const authEnvelopedData = await AuthEnvelopedData.builder()
+    .setData(message)
+    .addRecipient({ certificate })
+    .build()
+
+const cipher = authEnvelopedData.authEncryptedContentInfo
+console.log('Cipher:', cipher.contentEncryptionAlgorithm.algorithm.friendlyName)
+console.log('Ciphertext bytes:', cipher.encryptedContent?.bytes.length)
+console.log('Authentication tag (mac) bytes:', authEnvelopedData.mac.length)
+
+// Send it as DER (this is what `openssl cms -decrypt -inform DER` reads) ...
+const der = authEnvelopedData.toCms().toDer()
+console.log('CMS size:', der.length, 'bytes')
+
+// ... and the recipient parses and decrypts it
+const received = AuthEnvelopedData.fromCms(der)
+const plaintext = await received.decrypt(keyPair.privateKey)
+console.log('Decrypted:', new TextDecoder().decode(plaintext))
+
+// Tampering is detected: flipping one bit of the ciphertext or the tag makes
+// decryption fail instead of returning altered data.
+const tampered = AuthEnvelopedData.fromCms(der)
+tampered.mac[0] ^= 1
+try {
+    await tampered.decrypt(keyPair.privateKey)
+    console.log('Tampering was NOT detected (unexpected)')
+} catch {
+    console.log('Tampered message rejected: authentication failed')
+}
+
+// Authenticated attributes travel with the message and are covered by the tag, so they
+// cannot be altered either. (A content-type attribute is added automatically.)
+const withAttributes = await AuthEnvelopedData.builder()
+    .setData('Message with authenticated metadata')
+    .addAuthenticatedAttribute(
+        new Attribute({
+            type: '1.2.3.4.5', // an application-specific OID
+            values: [new asn1js.Integer({ value: 42 })],
+        }),
+    )
+    .addRecipient({ certificate })
+    .build()
+
+console.log(
+    '\nAuthenticated attributes:',
+    [...(withAttributes.authAttrs ?? [])].map((attribute) =>
+        attribute.type.toString(),
+    ),
+)
+console.log(
+    'Decrypted:',
+    new TextDecoder().decode(await withAttributes.decrypt(keyPair.privateKey)),
+)
+
+// Choose the cipher and tag length yourself: AES-128-GCM with a 12-byte tag
+const compact = await AuthEnvelopedData.builder()
+    .setData('Shorter tag, smaller key')
+    .setContentEncryptionAlgorithm({
+        type: 'AES_128_GCM',
+        params: {
+            nonce: crypto.getRandomValues(new Uint8Array(12)),
+            icvLen: 12, // tag length in bytes (12 to 16)
+        },
+    })
+    .addRecipient({ certificate })
+    .build()
+console.log(
+    '\nAES-128-GCM, tag bytes:',
+    compact.mac.length,
+    '->',
+    new TextDecoder().decode(await compact.decrypt(keyPair.privateKey)),
+)
+```
+
+## Protecting a private key with a password (PKCS#8 EncryptedPrivateKeyInfo)
+
+```typescript
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { EncryptedPrivateKeyInfo } from 'pki-lite/keys/EncryptedPrivateKeyInfo.js'
+
+console.log('=== Encrypted Private Key Example ===\n')
+
+const { privateKey } = await KeyGen.generateEcPair({ namedCurve: 'P-256' })
+console.log('Plain PKCS#8 PEM header:', privateKey.toPem().split('\n')[0])
+
+// Encrypt with a password using PBES2 (PBKDF2-HMAC-SHA-256 + AES-256-CBC)
+const password = 'correct horse battery staple'
+const encrypted = await EncryptedPrivateKeyInfo.create(privateKey, password, {
+    iterations: 100_000, // more iterations make password guessing slower
+})
+
+// The PEM can be stored or shared: `openssl pkey -in key.pem` reads it
+const pem = encrypted.toPem()
+console.log('\nEncrypted PEM:')
+console.log(pem)
+
+// Load it back and decrypt
+const loaded = EncryptedPrivateKeyInfo.fromPem(pem)
+const decrypted = await loaded.decrypt(password)
+console.log(
+    '\nDecrypted key matches the original:',
+    decrypted.equals(privateKey),
+)
+
+// A wrong password fails instead of returning garbage
+try {
+    await loaded.decrypt('wrong password')
+    console.log('Wrong password was accepted (unexpected)')
+} catch {
+    console.log('Wrong password rejected')
+}
+```
+
+## Reading certificate extensions
+
+```typescript
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { OIDs } from 'pki-lite/core/OIDs.js'
+import { SubjectKeyIdentifier } from 'pki-lite/keys/SubjectKeyIdentifier.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+import { BasicConstraints } from 'pki-lite/x509/extensions/BasicConstraints.js'
+import { ExtKeyUsage } from 'pki-lite/x509/extensions/ExtKeyUsage.js'
+import { KeyUsage } from 'pki-lite/x509/extensions/KeyUsage.js'
+import { GeneralName } from 'pki-lite/x509/GeneralName.js'
+
+console.log('=== Certificate Extensions Example ===\n')
+
+// A certificate with a typical set of extensions (any certificate would do)
+const keyPair = await KeyGen.generateEcPair({ namedCurve: 'P-256' })
+const certificate = await Certificate.builder()
+    .setSubject('CN=www.example.com, O=Example Org, C=GB')
+    .setPublicKey(keyPair.publicKey)
+    .setPrivateKey(keyPair.privateKey)
+    .setAlgorithm({
+        type: 'ECDSA',
+        params: { namedCurve: 'P-256', hash: 'SHA-256' },
+    })
+    .setValidityDays(90)
+    .generateSerialNumber()
+    .addBasicConstraints(false)
+    .addKeyUsage({ digitalSignature: true })
+    .addExtendedKeyUsage({ serverAuth: true, clientAuth: true })
+    .addSubjectAltName(
+        'www.example.com',
+        'example.com',
+        new GeneralName.rfc822Name({ value: 'admin@example.com' }),
+        new GeneralName.iPAddress({ bytes: new Uint8Array([192, 0, 2, 1]) }),
+    )
+    .addSubjectKeyIdentifier(crypto.getRandomValues(new Uint8Array(20)))
+    .selfSign()
+
+// Every extension, with its OID and whether it is critical
+console.log('Extensions present:')
+for (const extension of certificate.tbsCertificate.extensions ?? []) {
+    console.log(
+        `  ${extension.extnID.friendlyName} (${extension.extnID})`,
+        extension.critical ? '[critical]' : '',
+    )
+}
+
+// Look one up by OID and parse its value as the matching class
+const basicConstraints = certificate
+    .getExtensionByOid(OIDs.EXTENSION.BASIC_CONSTRAINTS)
+    ?.extnValue.parseAs(BasicConstraints)
+console.log('\nIs a CA:', basicConstraints?.cA)
+
+const keyUsage = certificate
+    .getExtensionByOid(OIDs.EXTENSION.KEY_USAGE)
+    ?.extnValue.parseAs(KeyUsage)
+console.log(
+    'Key usage:',
+    Object.entries(keyUsage ?? {})
+        .filter(([, set]) => set === true)
+        .map(([name]) => name),
+)
+
+const extKeyUsage = certificate
+    .getExtensionByOid(OIDs.EXTENSION.EXTENDED_KEY_USAGE)
+    ?.extnValue.parseAs(ExtKeyUsage)
+console.log(
+    'Extended key usage:',
+    [...(extKeyUsage ?? [])].map((oid) => oid.friendlyName),
+)
+
+const keyIdentifier = certificate
+    .getExtensionByOid(OIDs.EXTENSION.SUBJECT_KEY_IDENTIFIER)
+    ?.extnValue.parseAs(SubjectKeyIdentifier)
+console.log('Subject key identifier:', keyIdentifier?.toHumanString())
+
+// Subject alternative names: each entry is a typed GeneralName
+console.log('\nSubject alternative names:')
+for (const alternativeNames of certificate.getSubjectAltNames()) {
+    for (const name of alternativeNames) {
+        const value =
+            name instanceof GeneralName.iPAddress
+                ? [...name.bytes].join('.') // an IPv4 address is 4 raw bytes
+                : name.toString()
+        console.log(`  ${name.constructor.name}: ${value}`)
+    }
+}
+console.log('Common name:', certificate.getCommonName())
+```
+
+## Restricting a CA with name constraints
+
+```typescript
+import { CertificateValidator } from 'pki-lite/core/CertificateValidator.js'
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+import { Extension } from 'pki-lite/x509/Extension.js'
+import {
+    GeneralSubtree,
+    NameConstraints,
+} from 'pki-lite/x509/extensions/NameConstraints.js'
+import { dNSName } from 'pki-lite/x509/GeneralName.js'
+
+console.log('=== Name Constraints Example ===\n')
+
+// A CA that may only issue for example.com and its subdomains, except secret.example.com
+const nameConstraints = new NameConstraints({
+    permittedSubtrees: [
+        new GeneralSubtree({ base: new dNSName({ value: 'example.com' }) }),
+    ],
+    excludedSubtrees: [
+        new GeneralSubtree({
+            base: new dNSName({ value: 'secret.example.com' }),
+        }),
+    ],
+})
+
+const caKeys = await KeyGen.generateRsaPair({ keySize: 2048 })
+const caCertificate = await Certificate.builder()
+    .setSubject('CN=Constrained CA, O=Example Org')
+    .setPublicKey(caKeys.publicKey)
+    .setPrivateKey(caKeys.privateKey)
+    .setValidityDays(3650)
+    .generateSerialNumber()
+    .addBasicConstraints(true)
+    .addKeyUsage({ keyCertSign: true, cRLSign: true })
+    .addExtension(
+        new Extension({
+            extnID: '2.5.29.30', // id-ce-nameConstraints
+            critical: true,
+            extnValue: nameConstraints,
+        }),
+    )
+    .selfSign()
+console.log('Created CA with name constraints\n')
+
+// The constraints can be read back from the certificate and checked directly
+const constraints = caCertificate
+    .getExtensionByOid('2.5.29.30')!
+    .extnValue.parseAs(NameConstraints)
+for (const name of ['www.example.com', 'www.evil.com', 'secret.example.com']) {
+    const permitted = constraints.permittedSubtrees?.matches(name) ?? true
+    const excluded = constraints.excludedSubtrees?.matches(name) ?? false
+    console.log(
+        `${name.padEnd(20)} permitted: ${permitted}, excluded: ${excluded}`,
+    )
+}
+
+// Issue a certificate for each name and let the validator apply the constraints
+console.log('\nValidating issued certificates:')
+const validator = new CertificateValidator()
+for (const host of ['www.example.com', 'www.evil.com', 'secret.example.com']) {
+    const keys = await KeyGen.generateEcPair({ namedCurve: 'P-256' })
+    const certificate = await Certificate.builder()
+        .setSubject(`CN=${host}`)
+        .setIssuer(caCertificate)
+        .setPublicKey(keys.publicKey)
+        .setIssuerPrivateKey(caKeys.privateKey)
+        .setValidityDays(30)
+        .generateSerialNumber()
+        .addBasicConstraints(false)
+        .addSubjectAltName(host)
+        .sign()
+
+    const result = await validator.validate(certificate, {
+        validateChain: true,
+        validateNameConstraints: true,
+        // The constraints in the CA certificate itself are enforced. (They can also be
+        // given with the trust anchor: `{ certificate, nameConstraints }`.)
+        trustAnchors: [{ certificate: caCertificate }],
+    })
+    console.log(`  ${host.padEnd(20)} valid: ${result.isValid}`)
+    if (!result.isValid) {
+        console.log(`    ${result.messages.join('; ')}`)
+    }
+}
+```
+
+## Creating and verifying a detached CMS signature
+
+```typescript
+import { CertificateValidator } from 'pki-lite/core/CertificateValidator.js'
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { ContentInfo } from 'pki-lite/pkcs7/ContentInfo.js'
+import { SignedData } from 'pki-lite/pkcs7/SignedData.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+
+console.log('=== Signed Data Verification Example ===\n')
+
+// A CA and a signer certificate issued by it
+const caKeys = await KeyGen.generateRsaPair({ keySize: 2048 })
+const caCertificate = await Certificate.builder()
+    .setSubject('CN=Example Signing CA')
+    .setPublicKey(caKeys.publicKey)
+    .setPrivateKey(caKeys.privateKey)
+    .setValidityDays(3650)
+    .generateSerialNumber()
+    .addBasicConstraints(true)
+    .addKeyUsage({ keyCertSign: true })
+    .selfSign()
+
+const signerKeys = await KeyGen.generateEcPair({ namedCurve: 'P-256' })
+const signerCertificate = await Certificate.builder()
+    .setSubject('CN=Alice, O=Example Org')
+    .setIssuer(caCertificate)
+    .setPublicKey(signerKeys.publicKey)
+    .setIssuerPrivateKey(caKeys.privateKey)
+    .setValidityDays(365)
+    .generateSerialNumber()
+    .addBasicConstraints(false)
+    .addKeyUsage({ digitalSignature: true })
+    .sign()
+
+// Sign a document. A detached signature keeps the document out of the CMS structure.
+const document = new TextEncoder().encode('Invoice #1234: pay 100 EUR')
+const signedData = await SignedData.builder()
+    .setData(document)
+    .setDetached(true)
+    .addCertificate(signerCertificate)
+    .addSigner({
+        certificate: signerCertificate,
+        privateKeyInfo: signerKeys.privateKey,
+        // the default is RSA, so say which algorithm an EC key signs with
+        encryptionAlgorithm: {
+            type: 'ECDSA',
+            params: { namedCurve: 'P-256', hash: 'SHA-256' },
+        },
+    })
+    .build()
+
+const der = signedData.toCms().toDer()
+console.log('Detached signature:', der.length, 'bytes (document not included)')
+
+// Verify: parse the signature and supply the document it belongs to
+const received = ContentInfo.fromDer(der).parseContentAs(SignedData)
+const result = await received.verify({ data: document })
+console.log('\nSignature valid:', result.valid)
+if (result.valid) {
+    console.log('Signer:', result.signerInfo.sid.toHumanString())
+}
+
+// Any change to the document breaks the signature
+const forged = await received.verify({
+    data: new TextEncoder().encode('Invoice #1234: pay 900 EUR'),
+})
+console.log('\nAltered document valid:', forged.valid)
+if (!forged.valid) {
+    console.log('Reason:', forged.reasons[0])
+}
+
+// The signature above proves *who* signed only if you trust the signer's certificate.
+// Ask the verifier to also validate the signer's chain against a trusted CA:
+const trusted = await received.verify({
+    data: document,
+    certificateValidation: {
+        validateChain: true,
+        trustAnchors: [{ certificate: caCertificate }],
+    },
+})
+console.log('\nSigned by a trusted CA:', trusted.valid)
+
+const untrusted = await received.verify({
+    data: document,
+    certificateValidation: {
+        validateChain: true,
+        trustAnchors: [
+            {
+                // some unrelated CA
+                certificate: await (async () => {
+                    const keys = await KeyGen.generateRsaPair({ keySize: 2048 })
+                    return Certificate.builder()
+                        .setSubject('CN=Some Other CA')
+                        .setPublicKey(keys.publicKey)
+                        .setPrivateKey(keys.privateKey)
+                        .setValidityDays(30)
+                        .generateSerialNumber()
+                        .addBasicConstraints(true)
+                        .selfSign()
+                })(),
+            },
+        ],
+    },
+})
+console.log('Signed by an unrelated CA:', untrusted.valid)
+
+// The validator can also be used on its own
+const chain = await new CertificateValidator().validate(signerCertificate, {
+    validateChain: true,
+    trustAnchors: [{ certificate: caCertificate }],
+})
+console.log('\nSigner certificate status:', chain.status)
+```
+
+## Choosing signature algorithms: RSA, RSA-PSS, ECDSA and Ed25519
+
+```typescript
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
+import { SubjectPublicKeyInfo } from 'pki-lite/keys/SubjectPublicKeyInfo.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+
+console.log('=== Signature Algorithms Example ===\n')
+
+async function selfSigned(
+    name: string,
+    keys: { privateKey: PrivateKeyInfo; publicKey: SubjectPublicKeyInfo },
+    algorithm: Parameters<
+        ReturnType<typeof Certificate.builder>['setAlgorithm']
+    >[0],
+) {
+    const certificate = await Certificate.builder()
+        .setSubject(`CN=${name}`)
+        .setPublicKey(keys.publicKey)
+        .setPrivateKey(keys.privateKey)
+        .setAlgorithm(algorithm)
+        .setValidityDays(30)
+        .generateSerialNumber()
+        .selfSign()
+
+    // Check the signature we just made, and report what was used
+    const valid = await certificate.isSelfSigned()
+    console.log(
+        `${name.padEnd(22)} ${certificate.signatureAlgorithm.algorithm.friendlyName}`.padEnd(
+            58,
+        ),
+        `signature valid: ${valid}`,
+    )
+}
+
+// RSA: the classic PKCS#1 v1.5 padding, or the newer, randomised PSS
+const rsa = await KeyGen.generateRsaPair({ keySize: 2048 })
+await selfSigned('RSA PKCS#1 v1.5', rsa, {
+    type: 'RSASSA_PKCS1_v1_5',
+    params: { hash: 'SHA-256' },
+})
+await selfSigned('RSA-PSS', rsa, {
+    type: 'RSA_PSS',
+    params: { hash: 'SHA-256', saltLength: 32 },
+})
+
+// ECDSA: the hash is chosen independently of the curve
+const p256 = await KeyGen.generateEcPair({ namedCurve: 'P-256' })
+await selfSigned('ECDSA P-256 / SHA-256', p256, {
+    type: 'ECDSA',
+    params: { namedCurve: 'P-256', hash: 'SHA-256' },
+})
+const p384 = await KeyGen.generateEcPair({ namedCurve: 'P-384' })
+await selfSigned('ECDSA P-384 / SHA-384', p384, {
+    type: 'ECDSA',
+    params: { namedCurve: 'P-384', hash: 'SHA-384' },
+})
+
+// Ed25519 has no hash or other parameters. KeyGen does not generate these keys yet, so
+// create one with WebCrypto (needs a runtime that supports Ed25519) and wrap it.
+const ed25519 = await crypto.subtle.generateKey('Ed25519', true, [
+    'sign',
+    'verify',
+])
+await selfSigned(
+    'Ed25519',
+    {
+        privateKey: PrivateKeyInfo.fromDer(
+            new Uint8Array(
+                await crypto.subtle.exportKey('pkcs8', ed25519.privateKey),
+            ),
+        ),
+        publicKey: SubjectPublicKeyInfo.fromDer(
+            new Uint8Array(
+                await crypto.subtle.exportKey('spki', ed25519.publicKey),
+            ),
+        ),
+    },
+    { type: 'ED25519', params: {} },
+)
+```
+
+## Inspecting ASN.1, and converting between PEM and DER
+
+```typescript
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { ObjectIdentifier } from 'pki-lite/asn1/ObjectIdentifier.js'
+import { derToAsn1 } from 'pki-lite/core/PkiBase.js'
+import { ContentInfo } from 'pki-lite/pkcs7/ContentInfo.js'
+import { SignedData } from 'pki-lite/pkcs7/SignedData.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+
+console.log('=== ASN.1 and PEM Example ===\n')
+
+const keys = await KeyGen.generateEcPair({ namedCurve: 'P-256' })
+const certificate = await Certificate.builder()
+    .setSubject('CN=ASN.1 Example')
+    .setPublicKey(keys.publicKey)
+    .setPrivateKey(keys.privateKey)
+    .setAlgorithm({
+        type: 'ECDSA',
+        params: { namedCurve: 'P-256', hash: 'SHA-256' },
+    })
+    .setValidityDays(30)
+    .generateSerialNumber()
+    .selfSign()
+
+// Every object converts to DER (binary) and PEM (base64 text) and back
+const der = certificate.toDer()
+const pem = certificate.toPem()
+console.log('DER:', der.length, 'bytes, starts with', [...der.slice(0, 4)])
+console.log('PEM:', pem.split('\n')[0], '...')
+console.log(
+    'Same certificate from DER and PEM:',
+    Certificate.fromDer(der).equals(Certificate.fromPem(pem)),
+)
+
+// toString() prints the ASN.1 structure, handy for debugging
+console.log('\nASN.1 of the subject public key:')
+console.log(certificate.tbsCertificate.subjectPublicKeyInfo.toString())
+
+// Parse bytes you know nothing about into a generic ASN.1 tree
+const tree = derToAsn1(der)
+console.log('\nTop level:', tree.constructor.name)
+
+// Unknown CMS data: look at the content type first, then parse as that type
+const signed = await SignedData.builder()
+    .setData(new TextEncoder().encode('data'))
+    .addSigner({
+        certificate,
+        privateKeyInfo: keys.privateKey,
+        encryptionAlgorithm: {
+            type: 'ECDSA',
+            params: { namedCurve: 'P-256', hash: 'SHA-256' },
+        },
+    })
+    .build()
+const unknown = ContentInfo.fromDer(signed.toCms().toDer())
+console.log('\nCMS content type:', unknown.contentType.friendlyName)
+if (unknown.contentType.is('1.2.840.113549.1.7.2')) {
+    const parsed = unknown.parseContentAs(SignedData)
+    console.log('Signers:', parsed.signerInfos.length)
+    console.log('Embedded certificates:', parsed.certificates?.length)
+}
+
+// parseAs re-reads a value as another type, e.g. the curve OID in the key's parameters
+const curve =
+    certificate.tbsCertificate.subjectPublicKeyInfo.algorithm.parameters?.parseAs(
+        ObjectIdentifier,
+    )
+console.log('\nCurve:', curve?.friendlyName, `(${curve})`)
+```
+
+## Reading certificates, requests, CRLs and OCSP responses created by OpenSSL
+
+```typescript
+import { OIDs } from 'pki-lite/core/OIDs.js'
+import { OCSPResponse } from 'pki-lite/ocsp/OCSPResponse.js'
+import { CertificateList } from 'pki-lite/x509/CertificateList.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+import { CertificateRequest } from 'pki-lite/x509/CertificateRequest.js'
+
+console.log('=== Reading OpenSSL output ===\n')
+
+// These were made with, respectively:
+//   openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 ...
+//   openssl req -new -addext subjectAltName=DNS:a.example,IP:10.0.0.1 ...
+//   openssl ca -gencrl ... (with revoked certificates)
+//   openssl ocsp -index ... -respout ... (for a revoked certificate)
+const certificatePem = `-----BEGIN CERTIFICATE-----
+MIIBczCCARmgAwIBAgIUKBhZ2AVzxLzBZ5xE00YVIYFZDY4wCgYIKoZIzj0EAwIw
+DzENMAsGA1UEAwwEVGVzdDAeFw0yNjExMTExMjQ1NTZaFw0yNjEyMTExMjQ1NTZa
+MA8xDTALBgNVBAMMBFRlc3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAT003m7
+gsMFGNWU8O8fzRTWI6o44DX4nuAmfi0YWKA8rnnmxQPaTCcDk7bEHVQiylShCOgW
+Pj42HyGICe7TwKOro1MwUTAdBgNVHQ4EFgQUyhtApj1b+4SbhqlJAIz9LlElD/sw
+HwYDVR0jBBgwFoAUyhtApj1b+4SbhqlJAIz9LlElD/swDwYDVR0TAQH/BAUwAwEB
+/zAKBggqhkjOPQQDAgNIADBFAiEAqeyvJDuaTtqMMICaAUg/3MLYP53DJWZ2hST+
+jZ+/Mv0CIDds0y9CS2saR9taicfrW+4AAK5v4AK4gAMNLjB6PVa2
+-----END CERTIFICATE-----`
+
+const csrPem = `-----BEGIN CERTIFICATE REQUEST-----
+MIICfjCCAWYCAQAwDDEKMAgGA1UEAwwBWDCCASIwDQYJKoZIhvcNAQEBBQADggEP
+ADCCAQoCggEBAIlh38Wr3e7t7tZfLyJm9VU03i5VeFziZfgU87rlKEoncHDRdyJT
+Czu9QPEtHHcYiFD52IKmASRRuvXx6cXueeA7/94lANz7m09EM5RHmzpQvsaP6F8C
+WXFPff02gqgy5q4fPblxrQ9ZzTLLhdDHc92SKenRoaeKYZ5MqRo+5eJCvq1ONkIn
+1LNZHugInBdIGInZz1+QGLyg2hT6SoeOB3RHl7HaA2Mo+NOl8/kV/w6raCDUqRJM
++ZKA+MQzD6w0s6HfJNml01p5WaxtpPnP3Z9phD4859xRr7FiQSC+9pACeAjxPmdC
+JHtvjOCskS4SDDwb8YWrr2t6MGI1k69uMY8CAwEAAaAtMCsGCSqGSIb3DQEJDjEe
+MBwwGgYDVR0RBBMwEYIJYS5leGFtcGxlhwQKAAABMA0GCSqGSIb3DQEBCwUAA4IB
+AQBuaWHZXvm/gPcTDhJfomWHEtgNh2YOnoq4Giyq+g/IOCt2T4OLz+xlo+Jogmlq
+bdsRWOnvocUkZyQlAYLWrJg23a1SDhAjzg+OQ4wnbzZaA7IBz+FO3vsQpI2qd26f
+rNj65AKv6rGSa9a8exBXvQZsacXyrk2azfI/sEzbTFwxPO2M5+iuPJatWiLXniXR
+Djirt4291X61APorU6s3FZd5qK0qa6+Z3qdNCdKXRTP30x3X3sRTjUdZ3LjN1oZG
+zOLuOX5Srx/P8Aksf8xcCocNEAj1EjpAi1t1aSUz4gqT+WAf2pknpc9WF5EQYCZ2
+9qOWfcqq4ANhe1244mZcpm77
+-----END CERTIFICATE REQUEST-----`
+
+const crlPem = `-----BEGIN X509 CRL-----
+MIICuDCCAaACAQEwDQYJKoZIhvcNAQELBQAwEjEQMA4GA1UEAwwHVGVzdCBDQRcN
+MjYxMTExMTI0NTU4WhcNMjYxMTE4MTI0NTU4WjCCARwwEgIBARcNMjYxMTExMTI0
+NTU4WjAgAgECFw0yNjExMTExMjQ1NThaMAwwCgYDVR0VBAMKAQEwIAIBAxcNMjYx
+MTExMTI0NTU4WjAMMAoGA1UdFQQDCgECMCACAQQXDTI2MTExMTEyNDU1OFowDDAK
+BgNVHRUEAwoBBjAgAgEFFw0yNjExMTExMjQ1NThaMAwwCgYDVR0VBAMKAQgwOgIB
+BhcNMjYxMTExMTI0NTU4WjAmMAoGA1UdFQQDCgEBMBgGA1UdGAQRGA8yMDI0MDEw
+MTAwMDAwMFowIAIBBxcNMjYxMTExMTI0NTU4WjAMMAoGA1UdFQQDCgEDMCACAQgX
+DTI2MTExMTEyNDU1OFowDDAKBgNVHRUEAwoBAKA6MDgwHwYDVR0jBBgwFoAU3NAe
+xUQTwAB+w3BNW3VMsMSvoP4wCQYDVR0SBAIwADAKBgNVHRQEAwIBAjANBgkqhkiG
+9w0BAQsFAAOCAQEAiTvhbIOtZ8yRnwn3DGkc6FWN1SBJHTNzAET7lskaAGkScULp
+MLzhUrZyq+YYo0OfBrh3WI2XeTUmQP8JtNOOFej2GhRzVMxWhevd5O2FyLJ2WFft
+RkfvO1YdstatZZEmQkn6BlqumdbS4ngtBS6c18aEGMe9AneBGed7X0fmZmYenq1u
+76OAVIeg9pLT7rarfn6auEhCTBMQ7RZtOQk4lABs1AV+dZn2A4UpfysIg5rTHaSP
++eJ0Oo3GpEUYRMJNUDpyFW/3tSqYPElMR6J5ywd9+e8V/G5nUS8sMMMXL142b/GX
+uSVzWdoGbZmaguXYibZcWoMHS0sixYZhdPXFtw==
+-----END X509 CRL-----`
+
+const ocspBase64 = `MIIE4QoBAKCCBNowggTWBgkrBgEFBQcwAQEEggTHMIIEwzCBi6EUMBIxEDAOBgNV
+BAMMB1Rlc3QgQ0EYDzIwMjYxMTExMTI0NTU4WjBiMGAwOjAJBgUrDgMCGgUABBS/
+cFLIucD3YMiRI+CZgV6ywDlCJgQU3NAexUQTwAB+w3BNW3VMsMSvoP4CAQGhERgP
+MjAyNjExMTExMjQ1NThaGA8yMDI2MTExMTEyNDU1OFowDQYJKoZIhvcNAQELBQAD
+ggEBAAArbLxHIxpNFV210Be8CR1U03SxOmk/2gBqWrEv90+4KRc0rlAjxXjZMe+V
+aNh+WNjk99uj7mC0l07Q+jD3LaMmD/+xjgpE6KTHqmeeVzQW6DPMQDbAKn+8yFfY
++jYHyO8clz0Y27j8qq8TnAPn6SWAluQnAy+zbRq7sWOqzkq4WE03j03vV9Q3wuIX
+24qv3waPP0mwaufCn7NBkGcA2MIw5AHb5T4TuIBulkWZ1EIDRCRPfcHXPSbZhXKg
+4bXn2yOIQJCqd0LoAl+38lNGj5bfgav4elOmpJa17E6ozssJFsqa6m1ND9l2C0Xo
+fQnuk23kYcyDTcvS9lKKtQJzCmSgggMdMIIDGTCCAxUwggH9oAMCAQICFClgLppy
+ennxRqJk/06fVW8A2zxnMA0GCSqGSIb3DQEBCwUAMBIxEDAOBgNVBAMMB1Rlc3Qg
+Q0EwHhcNMjYxMTExMTI0NTU4WhcNMjcxMTExMTI0NTU4WjASMRAwDgYDVQQDDAdU
+ZXN0IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiWHfxavd7u3u
+1l8vImb1VTTeLlV4XOJl+BTzuuUoSidwcNF3IlMLO71A8S0cdxiIUPnYgqYBJFG6
+9fHpxe554Dv/3iUA3PubT0QzlEebOlC+xo/oXwJZcU99/TaCqDLmrh89uXGtD1nN
+MsuF0Mdz3ZIp6dGhp4phnkypGj7l4kK+rU42QifUs1ke6AicF0gYidnPX5AYvKDa
+FPpKh44HdEeXsdoDYyj406Xz+RX/DqtoINSpEkz5koD4xDMPrDSzod8k2aXTWnlZ
+rG2k+c/dn2mEPjzn3FGvsWJBIL72kAJ4CPE+Z0Ike2+M4KyRLhIMPBvxhauva3ow
+YjWTr24xjwIDAQABo2MwYTAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIB
+BjAdBgNVHQ4EFgQU3NAexUQTwAB+w3BNW3VMsMSvoP4wHwYDVR0jBBgwFoAU3NAe
+xUQTwAB+w3BNW3VMsMSvoP4wDQYJKoZIhvcNAQELBQADggEBAID7T9q5JYLRMS1W
+l51WYvpRd0Pjn4L9j+WWwRfW8Nfiw7nys+hrFlqf9acw3wbTfztQXw9z0tve79Du
+QKSAOeWHogZqe791zDYHKKv8vhdUgDK8m2/RkIXUtz+zoiGkbj8R+nRj4t2RI+cw
+ltHq53eY5FLHPvTFBGtLCzhW18btQulUoI8rHh68RJ9n1eXnT1tQz4TqINBCb7YB
+hq5kBY3inLkVNF5OOdxWp58q9wAtGmx4gHO8xLLcJfoLp1MqyYxDwSbTVzXtTAkv
+07wQFwChFMGNAF+LRqSYSq99STgm3CmEljRerUQP7O2dB8AVIJRuCLvaY+raY/QR
+JrJhLMw=`
+
+// --- A certificate ---
+const certificate = Certificate.fromPem(certificatePem)
+console.log('Certificate')
+console.log('  Subject:', certificate.tbsCertificate.subject.toHumanString())
+console.log(
+    '  Signature:',
+    certificate.signatureAlgorithm.algorithm.friendlyName,
+)
+console.log(
+    '  Valid:',
+    certificate.tbsCertificate.validity.notBefore.toISOString(),
+    'to',
+    certificate.tbsCertificate.validity.notAfter.toISOString(),
+)
+console.log(
+    '  Self-signed and signature valid:',
+    await certificate.isSelfSigned(),
+)
+
+// --- A certificate signing request ---
+const csr = CertificateRequest.fromPem(csrPem)
+console.log('\nCertificate request')
+console.log('  Subject:', csr.requestInfo.subject.toHumanString())
+console.log(
+    '  Public key:',
+    csr.requestInfo.publicKey.algorithm.algorithm.friendlyName,
+)
+for (const attribute of csr.requestInfo.attributes ?? []) {
+    console.log('  Attribute:', attribute.type.friendlyName)
+}
+
+// --- A CRL ---
+const crl = CertificateList.fromPem(crlPem)
+const revoked = crl.tbsCertList.revokedCertificates ?? []
+console.log('\nCRL from', crl.tbsCertList.issuer.toHumanString())
+console.log('  This update:', crl.tbsCertList.thisUpdate.toISOString())
+console.log('  Next update:', crl.tbsCertList.nextUpdate?.toISOString())
+console.log('  Revoked certificates:', revoked.length)
+for (const entry of revoked.slice(0, 3)) {
+    const hasReason = entry.crlEntryExtensions?.some(
+        (extension) =>
+            extension.extnID.value === OIDs.EXTENSION.CRL_REASON_CODE,
+    )
+    console.log(
+        '   ',
+        entry.userCertificate,
+        'revoked',
+        entry.revocationDate.toISOString(),
+        hasReason ? '(with a reason code)' : '',
+    )
+}
+
+// --- An OCSP response ---
+const ocsp = OCSPResponse.fromDer(
+    Uint8Array.from(atob(ocspBase64.replace(/\s/g, '')), (c) =>
+        c.charCodeAt(0),
+    ),
+)
+console.log(
+    '\nOCSP response status code:',
+    ocsp.responseStatus.value,
+    '(0 = successful)',
+)
+const single = ocsp.getBasicOCSPResponse().tbsResponseData.responses[0]
+console.log('  Certificate status:', single.certStatus.status)
+console.log('  Revoked at:', single.certStatus.revocationTime?.toISOString())
+console.log('  This update:', single.thisUpdate.time.toISOString())
+```
+
+## Decrypting what OpenSSL produces by default (RSA PKCS#1 v1.5 and 3DES)
+
+```typescript
+import { PrivateKeyInfo } from 'pki-lite/keys/PrivateKeyInfo.js'
+import { EnvelopedData } from 'pki-lite/pkcs7/EnvelopedData.js'
+import { PFX } from 'pki-lite/pkcs12/PFX.js'
+
+console.log('=== OpenSSL defaults with the extended crypto package ===\n')
+
+const fromBase64 = (text: string) =>
+    Uint8Array.from(atob(text.replace(/\s/g, '')), (c) => c.charCodeAt(0))
+
+// `openssl cms -encrypt -aes256 -recip cert.pem` wraps the content key with RSA
+// PKCS#1 v1.5, which WebCrypto does not offer.
+const cmsBase64 = `MIIBrgYJKoZIhvcNAQcDoIIBnzCCAZsCAQAxggFGMIIBQgIBADAqMBIxEDAOBgNV
+BAMMB1Rlc3QgQ0ECFFE2yTfw/ZHSau6Z8W8G1snvhr58MA0GCSqGSIb3DQEBAQUA
+BIIBAAoCju/D489GfEcvW//inPaORt6TXYiWiefuLzrrhhnSGn6GtgEHsd/LCZnr
+bY3m9XvqvGNR3Ey94Zrl6+eqxCLNG9rSvv3CSwVXioGPpN99yRvK8iwb2IYPSoc6
+ETV4ZWQFiKbbf+J4q3Qjlakl1R56iUILnz/WhWa6JLvZe2x7IinyORlAiRbXVgiA
+di8TgKMSgU/AJtHKwSA250DHWd1nAgV8Q8tqmnv3Op/1qm1Zs3RWfPGgAse84uDd
+xy0kOFlxzx9xTx77fSJxqjzyTFC1zCF+2VLVJ9lSMbfdg9MAcgEP2VUWW+wPDMWI
+lADf77QlpSHxn5sjqlHEEtHlMq8wTAYJKoZIhvcNAQcBMB0GCWCGSAFlAwQBKgQQ
+xhtaAE3WlTdY04Ulu4DTAYAgdCG01G+Nk2QtWlCEm3f/O2PgBenjtUO3/M3PohI4
+t1g=`
+const privateKey = PrivateKeyInfo.fromPem(`-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCJYd/Fq93u7e7W
+Xy8iZvVVNN4uVXhc4mX4FPO65ShKJ3Bw0XciUws7vUDxLRx3GIhQ+diCpgEkUbr1
+8enF7nngO//eJQDc+5tPRDOUR5s6UL7Gj+hfAllxT339NoKoMuauHz25ca0PWc0y
+y4XQx3Pdkinp0aGnimGeTKkaPuXiQr6tTjZCJ9SzWR7oCJwXSBiJ2c9fkBi8oNoU
++kqHjgd0R5ex2gNjKPjTpfP5Ff8Oq2gg1KkSTPmSgPjEMw+sNLOh3yTZpdNaeVms
+baT5z92faYQ+POfcUa+xYkEgvvaQAngI8T5nQiR7b4zgrJEuEgw8G/GFq69rejBi
+NZOvbjGPAgMBAAECggEACcwsRcV6h+TPFi8RRk5PwRpf8q+kwaxht54Nkxlu/07Y
+aCtVaDds7dSS55WfLz0q0j+R5HYLTyLxsZg64vidbNOf7UtNSEqR/8auOQJxpxMw
+GoAT2IbAiIyx6wIysjp4ahg58i+Rty5hLHYISTnti502FldIGec2tq/ilXJr5EVh
+4jOWXXQ8PVc33agBDf2Br06/S2urQiAxCnx9ewjndB/H+w+PXrreMfKm/ZbUwU/1
+TSnWvB1yT+z1yJsertlM0me3LnpHIIrFLX8FvfOPKTa+Gcs6kq7Kyw7s8qSkPGKg
+Z3yFv4Qzolh75PiQQYGek4JMtIPw09E95nrYoDQF1QKBgQC9ALwkpemwN/Z3oZFl
+5b+DbO+VXqz7whsowURKr+9TEi0hB0vIM4CvNUJ6DaM30MRydVm6Z0a+Y55Z381L
+IR4OunN7uOG8ILxKNyEUeW2fU3kcV5AyiFYVWdm0FpiIjzUkvn9yrtx7hwjOh8Wz
+hlWfyFnobCgNpYjwBDIJ5kqN0wKBgQC6FMchjl7b2UlyTrdUib38V8gK6GDTZKXR
+KvLvqiMjJqcUEwYWZjnE0ozL9zKjcut/5F0Keh7PXD2a/+rJVnGA1XZKfzvBQpAG
+YPCfv4LtdHefjGitqihFiLnRpfJ069vhDjK9Ow+YHAFBFXXUS1mSctC6+d/xNRUK
+9eUiJwVr1QKBgBfg9+RJcfTpnSIQL6aIGGIqaTqd84z7QSMtB8vH3pzINxttKI3q
+s99vAy8Yef6bSbaMTQHX+oAjZeZE+FL9pCaIN/7xpNN371IRFQTZMphmm26RQY6g
+2v9nkrHGCQ93yGcUClYa8ZBJxzsQvFGqLzc4wOM0hvryZxKr9QZ7KgAxAoGAXRwy
+fAb6TjXOu4TJ1WJLD255KYQXlw9grWY5Q1U12cvohHH0dNbYBzV3wEPEMec6Ebea
+Grj6m7XDGcD+oZpAlz+4vhQmOVDuMlLldHnmsJy7krk2U9e16P0+RbostPakAlwR
+ZYCdD/bLZd6wI/dELbSH31dTCCYQjnh2G/28h7UCgYAjWats6wG1V2yCpF35+RXg
+C4FDK2izwoQafdpsvWFx00ce4WEeiJTBjUZ/Iec5ZbQ2jW3f2Z0BKBd3lovJkagi
+GndtOxfMvOylDc9/S63Q2Mnwcu6RVgMtg0Mb1BD3ReBMmO9zCsoYNo5+m48otUA6
+y78dk/1k3Ju2FAiCapL/vw==
+-----END PRIVATE KEY-----`)
+
+// `openssl pkcs12 -export -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES`: password "pw"
+const legacyPfxBase64 = `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
+EGLpy1PI5e2D528FkHbE+cECAggA`
+
+const envelopedData = EnvelopedData.fromCms(fromBase64(cmsBase64))
+
+// With only the default provider, RSA PKCS#1 v1.5 key transport is not available
+try {
+    await envelopedData.decrypt(privateKey)
+    console.log('Default provider: decrypted (unexpected)')
+} catch {
+    console.log('Default provider: cannot decrypt (no RSA PKCS#1 v1.5)')
+}
+
+// Importing the extended package installs a provider that adds RSA PKCS#1 v1.5, 3DES, MD5
+// and more. Do this once at start-up; it applies to all of pki-lite.
+await import('pki-lite-crypto-extended')
+
+const plaintext = await envelopedData.decrypt(privateKey)
+console.log(
+    'Extended provider: decrypted ->',
+    JSON.stringify(new TextDecoder().decode(plaintext).trimEnd()), // OpenSSL adds a CRLF
+)
+
+// The same provider reads the legacy 3DES-encrypted PKCS#12 files many tools still write
+const pfx = PFX.fromDer(fromBase64(legacyPfxBase64))
+const { privateKeys, certificates } = await pfx.extractItems('pw')
+console.log(
+    `3DES PKCS#12: ${privateKeys.length} private key, ${certificates.length} certificate`,
+)
+console.log(
+    '  Certificate:',
+    certificates[0].tbsCertificate.subject.toHumanString(),
+)
+```
+
+## Certificate policies: requiring, mapping and constraining policies along a chain
+
+```typescript
+import { CertificateValidator } from 'pki-lite/core/CertificateValidator.js'
+import { KeyGen } from 'pki-lite/core/KeyGen.js'
+import { Certificate } from 'pki-lite/x509/Certificate.js'
+
+console.log('=== Certificate Policies Example ===\n')
+
+// Policy OIDs: what the root's domain calls "high assurance", and what the
+// intermediate CA's own domain calls it
+const ROOT_HIGH_ASSURANCE = '1.3.6.1.4.1.99999.1.1'
+const SUBCA_HIGH_ASSURANCE = '1.3.6.1.4.1.99999.2.1'
+const LOW_ASSURANCE = '1.3.6.1.4.1.99999.1.9'
+
+// The CAs sign with RSA (the builder's default signature algorithm)
+const [rootKeys, caKeys, leafKeys] = await Promise.all([
+    KeyGen.generateRsaPair({ keySize: 2048 }),
+    KeyGen.generateRsaPair({ keySize: 2048 }),
+    KeyGen.generateEcPair({ namedCurve: 'P-256' }),
+])
+
+const root = await Certificate.builder()
+    .setSubject('CN=Policy Root')
+    .setPublicKey(rootKeys.publicKey)
+    .setPrivateKey(rootKeys.privateKey)
+    .setValidityDays(3650)
+    .generateSerialNumber()
+    .addBasicConstraints(true)
+    .addKeyUsage({ keyCertSign: true, cRLSign: true })
+    .selfSign()
+
+// The intermediate CA asserts the root's policy, says its own domain's OID means the
+// same (a policy mapping), and requires every certificate below it to carry an
+// acceptable policy (requireExplicitPolicy: 0)
+const intermediate = await Certificate.builder()
+    .setSubject('CN=Policy Sub CA')
+    .setIssuer(root)
+    .setPublicKey(caKeys.publicKey)
+    .setIssuerPrivateKey(rootKeys.privateKey)
+    .setValidityDays(1825)
+    .generateSerialNumber()
+    .addBasicConstraints(true)
+    .addKeyUsage({ keyCertSign: true, cRLSign: true })
+    .addCertificatePolicies(ROOT_HIGH_ASSURANCE)
+    .addPolicyMappings({
+        issuerDomainPolicy: ROOT_HIGH_ASSURANCE,
+        subjectDomainPolicy: SUBCA_HIGH_ASSURANCE,
+    })
+    .addPolicyConstraints({ requireExplicitPolicy: 0 })
+    .sign()
+
+async function leaf(...policies: string[]) {
+    const builder = Certificate.builder()
+        .setSubject('CN=server.example.com')
+        .setIssuer(intermediate)
+        .setPublicKey(leafKeys.publicKey)
+        .setIssuerPrivateKey(caKeys.privateKey)
+        .setValidityDays(90)
+        .generateSerialNumber()
+        .addBasicConstraints(false)
+    if (policies.length > 0) builder.addCertificatePolicies(...policies)
+    return builder.sign()
+}
+
+const validator = new CertificateValidator()
+const validate = (certificate: Certificate, options: object = {}) =>
+    validator.validate(certificate, {
+        validateChain: true,
+        trustAnchors: [{ certificate: root }],
+        otherCertificates: [intermediate],
+        ...options,
+    })
+
+const cases: [string, Certificate, object][] = [
+    // the leaf uses the sub CA's OID, which the mapping ties to the root's policy
+    ['mapped high-assurance leaf', await leaf(SUBCA_HIGH_ASSURANCE), {}],
+    // the CA's policy constraints demand a policy, and this leaf has none
+    ['leaf without policies', await leaf(), {}],
+    // a policy the CA never asserted is not valid for the path
+    ['low-assurance leaf', await leaf(LOW_ASSURANCE), {}],
+    // the relying party only accepts the root's high-assurance policy
+    [
+        'mapped leaf, only high assurance accepted',
+        await leaf(SUBCA_HIGH_ASSURANCE),
+        { initialPolicySet: [ROOT_HIGH_ASSURANCE] },
+    ],
+    // ...but refuses policy mapping altogether
+    [
+        'mapped leaf, mappings not allowed',
+        await leaf(SUBCA_HIGH_ASSURANCE),
+        { initialPolicyMappingInhibit: true },
+    ],
+]
+
+for (const [label, certificate, options] of cases) {
+    const result = await validate(certificate, options)
+    console.log(`${label.padEnd(42)} valid: ${result.isValid}`)
+    if (result.isValid) {
+        console.log(`    valid policies: ${result.policyResult?.validPolicies}`)
+    } else {
+        console.log(`    ${result.messages.join('; ')}`)
+    }
+}
+```

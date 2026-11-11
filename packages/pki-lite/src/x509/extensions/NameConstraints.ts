@@ -6,6 +6,8 @@ import {
 } from '../../core/PkiBase.js'
 import { GeneralName } from '../GeneralName.js'
 import { RDNSequence } from '../RDNSequence.js'
+import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
+import { implicitTag, isContextTag } from '../../core/tagging.js'
 
 /**
  * Represents a GeneralSubtree structure used in name constraints.
@@ -49,28 +51,69 @@ export class GeneralSubtree extends PkiBase<GeneralSubtree> {
 
         values.push(this.base.toAsn1())
 
+        // minimum [0] and maximum [1] are IMPLICIT INTEGERs; minimum is DEFAULT 0, so
+        // DER omits it when it is 0.
         if (this.minimum !== 0) {
             values.push(
-                new asn1js.Integer({
-                    value: this.minimum,
-                    optional: true,
-                    idBlock: { tagClass: 3, tagNumber: 0 }, // [0]
-                }),
+                implicitTag(new asn1js.Integer({ value: this.minimum }), 0),
             )
         }
 
         if (this.maximum !== undefined) {
             values.push(
-                new asn1js.Integer({
-                    value: this.maximum,
-                    optional: true,
-                    idBlock: { tagClass: 3, tagNumber: 1 }, // [1]
-                }),
+                implicitTag(new asn1js.Integer({ value: this.maximum }), 1),
             )
         }
 
         return new asn1js.Sequence({
             value: values,
+        })
+    }
+
+    static fromAsn1(asn1: Asn1BaseBlock): GeneralSubtree {
+        if (!(asn1 instanceof asn1js.Sequence)) {
+            throw new Asn1ParseError(
+                'Invalid ASN.1 structure: expected Sequence for GeneralSubtree',
+            )
+        }
+
+        const [baseAsn1, ...rest] = asn1.valueBlock.value
+        if (!baseAsn1) {
+            throw new Asn1ParseError(
+                'Invalid GeneralSubtree: missing base GeneralName',
+            )
+        }
+
+        // minimum [0] and maximum [1] are IMPLICIT INTEGERs
+        const distance = (element: Asn1BaseBlock): number => {
+            const integer =
+                element instanceof asn1js.Integer
+                    ? element
+                    : new asn1js.Integer({
+                          valueHex: (element as asn1js.Primitive).valueBlock
+                              .valueHexView,
+                      })
+            return integer.valueBlock.valueDec
+        }
+
+        let minimum: number | undefined
+        let maximum: number | undefined
+        for (const element of rest) {
+            if (isContextTag(element, 0)) {
+                minimum = distance(element)
+            } else if (isContextTag(element, 1)) {
+                maximum = distance(element)
+            } else {
+                throw new Asn1ParseError(
+                    'Invalid GeneralSubtree: unexpected element',
+                )
+            }
+        }
+
+        return new GeneralSubtree({
+            base: GeneralName.fromAsn1(baseAsn1),
+            minimum,
+            maximum,
         })
     }
 
@@ -180,6 +223,9 @@ export class NameConstraints extends PkiBase<NameConstraints> {
 
     /**
      * Converts the NameConstraints to an ASN.1 structure.
+     *
+     * permittedSubtrees [0] and excludedSubtrees [1] are IMPLICIT GeneralSubtrees, so
+     * the GeneralSubtree elements sit directly inside the tag (no SEQUENCE around them).
      */
     toAsn1() {
         const values = []
@@ -188,7 +234,9 @@ export class NameConstraints extends PkiBase<NameConstraints> {
             values.push(
                 new asn1js.Constructed({
                     idBlock: { tagClass: 3, tagNumber: 0 }, // [0]
-                    value: [this.permittedSubtrees.toAsn1()],
+                    value: this.permittedSubtrees.map((subtree) =>
+                        subtree.toAsn1(),
+                    ),
                 }),
             )
         }
@@ -197,7 +245,9 @@ export class NameConstraints extends PkiBase<NameConstraints> {
             values.push(
                 new asn1js.Constructed({
                     idBlock: { tagClass: 3, tagNumber: 1 }, // [1]
-                    value: [this.excludedSubtrees.toAsn1()],
+                    value: this.excludedSubtrees.map((subtree) =>
+                        subtree.toAsn1(),
+                    ),
                 }),
             )
         }
@@ -205,5 +255,50 @@ export class NameConstraints extends PkiBase<NameConstraints> {
         return new asn1js.Sequence({
             value: values,
         })
+    }
+
+    static fromAsn1(asn1: Asn1BaseBlock): NameConstraints {
+        if (!(asn1 instanceof asn1js.Sequence)) {
+            throw new Asn1ParseError(
+                'Invalid ASN.1 structure: expected Sequence for NameConstraints',
+            )
+        }
+
+        const subtrees = (element: Asn1BaseBlock): GeneralSubtree[] => {
+            if (!(element instanceof asn1js.Constructed)) {
+                throw new Asn1ParseError(
+                    'Invalid NameConstraints: subtrees must be constructed',
+                )
+            }
+            let children = element.valueBlock.value
+            // Earlier versions wrapped the subtrees in an extra SEQUENCE: [n] { SEQUENCE
+            // { GeneralSubtree... } }. A GeneralSubtree's base is context-tagged, a
+            // wrapped one starts with a SEQUENCE instead.
+            const [first] = children
+            if (
+                children.length === 1 &&
+                first instanceof asn1js.Sequence &&
+                first.valueBlock.value[0] instanceof asn1js.Sequence
+            ) {
+                children = first.valueBlock.value
+            }
+            return children.map((child) => GeneralSubtree.fromAsn1(child))
+        }
+
+        let permittedSubtrees: GeneralSubtree[] | undefined
+        let excludedSubtrees: GeneralSubtree[] | undefined
+        for (const element of asn1.valueBlock.value) {
+            if (isContextTag(element, 0)) {
+                permittedSubtrees = subtrees(element)
+            } else if (isContextTag(element, 1)) {
+                excludedSubtrees = subtrees(element)
+            } else {
+                throw new Asn1ParseError(
+                    'Invalid NameConstraints: unexpected element',
+                )
+            }
+        }
+
+        return new NameConstraints({ permittedSubtrees, excludedSubtrees })
     }
 }

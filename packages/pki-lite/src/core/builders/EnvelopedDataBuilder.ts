@@ -321,6 +321,41 @@ export class EnvelopedDataBuilder implements AsyncBuilder<EnvelopedData> {
     }
 
     /**
+     * Creates the KeyTransRecipientInfo for one recipient: the content encryption key,
+     * encrypted for that recipient's certificate. Shared with AuthEnvelopedDataBuilder.
+     */
+    static async createRecipientInfo(
+        recipient: EnvelopedDataBuilderRecipient,
+        contentEncryptionKey: Uint8Array<ArrayBuffer>,
+    ): Promise<KeyTransRecipientInfo> {
+        const keyEncryptionAlgorithm: KeyEncryptionAlgorithmIdentifier =
+            recipient.keyEncryptionAlgorithm
+                ? recipient.keyEncryptionAlgorithm instanceof
+                  AlgorithmIdentifier
+                    ? (recipient.keyEncryptionAlgorithm as KeyEncryptionAlgorithmIdentifier)
+                    : AlgorithmIdentifier.keyEncryptionAlgorithm(
+                          recipient.keyEncryptionAlgorithm,
+                      )
+                : EnvelopedDataBuilder.DEFAULT_KEY_ENCRYPTION_ALGORITHM
+
+        const issuerAndSerialNumber = new IssuerAndSerialNumber({
+            issuer: recipient.certificate.tbsCertificate.issuer,
+            serialNumber: recipient.certificate.tbsCertificate.serialNumber,
+        })
+
+        const encryptedKey = await keyEncryptionAlgorithm.encrypt(
+            contentEncryptionKey,
+            recipient.certificate.tbsCertificate.subjectPublicKeyInfo,
+        )
+
+        return new KeyTransRecipientInfo({
+            rid: issuerAndSerialNumber,
+            keyEncryptionAlgorithm,
+            encryptedKey,
+        })
+    }
+
+    /**
      * Builds the EnvelopedData structure by encrypting the content and creating recipient infos.
      *
      * The build process:
@@ -384,39 +419,12 @@ export class EnvelopedDataBuilder implements AsyncBuilder<EnvelopedData> {
         })
 
         const recipientInfos: RecipientInfo[] = await Promise.all(
-            this.recipients.map(async (recipient) => {
-                const keyEncryptionAlgorithm: KeyEncryptionAlgorithmIdentifier =
-                    recipient.keyEncryptionAlgorithm
-                        ? recipient.keyEncryptionAlgorithm instanceof
-                          AlgorithmIdentifier
-                            ? (recipient.keyEncryptionAlgorithm as KeyEncryptionAlgorithmIdentifier)
-                            : AlgorithmIdentifier.keyEncryptionAlgorithm(
-                                  recipient.keyEncryptionAlgorithm,
-                              )
-                        : EnvelopedDataBuilder.DEFAULT_KEY_ENCRYPTION_ALGORITHM
-
-                const issuerAndSerialNumber = new IssuerAndSerialNumber({
-                    issuer: recipient.certificate.tbsCertificate.issuer,
-                    serialNumber:
-                        recipient.certificate.tbsCertificate.serialNumber,
-                })
-
-                const publicKey =
-                    recipient.certificate.tbsCertificate.subjectPublicKeyInfo
-
-                const encryptedKey = await keyEncryptionAlgorithm.encrypt(
+            this.recipients.map((recipient) =>
+                EnvelopedDataBuilder.createRecipientInfo(
+                    recipient,
                     contentEncryptionKey,
-                    publicKey,
-                )
-
-                const ktri = new KeyTransRecipientInfo({
-                    rid: issuerAndSerialNumber,
-                    keyEncryptionAlgorithm,
-                    encryptedKey,
-                })
-
-                return ktri
-            }),
+                ),
+            ),
         )
 
         return new EnvelopedData({

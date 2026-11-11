@@ -21,8 +21,6 @@ import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 import { SubjectPublicKeyInfo } from '../keys/SubjectPublicKeyInfo.js'
 import { BitString } from '../asn1/BitString.js'
 import { ECDSASignature } from '../keys/ECDSASignature.js'
-import { ECPublicKey } from '../keys/ECPublicKey.js'
-import { ECPrivateKey } from '../keys/ECPrivateKey.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
 /**
@@ -362,7 +360,10 @@ export class SignatureAlgorithmIdentifier extends AlgorithmIdentifier {
             this.toAsymmetricEncryptionAlgorithmParams(),
         )
 
-        if (privateKeyInfo.getPrivateKey() instanceof ECPrivateKey) {
+        // WebCrypto returns raw r||s for ECDSA; certificates and CMS carry DER. Decide from
+        // the key algorithm: getPrivateKey() would throw for key types it does not model
+        // (Ed25519, ...).
+        if (privateKeyInfo.algorithm.algorithm.value === OIDs.EC.PUBLIC_KEY) {
             return ECDSASignature.fromRaw(signature).toDer()
         }
 
@@ -383,10 +384,19 @@ export class SignatureAlgorithmIdentifier extends AlgorithmIdentifier {
                   ? signature.bytes
                   : signature.toDer()
 
-        signature =
-            publicKeyInfo.getPublicKey() instanceof ECPublicKey
-                ? ECDSASignature.fromDer(signatureBytes).toRaw()
-                : signatureBytes
+        // ECDSA signatures are DER in certificates/CMS but raw r||s for WebCrypto. Decide
+        // from the key's algorithm: getPublicKey() would throw for key types it does not
+        // model (Ed25519, RSA-PSS, ...).
+        if (publicKeyInfo.algorithm.algorithm.value === OIDs.EC.PUBLIC_KEY) {
+            // r and s are as long as a coordinate of the public point (04 || X || Y, or
+            // 02/03 || X compressed); DER drops their leading zero bytes
+            const point = publicKeyInfo.subjectPublicKey.bytes
+            const coordinate =
+                point[0] === 0x04 ? (point.length - 1) / 2 : point.length - 1
+            signature = ECDSASignature.fromDer(signatureBytes).toRaw(coordinate)
+        } else {
+            signature = signatureBytes
+        }
 
         return await crypto.verify(
             data instanceof Uint8Array ? data : data.toDer(),

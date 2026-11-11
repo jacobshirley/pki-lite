@@ -4,6 +4,10 @@ import { rsaSigningKeys } from '../../../test-fixtures/signing-keys/rsa-2048/ind
 import { PrivateKeyInfo } from '../../keys/PrivateKeyInfo.js'
 import { ecP256SigningKeys } from '../../../test-fixtures/signing-keys/ec-p256/index.js'
 import { Certificate } from '../../x509/Certificate.js'
+import { opensslCorpus } from '../../../test-fixtures/openssl-corpus/corpus.js'
+import { OIDs } from '../OIDs.js'
+import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
+import { OctetString } from '../../asn1/OctetString.js'
 import {
     AsymmetricEncryptionAlgorithmParams,
     PbeAlgorithmParams,
@@ -272,5 +276,152 @@ describe('WebCryptoProvider', () => {
 
             expect(bytesToString(decrypted)).toBe('test')
         })
+    })
+})
+
+describe('toSymmetricEncryptionAlgorithmParams AES key sizes', () => {
+    const provider = new WebCryptoProvider()
+    const iv = new OctetString({ bytes: new Uint8Array(16) }).toAsn1()
+
+    for (const bits of [128, 192, 256] as const) {
+        it(`reports AES-${bits}-CBC as AES_${bits}_CBC, not AES_256_CBC`, () => {
+            const params = provider.toSymmetricEncryptionAlgorithmParams(
+                new AlgorithmIdentifier({
+                    algorithm: OIDs.ENCRYPTION[`AES_${bits}_CBC`],
+                    parameters: iv,
+                }),
+            )
+            expect(params.type).toBe(`AES_${bits}_CBC`)
+        })
+
+        it(`reports AES-${bits}-ECB as AES_${bits}_ECB, not AES_256_ECB`, () => {
+            const params = provider.toSymmetricEncryptionAlgorithmParams(
+                new AlgorithmIdentifier({
+                    algorithm: OIDs.ENCRYPTION[`AES_${bits}_ECB`],
+                }),
+            )
+            expect(params.type).toBe(`AES_${bits}_ECB`)
+        })
+    }
+})
+
+describe('AES-GCM additional authenticated data', () => {
+    const provider = new WebCryptoProvider()
+    const key = new Uint8Array(32).map((_, i) => i)
+    const nonce = new Uint8Array(12).map((_, i) => 100 + i)
+    const data = new TextEncoder().encode('authenticated and encrypted')
+    const aad = new Uint8Array([1, 2, 3, 4])
+
+    const params = (additionalData?: Uint8Array<ArrayBuffer>) => ({
+        type: 'AES_256_GCM' as const,
+        params: { nonce, additionalData },
+    })
+
+    it('decrypts when the same additional data is supplied', async () => {
+        const sealed = await provider.encryptSymmetric(data, key, params(aad))
+        expect(
+            await provider.decryptSymmetric(sealed, key, params(aad)),
+        ).toEqual(data)
+    })
+
+    it('fails authentication when the additional data differs', async () => {
+        const sealed = await provider.encryptSymmetric(data, key, params(aad))
+        await expect(
+            provider.decryptSymmetric(
+                sealed,
+                key,
+                params(new Uint8Array([9, 9, 9, 9])),
+            ),
+        ).rejects.toThrow()
+        await expect(
+            provider.decryptSymmetric(sealed, key, params()),
+        ).rejects.toThrow()
+    })
+})
+
+describe('Ed25519', () => {
+    const provider = new WebCryptoProvider()
+    const algorithm = { type: 'ED25519' as const, params: {} }
+
+    it('signs and verifies, and detects tampering', async () => {
+        const key = PrivateKeyInfo.fromDer(
+            Uint8Array.from(atob(opensslCorpus.key['pkcs8_ed25519.der']), (c) =>
+                c.charCodeAt(0),
+            ),
+        )
+        const cert = Certificate.fromDer(
+            Uint8Array.from(atob(opensslCorpus.cert['key_ed25519.der']), (c) =>
+                c.charCodeAt(0),
+            ),
+        )
+        const spki = cert.getSubjectPublicKeyInfo()
+        const data = new TextEncoder().encode('sign me')
+
+        const signature = await provider.sign(data, key, algorithm)
+        expect(signature).toHaveLength(64)
+        expect(await provider.verify(data, spki, signature, algorithm)).toBe(
+            true,
+        )
+        expect(
+            await provider.verify(
+                new TextEncoder().encode('tampered'),
+                spki,
+                signature,
+                algorithm,
+            ),
+        ).toBe(false)
+    })
+
+    it('uses the RFC 8410 algorithm identifier without parameters', () => {
+        const identifier = provider.signatureAlgorithm(algorithm)
+        expect(identifier.algorithm.value).toBe('1.3.101.112')
+        expect(identifier.parameters).toBeUndefined()
+    })
+
+    it('reports Ed448 as needing the extended provider', async () => {
+        const spki = Certificate.fromDer(
+            Uint8Array.from(atob(opensslCorpus.cert['key_ed448.der']), (c) =>
+                c.charCodeAt(0),
+            ),
+        ).getSubjectPublicKeyInfo()
+        await expect(
+            provider.verify(new Uint8Array(1), spki, new Uint8Array(114), {
+                type: 'ED448',
+                params: {},
+            }),
+        ).rejects.toThrow('pki-lite-crypto-extended')
+    })
+})
+
+describe('GCM tag length (icvLen) is in bytes', () => {
+    const provider = new WebCryptoProvider()
+    const nonce = new Uint8Array(12).fill(3)
+    const key = new Uint8Array(32).fill(9)
+
+    it('produces a tag of icvLen bytes and writes it to the ASN.1 parameters', async () => {
+        const params = {
+            type: 'AES_256_GCM' as const,
+            params: { nonce, icvLen: 14 },
+        }
+        const sealed = await provider.encryptSymmetric(
+            new Uint8Array(5),
+            key,
+            params,
+        )
+        expect(sealed).toHaveLength(5 + 14)
+
+        // what is written is what is read back
+        const identifier = provider.contentEncryptionAlgorithm(params)
+        const decoded =
+            provider.toSymmetricEncryptionAlgorithmParams(identifier)
+        expect(decoded.params).toMatchObject({ icvLen: 14 })
+    })
+
+    it('defaults to a 16-byte tag', async () => {
+        const sealed = await provider.encryptSymmetric(new Uint8Array(5), key, {
+            type: 'AES_256_GCM',
+            params: { nonce },
+        })
+        expect(sealed).toHaveLength(5 + 16)
     })
 })

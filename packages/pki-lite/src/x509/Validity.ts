@@ -1,3 +1,4 @@
+import { Time } from '../asn1/Time.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -29,20 +30,8 @@ export class Validity extends PkiBase<Validity> {
      * Converts the validity period to an ASN.1 structure.
      */
     toAsn1(): Asn1BaseBlock {
-        // The X.509 spec says: "In no case shall UTCTime be used for
-        // representing dates beyond 2049". This is because UTCTime only uses
-        // two digits to encode the year, making it impossible to know whether
-        // for instance 50 means 1950 or 2050 (or indeed 3050).
-        // Hence, encode post-2049 Dates as GeneralizedTime.
-        const utcTimeCutoff = new Date('2050-01-01T00:00:00.000Z')
-        const notBefore =
-            this.notBefore < utcTimeCutoff
-                ? new asn1js.UTCTime({ valueDate: this.notBefore })
-                : new asn1js.GeneralizedTime({ valueDate: this.notBefore })
-        const notAfter =
-            this.notAfter < utcTimeCutoff
-                ? new asn1js.UTCTime({ valueDate: this.notAfter })
-                : new asn1js.GeneralizedTime({ valueDate: this.notAfter })
+        const notBefore = new Time({ time: this.notBefore }).toAsn1()
+        const notAfter = new Time({ time: this.notAfter }).toAsn1()
 
         return new asn1js.Sequence({
             value: [notBefore, notAfter],
@@ -67,28 +56,8 @@ export class Validity extends PkiBase<Validity> {
         const notBeforeBlock = asn1.valueBlock.value[0]
         const notAfterBlock = asn1.valueBlock.value[1]
 
-        let notBefore: Date
-        let notAfter: Date
-
-        if (notBeforeBlock instanceof asn1js.UTCTime) {
-            notBefore = notBeforeBlock.toDate()
-        } else if (notBeforeBlock instanceof asn1js.GeneralizedTime) {
-            notBefore = notBeforeBlock.toDate()
-        } else {
-            throw new Asn1ParseError(
-                'Expected UTCTime or GeneralizedTime for notBefore',
-            )
-        }
-
-        if (notAfterBlock instanceof asn1js.UTCTime) {
-            notAfter = notAfterBlock.toDate()
-        } else if (notAfterBlock instanceof asn1js.GeneralizedTime) {
-            notAfter = notAfterBlock.toDate()
-        } else {
-            throw new Asn1ParseError(
-                'Expected UTCTime or GeneralizedTime for notAfter',
-            )
-        }
+        const notBefore = Time.fromAsn1(notBeforeBlock, 'notBefore').time
+        const notAfter = Time.fromAsn1(notAfterBlock, 'notAfter').time
 
         return new Validity({ notBefore, notAfter })
     }

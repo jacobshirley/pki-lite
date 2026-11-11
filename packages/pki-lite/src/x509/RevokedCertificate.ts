@@ -1,3 +1,4 @@
+import { Time } from '../asn1/Time.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { Extension } from './Extension.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -50,11 +51,7 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
         )
 
         // Revocation Date
-        values.push(
-            new asn1js.UTCTime({
-                valueDate: this.revocationDate,
-            }),
-        )
+        values.push(new Time({ time: this.revocationDate }).toAsn1())
 
         // CRL Entry Extensions (optional)
         if (this.crlEntryExtensions && this.crlEntryExtensions.length > 0) {
@@ -113,17 +110,10 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
             : userCertificateAsn1.valueBlock.valueDec
 
         // Get the revocation date
-        let revocationDate: Date
-
-        if (revocationDateAsn1 instanceof asn1js.UTCTime) {
-            revocationDate = revocationDateAsn1.toDate()
-        } else if (revocationDateAsn1 instanceof asn1js.GeneralizedTime) {
-            revocationDate = revocationDateAsn1.toDate()
-        } else {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: revocationDate must be a UTCTime or GeneralizedTime',
-            )
-        }
+        const revocationDate = Time.fromAsn1(
+            revocationDateAsn1,
+            'revocationDate',
+        ).time
 
         // Parse optional extensions
         let crlEntryExtensions: Extension[] | undefined

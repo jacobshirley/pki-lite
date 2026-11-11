@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1BaseBlock, asn1js, derToAsn1, PkiBase } from '../core/PkiBase.js'
 import { ContentInfo } from '../pkcs7/ContentInfo.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -216,11 +216,17 @@ export class PKIStatusInfo extends PkiBase<PKIStatusInfo> {
         }
 
         if (this.failInfo !== undefined) {
-            // PKIFailureInfo is a BIT STRING
-            const failInfoBitString = new asn1js.BitString({
-                valueHex: new Uint8Array([this.failInfo]),
-            })
-            values.push(failInfoBitString)
+            // PKIFailureInfo is a named BIT STRING: set bit number `failInfo`, DER-minimal
+            // (no trailing zero bits), e.g. unacceptedPolicy (15) -> 03 03 00 00 01
+            const bit = this.failInfo
+            const bytes = new Uint8Array(Math.floor(bit / 8) + 1)
+            bytes[bytes.length - 1] = 0x80 >> bit % 8
+            values.push(
+                new asn1js.BitString({
+                    valueHex: bytes,
+                    unusedBits: 7 - (bit % 8),
+                }),
+            )
         }
 
         return new asn1js.Sequence({
@@ -267,11 +273,12 @@ export class PKIStatusInfo extends PkiBase<PKIStatusInfo> {
             if (value instanceof asn1js.Sequence) {
                 statusString = PKIFreeText.fromAsn1(value)
             } else if (value instanceof asn1js.BitString) {
-                const failInfoBytes = new Uint8Array(
-                    value.valueBlock.valueHexView,
-                )
-                if (failInfoBytes.length > 0) {
-                    failInfo = failInfoBytes[0] as PKIFailureInfo
+                // the first (normally the only) bit set is the failure
+                const bytes = value.valueBlock.valueHexView
+                const index = Array.from(bytes).findIndex((byte) => byte !== 0)
+                if (index >= 0) {
+                    const leading = Math.clz32(bytes[index]) - 24
+                    failInfo = (index * 8 + leading) as PKIFailureInfo
                 }
             }
         }
@@ -384,6 +391,16 @@ export class TimeStampResp extends PkiBase<TimeStampResp> {
         }
 
         return new TimeStampResp({ status, timeStampToken })
+    }
+
+    /**
+     * Creates a TimeStampResp from DER-encoded bytes (an application/timestamp-reply body).
+     *
+     * @param der The DER-encoded timestamp response
+     * @returns A TimeStampResp
+     */
+    static fromDer(der: Uint8Array<ArrayBuffer>): TimeStampResp {
+        return TimeStampResp.fromAsn1(derToAsn1(der))
     }
 
     /**

@@ -1,4 +1,5 @@
 import { EnvelopedData } from '../../src/pkcs7/EnvelopedData.js'
+import { AuthEnvelopedData } from '../../src/pkcs7/AuthEnvelopedData.js'
 import { Certificate } from '../../src/x509/Certificate.js'
 import { describe, test, expect } from 'vitest'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
@@ -8,6 +9,7 @@ import {
     opensslPkcs12Parse,
     opensslValidate,
     opensslVerifyCertificate,
+    opensslVerifyCsr,
 } from '../../test-fixtures/openSsl.js'
 import { PrivateKeyInfo } from '../../src/keys/PrivateKeyInfo.js'
 import { SignedData } from '../../src/pkcs7/SignedData.js'
@@ -21,6 +23,7 @@ import { OIDs } from '../../src/core/OIDs.js'
 import { UTCTime } from '../../src/asn1/UTCTime.js'
 import { ecP256SigningKeys } from '../../test-fixtures/signing-keys/ec-p256/index.js'
 import { PFX } from '../../src/pkcs12/PFX.js'
+import { CertificateRequest } from '../../src/x509/CertificateRequest.js'
 
 describe('OpenSSL compatibility', { timeout: 60000 }, () => {
     describe('EnvelopedData', () => {
@@ -516,6 +519,51 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
         })
     })
 
+    describe('AuthEnvelopedData', () => {
+        const recipient = () => ({
+            certificate: Certificate.fromPem(rsaSigningKeys.certPem),
+        })
+        const decryptWithOpenSSL = async (cms: Uint8Array) => {
+            const result = await opensslCmsDecrypt({
+                envelopedData: cms,
+                recipientCertificatePem: rsaSigningKeys.certPem,
+                recipientPrivateKeyPem: rsaSigningKeys.privateKeyPem,
+            })
+            expect(result.success, result.error).toBe(true)
+            return new TextDecoder().decode(result.plaintext)
+        }
+
+        test('AES-256-GCM message built by pki-lite is decryptable with OpenSSL', async () => {
+            const authEnvelopedData = await AuthEnvelopedData.builder()
+                .setData('Hello AuthEnvelopedData')
+                .addRecipient(recipient())
+                .build()
+
+            expect(
+                await decryptWithOpenSSL(authEnvelopedData.toCms().toDer()),
+            ).toBe('Hello AuthEnvelopedData')
+        })
+
+        test('AES-128-GCM with a 12-byte tag is decryptable with OpenSSL', async () => {
+            const authEnvelopedData = await AuthEnvelopedData.builder()
+                .setData('short tag')
+                .setContentEncryptionAlgorithm({
+                    type: 'AES_128_GCM',
+                    params: {
+                        nonce: crypto.getRandomValues(new Uint8Array(12)),
+                        icvLen: 12,
+                    },
+                })
+                .addRecipient(recipient())
+                .build()
+
+            expect(authEnvelopedData.mac).toHaveLength(12)
+            expect(
+                await decryptWithOpenSSL(authEnvelopedData.toCms().toDer()),
+            ).toBe('short tag')
+        })
+    })
+
     describe('Certificate', () => {
         test('self-signed certificate is valid with OpenSSL', async () => {
             const keyPair = PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem)
@@ -670,6 +718,43 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
             })
 
             expect(result.success).toBe(false)
+        })
+    })
+
+    describe('CertificateRequest', () => {
+        const keys = () => ({
+            privateKey: PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem),
+            publicKey: Certificate.fromPem(rsaSigningKeys.certPem)
+                .tbsCertificate.subjectPublicKeyInfo,
+        })
+
+        test('request without attributes is accepted by OpenSSL', async () => {
+            const { privateKey, publicKey } = keys()
+            const csr = await CertificateRequest.builder()
+                .setSubject('CN=Plain Request, O=Test Org, C=US')
+                .setPublicKey(publicKey)
+                .setPrivateKey(privateKey)
+                .build()
+
+            const result = await opensslVerifyCsr({ csr: csr.toPem() })
+            expect(result.success, result.error).toBe(true)
+            expect(result.text).toMatch(/CN\s*=\s*Plain Request/)
+        })
+
+        test('request with a subjectAltName extension request is accepted by OpenSSL', async () => {
+            const { privateKey, publicKey } = keys()
+            const csr = await CertificateRequest.builder()
+                .setSubject('CN=With SAN')
+                .setPublicKey(publicKey)
+                .setPrivateKey(privateKey)
+                .addSubjectAltName('a.example.com', 'b.example.com')
+                .build()
+
+            const result = await opensslVerifyCsr({ csr: csr.toPem() })
+            expect(result.success, result.error).toBe(true)
+            expect(result.text).toContain('Requested Extensions')
+            expect(result.text).toContain('DNS:a.example.com')
+            expect(result.text).toContain('DNS:b.example.com')
         })
     })
 })

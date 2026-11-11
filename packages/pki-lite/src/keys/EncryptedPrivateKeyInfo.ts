@@ -1,7 +1,7 @@
 import { ContentEncryptionAlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
-import { asn1js, PkiBase } from '../core/PkiBase.js'
+import { asn1js, PkiBase, pemToDer } from '../core/PkiBase.js'
 import { PrivateKeyInfo } from './PrivateKeyInfo.js'
 
 /**
@@ -57,6 +57,16 @@ export class EncryptedPrivateKeyInfo extends PkiBase<EncryptedPrivateKeyInfo> {
 
     static fromDer(der: Uint8Array<ArrayBuffer>): EncryptedPrivateKeyInfo {
         return EncryptedPrivateKeyInfo.fromAsn1(asn1js.fromBER(der).result)
+    }
+
+    /**
+     * Reads an `-----BEGIN ENCRYPTED PRIVATE KEY-----` PEM, as written by `toPem()` and
+     * by `openssl pkcs8 -topk8`.
+     */
+    static fromPem(pem: string): EncryptedPrivateKeyInfo {
+        return EncryptedPrivateKeyInfo.fromDer(
+            pemToDer(pem, 'ENCRYPTED PRIVATE KEY'),
+        )
     }
 
     /**

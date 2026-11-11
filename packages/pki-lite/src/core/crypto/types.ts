@@ -63,6 +63,15 @@ export interface AsymmetricEncryptionAlgorithmParamsMap {
         /** Named curve identifier */
         namedCurve: NamedCurve
     }
+    /**
+     * Ed25519 (RFC 8032, RFC 8410). It has no parameters: the hash is built in.
+     */
+    ED25519: Record<string, never>
+    /**
+     * Ed448 (RFC 8032, RFC 8410). No parameters. WebCrypto has no Ed448, so signing and
+     * verifying need a provider that implements it (pki-lite-crypto-extended).
+     */
+    ED448: Record<string, never>
 }
 
 /**
@@ -188,6 +197,8 @@ export interface SymmetricEncryptionAlgorithmParamsMap
         nonce: Uint8Array<ArrayBuffer>
         /** Authentication tag length in bytes */
         icvLen?: number
+        /** Additional authenticated data (AAD) */
+        additionalData?: Uint8Array<ArrayBuffer>
     }
     /**
      * AES-192 in Galois/Counter Mode parameters.
@@ -197,6 +208,8 @@ export interface SymmetricEncryptionAlgorithmParamsMap
         nonce: Uint8Array<ArrayBuffer>
         /** Authentication tag length in bytes */
         icvLen?: number
+        /** Additional authenticated data (AAD) */
+        additionalData?: Uint8Array<ArrayBuffer>
     }
     /**
      * AES-256 in Galois/Counter Mode parameters.
@@ -206,6 +219,8 @@ export interface SymmetricEncryptionAlgorithmParamsMap
         nonce: Uint8Array<ArrayBuffer>
         /** Authentication tag length in bytes */
         icvLen?: number
+        /** Additional authenticated data (AAD) */
+        additionalData?: Uint8Array<ArrayBuffer>
     }
     /**
      * AES-128 in Counter with CBC-MAC Mode parameters.

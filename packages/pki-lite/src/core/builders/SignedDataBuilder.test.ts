@@ -276,4 +276,51 @@ describe('SignedDataBuilder', () => {
         expect(signedData.crls).toBeDefined()
         expect(signedData.crls!.length).toBeGreaterThanOrEqual(2)
     })
+
+    describe('embedded certificates', () => {
+        const signerOptions = () => ({
+            privateKeyInfo: PrivateKeyInfo.fromPem(
+                rsaSigningKeys.privateKeyPem,
+            ),
+            certificate: Certificate.fromPem(rsaSigningKeys.certPem),
+        })
+        const data = new TextEncoder().encode('data')
+
+        test('a certificate added explicitly and as the signer is embedded once', async () => {
+            const certificate = Certificate.fromPem(rsaSigningKeys.certPem)
+            const signedData = await SignedData.builder()
+                .setData(data)
+                .addCertificate(certificate)
+                .addSigner(signerOptions())
+                .build()
+
+            expect(signedData.certificates).toHaveLength(1)
+            expect((await signedData.verify({ data })).valid).toBe(true)
+        })
+
+        test('signers that share a certificate embed it once', async () => {
+            const signedData = await SignedData.builder()
+                .setData(data)
+                .addSigner(signerOptions())
+                .addSigner(signerOptions())
+                .build()
+
+            expect(signedData.signerInfos).toHaveLength(2)
+            expect(signedData.certificates).toHaveLength(1)
+        })
+
+        test('distinct certificates are all kept, signer first', async () => {
+            const signer = Certificate.fromPem(rsaSigningKeys.certPem)
+            const ca = Certificate.fromPem(rsaSigningKeys.caCertPem)
+            const signedData = await SignedData.builder()
+                .setData(data)
+                .addCertificate(ca, signer)
+                .addSigner(signerOptions())
+                .build()
+
+            expect(signedData.certificates).toHaveLength(2)
+            expect(signedData.certificates![0].toDer()).toEqual(signer.toDer())
+            expect(signedData.certificates![1].toDer()).toEqual(ca.toDer())
+        })
+    })
 })

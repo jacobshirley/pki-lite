@@ -2,6 +2,7 @@
     "name": "pki-lite-crypto-extended",
     "version": "1.2.5",
     "description": "Extended cryptographic provider for pki-lite with MD5 hashing and AES ECB/CBC support",
+    "type": "module",
     "main": "dist/index.js",
     "scripts": {
         "compile": "pnpm compile:validate && tsc -p tsconfig.prod.json",
@@ -44,6 +45,7 @@
     "packageManager": "pnpm@12.3.4",
     "dependencies": {
         "@noble/ciphers": "2.4.0",
+        "@noble/curves": "2.4.0",
         "@noble/hashes": "2.4.0",
         "node-forge": "^1.3.1"
     },

@@ -16,17 +16,29 @@ import type { SubjectPublicKeyInfo } from '../../keys/SubjectPublicKeyInfo.js'
 import { UnsupportedCryptoAlgorithmError } from '../errors/UnsupportedCryptoAlgorithmError.js'
 import { OIDs } from '../OIDs.js'
 import type { Asn1Any, ObjectIdentifierString } from '../PkiBase.js'
+import { asn1js } from '../PkiBase.js'
 import type {
     AsymmetricEncryptionAlgorithmParams,
     CryptoProvider,
     DerivationAlgorithmParams,
     HashAlgorithm,
+    KeyPairGenOptions,
     SymmetricEncryptionAlgorithmParams,
     NamedCurve,
     PbeAlgorithmParams,
 } from './types.js'
 import { PBKDF2Params } from '../../pkcs5/PBKDF2Params.js'
 import { pkcs12Derive } from './utils.js'
+import { bigEndianBytes } from '../utils.js'
+
+/** The AES key size, in bits, that each AES content-encryption OID stands for. */
+const AES_KEY_BITS: Record<string, 128 | 192 | 256> = Object.fromEntries(
+    (['CBC', 'ECB', 'GCM', 'CCM'] as const).flatMap((mode) =>
+        ([128, 192, 256] as const).map(
+            (bits) => [OIDs.ENCRYPTION[`AES_${bits}_${mode}`], bits] as const,
+        ),
+    ),
+)
 
 /**
  * Cryptographic provider implementation using the Web Crypto API.
@@ -136,8 +148,15 @@ export class WebCryptoProvider implements CryptoProvider {
         | RsaPssParams
         | EcKeyImportParams
         | RsaOaepParams
-        | RsaHashedKeyAlgorithm {
+        | RsaHashedKeyAlgorithm
+        | Algorithm {
         switch (algorithm.type) {
+            case 'ED25519':
+                return { name: 'Ed25519' }
+            case 'ED448':
+                throw new UnsupportedCryptoAlgorithmError(
+                    'Ed448 is not supported by WebCrypto; use pki-lite-crypto-extended',
+                )
             case 'RSA_PSS':
                 return {
                     name: 'RSA-PSS',
@@ -174,6 +193,36 @@ export class WebCryptoProvider implements CryptoProvider {
                     `Unsupported algorithm type: ${_exhaustiveCheck}`,
                 )
         }
+    }
+
+    /**
+     * The DER of a public key as WebCrypto accepts it. A key restricted to RSA-PSS or
+     * RSA-OAEP (RFC 4055) is an RSA key whose SubjectPublicKeyInfo names `id-RSASSA-PSS`
+     * or `id-RSAES-OAEP`; WebCrypto only imports RSA keys labelled `rsaEncryption`, and the
+     * key bits are the same, so relabel it.
+     */
+    toWebCryptoSpki(
+        publicKeyInfo: SubjectPublicKeyInfo,
+    ): Uint8Array<ArrayBuffer> {
+        const oid = publicKeyInfo.algorithm.algorithm.value
+        if (oid !== OIDs.RSA.RSASSA_PSS && oid !== OIDs.RSA.RSAES_OAEP) {
+            return publicKeyInfo.toDer()
+        }
+        return new Uint8Array(
+            new asn1js.Sequence({
+                value: [
+                    new asn1js.Sequence({
+                        value: [
+                            new asn1js.ObjectIdentifier({
+                                value: OIDs.RSA.ENCRYPTION,
+                            }),
+                            new asn1js.Null(),
+                        ],
+                    }),
+                    publicKeyInfo.subjectPublicKey.toAsn1(),
+                ],
+            }).toBER(),
+        )
     }
 
     async sign(
@@ -215,7 +264,7 @@ export class WebCryptoProvider implements CryptoProvider {
 
         const importedKey = await this.crypto.subtle.importKey(
             'spki',
-            publicKeyInfo.toDer(),
+            this.toWebCryptoSpki(publicKeyInfo),
             webCryptoParams,
             false,
             ['verify'],
@@ -264,7 +313,11 @@ export class WebCryptoProvider implements CryptoProvider {
                 return {
                     name: 'AES-GCM',
                     iv: gcmParams.nonce,
-                    tagLength: gcmParams.icvLen ?? 128,
+                    // icvLen is in bytes (as in the ASN.1 AES-ICVlen); WebCrypto wants bits
+                    tagLength: (gcmParams.icvLen ?? 16) * 8,
+                    ...(gcmParams.additionalData
+                        ? { additionalData: gcmParams.additionalData }
+                        : {}),
                 }
             }
 
@@ -280,7 +333,7 @@ export class WebCryptoProvider implements CryptoProvider {
                 return {
                     name: 'AES-CCM',
                     iv: ccmParams.nonce,
-                    tagLength: ccmParams.icvLen || 128,
+                    tagLength: (ccmParams.icvLen || 16) * 8,
                 }
             }
             case 'AES_128_ECB':
@@ -605,7 +658,7 @@ export class WebCryptoProvider implements CryptoProvider {
 
         const cryptoKey = await this.crypto.subtle.importKey(
             'spki',
-            publicKeyInfo.toDer(),
+            this.toWebCryptoSpki(publicKeyInfo),
             params,
             false,
             ['encrypt'],
@@ -700,16 +753,36 @@ export class WebCryptoProvider implements CryptoProvider {
         }
     }
 
-    async generateKeyPair(options: {
-        algorithm: 'RSA' | 'EC'
-        keySize?: number
-        publicExponent?: Uint8Array<ArrayBuffer>
-        hash?: string
-        namedCurve?: string
-    }): Promise<{
+    /**
+     * Generates a key pair. Takes the `{ algorithm, params }` form declared by
+     * `CryptoProvider` (what `KeyGen` passes). The older flat form
+     * (`{ algorithm, keySize, namedCurve, ... }`) is still accepted.
+     */
+    async generateKeyPair(
+        options:
+            | KeyPairGenOptions
+            | {
+                  algorithm: 'RSA' | 'EC'
+                  keySize?: number
+                  publicExponent?: Uint8Array<ArrayBuffer> | number
+                  hash?: string
+                  namedCurve?: string
+              },
+    ): Promise<{
         publicKey: Uint8Array<ArrayBuffer>
         privateKey: Uint8Array<ArrayBuffer>
     }> {
+        // Read both shapes: the requested size/curve used to be ignored when it was
+        // nested in `params`, silently producing a 2048-bit RSA / P-256 key.
+        const requested = {
+            ...(options as { params?: object }).params,
+            ...options,
+        } as {
+            keySize?: number
+            publicExponent?: Uint8Array<ArrayBuffer> | number
+            hash?: string
+            namedCurve?: string
+        }
         let webCryptoAlgorithm:
             | RsaHashedKeyGenParams
             | EcKeyGenParams
@@ -717,18 +790,21 @@ export class WebCryptoProvider implements CryptoProvider {
 
         if (options.algorithm === 'RSA') {
             const modulusLength =
-                typeof options.keySize === 'number' ? options.keySize : 2048
+                typeof requested.keySize === 'number' ? requested.keySize : 2048
+            const exponent = requested.publicExponent
             webCryptoAlgorithm = {
                 name: 'RSASSA-PKCS1-v1_5',
                 modulusLength,
                 publicExponent:
-                    options.publicExponent ?? new Uint8Array([1, 0, 1]), // 65537
-                hash: { name: options.hash ?? 'SHA-256' },
+                    typeof exponent === 'number'
+                        ? bigEndianBytes(exponent)
+                        : (exponent ?? new Uint8Array([1, 0, 1])), // 65537
+                hash: { name: requested.hash ?? 'SHA-256' },
             }
         } else if (options.algorithm === 'EC') {
             const namedCurve =
-                typeof options.namedCurve === 'string'
-                    ? options.namedCurve
+                typeof requested.namedCurve === 'string'
+                    ? requested.namedCurve
                     : 'P-256'
             webCryptoAlgorithm = {
                 name: 'ECDSA',
@@ -795,6 +871,19 @@ export class WebCryptoProvider implements CryptoProvider {
     ): AlgorithmIdentifier {
         if (encryptionParams.type === 'ECDH') {
             throw new Error(`ECDH is not a signature algorithm`)
+        }
+
+        if (
+            encryptionParams.type === 'ED25519' ||
+            encryptionParams.type === 'ED448'
+        ) {
+            // RFC 8410 3: the parameters field MUST be absent
+            return new AlgorithmIdentifier({
+                algorithm:
+                    encryptionParams.type === 'ED25519'
+                        ? OIDs.CURVES.ED25519
+                        : OIDs.CURVES.ED448,
+            })
         }
 
         const digestAlgorithm = this.digestAlgorithm(
@@ -1243,11 +1332,9 @@ export class WebCryptoProvider implements CryptoProvider {
 
         switch (algorithm.algorithm.toString()) {
             case OIDs.ENCRYPTION.AES_128_CBC:
-                type = 'AES_128_CBC'
             case OIDs.ENCRYPTION.AES_192_CBC:
-                type = 'AES_192_CBC'
             case OIDs.ENCRYPTION.AES_256_CBC: {
-                type = 'AES_256_CBC'
+                type = `AES_${AES_KEY_BITS[algorithm.algorithm.toString()]}_CBC`
                 const iv = algorithm.parameters?.parseAs(OctetString)?.bytes
                 if (!iv) {
                     throw new Error(
@@ -1262,11 +1349,9 @@ export class WebCryptoProvider implements CryptoProvider {
             }
 
             case OIDs.ENCRYPTION.AES_128_GCM:
-                type = 'AES_128_GCM'
             case OIDs.ENCRYPTION.AES_192_GCM:
-                type = 'AES_192_GCM'
             case OIDs.ENCRYPTION.AES_256_GCM: {
-                type = 'AES_256_GCM'
+                type = `AES_${AES_KEY_BITS[algorithm.algorithm.toString()]}_GCM`
                 const gcmParams = algorithm.parameters?.parseAs(GCMParameters)
                 if (!gcmParams) {
                     throw new Error(
@@ -1279,17 +1364,15 @@ export class WebCryptoProvider implements CryptoProvider {
                     type,
                     params: {
                         nonce: gcmParams.aesNonce.bytes,
-                        icvLen: tagLength ? tagLength * 8 : undefined, // Convert to bits
+                        icvLen: tagLength || undefined, // bytes, like the ASN.1 field
                     },
                 }
             }
 
             case OIDs.ENCRYPTION.AES_128_CCM:
-                type = 'AES_128_CCM'
             case OIDs.ENCRYPTION.AES_192_CCM:
-                type = 'AES_192_CCM'
             case OIDs.ENCRYPTION.AES_256_CCM: {
-                type = 'AES_256_CCM'
+                type = `AES_${AES_KEY_BITS[algorithm.algorithm.toString()]}_CCM`
                 const ccmParams = algorithm.parameters?.parseAs(CCMParameters)
                 if (!ccmParams) {
                     throw new Error(
@@ -1301,16 +1384,14 @@ export class WebCryptoProvider implements CryptoProvider {
                     type,
                     params: {
                         nonce: ccmParams.aesNonce.bytes,
-                        icvLen: tagLength ? tagLength * 8 : undefined, // Convert to bits
+                        icvLen: tagLength || undefined, // bytes, like the ASN.1 field
                     },
                 }
             }
             case OIDs.ENCRYPTION.AES_128_ECB:
-                type = 'AES_128_ECB'
             case OIDs.ENCRYPTION.AES_192_ECB:
-                type = 'AES_192_ECB'
             case OIDs.ENCRYPTION.AES_256_ECB: {
-                type = 'AES_256_ECB'
+                type = `AES_${AES_KEY_BITS[algorithm.algorithm.toString()]}_ECB`
                 return {
                     type,
                     params: {
@@ -1375,6 +1456,10 @@ export class WebCryptoProvider implements CryptoProvider {
                     },
                 }
 
+            case OIDs.CURVES.ED25519:
+                return { type: 'ED25519', params: {} }
+            case OIDs.CURVES.ED448:
+                return { type: 'ED448', params: {} }
             case OIDs.RSA.SHA1_WITH_RSA:
                 return {
                     type: 'RSASSA_PKCS1_v1_5',

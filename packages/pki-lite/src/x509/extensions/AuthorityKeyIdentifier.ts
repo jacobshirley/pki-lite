@@ -2,7 +2,8 @@ import { Integer } from '../../asn1/Integer.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
 import { KeyIdentifier } from '../../pkcs7/recipients/KeyIdentifier.js'
-import { GeneralNames } from '../GeneralName.js'
+import { GeneralName, GeneralNames } from '../GeneralName.js'
+import { implicitTag } from '../../core/tagging.js'
 
 /**
  * AuthorityKeyIdentifier extension class.
@@ -38,41 +39,24 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
                 : new Integer({ value: params.authorityCertSerialNumber })
     }
 
+    /**
+     * All three fields are IMPLICITly tagged: keyIdentifier and
+     * authorityCertSerialNumber are primitive `[0]` / `[2]` values, and
+     * authorityCertIssuer is a constructed `[1]` holding the GeneralName
+     * elements directly.
+     */
     toAsn1(): Asn1BaseBlock {
-        const sequence = new asn1js.Sequence({
-            value: [],
-        })
+        const values: Asn1BaseBlock[] = []
         if (this.keyIdentifier) {
-            const keyIdBlock = new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // Context-specific
-                    tagNumber: 0, // [0]
-                },
-                value: [this.keyIdentifier.toAsn1()],
-            })
-            sequence.valueBlock.value.push(keyIdBlock)
+            values.push(implicitTag(this.keyIdentifier.toAsn1(), 0))
         }
         if (this.authorityCertIssuer) {
-            const issuerBlock = new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // Context-specific
-                    tagNumber: 1, // [1]
-                },
-                value: [this.authorityCertIssuer.toAsn1()],
-            })
-            sequence.valueBlock.value.push(issuerBlock)
+            values.push(this.authorityCertIssuer.toImplicitAsn1(1))
         }
         if (this.authorityCertSerialNumber !== undefined) {
-            const serialNumberBlock = new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // Context-specific
-                    tagNumber: 2, // [2]
-                },
-                value: [this.authorityCertSerialNumber.toAsn1()],
-            })
-            sequence.valueBlock.value.push(serialNumberBlock)
+            values.push(implicitTag(this.authorityCertSerialNumber.toAsn1(), 2))
         }
-        return sequence
+        return new asn1js.Sequence({ value: values })
     }
 
     static fromAsn1(asn1: Asn1BaseBlock): AuthorityKeyIdentifier {
@@ -84,34 +68,51 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
         let authorityCertSerialNumber: Integer | undefined
 
         for (const element of sequence.valueBlock.value) {
-            const tagNumber = element.idBlock.tagNumber
+            const explicit =
+                element instanceof asn1js.Constructed &&
+                element.valueBlock.value.length === 1
+                    ? element.valueBlock.value[0]
+                    : undefined
 
-            switch (tagNumber) {
+            switch (element.idBlock.tagNumber) {
                 case 0: // keyIdentifier [0] IMPLICIT OCTET STRING
-                    if (element instanceof asn1js.Constructed) {
-                        keyIdentifier = KeyIdentifier.fromAsn1(
-                            element.valueBlock.value[0],
-                        )
-                    } else {
+                    if (explicit) {
+                        // explicit form written by earlier versions
+                        keyIdentifier = KeyIdentifier.fromAsn1(explicit)
+                    } else if (element instanceof asn1js.OctetString) {
                         keyIdentifier = KeyIdentifier.fromAsn1(element)
+                    } else {
+                        keyIdentifier = new KeyIdentifier({
+                            bytes: new Uint8Array(
+                                (
+                                    element as asn1js.Primitive
+                                ).valueBlock.valueHexView,
+                            ),
+                        })
                     }
                     break
-                case 1: // authorityCertIssuer
-                    if (element instanceof asn1js.Constructed) {
-                        authorityCertIssuer = GeneralNames.fromAsn1(
-                            element.valueBlock.value[0],
+                case 1: // authorityCertIssuer [1] IMPLICIT GeneralNames
+                    if (!(element instanceof asn1js.Constructed)) {
+                        throw new Asn1ParseError(
+                            'Invalid AuthorityKeyIdentifier: authorityCertIssuer must be constructed',
                         )
-                    } else {
-                        authorityCertIssuer = GeneralNames.fromAsn1(element)
                     }
+                    authorityCertIssuer = GeneralNames.fromImplicitAsn1(element)
                     break
-                case 2: // authorityCertSerialNumber
-                    if (element instanceof asn1js.Constructed) {
-                        authorityCertSerialNumber = Integer.fromAsn1(
-                            element.valueBlock.value[0],
-                        )
-                    } else {
+                case 2: // authorityCertSerialNumber [2] IMPLICIT INTEGER
+                    if (explicit) {
+                        // explicit form written by earlier versions
+                        authorityCertSerialNumber = Integer.fromAsn1(explicit)
+                    } else if (element instanceof asn1js.Integer) {
                         authorityCertSerialNumber = Integer.fromAsn1(element)
+                    } else {
+                        authorityCertSerialNumber = new Integer({
+                            value: new Uint8Array(
+                                (
+                                    element as asn1js.Primitive
+                                ).valueBlock.valueHexView,
+                            ),
+                        })
                     }
                     break
                 default:
