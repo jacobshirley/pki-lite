@@ -109,7 +109,8 @@ export interface CertificateValidationOptions {
     /**
      * Whether to enforce name constraints (RFC 5280 4.2.1.10): the `NameConstraints`
      * extension of every CA in the chain, and any given with the trust anchor, apply to the
-     * certificates below them. Needs `validateChain`. Off by default.
+     * certificates below them. On by default, as RFC 5280 requires of path validation; set
+     * to `false` to skip the check. Part of chain validation (`validateChain`).
      */
     validateNameConstraints?: boolean
     /** Whether to validate certificate policies */
@@ -666,7 +667,7 @@ export class CertificateValidator {
 
         // Name constraints (RFC 5280 6.1): those of every CA in the path, and any given
         // with the trust anchor, apply to the certificates below them
-        if (options.validateNameConstraints) {
+        if (options.validateNameConstraints !== false) {
             const violation = this.checkChainNameConstraints(chain)
 
             if (violation) {

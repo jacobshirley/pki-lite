@@ -302,7 +302,7 @@ describe('CertificateValidator: name constraints from CA certificates', () => {
         expect(result.messages.join(' ')).toContain('trust anchor')
     })
 
-    test('constraints are only enforced when validateNameConstraints is set', async () => {
+    test('constraints are enforced by default and can be switched off', async () => {
         const root = await ca({
             subject: 'CN=Root',
             keys: rootKeys,
@@ -312,11 +312,18 @@ describe('CertificateValidator: name constraints from CA certificates', () => {
             'www.evil.org',
         ])
 
+        // on unless told otherwise: no option set, and explicitly true
+        const byDefault = await validator.validate(certificate, {
+            validateChain: true,
+            trustAnchors: [{ certificate: root }],
+        })
+        expect(byDefault.isValid).toBe(false)
+        expect((await validate(certificate, root)).isValid).toBe(false)
+
         const off = await validate(certificate, root, [], {
             validateNameConstraints: false,
         })
         expect(off.isValid, off.messages.join('; ')).toBe(true)
-        expect((await validate(certificate, root)).isValid).toBe(false)
     })
 
     test('unreadable name constraints fail closed', async () => {
