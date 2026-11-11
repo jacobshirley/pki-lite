@@ -22,12 +22,22 @@ import type {
     CryptoProvider,
     DerivationAlgorithmParams,
     HashAlgorithm,
+    KeyPairGenOptions,
     SymmetricEncryptionAlgorithmParams,
     NamedCurve,
     PbeAlgorithmParams,
 } from './types.js'
 import { PBKDF2Params } from '../../pkcs5/PBKDF2Params.js'
 import { pkcs12Derive } from './utils.js'
+
+/** A non-negative integer as big-endian bytes (for WebCrypto's publicExponent). */
+function bigEndianBytes(value: number): Uint8Array<ArrayBuffer> {
+    const bytes: number[] = []
+    for (let rest = value; rest > 0; rest = Math.floor(rest / 256)) {
+        bytes.unshift(rest % 256)
+    }
+    return new Uint8Array(bytes.length ? bytes : [0])
+}
 
 /** The AES key size, in bits, that each AES content-encryption OID stands for. */
 const AES_KEY_BITS: Record<string, 128 | 192 | 256> = Object.fromEntries(
@@ -751,16 +761,36 @@ export class WebCryptoProvider implements CryptoProvider {
         }
     }
 
-    async generateKeyPair(options: {
-        algorithm: 'RSA' | 'EC'
-        keySize?: number
-        publicExponent?: Uint8Array<ArrayBuffer>
-        hash?: string
-        namedCurve?: string
-    }): Promise<{
+    /**
+     * Generates a key pair. Takes the `{ algorithm, params }` form declared by
+     * `CryptoProvider` (what `KeyGen` passes). The older flat form
+     * (`{ algorithm, keySize, namedCurve, ... }`) is still accepted.
+     */
+    async generateKeyPair(
+        options:
+            | KeyPairGenOptions
+            | {
+                  algorithm: 'RSA' | 'EC'
+                  keySize?: number
+                  publicExponent?: Uint8Array<ArrayBuffer> | number
+                  hash?: string
+                  namedCurve?: string
+              },
+    ): Promise<{
         publicKey: Uint8Array<ArrayBuffer>
         privateKey: Uint8Array<ArrayBuffer>
     }> {
+        // Read both shapes: the requested size/curve used to be ignored when it was
+        // nested in `params`, silently producing a 2048-bit RSA / P-256 key.
+        const requested = {
+            ...(options as { params?: object }).params,
+            ...options,
+        } as {
+            keySize?: number
+            publicExponent?: Uint8Array<ArrayBuffer> | number
+            hash?: string
+            namedCurve?: string
+        }
         let webCryptoAlgorithm:
             | RsaHashedKeyGenParams
             | EcKeyGenParams
@@ -768,18 +798,21 @@ export class WebCryptoProvider implements CryptoProvider {
 
         if (options.algorithm === 'RSA') {
             const modulusLength =
-                typeof options.keySize === 'number' ? options.keySize : 2048
+                typeof requested.keySize === 'number' ? requested.keySize : 2048
+            const exponent = requested.publicExponent
             webCryptoAlgorithm = {
                 name: 'RSASSA-PKCS1-v1_5',
                 modulusLength,
                 publicExponent:
-                    options.publicExponent ?? new Uint8Array([1, 0, 1]), // 65537
-                hash: { name: options.hash ?? 'SHA-256' },
+                    typeof exponent === 'number'
+                        ? bigEndianBytes(exponent)
+                        : (exponent ?? new Uint8Array([1, 0, 1])), // 65537
+                hash: { name: requested.hash ?? 'SHA-256' },
             }
         } else if (options.algorithm === 'EC') {
             const namedCurve =
-                typeof options.namedCurve === 'string'
-                    ? options.namedCurve
+                typeof requested.namedCurve === 'string'
+                    ? requested.namedCurve
                     : 'P-256'
             webCryptoAlgorithm = {
                 name: 'ECDSA',
