@@ -861,13 +861,8 @@ export class CertificateValidator {
             }
 
             for (const revokedCert of crl.tbsCertList.revokedCertificates) {
-                // Compare serial numbers by converting to hex strings for reliable comparison
-                const revokedSerialHex = this.serialNumberToHex(
-                    revokedCert.userCertificate,
-                )
-                const certSerialHex = serialNumber.toHexString()
-
-                if (revokedSerialHex === certSerialHex) {
+                // Compare numerically: hex strings differ in case and leading zeros
+                if (revokedCert.serialAsBigInt() === serialNumber.toBigInt()) {
                     // Extract revocation reason if available from extensions
                     let reason: number | undefined
                     let details = 'Certificate found in CRL'
@@ -956,18 +951,6 @@ export class CertificateValidator {
         return {
             isRevoked: false,
             source: 'NONE',
-        }
-    }
-
-    /**
-     * Converts a serial number (number or string) to a consistent hex representation.
-     */
-    private serialNumberToHex(serialNumber: number | string): string {
-        if (typeof serialNumber === 'number') {
-            return serialNumber.toString(16).padStart(2, '0').toUpperCase()
-        } else {
-            // If it's already a hex string, normalize it
-            return serialNumber.replace(/[^0-9A-Fa-f]/g, '').toUpperCase()
         }
     }
 

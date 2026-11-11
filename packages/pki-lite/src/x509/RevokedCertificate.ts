@@ -2,6 +2,7 @@ import { Time } from '../asn1/Time.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { Extension } from './Extension.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { Integer } from '../asn1/Integer.js'
 
 /**
  * Represents a revoked certificate entry in a CRL.
@@ -33,22 +34,32 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
     }
 
     /**
+     * The serial number as a bigint. A string `userCertificate` is read as hex;
+     * separators such as `:` and a `0x` prefix are ignored.
+     */
+    serialAsBigInt(): bigint {
+        if (typeof this.userCertificate === 'number') {
+            return BigInt(this.userCertificate)
+        }
+        const hex = this.userCertificate
+            .replace(/^0x/i, '')
+            .replace(/[^0-9a-f]/gi, '')
+        if (hex.length === 0) {
+            throw new Asn1ParseError(
+                `Invalid serial number: ${this.userCertificate}`,
+            )
+        }
+        return BigInt('0x' + hex)
+    }
+
+    /**
      * Converts the revoked certificate to an ASN.1 structure.
      */
     toAsn1(): Asn1BaseBlock {
         const values: Asn1BaseBlock[] = []
 
-        // Serial Number - Convert string to number if necessary
-        const serialValue =
-            typeof this.userCertificate === 'string'
-                ? parseInt(this.userCertificate, 16) // Parse as hex since certificate serial numbers are typically hex
-                : this.userCertificate
-
-        values.push(
-            new asn1js.Integer({
-                value: serialValue,
-            }),
-        )
+        // Serial number, exact for serials of any size
+        values.push(new Integer({ value: this.serialAsBigInt() }).toAsn1())
 
         // Revocation Date
         values.push(new Time({ time: this.revocationDate }).toAsn1())
@@ -102,12 +113,13 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
             )
         }
 
-        // Convert serial number to string or number
-        const userCertificate = userCertificateAsn1.valueBlock
-            .toString()
-            .includes('0x')
-            ? userCertificateAsn1.valueBlock.toString()
-            : userCertificateAsn1.valueBlock.valueDec
+        // A number when it is exactly representable, otherwise a hex string
+        const serial = Integer.fromAsn1(userCertificateAsn1).toBigInt()
+        const userCertificate =
+            serial >= BigInt(Number.MIN_SAFE_INTEGER) &&
+            serial <= BigInt(Number.MAX_SAFE_INTEGER)
+                ? Number(serial)
+                : serial.toString(16)
 
         // Get the revocation date
         const revocationDate = Time.fromAsn1(

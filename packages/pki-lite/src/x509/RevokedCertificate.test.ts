@@ -1,4 +1,5 @@
 import { assert, describe, expect, test } from 'vitest'
+import { derToAsn1 } from '../core/PkiBase.js'
 import { RevokedCertificate } from './RevokedCertificate.js'
 import { Extension } from './Extension.js'
 import { asn1js, ObjectIdentifierString } from '../core/PkiBase.js'
@@ -273,5 +274,64 @@ describe('RevokedCertificate', () => {
           MCACAjA5Fw0yNDAxMDEwMDAwMDBaMAswCQYDVR0VBAIFAA==
           -----END REVOKEDCERTIFICATE-----"
         `)
+    })
+
+    describe('serial numbers', () => {
+        // SEQUENCE { INTEGER <serial>, UTCTime 260101000000Z }
+        const entry = (serial: number[]) => {
+            const time = [...new TextEncoder().encode('260101000000Z')]
+            const body = [
+                0x02,
+                serial.length,
+                ...serial,
+                0x17,
+                time.length,
+                ...time,
+            ]
+            return new Uint8Array([0x30, body.length, ...body])
+        }
+
+        test('keeps a 16-byte serial exactly (it used to read as 0)', () => {
+            const serial = [
+                0x4f, 0x1c, 0x00, 0xa2, 0x9b, 0x77, 0x31, 0xe0, 0x05, 0x6d,
+                0xc4, 0x18, 0xf2, 0x3a, 0x90, 0x5b,
+            ]
+            const der = entry(serial)
+            const revoked = RevokedCertificate.fromAsn1(derToAsn1(der))
+            expect(revoked.userCertificate).toBe(
+                '4f1c00a29b7731e0056dc418f23a905b',
+            )
+            expect(revoked.toDer()).toEqual(der)
+        })
+
+        test('reads a small serial as a number', () => {
+            const revoked = RevokedCertificate.fromAsn1(
+                derToAsn1(entry([0x30, 0x39])),
+            )
+            expect(revoked.userCertificate).toBe(12345)
+        })
+
+        test('serialAsBigInt accepts numbers and hex in any common form', () => {
+            const at = (userCertificate: number | string) =>
+                new RevokedCertificate({
+                    userCertificate,
+                    revocationDate: new Date(),
+                }).serialAsBigInt()
+            expect(at(0xabcdef)).toBe(0xabcdefn)
+            expect(at('ABCDEF')).toBe(0xabcdefn)
+            expect(at('0xab:cd:ef')).toBe(0xabcdefn)
+            expect(() => at('zz')).toThrow('Invalid serial number')
+        })
+
+        test('encodes a large hex serial without losing precision', () => {
+            const revoked = new RevokedCertificate({
+                userCertificate: 'ffffffffffffffffffff',
+                revocationDate: new Date('2026-01-01T00:00:00Z'),
+            })
+            const parsed = RevokedCertificate.fromAsn1(
+                derToAsn1(revoked.toDer()),
+            )
+            expect(parsed.userCertificate).toBe('ffffffffffffffffffff')
+        })
     })
 })
