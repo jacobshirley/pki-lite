@@ -199,4 +199,36 @@ describe('EncryptedPrivateKeyInfo', () => {
           -----END ENCRYPTED PRIVATE KEY-----"
         `)
     })
+
+    test('round-trips through PEM and decrypts', async () => {
+        const { PrivateKeyInfo } = await import('./PrivateKeyInfo.js')
+        const { KeyGen } = await import('../core/KeyGen.js')
+        const { privateKey } = await KeyGen.generateEcPair({
+            namedCurve: 'P-256',
+        })
+
+        const encrypted = await EncryptedPrivateKeyInfo.create(
+            privateKey,
+            'pw',
+            { iterations: 1000 },
+        )
+        const pem = encrypted.toPem()
+        expect(pem.startsWith('-----BEGIN ENCRYPTED PRIVATE KEY-----')).toBe(
+            true,
+        )
+
+        const loaded = EncryptedPrivateKeyInfo.fromPem(pem)
+        expect(loaded.toDer()).toEqual(encrypted.toDer())
+        const decrypted = await loaded.decrypt('pw')
+        expect(decrypted).toBeInstanceOf(PrivateKeyInfo)
+        expect(decrypted.equals(privateKey)).toBe(true)
+    })
+
+    test('fromPem rejects a PEM of another type', () => {
+        expect(() =>
+            EncryptedPrivateKeyInfo.fromPem(
+                '-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----',
+            ),
+        ).toThrow()
+    })
 })
