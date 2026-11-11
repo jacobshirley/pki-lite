@@ -74,14 +74,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             (c === 'signedData:verify' && /sd_ed25519/.test(t)),
     },
     {
-        id: 'CSR-ATTRIBUTES-PARSE',
-        why:
-            'CertificateRequestInfo cannot parse the [0] attributes field: it crashes on the empty `A0 00` ' +
-            'OpenSSL writes for a request without attributes, and for non-empty attributes it expects an ' +
-            'explicit SET wrapper that PKCS#10 (IMPLICIT SET OF) does not have. No OpenSSL-made CSR can be read.',
-        match: (t, c) => t.startsWith('csr/') && /^(parse|roundtrip)$/.test(c),
-    },
-    {
         id: 'CRL-GENERALIZEDTIME-ROUNDTRIP',
         why: 'A CRL whose thisUpdate/nextUpdate are GeneralizedTime (year >= 2050) is re-encoded differently.',
         match: (t, c) => c === 'roundtrip' && t === 'crl/crl_gentime.der',

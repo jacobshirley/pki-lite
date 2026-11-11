@@ -53,23 +53,19 @@ export class CertificateRequestInfo extends PkiBase<CertificateRequestInfo> {
             this.publicKey.toAsn1(),
         ]
 
-        if (this.attributes && this.attributes.length > 0) {
-            const setOfAttributes = new asn1js.Set({
-                value: this.attributes.map((attribute: Attribute) =>
-                    attribute.toAsn1(),
-                ),
-            })
-
-            const contextSpecificAttributes = new asn1js.Constructed({
+        // attributes [0] is mandatory in PKCS#10 (an empty request writes `A0 00`) and
+        // IMPLICIT SET OF: the Attribute elements sit directly inside the [0].
+        values.push(
+            new asn1js.Constructed({
                 idBlock: {
                     tagClass: 3, // CONTEXT_SPECIFIC
                     tagNumber: 0, // [0]
                 },
-                value: [setOfAttributes],
-            })
-
-            values.push(contextSpecificAttributes)
-        }
+                value: (this.attributes ?? []).map((attribute: Attribute) =>
+                    attribute.toAsn1(),
+                ),
+            }),
+        )
 
         return new asn1js.Sequence({
             value: values,
@@ -142,7 +138,15 @@ export class CertificateRequestInfo extends PkiBase<CertificateRequestInfo> {
                 )
             }
 
-            attributes = Attributes.fromAsn1(attributesAsn1.valueBlock.value[0])
+            // The Attribute elements sit directly in the [0]. Older versions of this
+            // library wrapped them in an extra SET, so accept that form too.
+            const [first] = attributesAsn1.valueBlock.value
+            const parsed =
+                attributesAsn1.valueBlock.value.length === 1 &&
+                first instanceof asn1js.Set
+                    ? Attributes.fromAsn1(first)
+                    : Attributes.fromAsn1(attributesAsn1)
+            attributes = parsed.length > 0 ? [...parsed] : undefined
         }
 
         return new CertificateRequestInfo({

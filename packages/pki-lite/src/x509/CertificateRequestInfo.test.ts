@@ -62,8 +62,14 @@ describe('CertificateRequestInfo', () => {
         expect(requestInfo.attributes).toBeUndefined()
 
         const asn1 = requestInfo.toAsn1()
+        // PKCS#10 makes `attributes [0]` mandatory: without attributes it is written
+        // as an empty [0] (A0 00), which is what OpenSSL does too.
         // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value.length).toEqual(3) // No attributes
+        const children = asn1.valueBlock.value
+        expect(children.length).toEqual(4)
+        expect(children[3].idBlock.tagClass).toEqual(3)
+        expect(children[3].idBlock.tagNumber).toEqual(0)
+        expect(children[3].valueBlock.value.length).toEqual(0)
     })
 
     test('can be parsed from ASN.1 without attributes', () => {
@@ -258,11 +264,10 @@ describe('CertificateRequestInfo', () => {
                 OBJECT IDENTIFIER : 1.2.840.113549.1.1.1
               BIT STRING : 0000000100000010000000110000010000000101
             [0] :
-              SET :
-                SEQUENCE :
-                  OBJECT IDENTIFIER : 1.2.840.113549.1.9.14
-                  SET :
-                    BOOLEAN: FALSE"
+              SEQUENCE :
+                OBJECT IDENTIFIER : 1.2.840.113549.1.9.14
+                SET :
+                  BOOLEAN: FALSE"
         `)
     })
 
@@ -293,7 +298,8 @@ describe('CertificateRequestInfo', () => {
             SEQUENCE :
               SEQUENCE :
                 OBJECT IDENTIFIER : 1.2.840.113549.1.1.1
-              BIT STRING : 0000000100000010000000110000010000000101"
+              BIT STRING : 0000000100000010000000110000010000000101
+            [0] :"
         `)
     })
 
@@ -301,7 +307,7 @@ describe('CertificateRequestInfo', () => {
         const obj = createSampleRequestInfo()
         expect(obj.toPem()).toMatchInlineSnapshot(`
           "-----BEGIN CERTIFICATEREQUESTINFO-----
-          MHICAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaAUMRIwEAYJKoZIhvcNAQkOMQMBAQA=
+          MHACAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaASMBAGCSqGSIb3DQEJDjEDAQEA
           -----END CERTIFICATEREQUESTINFO-----"
         `)
     })
@@ -316,7 +322,7 @@ describe('CertificateRequestInfo', () => {
         })
         expect(obj.toPem()).toMatchInlineSnapshot(`
           "-----BEGIN CERTIFICATEREQUESTINFO-----
-          MFwCAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBQ==
+          MF4CAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaAA
           -----END CERTIFICATEREQUESTINFO-----"
         `)
     })
