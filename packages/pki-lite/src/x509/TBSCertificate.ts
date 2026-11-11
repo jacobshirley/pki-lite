@@ -76,16 +76,18 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
     toAsn1(): Asn1BaseBlock {
         const tbsValues = []
 
-        // Version [0] EXPLICIT
-        tbsValues.push(
-            new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // CONTEXT-SPECIFIC
-                    tagNumber: 0, // [0]
-                },
-                value: [new asn1js.Integer({ value: this.version })],
-            }),
-        )
+        // Version [0] EXPLICIT, DEFAULT v1: DER leaves the default out
+        if (this.version !== 0) {
+            tbsValues.push(
+                new asn1js.Constructed({
+                    idBlock: {
+                        tagClass: 3, // CONTEXT-SPECIFIC
+                        tagNumber: 0, // [0]
+                    },
+                    value: [new asn1js.Integer({ value: this.version })],
+                }),
+            )
+        }
 
         tbsValues.push(this.serialNumber.toAsn1())
 
