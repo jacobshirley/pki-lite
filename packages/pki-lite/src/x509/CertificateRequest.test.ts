@@ -145,11 +145,10 @@ describe('CertificateRequest', () => {
                   OBJECT IDENTIFIER : 1.2.840.113549.1.1.1
                 BIT STRING : 0000000100000010000000110000010000000101
               [0] :
-                SET :
-                  SEQUENCE :
-                    OBJECT IDENTIFIER : 1.2.840.113549.1.9.14
-                    SET :
-                      BOOLEAN: FALSE
+                SEQUENCE :
+                  OBJECT IDENTIFIER : 1.2.840.113549.1.9.14
+                  SET :
+                    BOOLEAN: FALSE
             SEQUENCE :
               OBJECT IDENTIFIER : 1.2.840.113549.1.1.11
             BIT STRING : 0000101000010100000111100010100000110010"
@@ -160,7 +159,7 @@ describe('CertificateRequest', () => {
         const request = createSampleRequest()
         expect(request.toPem()).toMatchInlineSnapshot(`
           "-----BEGIN CERTIFICATE REQUEST-----
-          MIGJMHICAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaAUMRIwEAYJKoZIhvcNAQkOMQMBAQAwCwYJKoZIhvcNAQELAwYAChQeKDI=
+          MIGHMHACAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaASMBAGCSqGSIb3DQEJDjEDAQEAMAsGCSqGSIb3DQEBCwMGAAoUHigy
           -----END CERTIFICATE REQUEST-----"
         `)
     })

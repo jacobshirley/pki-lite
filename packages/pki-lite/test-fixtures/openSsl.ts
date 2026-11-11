@@ -1,4 +1,4 @@
-import { spawn } from 'child_process'
+import { spawn, spawnSync } from 'child_process'
 import { randomUUID } from 'crypto'
 import fs from 'fs'
 
@@ -10,15 +10,25 @@ function getTempFolder(): string {
     return tmpFolder
 }
 
+const hasCommand = (command: string) =>
+    spawnSync(command, ['--version'], { stdio: 'ignore' }).status === 0
+
+// CI runs OpenSSL from a pinned docker image; where docker is unavailable (e.g. a dev
+// machine without it) fall back to an `openssl` on PATH.
+const useDocker = hasCommand('docker')
+
 export async function runOpenSSL(
     args: string[],
     debugFolder: string,
 ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-        const dockerOpenssl = `docker run --rm -v ${debugFolder}:/data -w /data alpine/openssl:latest`
+        const relativeArgs = args.map((x) => x.replace(debugFolder + '/', ''))
+        const openssl = useDocker
+            ? `docker run --rm -v ${debugFolder}:/data -w /data alpine/openssl:latest`
+            : 'openssl'
         fs.writeFileSync(
             debugFolder + '/debug.sh',
-            `${dockerOpenssl} ${args.map((x) => x.replace(debugFolder + '/', '')).join(' ')}`,
+            `${openssl} ${relativeArgs.join(' ')}`,
             {
                 mode: 0o755,
             },
@@ -276,6 +286,34 @@ export async function opensslPkcs12Parse(options: {
     try {
         const output = await runOpenSSL(args, tmpFolder)
         return { success: true, output: output.toString() }
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+        }
+    }
+}
+
+/**
+ * Has OpenSSL parse a PKCS#10 certificate request and verify its self-signature.
+ * Returns the `-text` rendering so callers can check the contents.
+ */
+export async function opensslVerifyCsr(options: { csr: string }): Promise<{
+    success: boolean
+    text?: string
+    error?: string
+}> {
+    const tmpFolder = getTempFolder()
+    fs.writeFileSync(`${tmpFolder}/csr.pem`, options.csr)
+
+    try {
+        const output = await runOpenSSL(
+            ['req', '-in', 'csr.pem', '-noout', '-verify', '-text'],
+            tmpFolder,
+        )
+        // "Certificate request self-signature verify OK" goes to stderr, so a zero
+        // exit status is what tells us the request parsed and verified.
+        return { success: true, text: output.toString() }
     } catch (error) {
         return {
             success: false,

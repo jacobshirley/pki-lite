@@ -20,6 +20,15 @@ export class SubjectKeyIdentifier extends OctetString {
             })
         }
 
+        // `subjectKeyIdentifier [0] SubjectKeyIdentifier` in CMS (SignerIdentifier,
+        // RecipientIdentifier, ...) is IMPLICIT, so DER parsing yields a primitive
+        // context-specific value rather than a universal OCTET STRING.
+        if (asn1 instanceof asn1js.Primitive && asn1.idBlock.tagClass === 3) {
+            return new SubjectKeyIdentifier({
+                bytes: new Uint8Array(asn1.valueBlock.valueHexView),
+            })
+        }
+
         throw new Asn1ParseError(
             'Invalid ASN.1 structure for SubjectKeyIdentifier',
         )

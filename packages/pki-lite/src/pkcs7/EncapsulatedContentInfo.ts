@@ -1,3 +1,4 @@
+import { OctetString } from '../asn1/OctetString.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import {
     Asn1BaseBlock,
@@ -126,7 +127,8 @@ export class EncapsulatedContentInfo extends PkiBase<EncapsulatedContentInfo> {
                 )
             }
 
-            content = new Uint8Array(contentValues[0].valueBlock.valueHexView)
+            // May be a constructed (chunked) OCTET STRING in BER, e.g. `openssl cms -stream`
+            content = new Uint8Array(OctetString.contentBytes(contentValues[0]))
         }
 
         return new EncapsulatedContentInfo({

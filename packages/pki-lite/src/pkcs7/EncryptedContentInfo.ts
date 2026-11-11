@@ -100,20 +100,16 @@ export class EncryptedContentInfo extends PkiBase<EncryptedContentInfo> {
 
         // EncryptedContent (optional)
         let encryptedContent: Uint8Array<ArrayBuffer> | undefined = undefined
+        // encryptedContent [0] IMPLICIT OCTET STRING: primitive in DER, but BER writers
+        // that stream (`openssl cms -stream`) use a constructed [0] of OCTET STRING chunks
         if (
             values.length > 2 &&
-            (values[2] instanceof asn1js.Primitive ||
-                values[2] instanceof asn1js.OctetString)
+            values[2].idBlock.tagClass === 3 &&
+            values[2].idBlock.tagNumber === 0
         ) {
-            const primitive = values[2] as asn1js.Primitive | asn1js.OctetString
-            if (
-                primitive.idBlock.tagClass === 3 &&
-                primitive.idBlock.tagNumber === 0
-            ) {
-                encryptedContent = new Uint8Array(
-                    primitive.valueBlock.valueHexView,
-                )
-            }
+            encryptedContent = new Uint8Array(
+                OctetString.contentBytes(values[2]),
+            )
         }
 
         return new EncryptedContentInfo({

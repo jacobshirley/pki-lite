@@ -15,6 +15,7 @@ import { RelativeDistinguishedName } from '../RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../AttributeTypeAndValue.js'
 import { OIDs } from '../../core/OIDs.js'
 import * as asn1js from 'asn1js'
+import { derToAsn1 } from '../../core/PkiBase.js'
 
 describe('GeneralSubtree', () => {
     test('should create GeneralSubtree with DNS name', () => {
@@ -302,5 +303,39 @@ describe('NameConstraints', () => {
         const asn1 = nameConstraints.toAsn1()
         expect(asn1).toBeInstanceOf(asn1js.Sequence)
         expect(asn1.valueBlock.value.length).toBeGreaterThan(0)
+    })
+})
+
+describe('NameConstraints encoding (RFC 5280, IMPLICIT TAGS)', () => {
+    const toHex = (b: Uint8Array) =>
+        Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
+    const fromHex = (hex: string) =>
+        new Uint8Array(hex.match(/../g)!.map((h) => parseInt(h, 16)))
+
+    // SEQUENCE { [0] { SEQUENCE { dNSName "example.com", [0] 1, [1] 3 } } }
+    const der =
+        '3017a01530138' + '20b6578616d706c652e636f6d' + '800101' + '810103'
+
+    test('writes subtrees directly inside [0]/[1] with implicit minimum/maximum', () => {
+        const constraints = new NameConstraints({
+            permittedSubtrees: [
+                new GeneralSubtree({
+                    base: new dNSName({ value: 'example.com' }),
+                    minimum: 1,
+                    maximum: 3,
+                }),
+            ],
+        })
+        expect(toHex(constraints.toDer())).toBe(der)
+    })
+
+    test('parses permitted and excluded subtrees including minimum/maximum', () => {
+        const parsed = NameConstraints.fromAsn1(derToAsn1(fromHex(der)))
+        expect(parsed.permittedSubtrees?.length).toBe(1)
+        expect(parsed.excludedSubtrees).toBeUndefined()
+        const [subtree] = parsed.permittedSubtrees!
+        expect(subtree.minimum).toBe(1)
+        expect(subtree.maximum).toBe(3)
+        expect(toHex(parsed.toDer())).toBe(der)
     })
 })

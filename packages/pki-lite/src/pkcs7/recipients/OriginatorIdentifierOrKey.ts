@@ -36,7 +36,12 @@ export const OriginatorIdentifierOrKey = Choice('OriginatorIdentifierOrKey', {
 
             // OriginatorPublicKey [1]
             if (tagNumber === 1) {
-                return OriginatorPublicKey.fromAsn1(asn1)
+                // [1] IMPLICIT OriginatorPublicKey: restore the SEQUENCE tag
+                return OriginatorPublicKey.fromAsn1(
+                    new asn1js.Sequence({
+                        value: (asn1 as asn1js.Constructed).valueBlock.value,
+                    }),
+                )
             }
 
             throw new Asn1ParseError(`Unsupported tag number: ${tagNumber}`)

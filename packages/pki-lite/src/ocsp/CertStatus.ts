@@ -84,16 +84,14 @@ export class CertStatus extends PkiBase<CertStatus> {
                 )
             }
 
-            const revokedInfo = new asn1js.Sequence({
-                value: values,
-            })
-
+            // revoked [1] IMPLICIT RevokedInfo: the RevokedInfo fields sit directly
+            // inside the [1], there is no SEQUENCE in between.
             return new asn1js.Constructed({
                 idBlock: {
                     tagClass: 3, // CONTEXT-SPECIFIC
                     tagNumber: 1, // [1]
                 },
-                value: [revokedInfo],
+                value: values,
             })
         } else {
             // unknown
@@ -121,16 +119,25 @@ export class CertStatus extends PkiBase<CertStatus> {
             asn1.idBlock.tagNumber === 1
         ) {
             // revoked
-            const revokedInfo = asn1.valueBlock.value[0] as asn1js.Sequence
-            const revocationTimeBlock = revokedInfo.valueBlock
-                .value[0] as asn1js.GeneralizedTime
-            // Parse the date from the GeneralizedTime
+            // The RevokedInfo fields are the children of [1]. Earlier versions of this
+            // library wrapped them in an extra SEQUENCE, so accept that too.
+            const children = asn1.valueBlock.value
+            const [first] = children
+            const fields =
+                children.length === 1 && first instanceof asn1js.Sequence
+                    ? first.valueBlock.value
+                    : children
+            const revocationTimeBlock = fields[0]
+            if (!(revocationTimeBlock instanceof asn1js.GeneralizedTime)) {
+                throw new Asn1ParseError(
+                    'Invalid ASN.1 structure for CertStatus: revocationTime must be a GeneralizedTime',
+                )
+            }
             const revocationTime = revocationTimeBlock.toDate()
 
             let revocationReason: number | undefined = undefined
-            if (revokedInfo.valueBlock.value.length > 1) {
-                const reasonContainer = revokedInfo.valueBlock
-                    .value[1] as asn1js.Constructed
+            if (fields.length > 1) {
+                const reasonContainer = fields[1] as asn1js.Constructed
                 if (
                     reasonContainer.idBlock.tagClass === 3 &&
                     reasonContainer.idBlock.tagNumber === 0

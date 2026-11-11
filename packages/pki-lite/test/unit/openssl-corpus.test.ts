@@ -6,10 +6,11 @@
  * that re-encoding the parsed object gives back the original bytes, plus a handful of
  * semantic checks (verify a signature, decrypt, extract PKCS#12 items, ...).
  *
- * Cases that currently fail because of a real pki-lite defect are registered in
- * `KNOWN_ISSUES` and run with `test.fails`: CI stays green, and as soon as a defect is
- * fixed the matching tests start failing with "expected to fail", pointing at the entry
- * to delete.
+ * Cases that currently fail are registered in `KNOWN_ISSUES` and run with `test.fails`:
+ * CI stays green, and as soon as the gap is closed the matching tests start failing with
+ * "expected to fail", pointing at the entry to delete. What is left there are unsupported
+ * features (EdDSA/RSA-PSS keys, RSA PKCS#1 v1.5 key transport, 3DES PBE, explicit EC
+ * parameters, AuthEnvelopedData), not encoding defects.
  */
 import { describe, expect, test } from 'vitest'
 import { opensslCorpus } from '../../test-fixtures/openssl-corpus/corpus.js'
@@ -61,145 +62,41 @@ type KnownIssue = {
 
 const KNOWN_ISSUES: KnownIssue[] = [
     {
-        id: 'GENERALNAME-EXPLICIT-TAGS',
-        why:
-            'GeneralName choices that are IMPLICIT in RFC 5280 (rfc822Name, dNSName, URI, ...) are ' +
-            'encoded as an explicit constructed [n] wrapping an IA5String (A2 0F 16 0D ...) instead of ' +
-            'a primitive [n] (82 0D ...). OpenSSL tolerates it as a BER constructed string; DER parsers do not. ' +
-            'Affects every extension that embeds a GeneralName.',
-        // directoryName ([4] Name) is a CHOICE, so EXPLICIT is correct for it
-        match: (t, c) =>
-            !/san1_dirname/.test(t) &&
-            /^ext:(subjectAltName|issuerAltName|authorityInfoAccess|subjectInfoAccess|crlDistributionPoints|freshestCRL):roundtrip$/.test(
-                c,
-            ),
-    },
-    {
-        id: 'AKI-KEYIDENTIFIER-EXPLICIT-TAG',
-        why: 'AuthorityKeyIdentifier writes keyIdentifier [0] as an explicit wrapper (A0 16 04 14 ...) instead of IMPLICIT (80 14 ...).',
-        match: (_t, c) => c === 'ext:authorityKeyIdentifier:roundtrip',
-    },
-    {
-        id: 'AKI-AUTHORITYCERTISSUER-PARSE',
-        why: 'AuthorityKeyIdentifier cannot parse authorityCertIssuer [1] (GeneralNames is implicit, so the content is the GeneralName elements, not a SEQUENCE).',
-        match: (t, c) =>
-            c === 'ext:authorityKeyIdentifier:parse' &&
-            /akid_(issuer_only|keyid_issuer)/.test(t),
-    },
-    {
-        id: 'KEYUSAGE-NOT-MINIMAL-DER',
-        why: 'KeyUsage always encodes a two-byte BIT STRING; DER requires trailing zero bits of a named bit list to be dropped (03 02 07 80, not 03 03 07 80 00).',
-        match: (t, c) =>
-            c === 'ext:keyUsage:roundtrip' && !/decipherOnly/.test(t),
-    },
-    {
-        id: 'CRLDP-PARSE',
-        why: 'CRLDistributionPoints cannot parse a DistributionPoint with reasons / cRLIssuer / relativeName.',
-        match: (t, c) =>
-            c === 'ext:crlDistributionPoints:parse' && /dp_full/.test(t),
-    },
-    {
-        id: 'SAN-OTHERNAME-AND-RID-PARSE',
-        why: 'SubjectAltName cannot parse an otherName or a registeredID (the implicit [0]/[8] forms are mishandled), so the whole extension fails.',
-        match: (t, c) =>
-            /^ext:(subjectAltName|issuerAltName):parse$|^accessors$/.test(c) &&
-            /san_all|san1_othername|san1_rid/.test(t),
-    },
-    {
-        id: 'NAMECONSTRAINTS-NO-PARSER',
-        why: 'NameConstraints has no fromAsn1/fromDer, so it cannot be parsed from a certificate.',
-        match: (_t, c) => /^ext:nameConstraints:(parse|roundtrip)$/.test(c),
-    },
-    {
         id: 'SIGNATURE-ALGORITHMS-UNSUPPORTED',
-        why: 'isSelfSigned/verify does not support Ed25519, Ed448 or RSA-PSS keys.',
+        why:
+            'Unsupported feature: isSelfSigned/verify does not support Ed25519, Ed448 or RSA-PSS keys. ' +
+            'Needs new algorithm types and key models in the crypto provider (and Ed448 has no WebCrypto support).',
         match: (t, c) =>
             (c === 'isSelfSigned' &&
                 /key_ed25519|key_ed448|key_rsapss/.test(t)) ||
             (c === 'signedData:verify' && /sd_ed25519/.test(t)),
     },
     {
-        id: 'CSR-ATTRIBUTES-PARSE',
-        why:
-            'CertificateRequestInfo cannot parse the [0] attributes field: it crashes on the empty `A0 00` ' +
-            'OpenSSL writes for a request without attributes, and for non-empty attributes it expects an ' +
-            'explicit SET wrapper that PKCS#10 (IMPLICIT SET OF) does not have. No OpenSSL-made CSR can be read.',
-        match: (t, c) => t.startsWith('csr/') && /^(parse|roundtrip)$/.test(c),
-    },
-    {
-        id: 'CRL-GENERALIZEDTIME-ROUNDTRIP',
-        why: 'A CRL whose thisUpdate/nextUpdate are GeneralizedTime (year >= 2050) is re-encoded differently.',
-        match: (t, c) => c === 'roundtrip' && t === 'crl/crl_gentime.der',
-    },
-    {
         id: 'ECPRIVATEKEY-EXPLICIT-PARAMS',
-        why: 'ECPrivateKey cannot parse explicit (non-namedCurve) EC parameters.',
+        why:
+            'Unsupported feature: ECPrivateKey cannot parse explicit (non-namedCurve) EC parameters, ' +
+            'which RFC 5480 deprecates; only named curves are modelled.',
         match: (t, c) =>
             /^(parse|roundtrip)$/.test(c) &&
             t === 'key/ecprivate_explicitparams.der',
     },
     {
-        id: 'SIGNERIDENTIFIER-SKI',
-        why: 'A SignerInfo/KeyTransRecipientInfo identified by subjectKeyIdentifier ([0] IMPLICIT) cannot be parsed.',
-        match: (t, c) =>
-            /^(signedData|envelopedData):(parse|roundtrip|decrypt)$/.test(c) &&
-            /sd_keyid|ed_rsa_keyid/.test(t),
-    },
-    {
-        id: 'RECIPIENTINFO-KARI-KEKRI-PWRI',
-        why: 'EnvelopedData cannot parse KeyAgreeRecipientInfo, KEKRecipientInfo or PasswordRecipientInfo (implicitly tagged choices expected to be plain SEQUENCEs).',
-        match: (t, c) =>
-            /^envelopedData:(parse|roundtrip)$/.test(c) &&
-            /ed_ec_kari|ed_multi|ed_kekri|ed_pwri/.test(t),
-    },
-    {
-        id: 'CMS-RSA-SIGNERINFO-ALGORITHM',
-        why: 'SignerInfo.signatureAlgorithm = rsaEncryption (what OpenSSL writes for RSA PKCS#1 v1.5) is rejected with "Unsupported algorithm: RSA", so plain RSA CMS signatures cannot be verified.',
-        match: (t, c) =>
-            c === 'signedData:verify' &&
-            /sd_(big|certfile_chain|detached_rsa|attached_rsa|noattr|nosmimecap|econtent_type|keyid|sha512|empty_content)/.test(
-                t,
-            ),
-    },
-    {
-        id: 'AUTHENVELOPEDDATA-MISPARSED',
-        why:
-            'AuthEnvelopedData (1.2.840.113549.1.9.16.1.23, what `openssl cms -encrypt -aes-256-gcm` writes) is ' +
-            'accepted as EnvelopedData without checking the content type; it is re-encoded under the EnvelopedData ' +
-            'OID and the authentication tag/attributes are dropped, and decryption fails.',
-        match: (t, c) =>
-            /^envelopedData:(roundtrip|decrypt)$/.test(c) &&
-            /ed_rsa_gcm|authenveloped/.test(t),
-    },
-    {
-        id: 'CMS-BER-INDEFINITE-LENGTH',
-        why: 'Indefinite-length / constructed-OCTET-STRING BER (openssl cms -stream) is not handled: the eContent digest is computed over the wrong bytes.',
-        match: (t, c) =>
-            /_stream/.test(t) && /verify|decrypt|roundtrip/.test(c),
-    },
-    {
         id: 'CMS-RSA-PKCS1V15-KEY-TRANSPORT',
-        why: 'EnvelopedData.decrypt cannot unwrap RSA PKCS#1 v1.5 key transport (rsaEncryption), the OpenSSL default.',
+        why:
+            'Unsupported feature: EnvelopedData.decrypt cannot unwrap RSA PKCS#1 v1.5 key transport ' +
+            '(rsaEncryption), the OpenSSL default. WebCrypto only offers RSA-OAEP; doing it here would mean ' +
+            'implementing raw RSA decryption and padding checks in JavaScript, which is easy to get wrong ' +
+            '(Bleichenbacher), so it is deliberately left out.',
         match: (t, c) =>
             c === 'envelopedData:decrypt' &&
-            /ed_rsa_(3des|aes128|aes256)|ed_stream|ed_empty/.test(t),
-    },
-    {
-        id: 'OCSP-REVOKED-PARSE',
-        why: 'CertStatus.fromAsn1 crashes (reading "toDate" of undefined) on every `revoked` status, so a response for a revoked certificate cannot be parsed.',
-        match: (t, c) =>
-            c === 'basic:parse' &&
-            /resp_(revoked|nonce|multi|nextupdate|ndays|keyid)/.test(t),
+            /ed_rsa_(3des|aes128|aes256|keyid)|ed_stream|ed_empty/.test(t),
     },
     {
         id: 'PKCS12-3DES-UNSUPPORTED',
-        why: 'PKCS#12 pbeWithSHAAnd3-KeyTripleDES-CBC is not supported.',
+        why:
+            'Unsupported feature: PKCS#12 pbeWithSHAAnd3-KeyTripleDES-CBC (legacy 3DES) is not supported; ' +
+            'WebCrypto has no 3DES.',
         match: (t, c) => c === 'extractItems' && t === 'p12/legacy_3des.p12',
-    },
-    {
-        id: 'PKCS12-PLAIN-KEYBAG',
-        why: 'An unencrypted keyBag (openssl pkcs12 -keypbe NONE) is not returned by getPrivateKeys.',
-        match: (t, c) => c === 'extractItems' && t === 'p12/keypbe_none.p12',
     },
 ]
 
@@ -379,6 +276,8 @@ describe('OpenSSL corpus: keys and signatures', () => {
 // CMS
 // ---------------------------------------------------------------------------
 describe('OpenSSL corpus: CMS', () => {
+    test.todo('AuthEnvelopedData (AES-GCM) support: parse, encode and decrypt')
+
     const rsaKey = () => PrivateKeyInfo.fromDer(read('key', 'pkcs8_rsa.der'))
     for (const file of files('cms')) {
         const der = read('cms', file)
@@ -410,15 +309,26 @@ describe('OpenSSL corpus: CMS', () => {
                     expect(result.valid).toBe(true)
                 })
             }
-        } else if (file.startsWith('ed_') || file === 'authenveloped.der') {
+        } else if (file === 'ed_rsa_gcm.der' || file === 'authenveloped.der') {
+            // AuthEnvelopedData (RFC 5083), written by `-aes-256-gcm`. Not supported yet:
+            // it must be rejected rather than misread as EnvelopedData.
+            register('cms', file, 'authEnvelopedData:rejected', () => {
+                expect(() =>
+                    ContentInfo.fromDer(der).parseContentAs(EnvelopedData),
+                ).toThrow(/AuthEnvelopedData/)
+            })
+        } else if (file.startsWith('ed_')) {
             register('cms', file, 'envelopedData:parse', () => {
                 ContentInfo.fromDer(der).parseContentAs(EnvelopedData)
             })
-            register('cms', file, 'envelopedData:roundtrip', () => {
-                const ed =
-                    ContentInfo.fromDer(der).parseContentAs(EnvelopedData)
-                expectRoundtrip(ed.toCms(), der)
-            })
+            // BER (indefinite length) input is re-written as DER, so it cannot round-trip
+            if (!/_stream/.test(file)) {
+                register('cms', file, 'envelopedData:roundtrip', () => {
+                    const ed =
+                        ContentInfo.fromDer(der).parseContentAs(EnvelopedData)
+                    expectRoundtrip(ed.toCms(), der)
+                })
+            }
             if (/^ed_(rsa|stream|empty)/.test(file)) {
                 register('cms', file, 'envelopedData:decrypt', async () => {
                     const ed =

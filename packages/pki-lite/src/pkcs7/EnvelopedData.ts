@@ -44,6 +44,17 @@ type UnprotectedAttributes = Attributes
  * ```
  */
 class RecipientInfos extends PkiSet<RecipientInfo> {
+    /**
+     * Encodes each RecipientInfo through its CHOICE so that kari [1], kekri [2],
+     * pwri [3] and ori [4] get their context tag (a bare SEQUENCE would be read as
+     * a KeyTransRecipientInfo).
+     */
+    toAsn1(): asn1js.Set {
+        return new asn1js.Set({
+            value: this.map((recipient) => RecipientInfo.toAsn1(recipient)),
+        })
+    }
+
     static fromAsn1(asn1: Asn1BaseBlock): RecipientInfos {
         if (!(asn1 instanceof asn1js.Set)) {
             throw new Asn1ParseError(
@@ -214,10 +225,13 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
             values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
             values[currentIndex].idBlock.tagNumber === 0 // [0]
         ) {
-            const originatorInfoAsn1 = (
-                values[currentIndex] as asn1js.Constructed
-            ).valueBlock.value[0]
-            originatorInfo = OriginatorInfo.fromAsn1(originatorInfoAsn1)
+            // originatorInfo [0] IMPLICIT OriginatorInfo (a SEQUENCE)
+            originatorInfo = OriginatorInfo.fromAsn1(
+                new asn1js.Sequence({
+                    value: (values[currentIndex] as asn1js.Constructed)
+                        .valueBlock.value,
+                }),
+            )
             currentIndex++
         }
 
@@ -244,11 +258,20 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
             values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
             values[currentIndex].idBlock.tagNumber === 1 // [1]
         ) {
-            const unprotectedAttrsAsn1 = (
-                values[currentIndex] as asn1js.Constructed
-            ).valueBlock.value[0]
-            unprotectedAttrs =
-                UnprotectedAttributes.fromAsn1(unprotectedAttrsAsn1)
+            // unprotectedAttrs [1] IMPLICIT SET OF Attribute: the attributes sit
+            // directly inside the [1]
+            unprotectedAttrs = UnprotectedAttributes.fromAsn1(
+                values[currentIndex],
+            )
+            currentIndex++
+        }
+
+        if (currentIndex < values.length) {
+            // e.g. AuthEnvelopedData (RFC 5083), whose `mac` follows the content info.
+            // Parsing it as EnvelopedData would silently drop that data.
+            throw new Asn1ParseError(
+                'Invalid ASN.1 structure: unexpected element after EnvelopedData fields (is this an AuthEnvelopedData? that type is not supported)',
+            )
         }
 
         return new EnvelopedData({
