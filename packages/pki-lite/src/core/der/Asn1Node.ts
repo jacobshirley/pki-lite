@@ -1,36 +1,9 @@
 import { Asn1ParseError } from '../errors/Asn1ParseError.js'
+import { dump } from './dump.js'
 
-/** The two tag-class bits of an identifier octet (X.690 8.1.2.2). */
-export const TagClass = {
-    Universal: 0,
-    Application: 1,
-    Context: 2,
-    Private: 3,
-} as const
+import { TagClass, UniversalTag } from './tags.js'
 
-export type TagClass = (typeof TagClass)[keyof typeof TagClass]
-
-/** Universal tag numbers used by the library (X.680 8.4). */
-export const UniversalTag = {
-    Boolean: 1,
-    Integer: 2,
-    BitString: 3,
-    OctetString: 4,
-    Null: 5,
-    ObjectIdentifier: 6,
-    Enumerated: 10,
-    UTF8String: 12,
-    Sequence: 16,
-    Set: 17,
-    PrintableString: 19,
-    TeletexString: 20,
-    IA5String: 22,
-    UTCTime: 23,
-    GeneralizedTime: 24,
-    VisibleString: 26,
-    UniversalString: 28,
-    BMPString: 30,
-} as const
+export { TagClass, UniversalTag } from './tags.js'
 
 const universalTagNames: Record<number, string> = Object.fromEntries(
     Object.entries(UniversalTag).map(([name, tag]) => [tag, name]),
@@ -183,16 +156,9 @@ export class Asn1Node {
         return describeTag(this.tagClass, this.tag)
     }
 
-    /** Indented dump of the tree, for debugging. */
-    toString(indent = ''): string {
-        const head = `${indent}${this.describe()}`
-        if (this.constructed) {
-            return [
-                `${head} (${this.children.length} items)`,
-                ...this.children.map((child) => child.toString(indent + '  ')),
-            ].join('\n')
-        }
-        return `${head} ${toHex(this.content)}`
+    /** Indented, human-readable dump of the tree (see {@link dump}). */
+    toString(): string {
+        return dump(this)
     }
 }
 
@@ -373,10 +339,4 @@ export function concat(parts: readonly Uint8Array[]): Uint8Array<ArrayBuffer> {
         offset += part.length
     }
     return out
-}
-
-function toHex(bytes: Uint8Array): string {
-    let hex = ''
-    for (const b of bytes) hex += b.toString(16).padStart(2, '0')
-    return hex
 }

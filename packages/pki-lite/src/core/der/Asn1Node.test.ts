@@ -142,7 +142,7 @@ describe('Asn1Node', () => {
     test('toString dumps the tree', () => {
         const node = Asn1Node.parse(hex('30 05 a0 03 04 01 ff'))
         expect(node.toString()).toBe(
-            'SEQUENCE (1 items)\n  [0] (1 items)\n    OCTET STRING ff',
+            'SEQUENCE :\n  [0] :\n    OCTET STRING : ff',
         )
     })
 
