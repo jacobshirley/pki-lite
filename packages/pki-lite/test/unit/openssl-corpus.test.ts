@@ -61,24 +61,6 @@ type KnownIssue = {
 
 const KNOWN_ISSUES: KnownIssue[] = [
     {
-        id: 'GENERALNAME-EXPLICIT-TAGS',
-        why:
-            'GeneralName choices that are IMPLICIT in RFC 5280 (rfc822Name, dNSName, URI, ...) are ' +
-            'encoded as an explicit constructed [n] wrapping an IA5String (A2 0F 16 0D ...) instead of ' +
-            'a primitive [n] (82 0D ...). OpenSSL tolerates it as a BER constructed string; DER parsers do not. ' +
-            'Affects every extension that embeds a GeneralName.',
-        // directoryName ([4] Name) is a CHOICE, so EXPLICIT is correct for it
-        match: (t, c) =>
-            !/san1_dirname/.test(t) &&
-            /^ext:(crlDistributionPoints|freshestCRL):roundtrip$/.test(c),
-    },
-    {
-        id: 'CRLDP-PARSE',
-        why: 'CRLDistributionPoints cannot parse a DistributionPoint with reasons / cRLIssuer / relativeName.',
-        match: (t, c) =>
-            c === 'ext:crlDistributionPoints:parse' && /dp_full/.test(t),
-    },
-    {
         id: 'NAMECONSTRAINTS-NO-PARSER',
         why: 'NameConstraints has no fromAsn1/fromDer, so it cannot be parsed from a certificate.',
         match: (_t, c) => /^ext:nameConstraints:(parse|roundtrip)$/.test(c),
