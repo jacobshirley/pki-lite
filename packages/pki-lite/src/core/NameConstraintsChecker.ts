@@ -1,4 +1,4 @@
-import { Certificate } from '../Certificate.js'
+import { Certificate } from '../x509/Certificate.js'
 import {
     dNSName,
     directoryName,
@@ -10,9 +10,9 @@ import {
     rfc822Name,
     uniformResourceIdentifier,
     x400Address,
-} from '../GeneralName.js'
-import { RDNSequence } from '../RDNSequence.js'
-import { GeneralSubtree, NameConstraints } from './NameConstraints.js'
+} from '../x509/GeneralName.js'
+import { RDNSequence } from '../x509/RDNSequence.js'
+import { GeneralSubtree, NameConstraints } from '../x509/extensions/NameConstraints.js'
 
 /** `emailAddress` (PKCS #9), which may appear in a subject DN. */
 const EMAIL_ADDRESS_OID = '1.2.840.113549.1.9.1'
