@@ -14,24 +14,7 @@ import { OctetString } from '../asn1/OctetString.js'
 import { IA5String } from '../asn1/IA5String.js'
 import { DirectoryString } from './DirectoryString.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
-
-/**
- * Re-tags a block with a context-specific tag, i.e. applies an IMPLICIT tag.
- * RFC 5280 defines GeneralName in a module with IMPLICIT TAGS, so every
- * alternative except directoryName (a CHOICE, hence EXPLICIT) is encoded this way.
- */
-function implicitTag<T extends Asn1BaseBlock>(block: T, tagNumber: number): T {
-    block.idBlock.tagClass = 3 // CONTEXT-SPECIFIC
-    block.idBlock.tagNumber = tagNumber
-    return block
-}
-
-/** The content octets of a primitive (implicitly tagged) block. */
-const contentOctets = (asn1: Asn1BaseBlock) =>
-    (asn1.valueBlock as unknown as { valueHexView: Uint8Array }).valueHexView
-
-const isContext = (asn1: Asn1BaseBlock, tagNumber: number) =>
-    asn1.idBlock.tagClass === 3 && asn1.idBlock.tagNumber === tagNumber
+import { contentOctets, implicitTag, isContextTag } from '../core/tagging.js'
 
 /** The content octets of a GeneralName string alternative ([1], [2], [6]). */
 function implicitStringBytes(asn1: Asn1BaseBlock): Uint8Array<ArrayBuffer> {
@@ -100,7 +83,7 @@ export class AnotherName extends PkiBase<AnotherName> {
         let value = sequence[1]
         if (
             value instanceof asn1js.Constructed &&
-            isContext(value, 0) &&
+            isContextTag(value, 0) &&
             value.valueBlock.value.length === 1
         ) {
             value = value.valueBlock.value[0]
@@ -165,7 +148,7 @@ export class EDIPartyName extends PkiBase<EDIPartyName> {
         const unwrap = (block: Asn1BaseBlock, tagNumber: number) => {
             if (
                 !(block instanceof asn1js.Constructed) ||
-                !isContext(block, tagNumber)
+                !isContextTag(block, tagNumber)
             ) {
                 return undefined
             }

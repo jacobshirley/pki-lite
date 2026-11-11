@@ -5,6 +5,7 @@ import { GeneralNames, dNSName } from '../GeneralName.js'
 import { Integer } from '../../asn1/Integer.js'
 import * as asn1js from 'asn1js'
 import { Extension } from '../Extension.js'
+import { derToAsn1 } from '../../core/PkiBase.js'
 
 describe('AuthorityKeyIdentifier', () => {
     test('should create AuthorityKeyIdentifier with only keyIdentifier', () => {
@@ -264,5 +265,58 @@ describe('AuthorityKeyIdentifier', () => {
         expect(intermediate_AKI.keyIdentifier).toBeDefined()
         expect(intermediate_AKI.authorityCertIssuer).toBeDefined()
         expect(intermediate_AKI.authorityCertSerialNumber).toBeDefined()
+    })
+
+    describe('encoding (RFC 5280, IMPLICIT TAGS)', () => {
+        const toHex = (b: Uint8Array) =>
+            Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
+        const fromHex = (hex: string) =>
+            new Uint8Array(hex.match(/../g)!.map((h) => parseInt(h, 16)))
+
+        test('keyIdentifier is a primitive [0], not an explicit wrapper', () => {
+            const aki = new AuthorityKeyIdentifier({
+                keyIdentifier: new KeyIdentifier({
+                    bytes: new Uint8Array([1, 2, 3, 4]),
+                }),
+            })
+            // SEQUENCE { [0] 01020304 }
+            expect(toHex(aki.toDer())).toBe('30068004' + '01020304')
+        })
+
+        test('authorityCertIssuer holds the GeneralNames directly; serial is a primitive [2]', () => {
+            const aki = new AuthorityKeyIdentifier({
+                authorityCertIssuer: new GeneralNames(
+                    new dNSName({ value: 'ca.example' }),
+                ),
+                authorityCertSerialNumber: 5,
+            })
+            // SEQUENCE { [1] { [2] "ca.example" }, [2] 05 }
+            expect(toHex(aki.toDer())).toBe(
+                '3011' + 'a10c820a63612e6578616d706c65' + '820105',
+            )
+        })
+
+        test('parses the DER OpenSSL writes and re-encodes it identically', () => {
+            const hex =
+                '3017' +
+                '8004deadbeef' +
+                'a10c820a63612e6578616d706c65' +
+                '820105'
+            const parsed = AuthorityKeyIdentifier.fromAsn1(
+                derToAsn1(fromHex(hex)),
+            )
+            expect(toHex(parsed.keyIdentifier!.bytes)).toBe('deadbeef')
+            expect(parsed.authorityCertIssuer!.length).toBe(1)
+            expect(parsed.authorityCertSerialNumber!.toInteger()).toBe(5)
+            expect(toHex(parsed.toDer())).toBe(hex)
+        })
+
+        test('still parses the explicit form written by earlier versions', () => {
+            // SEQUENCE { [0] { OCTET STRING 01020304 } }
+            const parsed = AuthorityKeyIdentifier.fromAsn1(
+                derToAsn1(fromHex('3008a006' + '040401020304')),
+            )
+            expect(toHex(parsed.keyIdentifier!.bytes)).toBe('01020304')
+        })
     })
 })
