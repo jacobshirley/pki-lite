@@ -93,9 +93,10 @@ describe('KeyUsage', () => {
 
         expect(asn1).toBeInstanceOf(asn1js.BitString)
         const bitString = asn1 as asn1js.BitString
-        expect(bitString.valueBlock.unusedBits).toEqual(7)
+        // DER drops trailing zero bits: bits 0-6 are used, so 1 bit is unused
+        expect(bitString.valueBlock.unusedBits).toEqual(1)
         expect(Array.from(bitString.valueBlock.valueHexView)).toEqual([
-            0b0000_0110, 0b0000_0000,
+            0b0000_0110,
         ])
     })
 
@@ -118,5 +119,22 @@ describe('KeyUsage', () => {
         expect(() => KeyUsage.fromAsn1({} as any)).toThrow(
             `Expected BitString for KeyUsage`,
         )
+    })
+
+    it('encodes minimal DER: trailing zero bits are dropped', () => {
+        const hex = (u: KeyUsage) =>
+            Array.from(u.toDer(), (b) => b.toString(16).padStart(2, '0')).join(
+                '',
+            )
+        // digitalSignature only -> 03 02 07 80
+        expect(hex(new KeyUsage({ digitalSignature: true }))).toBe('03020780')
+        // keyCertSign + cRLSign -> 03 02 01 06
+        expect(hex(new KeyUsage({ keyCertSign: true, cRLSign: true }))).toBe(
+            '03020106',
+        )
+        // decipherOnly is bit 8, so a second byte is needed -> 03 03 07 00 80
+        expect(hex(new KeyUsage({ decipherOnly: true }))).toBe('0303070080')
+        // no bits at all -> empty BIT STRING
+        expect(hex(new KeyUsage({}))).toBe('030100')
     })
 })
