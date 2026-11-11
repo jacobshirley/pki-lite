@@ -349,4 +349,37 @@ describe('CertificateBuilder', () => {
             )
         })
     })
+
+    test('can self-sign with an Ed25519 key', async () => {
+        const keys = await crypto.subtle.generateKey('Ed25519', true, [
+            'sign',
+            'verify',
+        ])
+        const privateKey = PrivateKeyInfo.fromDer(
+            new Uint8Array(
+                await crypto.subtle.exportKey('pkcs8', keys.privateKey),
+            ),
+        )
+        const publicKey = SubjectPublicKeyInfo.fromDer(
+            new Uint8Array(
+                await crypto.subtle.exportKey('spki', keys.publicKey),
+            ),
+        )
+
+        const cert = await Certificate.builder()
+            .setSubject('CN=Ed25519')
+            .setPublicKey(publicKey)
+            .setPrivateKey(privateKey)
+            .setAlgorithm({ type: 'ED25519', params: {} })
+            .setValidityDays(1)
+            .generateSerialNumber()
+            .selfSign()
+
+        // RFC 8410: no parameters on the signature algorithm
+        expect(cert.signatureAlgorithm.algorithm.value).toBe(
+            OIDs.CURVES.ED25519,
+        )
+        expect(cert.signatureAlgorithm.parameters).toBeUndefined()
+        expect(await cert.isSelfSigned()).toBe(true)
+    })
 })
