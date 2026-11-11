@@ -1,7 +1,14 @@
 import { ContentEncryptionAlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
-import { asn1js, PkiBase, pemToDer } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    pemToDer,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { PrivateKeyInfo } from './PrivateKeyInfo.js'
 
 /**
@@ -34,20 +41,18 @@ export class EncryptedPrivateKeyInfo extends PkiBase<EncryptedPrivateKeyInfo> {
     }
 
     toAsn1() {
-        return new asn1js.Sequence({
-            value: [
-                this.encryptionAlgorithm.toAsn1(),
-                this.encryptedData.toAsn1(),
-            ],
-        })
+        return der.sequence([
+            this.encryptionAlgorithm.toAsn1(),
+            this.encryptedData.toAsn1(),
+        ])
     }
 
-    static fromAsn1(asn1: asn1js.BaseBlock): EncryptedPrivateKeyInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): EncryptedPrivateKeyInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Error('EncryptedPrivateKeyInfo: expected SEQUENCE')
         }
 
-        const [alg, data] = asn1.valueBlock.value
+        const [alg, data] = asn1.children
         return new EncryptedPrivateKeyInfo({
             encryptionAlgorithm:
                 ContentEncryptionAlgorithmIdentifier.fromAsn1(alg),
@@ -56,7 +61,7 @@ export class EncryptedPrivateKeyInfo extends PkiBase<EncryptedPrivateKeyInfo> {
     }
 
     static fromDer(der: Uint8Array<ArrayBuffer>): EncryptedPrivateKeyInfo {
-        return EncryptedPrivateKeyInfo.fromAsn1(asn1js.fromBER(der).result)
+        return EncryptedPrivateKeyInfo.fromAsn1(derToAsn1(der))
     }
 
     /**

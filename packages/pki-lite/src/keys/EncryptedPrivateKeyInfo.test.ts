@@ -2,7 +2,7 @@ import { assert, describe, expect, test } from 'vitest'
 import { EncryptedPrivateKeyInfo } from './EncryptedPrivateKeyInfo.js'
 import { ContentEncryptionAlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('EncryptedPrivateKeyInfo', () => {
     test('can be created with OctetString', () => {
@@ -66,14 +66,14 @@ describe('EncryptedPrivateKeyInfo', () => {
 
         const asn1 = epki.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
         // First element should be the encryption algorithm (a Sequence)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[0].is(UniversalTag.Sequence)).toBe(true)
 
         // Second element should be the encrypted data (an OctetString)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.OctetString)
+        expect(asn1.children[1].is(UniversalTag.OctetString)).toBe(true)
     })
 
     test('can be parsed from ASN.1', () => {
@@ -81,16 +81,10 @@ describe('EncryptedPrivateKeyInfo', () => {
         const encryptedData = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
 
         // Create ASN.1 structure manually
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({
-                    value: [
-                        new asn1js.ObjectIdentifier({ value: algorithmOid }),
-                    ],
-                }),
-                new asn1js.OctetString({ valueHex: encryptedData }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.sequence([der.oid(algorithmOid)]),
+            der.octetString(encryptedData),
+        ])
 
         const epki = EncryptedPrivateKeyInfo.fromAsn1(asn1)
 
@@ -103,9 +97,7 @@ describe('EncryptedPrivateKeyInfo', () => {
 
     test('throws an error when parsing invalid ASN.1', () => {
         // Create an ASN.1 structure that's not a SEQUENCE
-        const asn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const asn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => EncryptedPrivateKeyInfo.fromAsn1(asn1)).toThrow(
             'EncryptedPrivateKeyInfo: expected SEQUENCE',
