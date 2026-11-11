@@ -179,16 +179,25 @@ export class PFX extends PkiBase<PFX> {
         return await content.getBagsByName(bagName, password)
     }
 
+    /**
+     * Returns every private key in the container: both password-encrypted
+     * `pkcs8ShroudedKeyBag`s and plain `keyBag`s (what `openssl pkcs12 -keypbe NONE`
+     * writes), in the order they appear.
+     */
     async getPrivateKeys(
         password: string | Uint8Array<ArrayBuffer>,
     ): Promise<PrivateKeyInfo[]> {
-        const bags = await this.getBagsByName(
-            'PKCS8_SHROUDED_KEY_BAG',
-            password,
+        const bags = await this.getBags(password)
+        const keyBags = bags.filter(
+            (bag) =>
+                bag.bagId.is(OIDs.PKCS12.BAGS.PKCS8_SHROUDED_KEY_BAG) ||
+                bag.bagId.is(OIDs.PKCS12.BAGS.KEY_BAG),
         )
         return await Promise.all(
-            bags.map((bag) =>
-                bag.getAs(EncryptedPrivateKeyInfo).decrypt(password),
+            keyBags.map((bag) =>
+                bag.bagId.is(OIDs.PKCS12.BAGS.KEY_BAG)
+                    ? bag.getAs(PrivateKeyInfo)
+                    : bag.getAs(EncryptedPrivateKeyInfo).decrypt(password),
             ),
         )
     }
