@@ -4,6 +4,8 @@ import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { asn1js } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 import { EncryptedContentInfo } from './EncryptedContentInfo.js'
+import { Attribute } from '../x509/Attribute.js'
+import { derToAsn1 } from '../core/PkiBase.js'
 
 describe('EnvelopedData', () => {
     it('should create EnvelopedData', () => {
@@ -152,5 +154,51 @@ describe('EnvelopedData', () => {
           MCYCAQAxADAfBgkqhkiG9w0BBwEwCwYJKoZIhvcNAQEBgAUBAgMEBQ==
           -----END ENVELOPEDDATA-----"
         `)
+    })
+
+    it('keeps all unprotectedAttrs through a DER round trip ([1] IMPLICIT SET OF)', () => {
+        const attr = (oid: string, value: number) =>
+            new Attribute({
+                type: oid,
+                values: [new asn1js.Integer({ value })],
+            })
+        const original = new EnvelopedData({
+            version: 0,
+            recipientInfos: [],
+            encryptedContentInfo: new EncryptedContentInfo({
+                contentType: OIDs.PKCS7.DATA,
+                contentEncryptionAlgorithm: new AlgorithmIdentifier({
+                    algorithm: '1.2.840.113549.1.1.1',
+                }),
+                encryptedContent: new Uint8Array([1, 2, 3]),
+            }),
+            unprotectedAttrs: [attr('1.2.3.4', 1), attr('1.2.3.5', 2)],
+        })
+
+        const der = original.toDer()
+        const parsed = EnvelopedData.fromAsn1(derToAsn1(der))
+
+        expect(parsed.unprotectedAttrs).toHaveLength(2)
+        expect(parsed.toDer()).toEqual(der)
+    })
+
+    it('rejects trailing elements instead of silently dropping them (e.g. AuthEnvelopedData)', () => {
+        const valid = new EnvelopedData({
+            version: 0,
+            recipientInfos: [],
+            encryptedContentInfo: new EncryptedContentInfo({
+                contentType: OIDs.PKCS7.DATA,
+                contentEncryptionAlgorithm: new AlgorithmIdentifier({
+                    algorithm: '1.2.840.113549.1.1.1',
+                }),
+                encryptedContent: new Uint8Array([1, 2, 3]),
+            }),
+        }).toAsn1() as asn1js.Sequence
+        // AuthEnvelopedData carries a `mac OCTET STRING` after the content info
+        valid.valueBlock.value.push(
+            new asn1js.OctetString({ valueHex: new Uint8Array([9, 9]) }),
+        )
+
+        expect(() => EnvelopedData.fromAsn1(valid)).toThrow(/AuthEnvelopedData/)
     })
 })
