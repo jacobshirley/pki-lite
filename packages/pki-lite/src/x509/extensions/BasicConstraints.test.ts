@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { BasicConstraints } from './BasicConstraints.js'
 import * as asn1js from 'asn1js'
+import { derToAsn1 } from '../../core/PkiBase.js'
 
 describe('BasicConstraints', () => {
     test('should create BasicConstraints with cA true and no pathLenConstraint', () => {
@@ -97,22 +98,57 @@ describe('BasicConstraints', () => {
         expect(basicConstraints.pathLenConstraint).toEqual(2)
     })
 
-    test('fromAsn1 should throw error for empty sequence', () => {
+    test('fromAsn1 should accept an empty sequence (cA defaults to FALSE)', () => {
         const asn1 = new asn1js.Sequence({ value: [] })
 
-        expect(() => BasicConstraints.fromAsn1(asn1)).toThrow(
-            'Invalid BasicConstraints ASN.1 structure',
-        )
+        const basicConstraints = BasicConstraints.fromAsn1(asn1)
+        expect(basicConstraints.cA).toBe(false)
+        expect(basicConstraints.pathLenConstraint).toBeUndefined()
+    })
+
+    test('fromAsn1 should accept a sequence with only pathLenConstraint', () => {
+        const asn1 = new asn1js.Sequence({
+            value: [new asn1js.Integer({ value: 1 })],
+        })
+
+        const basicConstraints = BasicConstraints.fromAsn1(asn1)
+        expect(basicConstraints.cA).toBe(false)
+        expect(basicConstraints.pathLenConstraint).toBe(1)
     })
 
     test('fromAsn1 should throw error for invalid cA type', () => {
         const asn1 = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 1 })], // Should be Boolean
+            value: [new asn1js.OctetString({ valueHex: new Uint8Array([1]) })], // Should be Boolean
         })
 
         expect(() => BasicConstraints.fromAsn1(asn1)).toThrow(
             'Invalid BasicConstraints ASN.1 structure: cA is not a Boolean',
         )
+    })
+
+    test('cA defaults to false when omitted from the constructor', () => {
+        expect(new BasicConstraints({}).cA).toBe(false)
+        expect(new BasicConstraints({ pathLenConstraint: 2 }).cA).toBe(false)
+    })
+
+    test('encodes CA:FALSE as an empty sequence (DER omits DEFAULT values)', () => {
+        const der = (bc: BasicConstraints) =>
+            Buffer.from(bc.toDer()).toString('hex')
+
+        expect(der(new BasicConstraints({ cA: false }))).toBe('3000')
+        expect(der(new BasicConstraints({}))).toBe('3000')
+        expect(der(new BasicConstraints({ cA: true }))).toBe('30030101ff')
+        expect(
+            der(new BasicConstraints({ cA: false, pathLenConstraint: 0 })),
+        ).toBe('3003020100')
+    })
+
+    test('parses the DER OpenSSL produces for basicConstraints=CA:FALSE', () => {
+        const bc = BasicConstraints.fromAsn1(
+            derToAsn1(new Uint8Array([0x30, 0x00])) as asn1js.Sequence,
+        )
+        expect(bc.cA).toBe(false)
+        expect(bc.pathLenConstraint).toBeUndefined()
     })
 
     test('fromAsn1 should throw error for invalid pathLenConstraint type', () => {

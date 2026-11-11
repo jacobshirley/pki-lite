@@ -16,10 +16,10 @@ export class BasicConstraints extends PkiBase<BasicConstraints> {
     cA: boolean
     pathLenConstraint?: number
 
-    constructor(options: { cA: boolean; pathLenConstraint?: number }) {
+    constructor(options: { cA?: boolean; pathLenConstraint?: number }) {
         super()
 
-        const { cA, pathLenConstraint } = options
+        const { cA = false, pathLenConstraint } = options
 
         this.cA = cA
         this.pathLenConstraint = pathLenConstraint
@@ -27,11 +27,16 @@ export class BasicConstraints extends PkiBase<BasicConstraints> {
 
     /**
      * Converts the BasicConstraints to an ASN.1 structure.
+     *
+     * DER forbids encoding a DEFAULT value, so `cA` is omitted when false
+     * (`CA:FALSE` encodes as an empty SEQUENCE, as OpenSSL does).
      */
     toAsn1() {
         const values = []
 
-        values.push(new asn1js.Boolean({ value: this.cA }))
+        if (this.cA) {
+            values.push(new asn1js.Boolean({ value: true }))
+        }
 
         if (this.pathLenConstraint !== undefined) {
             values.push(new asn1js.Integer({ value: this.pathLenConstraint }))
@@ -42,35 +47,33 @@ export class BasicConstraints extends PkiBase<BasicConstraints> {
 
     /**
      * Creates a BasicConstraints from an ASN.1 structure
+     *
+     * Both fields are optional/defaulted, so an empty SEQUENCE (cA FALSE) and
+     * a SEQUENCE holding only the pathLenConstraint are valid.
      */
     static fromAsn1(asn1: asn1js.Sequence) {
         const sequence = asn1.valueBlock.value
 
-        if (sequence.length === 0) {
-            throw new Asn1ParseError('Invalid BasicConstraints ASN.1 structure')
-        }
-
-        const cA = sequence[0]
-        if (!(cA instanceof asn1js.Boolean)) {
-            throw new Asn1ParseError(
-                'Invalid BasicConstraints ASN.1 structure: cA is not a Boolean',
-            )
+        let index = 0
+        let cA = false
+        if (sequence[index] instanceof asn1js.Boolean) {
+            cA = (sequence[index] as asn1js.Boolean).valueBlock.value
+            index++
         }
 
         let pathLenConstraint: number | undefined
-        if (sequence.length > 1) {
-            const plc = sequence[1]
+        if (index < sequence.length) {
+            const plc = sequence[index]
             if (!(plc instanceof asn1js.Integer)) {
                 throw new Asn1ParseError(
-                    'Invalid BasicConstraints ASN.1 structure: pathLenConstraint is not an Integer',
+                    index === 0
+                        ? 'Invalid BasicConstraints ASN.1 structure: cA is not a Boolean'
+                        : 'Invalid BasicConstraints ASN.1 structure: pathLenConstraint is not an Integer',
                 )
             }
             pathLenConstraint = plc.valueBlock.valueDec
         }
 
-        return new BasicConstraints({
-            cA: cA.valueBlock.value,
-            pathLenConstraint,
-        })
+        return new BasicConstraints({ cA, pathLenConstraint })
     }
 }
