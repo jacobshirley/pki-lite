@@ -9,6 +9,7 @@ import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { AuthorityKeyIdentifier } from '../x509/extensions/AuthorityKeyIdentifier.js'
 import { CRLReason } from '../x509/CRLReason.js'
 import { OIDs } from './OIDs.js'
+import { ANY_POLICY, processPolicies } from './PolicyProcessor.js'
 import { KeyUsage } from '../x509/extensions/KeyUsage.js'
 
 /**
@@ -113,10 +114,18 @@ export interface CertificateValidationOptions {
      * to `false` to skip the check. Part of chain validation (`validateChain`).
      */
     validateNameConstraints?: boolean
-    /** Whether to validate certificate policies */
+    /** Whether to process certificate policies (RFC 5280 6.1). On by default. */
     validatePolicies?: boolean
-    /** Required policy OIDs (if any) */
+    /** Policy OIDs that must all be valid for the path (implies an explicit policy) */
     requiredPolicies?: string[]
+    /** user-initial-policy-set: the path must be valid for at least one of these (default: any) */
+    initialPolicySet?: string[]
+    /** initial-explicit-policy: an acceptable policy is required even if no certificate asks for it */
+    initialExplicitPolicy?: boolean
+    /** initial-policy-mapping-inhibit: policy mappings are not allowed */
+    initialPolicyMappingInhibit?: boolean
+    /** initial-any-policy-inhibit: anyPolicy is not treated as a match */
+    initialAnyPolicyInhibit?: boolean
 }
 
 /**
@@ -686,11 +695,8 @@ export class CertificateValidator {
 
         // Validate policies if requested
         let policyResult: PolicyValidationResult | undefined
-        if (options.validatePolicies) {
-            policyResult = this.validatePolicies(
-                chain,
-                options.requiredPolicies,
-            )
+        if (options.validatePolicies !== false) {
+            policyResult = this.validatePolicies(chain, options)
             if (!policyResult.isValid) {
                 return {
                     status: CertificateValidationStatus.CHAIN_INVALID,
@@ -1279,58 +1285,48 @@ export class CertificateValidator {
     }
 
     /**
-     * Validates certificate policies.
+     * Certificate policy processing (RFC 5280 6.1) of the path below the trust anchor.
      */
     private validatePolicies(
         chain: CertificateChain,
-        requiredPolicies?: string[],
+        options: CertificateValidationOptions,
     ): PolicyValidationResult {
-        const validPolicies: string[] = []
-        const violations: string[] = []
+        const certificates = chain.certificates
+        const last = certificates[certificates.length - 1]
+        const path =
+            chain.trustAnchor &&
+            this.certificatesEqual(last, chain.trustAnchor.certificate)
+                ? certificates.slice(0, -1)
+                : certificates
 
-        // Extract policies from each certificate in the chain
-        for (const certificate of chain.certificates) {
-            const policies = this.extractCertificatePolicies(certificate)
-            validPolicies.push(...policies)
-        }
+        const required = options.requiredPolicies ?? []
+        const result = processPolicies(
+            path,
+            (certificate) => this.isSelfIssued(certificate),
+            {
+                initialPolicySet: options.initialPolicySet,
+                initialExplicitPolicy:
+                    options.initialExplicitPolicy || required.length > 0,
+                initialPolicyMappingInhibit:
+                    options.initialPolicyMappingInhibit,
+                initialAnyPolicyInhibit: options.initialAnyPolicyInhibit,
+            },
+        )
 
-        // Check required policies if specified
-        if (requiredPolicies && requiredPolicies.length > 0) {
-            for (const requiredPolicy of requiredPolicies) {
-                if (!validPolicies.includes(requiredPolicy)) {
-                    violations.push(
-                        `Required policy not found: ${requiredPolicy}`,
-                    )
+        const violations = [...result.violations]
+        if (required.length > 0) {
+            // every required policy must be valid for the path (anyPolicy covers all)
+            const valid = new Set(result.validPolicies)
+            for (const policy of required) {
+                if (!valid.has(policy) && !valid.has(ANY_POLICY)) {
+                    violations.push(`Required policy not found: ${policy}`)
                 }
             }
         }
-
         return {
             isValid: violations.length === 0,
-            validPolicies: [...new Set(validPolicies)], // Remove duplicates
+            validPolicies: result.validPolicies,
             violations,
         }
-    }
-
-    /**
-     * Extracts certificate policy OIDs from a certificate.
-     */
-    private extractCertificatePolicies(certificate: Certificate): string[] {
-        const policies: string[] = []
-        const extensions = certificate.tbsCertificate.extensions
-
-        if (!extensions) return policies
-
-        for (const ext of extensions) {
-            // Certificate Policies OID: 2.5.29.32
-            if (ext.extnID.value === '2.5.29.32') {
-                // Simplified policy extraction
-                // In reality, this would parse the PolicyInformation structure
-                // For now, we'll just return the anyPolicy OID as a placeholder
-                policies.push('2.5.29.32.0') // anyPolicy
-            }
-        }
-
-        return policies
     }
 }
