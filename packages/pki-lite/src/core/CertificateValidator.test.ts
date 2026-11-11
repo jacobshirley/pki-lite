@@ -622,7 +622,13 @@ describe('CertificateValidator', () => {
                     validateNameConstraints: true,
                 }
 
-                const result = await validator.validate(endEntityCert, options)
+                const result = await validator.validate(
+                    createEndEntityCertificate(
+                        intermediateCert,
+                        'test.example.com',
+                    ),
+                    options,
+                )
                 expect(result.isValid).toEqual(true)
             })
 
@@ -649,7 +655,13 @@ describe('CertificateValidator', () => {
                     validateNameConstraints: true,
                 }
 
-                const result = await validator.validate(endEntityCert, options)
+                const result = await validator.validate(
+                    createEndEntityCertificate(
+                        intermediateCert,
+                        'test.example.com',
+                    ),
+                    options,
+                )
 
                 expect(result.isValid).toEqual(false)
                 expect(result.messages).toEqual(
@@ -682,7 +694,13 @@ describe('CertificateValidator', () => {
                     validateNameConstraints: true,
                 }
 
-                const result = await validator.validate(endEntityCert, options)
+                const result = await validator.validate(
+                    createEndEntityCertificate(
+                        intermediateCert,
+                        'test.example.com',
+                    ),
+                    options,
+                )
 
                 expect(result.isValid, result.messages.join(',')).toEqual(true)
                 expect(result.messages).toEqual(
@@ -692,6 +710,31 @@ describe('CertificateValidator', () => {
                         ),
                     ]),
                 )
+            })
+
+            test('rejects a SAN outside the permitted subtree even when the CN is inside', async () => {
+                // CN=test.example.com but SAN=test.com: the SAN is what counts. The
+                // validator used to accept this because any one of subject, CN or SAN
+                // matching was enough.
+                const nameConstraints = new NameConstraints({
+                    permittedSubtrees: [
+                        new GeneralSubtree({
+                            base: new GeneralName.dNSName({
+                                value: 'example.com',
+                            }),
+                        }),
+                    ],
+                })
+
+                const result = await validator.validate(endEntityCert, {
+                    validateChain: true,
+                    trustAnchors: [{ certificate: rootCert, nameConstraints }],
+                    otherCertificates: [intermediateCert],
+                    validateNameConstraints: true,
+                })
+
+                expect(result.isValid).toEqual(false)
+                expect(result.messages.join(' ')).toContain("'test.com'")
             })
         })
 
@@ -1173,7 +1216,10 @@ function createIntermediateCertificate(issuer: Certificate): Certificate {
     })
 }
 
-function createEndEntityCertificate(issuer: Certificate): Certificate {
+function createEndEntityCertificate(
+    issuer: Certificate,
+    dnsName = 'test.com',
+): Certificate {
     const validity = new Validity({
         notBefore: new Date(Date.now() - 24 * 60 * 60 * 1000),
         notAfter: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -1220,7 +1266,7 @@ function createEndEntityCertificate(issuer: Certificate): Certificate {
                 extnID: '2.5.29.17', // Subject Alternative Name
                 critical: false,
                 extnValue: new SubjectAltName(
-                    new GeneralName.dNSName({ value: 'test.com' }),
+                    new GeneralName.dNSName({ value: dnsName }),
                 ).toDer(),
             }),
         ],

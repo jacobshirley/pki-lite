@@ -184,6 +184,8 @@ export const OIDs = {
         BASIC_CONSTRAINTS: '2.5.29.19',
         /** CRL Number */
         CRL_NUMBER: '2.5.29.20',
+        /** Name Constraints */
+        NAME_CONSTRAINTS: '2.5.29.30',
         /** CRL Distribution Points */
         CRL_DISTRIBUTION_POINTS: '2.5.29.31',
         /** Certificate Policies */

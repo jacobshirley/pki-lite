@@ -17,6 +17,8 @@ import {
     AuthorityInfoAccess,
 } from './extensions/AuthorityInfoAccess.js'
 import { BasicConstraints } from './extensions/BasicConstraints.js'
+import { AuthorityKeyIdentifier } from './extensions/AuthorityKeyIdentifier.js'
+import { KeyIdentifier } from '../pkcs7/recipients/KeyIdentifier.js'
 import { ExtKeyCommonNames, ExtKeyUsage } from './extensions/ExtKeyUsage.js'
 import { KeyUsage, KeyUsageOptions } from './extensions/KeyUsage.js'
 import { SubjectAltName } from './extensions/SubjectAltName.js'
@@ -156,7 +158,11 @@ export class Extension extends PkiBase<Extension> {
         return new Extension({
             extnID: OIDs.EXTENSION.AUTHORITY_KEY_IDENTIFIER,
             critical: false,
-            extnValue: new OctetString({ bytes: keyIdentifier }),
+            // AuthorityKeyIdentifier ::= SEQUENCE { keyIdentifier [0] ... }, not a bare
+            // OCTET STRING (that is the Subject Key Identifier's form)
+            extnValue: new AuthorityKeyIdentifier({
+                keyIdentifier: new KeyIdentifier({ bytes: keyIdentifier }),
+            }),
         })
     }
 

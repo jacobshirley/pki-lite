@@ -219,4 +219,16 @@ describe('Extension', () => {
           -----END EXTENSION-----"
         `)
     })
+
+    test('authorityKeyIdentifier writes an AuthorityKeyIdentifier SEQUENCE, not a bare OCTET STRING', () => {
+        const extension = Extension.authorityKeyIdentifier(
+            new Uint8Array([1, 2, 3, 4]),
+        )
+        // SEQUENCE { [0] 01020304 }
+        expect(
+            Array.from(extension.extnValue.bytes, (b) =>
+                b.toString(16).padStart(2, '0'),
+            ).join(''),
+        ).toBe('300680040102' + '0304')
+    })
 })

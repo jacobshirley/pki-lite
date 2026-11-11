@@ -3,6 +3,7 @@ import { CertificateList } from '../x509/CertificateList.js'
 import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { BasicConstraints } from '../x509/extensions/BasicConstraints.js'
 import { NameConstraints } from '../x509/extensions/NameConstraints.js'
+import { checkNameConstraints } from './NameConstraintsChecker.js'
 import { SubjectKeyIdentifier } from '../keys/SubjectKeyIdentifier.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { AuthorityKeyIdentifier } from '../x509/extensions/AuthorityKeyIdentifier.js'
@@ -51,7 +52,11 @@ export interface RevocationStatus {
 export interface TrustAnchor {
     /** The trusted root certificate */
     certificate: Certificate
-    /** Optional name constraints to apply */
+    /**
+     * Optional name constraints to apply to every certificate below this trust anchor,
+     * in addition to any in the trust anchor's own certificate (when validating name
+     * constraints).
+     */
     nameConstraints?: NameConstraints
 }
 
@@ -101,7 +106,12 @@ export interface CertificateValidationOptions {
     validateChain?: boolean
     /** Whether to enforce CA constraints and key usage */
     enforceCAConstraints?: boolean
-    /** Whether to validate name constraints */
+    /**
+     * Whether to enforce name constraints (RFC 5280 4.2.1.10): the `NameConstraints`
+     * extension of every CA in the chain, and any given with the trust anchor, apply to the
+     * certificates below them. On by default, as RFC 5280 requires of path validation; set
+     * to `false` to skip the check. Part of chain validation (`validateChain`).
+     */
     validateNameConstraints?: boolean
     /** Whether to validate certificate policies */
     validatePolicies?: boolean
@@ -655,23 +665,16 @@ export class CertificateValidator {
             }
         }
 
-        // Check name constraints if trust anchor has them
-        if (
-            options.validateNameConstraints &&
-            chain.trustAnchor?.nameConstraints
-        ) {
-            const nameConstraintResult = this.validateNameConstraints(
-                chain.certificates[0],
-                chain.trustAnchor.nameConstraints,
-            )
+        // Name constraints (RFC 5280 6.1): those of every CA in the path, and any given
+        // with the trust anchor, apply to the certificates below them
+        if (options.validateNameConstraints !== false) {
+            const violation = this.checkChainNameConstraints(chain)
 
-            if (!nameConstraintResult.isValid) {
+            if (violation) {
                 return {
                     status: CertificateValidationStatus.CHAIN_INVALID,
                     isValid: false,
-                    messages: [
-                        `Name constraints violation: ${nameConstraintResult.message}`,
-                    ],
+                    messages: [`Name constraints violation: ${violation}`],
                     revocationStatus: { isRevoked: false, source: 'NONE' },
                     certificate: chain.certificates[0],
                     validatedAt: new Date(),
@@ -1194,68 +1197,74 @@ export class CertificateValidator {
     }
 
     /**
-     * Validates name constraints against a certificate.
+     * Checks the certificates of a chain against name constraints (RFC 5280 6.1.3 (b)
+     * and (c), 6.1.4 (g)). The constraints of each CA in the path, and any supplied with
+     * the trust anchor, apply to every certificate below it. A self-issued certificate in
+     * the middle of the path (e.g. a CA key rollover) is exempt, but the last one is not.
+     *
+     * @returns a description of the first violation, or undefined if there is none
      */
-    private validateNameConstraints(
-        certificate: Certificate,
-        nameConstraints: NameConstraints,
-    ): { isValid: boolean; message: string } {
-        // Simplified name constraints validation
-        // In a full implementation, this would parse the Subject Alternative Name extension
-        // and check against the permitted/excluded subtrees
+    private checkChainNameConstraints(
+        chain: CertificateChain,
+    ): string | undefined {
+        const certificates = chain.certificates
+        const last = certificates.length - 1
 
-        const subject = certificate.tbsCertificate.subject
+        // [constraints, who they came from, how many certificates below them]
+        const sources: [NameConstraints, string, number][] = []
+        for (let index = 1; index < certificates.length; index++) {
+            const ca = certificates[index]
+            const extension = ca.getExtensionByOid(
+                OIDs.EXTENSION.NAME_CONSTRAINTS,
+            )
+            if (!extension) continue
+            try {
+                sources.push([
+                    extension.extnValue.parseAs(NameConstraints),
+                    ca.tbsCertificate.subject.toHumanString(),
+                    index,
+                ])
+            } catch (error) {
+                return `cannot read the name constraints of '${ca.tbsCertificate.subject.toHumanString()}': ${error instanceof Error ? error.message : String(error)}`
+            }
+        }
 
-        const subjectAltNames = this.extractSubjectAltNames(certificate).map(
-            (san) => san.toString(),
+        const anchor = chain.trustAnchor
+        if (anchor?.nameConstraints) {
+            // everything below the trust anchor (its own certificate, when in the chain, last)
+            const below = this.certificatesEqual(
+                certificates[last],
+                anchor.certificate,
+            )
+                ? last
+                : certificates.length
+            sources.push([
+                anchor.nameConstraints,
+                `trust anchor '${anchor.certificate.tbsCertificate.subject.toHumanString()}'`,
+                below,
+            ])
+        }
+
+        for (const [constraints, source, below] of sources) {
+            for (let index = 0; index < below; index++) {
+                const certificate = certificates[index]
+                const isIntermediate = index > 0 && index < last
+                if (isIntermediate && this.isSelfIssued(certificate)) continue
+
+                const violation = checkNameConstraints(certificate, constraints)
+                if (violation) {
+                    return `${violation.message} (certificate '${certificate.tbsCertificate.subject.toHumanString()}', constrained by ${source.startsWith('trust') ? source : `'${source}'`})`
+                }
+            }
+        }
+        return undefined
+    }
+
+    /** Whether a certificate's issuer and subject are the same name. */
+    private isSelfIssued(certificate: Certificate): boolean {
+        return certificate.tbsCertificate.issuer.equals(
+            certificate.tbsCertificate.subject,
         )
-        // For testing, we'll also check the common name from the subject
-        const subjectCommonName = this.extractCommonName(certificate)
-
-        // Check permitted subtrees
-        if (
-            nameConstraints.permittedSubtrees &&
-            nameConstraints.permittedSubtrees.length > 0
-        ) {
-            const permitted =
-                nameConstraints.permittedSubtrees.matches(subject) ||
-                (subjectCommonName &&
-                    nameConstraints.permittedSubtrees.matches(
-                        subjectCommonName,
-                    )) ||
-                subjectAltNames.some((san) =>
-                    nameConstraints.permittedSubtrees?.matches(san),
-                )
-
-            if (!permitted) {
-                return {
-                    isValid: false,
-                    message: `Certificate name '${subjectCommonName || subject}' not in permitted subtrees`,
-                }
-            }
-        }
-
-        // Check excluded subtrees
-        if (
-            nameConstraints.excludedSubtrees &&
-            nameConstraints.excludedSubtrees.length > 0
-        ) {
-            if (
-                nameConstraints.excludedSubtrees.matches(subject) ||
-                (subjectCommonName &&
-                    nameConstraints.excludedSubtrees.matches(subjectCommonName))
-            ) {
-                return {
-                    isValid: false,
-                    message: `Certificate name '${subjectCommonName || subject}' matches excluded subtree`,
-                }
-            }
-        }
-
-        return {
-            isValid: true,
-            message: 'Name constraints validated successfully',
-        }
     }
 
     private extractSubjectAltNames(certificate: Certificate): SubjectAltName[] {
