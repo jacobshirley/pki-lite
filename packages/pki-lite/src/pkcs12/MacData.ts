@@ -1,5 +1,11 @@
 import { OctetString } from '../asn1/OctetString.js'
-import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { DigestInfo } from './DigestInfo.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
@@ -37,22 +43,19 @@ export class MacData extends PkiBase<MacData> {
         this.iterations = options.iterations ?? 1
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
-            this.mac.toAsn1(),
-            this.macSalt.toAsn1(),
-        ]
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [this.mac.toAsn1(), this.macSalt.toAsn1()]
         if (this.iterations !== 1) {
-            values.push(new asn1js.Integer({ value: this.iterations }))
+            values.push(der.integer(this.iterations))
         }
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): MacData {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): MacData {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('MacData: expected SEQUENCE')
         }
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 2 || values.length > 3) {
             throw new Asn1ParseError('MacData: expected 2 or 3 elements')
         }
@@ -61,10 +64,10 @@ export class MacData extends PkiBase<MacData> {
         let iterations = 1
         if (values.length === 3) {
             const it = values[2]
-            if (!(it instanceof asn1js.Integer)) {
+            if (!it.is(UniversalTag.Integer)) {
                 throw new Asn1ParseError('MacData: iterations must be INTEGER')
             }
-            iterations = it.valueBlock.valueDec
+            iterations = der.readNumber(it)
         }
         return new MacData({ mac, macSalt, iterations })
     }
