@@ -303,3 +303,37 @@ describe('toSymmetricEncryptionAlgorithmParams AES key sizes', () => {
         })
     }
 })
+
+describe('AES-GCM additional authenticated data', () => {
+    const provider = new WebCryptoProvider()
+    const key = new Uint8Array(32).map((_, i) => i)
+    const nonce = new Uint8Array(12).map((_, i) => 100 + i)
+    const data = new TextEncoder().encode('authenticated and encrypted')
+    const aad = new Uint8Array([1, 2, 3, 4])
+
+    const params = (additionalData?: Uint8Array<ArrayBuffer>) => ({
+        type: 'AES_256_GCM' as const,
+        params: { nonce, additionalData },
+    })
+
+    it('decrypts when the same additional data is supplied', async () => {
+        const sealed = await provider.encryptSymmetric(data, key, params(aad))
+        expect(
+            await provider.decryptSymmetric(sealed, key, params(aad)),
+        ).toEqual(data)
+    })
+
+    it('fails authentication when the additional data differs', async () => {
+        const sealed = await provider.encryptSymmetric(data, key, params(aad))
+        await expect(
+            provider.decryptSymmetric(
+                sealed,
+                key,
+                params(new Uint8Array([9, 9, 9, 9])),
+            ),
+        ).rejects.toThrow()
+        await expect(
+            provider.decryptSymmetric(sealed, key, params()),
+        ).rejects.toThrow()
+    })
+})

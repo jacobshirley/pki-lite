@@ -10,7 +10,7 @@
  * CI stays green, and as soon as the gap is closed the matching tests start failing with
  * "expected to fail", pointing at the entry to delete. What is left there are unsupported
  * features (EdDSA/RSA-PSS keys, RSA PKCS#1 v1.5 key transport, 3DES PBE, explicit EC
- * parameters, AuthEnvelopedData), not encoding defects.
+ * parameters), not encoding defects.
  */
 import { describe, expect, test } from 'vitest'
 import { opensslCorpus } from '../../test-fixtures/openssl-corpus/corpus.js'
@@ -36,6 +36,7 @@ import { EncryptedPrivateKeyInfo } from '../../src/keys/EncryptedPrivateKeyInfo.
 import { ContentInfo } from '../../src/pkcs7/ContentInfo.js'
 import { SignedData } from '../../src/pkcs7/SignedData.js'
 import { EnvelopedData } from '../../src/pkcs7/EnvelopedData.js'
+import { AuthEnvelopedData } from '../../src/pkcs7/AuthEnvelopedData.js'
 import { PFX } from '../../src/pkcs12/PFX.js'
 import { OCSPRequest } from '../../src/ocsp/OCSPRequest.js'
 import { OCSPResponse } from '../../src/ocsp/OCSPResponse.js'
@@ -266,8 +267,6 @@ describe('OpenSSL corpus: keys and signatures', () => {
 // CMS
 // ---------------------------------------------------------------------------
 describe('OpenSSL corpus: CMS', () => {
-    test.todo('AuthEnvelopedData (AES-GCM) support: parse, encode and decrypt')
-
     const rsaKey = () => PrivateKeyInfo.fromDer(read('key', 'pkcs8_rsa.der'))
     for (const file of files('cms')) {
         const der = read('cms', file)
@@ -299,14 +298,52 @@ describe('OpenSSL corpus: CMS', () => {
                     expect(result.valid).toBe(true)
                 })
             }
-        } else if (file === 'ed_rsa_gcm.der' || file === 'authenveloped.der') {
-            // AuthEnvelopedData (RFC 5083), written by `-aes-256-gcm`. Not supported yet:
-            // it must be rejected rather than misread as EnvelopedData.
-            register('cms', file, 'authEnvelopedData:rejected', () => {
+        } else if (/^(ed_rsa_gcm(_oaep)?|authenveloped)\.der$/.test(file)) {
+            // AuthEnvelopedData (RFC 5083), written by `-aes-256-gcm`
+            register('cms', file, 'authEnvelopedData:parse', () => {
+                ContentInfo.fromDer(der).parseContentAs(AuthEnvelopedData)
+            })
+            register('cms', file, 'authEnvelopedData:roundtrip', () => {
+                const aed =
+                    ContentInfo.fromDer(der).parseContentAs(AuthEnvelopedData)
+                expectRoundtrip(aed.toCms(), der)
+            })
+            // ... and must not be misread as plain EnvelopedData
+            register('cms', file, 'envelopedData:rejected', () => {
                 expect(() =>
                     ContentInfo.fromDer(der).parseContentAs(EnvelopedData),
                 ).toThrow(/AuthEnvelopedData/)
             })
+            // The default provider has no RSA PKCS#1 v1.5, so only the OAEP one decrypts
+            // here; the others are decrypted by pki-lite-crypto-extended's corpus test.
+            if (file === 'ed_rsa_gcm_oaep.der') {
+                register('cms', file, 'authEnvelopedData:decrypt', async () => {
+                    const aed =
+                        ContentInfo.fromDer(der).parseContentAs(
+                            AuthEnvelopedData,
+                        )
+                    const plain = await aed.decrypt(rsaKey())
+                    expect(
+                        new TextDecoder().decode(plain).replace(/\r\n/g, '\n'),
+                    ).toBe(CMS_MESSAGE)
+                })
+            }
+            if (file === 'ed_rsa_gcm_oaep.der') {
+                register(
+                    'cms',
+                    file,
+                    'authEnvelopedData:tampered',
+                    async () => {
+                        const aed =
+                            ContentInfo.fromDer(der).parseContentAs(
+                                AuthEnvelopedData,
+                            )
+                        aed.mac = aed.mac.map((b, i) => (i === 0 ? b ^ 1 : b))
+                        // the authentication tag no longer matches
+                        await expect(aed.decrypt(rsaKey())).rejects.toThrow()
+                    },
+                )
+            }
         } else if (file.startsWith('ed_')) {
             register('cms', file, 'envelopedData:parse', () => {
                 ContentInfo.fromDer(der).parseContentAs(EnvelopedData)

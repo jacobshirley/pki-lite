@@ -274,6 +274,9 @@ export class WebCryptoProvider implements CryptoProvider {
                     name: 'AES-GCM',
                     iv: gcmParams.nonce,
                     tagLength: gcmParams.icvLen ?? 128,
+                    ...(gcmParams.additionalData
+                        ? { additionalData: gcmParams.additionalData }
+                        : {}),
                 }
             }
 

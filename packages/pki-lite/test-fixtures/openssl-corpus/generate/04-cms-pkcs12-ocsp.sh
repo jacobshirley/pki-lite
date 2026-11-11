@@ -51,6 +51,7 @@ g $C/cms/ed_rsa_aes256.der openssl cms -encrypt -in msg.txt $R -aes256 -outform 
 g $C/cms/ed_rsa_aes128.der openssl cms -encrypt -in msg.txt $R -aes128 -outform DER -out $C/cms/ed_rsa_aes128.der
 g $C/cms/ed_rsa_3des.der openssl cms -encrypt -in msg.txt $R -des3 -outform DER -out $C/cms/ed_rsa_3des.der
 g $C/cms/ed_rsa_gcm.der openssl cms -encrypt -in msg.txt $R -aes-256-gcm -outform DER -out $C/cms/ed_rsa_gcm.der
+g $C/cms/ed_rsa_gcm_oaep.der openssl cms -encrypt -in msg.txt $R -keyopt rsa_padding_mode:oaep -aes-256-gcm -outform DER -out $C/cms/ed_rsa_gcm_oaep.der
 g $C/cms/ed_rsa_keyid.der openssl cms -encrypt -in msg.txt $R -keyid -aes256 -outform DER -out $C/cms/ed_rsa_keyid.der
 g $C/cms/ed_rsa_oaep.der openssl cms -encrypt -in msg.txt $R -keyopt rsa_padding_mode:oaep -aes256 -outform DER -out $C/cms/ed_rsa_oaep.der
 g $C/cms/ed_rsa_oaep_sha256.der openssl cms -encrypt -in msg.txt $R -keyopt rsa_padding_mode:oaep -keyopt rsa_oaep_md:sha256 -aes256 -outform DER -out $C/cms/ed_rsa_oaep_sha256.der

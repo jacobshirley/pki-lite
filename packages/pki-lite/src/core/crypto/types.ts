@@ -188,6 +188,8 @@ export interface SymmetricEncryptionAlgorithmParamsMap
         nonce: Uint8Array<ArrayBuffer>
         /** Authentication tag length in bytes */
         icvLen?: number
+        /** Additional authenticated data (AAD) */
+        additionalData?: Uint8Array<ArrayBuffer>
     }
     /**
      * AES-192 in Galois/Counter Mode parameters.
@@ -197,6 +199,8 @@ export interface SymmetricEncryptionAlgorithmParamsMap
         nonce: Uint8Array<ArrayBuffer>
         /** Authentication tag length in bytes */
         icvLen?: number
+        /** Additional authenticated data (AAD) */
+        additionalData?: Uint8Array<ArrayBuffer>
     }
     /**
      * AES-256 in Galois/Counter Mode parameters.
@@ -206,6 +210,8 @@ export interface SymmetricEncryptionAlgorithmParamsMap
         nonce: Uint8Array<ArrayBuffer>
         /** Authentication tag length in bytes */
         icvLen?: number
+        /** Additional authenticated data (AAD) */
+        additionalData?: Uint8Array<ArrayBuffer>
     }
     /**
      * AES-128 in Counter with CBC-MAC Mode parameters.
