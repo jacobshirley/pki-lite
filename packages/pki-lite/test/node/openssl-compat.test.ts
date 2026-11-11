@@ -1,4 +1,5 @@
 import { EnvelopedData } from '../../src/pkcs7/EnvelopedData.js'
+import { AuthEnvelopedData } from '../../src/pkcs7/AuthEnvelopedData.js'
 import { Certificate } from '../../src/x509/Certificate.js'
 import { describe, test, expect } from 'vitest'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
@@ -515,6 +516,51 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
                 valid: true,
                 signerInfo: signedData.signerInfos[0],
             })
+        })
+    })
+
+    describe('AuthEnvelopedData', () => {
+        const recipient = () => ({
+            certificate: Certificate.fromPem(rsaSigningKeys.certPem),
+        })
+        const decryptWithOpenSSL = async (cms: Uint8Array) => {
+            const result = await opensslCmsDecrypt({
+                envelopedData: cms,
+                recipientCertificatePem: rsaSigningKeys.certPem,
+                recipientPrivateKeyPem: rsaSigningKeys.privateKeyPem,
+            })
+            expect(result.success, result.error).toBe(true)
+            return new TextDecoder().decode(result.plaintext)
+        }
+
+        test('AES-256-GCM message built by pki-lite is decryptable with OpenSSL', async () => {
+            const authEnvelopedData = await AuthEnvelopedData.builder()
+                .setData('Hello AuthEnvelopedData')
+                .addRecipient(recipient())
+                .build()
+
+            expect(
+                await decryptWithOpenSSL(authEnvelopedData.toCms().toDer()),
+            ).toBe('Hello AuthEnvelopedData')
+        })
+
+        test('AES-128-GCM with a 12-byte tag is decryptable with OpenSSL', async () => {
+            const authEnvelopedData = await AuthEnvelopedData.builder()
+                .setData('short tag')
+                .setContentEncryptionAlgorithm({
+                    type: 'AES_128_GCM',
+                    params: {
+                        nonce: crypto.getRandomValues(new Uint8Array(12)),
+                        icvLen: 12,
+                    },
+                })
+                .addRecipient(recipient())
+                .build()
+
+            expect(authEnvelopedData.mac).toHaveLength(12)
+            expect(
+                await decryptWithOpenSSL(authEnvelopedData.toCms().toDer()),
+            ).toBe('short tag')
         })
     })
 

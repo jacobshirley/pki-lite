@@ -13,6 +13,7 @@ import { CMSVersion } from './CMSVersion.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { implicitTag, isContextTag } from '../core/tagging.js'
 import { getCryptoProvider } from '../core/crypto/provider.js'
+import { AuthEnvelopedDataBuilder } from '../core/builders/AuthEnvelopedDataBuilder.js'
 
 /**
  * Represents a CMS AuthEnvelopedData structure (RFC 5083), what
@@ -193,6 +194,10 @@ export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
         return cms.content.parseAs(AuthEnvelopedData)
     }
 
+    static builder() {
+        return new AuthEnvelopedDataBuilder()
+    }
+
     toCms(): ContentInfo {
         return new ContentInfo({
             contentType: OIDs.PKCS7.AUTH_ENVELOPED_DATA,
@@ -257,7 +262,7 @@ export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
             type: algorithm.type,
             params: {
                 ...algorithm.params,
-                icvLen: this.mac.length * 8,
+                icvLen: this.mac.length,
                 ...(additionalData ? { additionalData } : {}),
             },
         } as typeof algorithm)

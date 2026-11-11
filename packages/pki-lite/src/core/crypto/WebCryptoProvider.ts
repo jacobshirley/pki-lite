@@ -311,7 +311,8 @@ export class WebCryptoProvider implements CryptoProvider {
                 return {
                     name: 'AES-GCM',
                     iv: gcmParams.nonce,
-                    tagLength: gcmParams.icvLen ?? 128,
+                    // icvLen is in bytes (as in the ASN.1 AES-ICVlen); WebCrypto wants bits
+                    tagLength: (gcmParams.icvLen ?? 16) * 8,
                     ...(gcmParams.additionalData
                         ? { additionalData: gcmParams.additionalData }
                         : {}),
@@ -330,7 +331,7 @@ export class WebCryptoProvider implements CryptoProvider {
                 return {
                     name: 'AES-CCM',
                     iv: ccmParams.nonce,
-                    tagLength: ccmParams.icvLen || 128,
+                    tagLength: (ccmParams.icvLen || 16) * 8,
                 }
             }
             case 'AES_128_ECB':
@@ -1338,7 +1339,7 @@ export class WebCryptoProvider implements CryptoProvider {
                     type,
                     params: {
                         nonce: gcmParams.aesNonce.bytes,
-                        icvLen: tagLength ? tagLength * 8 : undefined, // Convert to bits
+                        icvLen: tagLength || undefined, // bytes, like the ASN.1 field
                     },
                 }
             }
@@ -1358,7 +1359,7 @@ export class WebCryptoProvider implements CryptoProvider {
                     type,
                     params: {
                         nonce: ccmParams.aesNonce.bytes,
-                        icvLen: tagLength ? tagLength * 8 : undefined, // Convert to bits
+                        icvLen: tagLength || undefined, // bytes, like the ASN.1 field
                     },
                 }
             }

@@ -392,3 +392,36 @@ describe('Ed25519', () => {
         ).rejects.toThrow('pki-lite-crypto-extended')
     })
 })
+
+describe('GCM tag length (icvLen) is in bytes', () => {
+    const provider = new WebCryptoProvider()
+    const nonce = new Uint8Array(12).fill(3)
+    const key = new Uint8Array(32).fill(9)
+
+    it('produces a tag of icvLen bytes and writes it to the ASN.1 parameters', async () => {
+        const params = {
+            type: 'AES_256_GCM' as const,
+            params: { nonce, icvLen: 14 },
+        }
+        const sealed = await provider.encryptSymmetric(
+            new Uint8Array(5),
+            key,
+            params,
+        )
+        expect(sealed).toHaveLength(5 + 14)
+
+        // what is written is what is read back
+        const identifier = provider.contentEncryptionAlgorithm(params)
+        const decoded =
+            provider.toSymmetricEncryptionAlgorithmParams(identifier)
+        expect(decoded.params).toMatchObject({ icvLen: 14 })
+    })
+
+    it('defaults to a 16-byte tag', async () => {
+        const sealed = await provider.encryptSymmetric(new Uint8Array(5), key, {
+            type: 'AES_256_GCM',
+            params: { nonce },
+        })
+        expect(sealed).toHaveLength(5 + 16)
+    })
+})
