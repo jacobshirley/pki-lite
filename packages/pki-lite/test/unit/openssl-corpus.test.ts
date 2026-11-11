@@ -72,15 +72,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             (c === 'signedData:verify' && /sd_ed25519/.test(t)),
     },
     {
-        id: 'ECPRIVATEKEY-EXPLICIT-PARAMS',
-        why:
-            'Unsupported feature: ECPrivateKey cannot parse explicit (non-namedCurve) EC parameters, ' +
-            'which RFC 5480 deprecates; only named curves are modelled.',
-        match: (t, c) =>
-            /^(parse|roundtrip)$/.test(c) &&
-            t === 'key/ecprivate_explicitparams.der',
-    },
-    {
         id: 'CMS-RSA-PKCS1V15-KEY-TRANSPORT',
         why:
             'Not available to the default provider: WebCrypto only offers RSA-OAEP, and raw RSA decryption ' +
