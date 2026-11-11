@@ -76,16 +76,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             t === 'key/ecprivate_explicitparams.der',
     },
     {
-        id: 'AUTHENVELOPEDDATA-MISPARSED',
-        why:
-            'AuthEnvelopedData (1.2.840.113549.1.9.16.1.23, what `openssl cms -encrypt -aes-256-gcm` writes) is ' +
-            'accepted as EnvelopedData without checking the content type; it is re-encoded under the EnvelopedData ' +
-            'OID and the authentication tag/attributes are dropped, and decryption fails.',
-        match: (t, c) =>
-            /^envelopedData:(roundtrip|decrypt)$/.test(c) &&
-            /ed_rsa_gcm|authenveloped/.test(t),
-    },
-    {
         id: 'CMS-RSA-PKCS1V15-KEY-TRANSPORT',
         why: 'EnvelopedData.decrypt cannot unwrap RSA PKCS#1 v1.5 key transport (rsaEncryption), the OpenSSL default.',
         match: (t, c) =>
@@ -275,6 +265,8 @@ describe('OpenSSL corpus: keys and signatures', () => {
 // CMS
 // ---------------------------------------------------------------------------
 describe('OpenSSL corpus: CMS', () => {
+    test.todo('AuthEnvelopedData (AES-GCM) support: parse, encode and decrypt')
+
     const rsaKey = () => PrivateKeyInfo.fromDer(read('key', 'pkcs8_rsa.der'))
     for (const file of files('cms')) {
         const der = read('cms', file)
@@ -306,7 +298,15 @@ describe('OpenSSL corpus: CMS', () => {
                     expect(result.valid).toBe(true)
                 })
             }
-        } else if (file.startsWith('ed_') || file === 'authenveloped.der') {
+        } else if (file === 'ed_rsa_gcm.der' || file === 'authenveloped.der') {
+            // AuthEnvelopedData (RFC 5083), written by `-aes-256-gcm`. Not supported yet:
+            // it must be rejected rather than misread as EnvelopedData.
+            register('cms', file, 'authEnvelopedData:rejected', () => {
+                expect(() =>
+                    ContentInfo.fromDer(der).parseContentAs(EnvelopedData),
+                ).toThrow(/AuthEnvelopedData/)
+            })
+        } else if (file.startsWith('ed_')) {
             register('cms', file, 'envelopedData:parse', () => {
                 ContentInfo.fromDer(der).parseContentAs(EnvelopedData)
             })
