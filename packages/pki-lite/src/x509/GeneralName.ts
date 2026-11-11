@@ -14,7 +14,7 @@ import { OctetString } from '../asn1/OctetString.js'
 import { IA5String } from '../asn1/IA5String.js'
 import { DirectoryString } from './DirectoryString.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
-import { contentOctets, implicitTag, isContextTag } from '../core/tagging.js'
+import { implicitTag, isContextTag } from '../core/tagging.js'
 
 /** The content octets of a GeneralName string alternative ([1], [2], [6]). */
 function implicitStringBytes(asn1: Asn1BaseBlock): Uint8Array<ArrayBuffer> {
@@ -23,7 +23,9 @@ function implicitStringBytes(asn1: Asn1BaseBlock): Uint8Array<ArrayBuffer> {
         return IA5String.fromAsn1(asn1.valueBlock.value[0]).bytes
     }
     if (asn1.idBlock.tagClass === 3) {
-        return new Uint8Array(contentOctets(asn1))
+        return new Uint8Array(
+            (asn1 as asn1js.Primitive).valueBlock.valueHexView,
+        )
     }
     return IA5String.fromAsn1(asn1).bytes
 }
@@ -318,7 +320,9 @@ export class iPAddress extends OctetString {
         }
         if (asn1.idBlock.tagClass === 3) {
             return new iPAddress({
-                bytes: new Uint8Array(contentOctets(asn1)),
+                bytes: new Uint8Array(
+                    (asn1 as asn1js.Primitive).valueBlock.valueHexView,
+                ),
             })
         }
         return new iPAddress({ bytes: OctetString.fromAsn1(asn1).bytes })

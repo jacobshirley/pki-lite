@@ -3,7 +3,6 @@ import { OriginatorPublicKey } from './OriginatorPublicKey.js'
 import { Asn1BaseBlock, asn1js, Choice } from '../../core/PkiBase.js'
 import { SubjectKeyIdentifier } from '../../keys/SubjectKeyIdentifier.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
-import { withUniversalTag } from '../../core/tagging.js'
 
 /**
  * Represents an OriginatorIdentifierOrKey structure as defined in RFC 5652.
@@ -38,7 +37,11 @@ export const OriginatorIdentifierOrKey = Choice('OriginatorIdentifierOrKey', {
             // OriginatorPublicKey [1]
             if (tagNumber === 1) {
                 // [1] IMPLICIT OriginatorPublicKey: restore the SEQUENCE tag
-                return OriginatorPublicKey.fromAsn1(withUniversalTag(asn1, 16))
+                return OriginatorPublicKey.fromAsn1(
+                    new asn1js.Sequence({
+                        value: (asn1 as asn1js.Constructed).valueBlock.value,
+                    }),
+                )
             }
 
             throw new Asn1ParseError(`Unsupported tag number: ${tagNumber}`)

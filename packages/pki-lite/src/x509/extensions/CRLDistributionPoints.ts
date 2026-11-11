@@ -9,11 +9,7 @@ import { GeneralNames } from '../GeneralName.js'
 import { ReasonFlags } from '../ReasonFlags.js'
 import { RelativeDistinguishedName } from '../RelativeDistinguishedName.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
-import {
-    implicitTag,
-    isContextTag,
-    withUniversalTag,
-} from '../../core/tagging.js'
+import { implicitTag, isContextTag } from '../../core/tagging.js'
 
 /**
  * Represents X.509 DistributionPointName
@@ -149,8 +145,15 @@ export class DistributionPoint extends PkiBase<DistributionPoint> {
                 } else if (element instanceof asn1js.BitString) {
                     dp.reasons = ReasonFlags.fromAsn1(element)
                 } else {
+                    // reasons [1] IMPLICIT BIT STRING: the content is the unused-bits
+                    // count followed by the bits
+                    const content = (element as asn1js.Primitive).valueBlock
+                        .valueHexView
                     dp.reasons = ReasonFlags.fromAsn1(
-                        withUniversalTag(element, 3),
+                        new asn1js.BitString({
+                            valueHex: content.slice(1),
+                            unusedBits: content[0],
+                        }),
                     )
                 }
             } else if (isContextTag(element, 2)) {

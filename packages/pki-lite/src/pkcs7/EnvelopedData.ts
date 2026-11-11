@@ -23,7 +23,6 @@ import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { OtherRevocationInfoFormat } from '../revocation/OtherRevocationInfoFormat.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
-import { withUniversalTag } from '../core/tagging.js'
 
 /**
  * Represents a set of unprotected attributes.
@@ -228,7 +227,10 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
         ) {
             // originatorInfo [0] IMPLICIT OriginatorInfo (a SEQUENCE)
             originatorInfo = OriginatorInfo.fromAsn1(
-                withUniversalTag(values[currentIndex], 16),
+                new asn1js.Sequence({
+                    value: (values[currentIndex] as asn1js.Constructed)
+                        .valueBlock.value,
+                }),
             )
             currentIndex++
         }

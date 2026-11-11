@@ -1,4 +1,4 @@
-import { encodeTime } from './Time.js'
+import { Time } from '../asn1/Time.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Name } from './Name.js'
@@ -75,11 +75,11 @@ export class TBSCertList extends PkiBase<TBSCertList> {
         tbsValues.push(this.issuer.toAsn1())
 
         // ThisUpdate
-        tbsValues.push(encodeTime(this.thisUpdate))
+        tbsValues.push(new Time({ time: this.thisUpdate }).toAsn1())
 
         // NextUpdate (optional)
         if (this.nextUpdate) {
-            tbsValues.push(encodeTime(this.nextUpdate))
+            tbsValues.push(new Time({ time: this.nextUpdate }).toAsn1())
         }
 
         // RevokedCertificates (optional)
@@ -171,26 +171,7 @@ export class TBSCertList extends PkiBase<TBSCertList> {
         index++
 
         // ThisUpdate
-        if (
-            !(values[index] instanceof asn1js.UTCTime) &&
-            !(values[index] instanceof asn1js.GeneralizedTime)
-        ) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected UTCTime or GeneralizedTime for thisUpdate',
-            )
-        }
-
-        // For testing purposes, we'll use a fixed date
-        // In a real implementation, you would extract the date correctly from the ASN.1 object
-        let thisUpdate: Date
-        if (values[index] instanceof asn1js.UTCTime) {
-            thisUpdate = (values[index] as asn1js.UTCTime).toDate()
-        } else if (values[index] instanceof asn1js.GeneralizedTime) {
-            thisUpdate = (values[index] as asn1js.GeneralizedTime).toDate()
-        } else {
-            // Fallback for testing
-            thisUpdate = new Date('2025-01-01')
-        }
+        const thisUpdate = Time.fromAsn1(values[index], 'thisUpdate').time
         index++
 
         // NextUpdate (optional)
@@ -200,16 +181,7 @@ export class TBSCertList extends PkiBase<TBSCertList> {
             (values[index] instanceof asn1js.UTCTime ||
                 values[index] instanceof asn1js.GeneralizedTime)
         ) {
-            // For testing purposes, we'll use a fixed date
-            // In a real implementation, you would extract the date correctly from the ASN.1 object
-            if (values[index] instanceof asn1js.UTCTime) {
-                nextUpdate = (values[index] as asn1js.UTCTime).toDate()
-            } else if (values[index] instanceof asn1js.GeneralizedTime) {
-                nextUpdate = (values[index] as asn1js.GeneralizedTime).toDate()
-            } else {
-                // Fallback for testing
-                nextUpdate = new Date('2026-01-01')
-            }
+            nextUpdate = Time.fromAsn1(values[index], 'nextUpdate').time
             index++
         }
 

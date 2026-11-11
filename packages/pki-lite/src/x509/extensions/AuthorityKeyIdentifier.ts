@@ -3,7 +3,7 @@ import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
 import { KeyIdentifier } from '../../pkcs7/recipients/KeyIdentifier.js'
 import { GeneralName, GeneralNames } from '../GeneralName.js'
-import { contentOctets, implicitTag } from '../../core/tagging.js'
+import { implicitTag } from '../../core/tagging.js'
 
 /**
  * AuthorityKeyIdentifier extension class.
@@ -83,7 +83,10 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
                         keyIdentifier = KeyIdentifier.fromAsn1(element)
                     } else {
                         keyIdentifier = new KeyIdentifier({
-                            bytes: new Uint8Array(contentOctets(element)),
+                            bytes: new Uint8Array(
+                                (element as asn1js.Primitive).valueBlock
+                                    .valueHexView,
+                            ),
                         })
                     }
                     break
@@ -103,7 +106,10 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
                         authorityCertSerialNumber = Integer.fromAsn1(element)
                     } else {
                         authorityCertSerialNumber = new Integer({
-                            value: new Uint8Array(contentOctets(element)),
+                            value: new Uint8Array(
+                                (element as asn1js.Primitive).valueBlock
+                                    .valueHexView,
+                            ),
                         })
                     }
                     break

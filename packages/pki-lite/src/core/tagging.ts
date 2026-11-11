@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js } from './PkiBase.js'
+import { Asn1BaseBlock } from './PkiBase.js'
 
 /**
  * Re-tags a block with a context-specific tag, i.e. applies an IMPLICIT tag.
@@ -6,6 +6,11 @@ import { Asn1BaseBlock, asn1js } from './PkiBase.js'
  * The X.509 / CMS ASN.1 modules use IMPLICIT TAGS, so a `[n] Type` field is encoded as
  * the underlying value with its universal tag replaced by `[n]` (and nothing wrapped
  * around it). Only a tagged CHOICE (e.g. `directoryName [4] Name`) is EXPLICIT.
+ *
+ * asn1js (3.0.10) has no helper or constants for implicit tagging; the supported way is
+ * to set the block's `idBlock`, which is all this does. Going the other way (reading a
+ * context-tagged value as its universal type) is done at the call sites by building the
+ * asn1js block (`Sequence`, `Integer`, `BitString`, ...) from the parsed children/content.
  */
 export function implicitTag<T extends Asn1BaseBlock>(
     block: T,
@@ -19,25 +24,3 @@ export function implicitTag<T extends Asn1BaseBlock>(
 /** Whether a block carries the context-specific tag `[tagNumber]`. */
 export const isContextTag = (asn1: Asn1BaseBlock, tagNumber: number) =>
     asn1.idBlock.tagClass === 3 && asn1.idBlock.tagNumber === tagNumber
-
-/** The content octets of a primitive (implicitly tagged) block. */
-export const contentOctets = (asn1: Asn1BaseBlock): Uint8Array =>
-    (asn1.valueBlock as unknown as { valueHexView: Uint8Array }).valueHexView
-
-/**
- * Turns a parsed implicitly tagged primitive, e.g. `[1] 'ab'`, back into the universal
- * type it stands for (OCTET STRING, BIT STRING, INTEGER, ...), so that the usual
- * `fromAsn1` of that type can read it. `universalTag` is the universal tag number.
- */
-export function withUniversalTag(
-    block: Asn1BaseBlock,
-    universalTag: number,
-): Asn1BaseBlock {
-    const bytes = new Uint8Array(block.toBER())
-    bytes[0] = (bytes[0] & 0x20) | universalTag // keep the constructed bit
-    const { result, offset } = asn1js.fromBER(bytes)
-    if (offset === -1) {
-        throw new Error('Failed to re-read implicitly tagged value')
-    }
-    return result
-}
