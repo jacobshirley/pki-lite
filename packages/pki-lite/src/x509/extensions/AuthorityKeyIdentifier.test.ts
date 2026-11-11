@@ -185,7 +185,11 @@ describe('AuthorityKeyIdentifier', () => {
         expect(aki.keyIdentifier).toBeUndefined()
         expect(aki.authorityCertIssuer).toBeUndefined()
         expect(aki.authorityCertSerialNumber).toBeUndefined()
-        expect(Buffer.from(aki.toDer()).toString('hex')).toBe('3000')
+        expect(
+            Array.from(aki.toDer(), (b) =>
+                b.toString(16).padStart(2, '0'),
+            ).join(''),
+        ).toBe('3000')
     })
 
     test('should handle round-trip conversion through ASN.1', () => {

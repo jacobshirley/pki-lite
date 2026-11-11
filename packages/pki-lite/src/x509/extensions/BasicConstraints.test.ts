@@ -133,7 +133,9 @@ describe('BasicConstraints', () => {
 
     test('encodes CA:FALSE as an empty sequence (DER omits DEFAULT values)', () => {
         const der = (bc: BasicConstraints) =>
-            Buffer.from(bc.toDer()).toString('hex')
+            Array.from(bc.toDer(), (b) => b.toString(16).padStart(2, '0')).join(
+                '',
+            )
 
         expect(der(new BasicConstraints({ cA: false }))).toBe('3000')
         expect(der(new BasicConstraints({}))).toBe('3000')
