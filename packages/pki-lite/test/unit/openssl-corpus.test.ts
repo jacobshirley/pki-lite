@@ -70,9 +70,7 @@ const KNOWN_ISSUES: KnownIssue[] = [
         // directoryName ([4] Name) is a CHOICE, so EXPLICIT is correct for it
         match: (t, c) =>
             !/san1_dirname/.test(t) &&
-            /^ext:(subjectAltName|issuerAltName|authorityInfoAccess|subjectInfoAccess|crlDistributionPoints|freshestCRL):roundtrip$/.test(
-                c,
-            ),
+            /^ext:(crlDistributionPoints|freshestCRL):roundtrip$/.test(c),
     },
     {
         id: 'AKI-KEYIDENTIFIER-EXPLICIT-TAG',
@@ -97,13 +95,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
         why: 'CRLDistributionPoints cannot parse a DistributionPoint with reasons / cRLIssuer / relativeName.',
         match: (t, c) =>
             c === 'ext:crlDistributionPoints:parse' && /dp_full/.test(t),
-    },
-    {
-        id: 'SAN-OTHERNAME-AND-RID-PARSE',
-        why: 'SubjectAltName cannot parse an otherName or a registeredID (the implicit [0]/[8] forms are mishandled), so the whole extension fails.',
-        match: (t, c) =>
-            /^ext:(subjectAltName|issuerAltName):parse$|^accessors$/.test(c) &&
-            /san_all|san1_othername|san1_rid/.test(t),
     },
     {
         id: 'NAMECONSTRAINTS-NO-PARSER',
