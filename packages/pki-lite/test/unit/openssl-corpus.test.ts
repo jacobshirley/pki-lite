@@ -132,13 +132,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             /ed_rsa_(3des|aes128|aes256)|ed_stream|ed_empty/.test(t),
     },
     {
-        id: 'OCSP-REVOKED-PARSE',
-        why: 'CertStatus.fromAsn1 crashes (reading "toDate" of undefined) on every `revoked` status, so a response for a revoked certificate cannot be parsed.',
-        match: (t, c) =>
-            c === 'basic:parse' &&
-            /resp_(revoked|nonce|multi|nextupdate|ndays|keyid)/.test(t),
-    },
-    {
         id: 'PKCS12-3DES-UNSUPPORTED',
         why: 'PKCS#12 pbeWithSHAAnd3-KeyTripleDES-CBC is not supported.',
         match: (t, c) => c === 'extractItems' && t === 'p12/legacy_3des.p12',
