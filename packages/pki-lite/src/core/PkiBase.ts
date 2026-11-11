@@ -1,17 +1,10 @@
-import * as asn1js from 'asn1js'
 import { Any } from '../asn1/Any.js'
-export * as asn1js from 'asn1js'
+import { Asn1Node } from './der/Asn1Node.js'
+import * as der from './der/index.js'
 import { Asn1ParseError } from './errors/Asn1ParseError.js'
 
-// Fixes an issue where asn1js.Boolean.toString would return
-// `BOOLEAN : getValue() {
-//        return this.valueBlock.value;
-//  }`
-asn1js.Boolean.prototype.toString = function () {
-    return `BOOLEAN: ${('' + this.getValue()).toUpperCase()}`
-}
-
-export type Asn1BaseBlock = asn1js.BaseBlock
+export { Asn1Node, TagClass, UniversalTag } from './der/Asn1Node.js'
+export * as der from './der/index.js'
 
 // TODO
 export type ToJson<T> = {
@@ -24,7 +17,7 @@ export type ToJson<T> = {
  * @template T The type that can be parsed
  */
 export type ParseableAsn1<T> = {
-    fromAsn1?(asn1: Asn1BaseBlock): T
+    fromAsn1?(asn1: Asn1Node): T
     fromDer?(der: Uint8Array<ArrayBuffer>): T
 }
 
@@ -85,7 +78,7 @@ export abstract class PkiBase<T extends object = any> {
      *
      * @returns The ASN.1 representation of this object
      */
-    abstract toAsn1(): Asn1BaseBlock
+    abstract toAsn1(): Asn1Node
 
     /**
      * Gets the PKI type name for this object (typically the class name).
@@ -296,7 +289,7 @@ export abstract class PkiArray<T extends PkiBase<any>> extends Array<T> {
      *
      * @returns The ASN.1 representation of this array
      */
-    abstract toAsn1(): Asn1BaseBlock
+    abstract toAsn1(): Asn1Node
 }
 
 /**
@@ -313,10 +306,8 @@ export class PkiSet<T extends PkiBase<any> = any> extends PkiArray<T> {
      *
      * @returns An ASN.1 SET containing all items in this collection
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Set({
-            value: [...this].map((item) => item.toAsn1()),
-        })
+    toAsn1(): Asn1Node {
+        return der.set([...this].map((item) => item.toAsn1()))
     }
 
     /**
@@ -386,10 +377,8 @@ export class PkiSequence<T extends PkiBase<any> = any> extends PkiArray<T> {
      *
      * @returns An ASN.1 SEQUENCE containing all items in order
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [...this].map((item) => item.toAsn1()),
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([...this].map((item) => item.toAsn1()))
     }
 
     /**
@@ -450,8 +439,8 @@ export class PkiSequence<T extends PkiBase<any> = any> extends PkiArray<T> {
  * @param value The ASN.1 structure to encode
  * @returns The DER-encoded bytes
  */
-export function asn1ToDer(value: Asn1BaseBlock): Uint8Array<ArrayBuffer> {
-    return new Uint8Array(value.toBER(false))
+export function asn1ToDer(value: Asn1Node): Uint8Array<ArrayBuffer> {
+    return value.encode()
 }
 
 /**
@@ -459,9 +448,10 @@ export function asn1ToDer(value: Asn1BaseBlock): Uint8Array<ArrayBuffer> {
  *
  * @param der The DER-encoded bytes to parse
  * @returns The parsed ASN.1 structure
+ * @throws Asn1ParseError if the bytes are not a single well-formed value
  */
-export function derToAsn1(der: Uint8Array | ArrayBuffer): Asn1BaseBlock {
-    return asn1js.fromBER(der).result
+export function derToAsn1(der: Uint8Array | ArrayBuffer): Asn1Node {
+    return Asn1Node.parse(der)
 }
 
 /**
@@ -609,7 +599,7 @@ export type ObjectIdentifierString = string | { toString(): string }
  */
 export type Asn1Any =
     | Uint8Array<ArrayBuffer>
-    | Asn1BaseBlock
+    | Asn1Node
     | null
     | string
     | Any

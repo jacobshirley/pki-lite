@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { TeletexString } from './TeletexString.js'
-import * as asn1js from 'asn1js'
 
 describe('TeletexString', () => {
     test('should create TeletexString from string value', () => {
@@ -54,17 +54,17 @@ describe('TeletexString', () => {
         const teletexString = new TeletexString({ value: testString })
         const asn1 = teletexString.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.TeletexString)
+        expect(asn1.is(UniversalTag.TeletexString)).toBe(true)
 
         // Verify the bytes are preserved in ASN.1
-        const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
+        const valueHex = asn1.content
         const expectedBytes = new TextEncoder().encode(testString)
         expect(valueHex).toEqual(expectedBytes)
     })
 
     test('should parse from ASN.1 structure correctly', () => {
         const testString = 'ASN1 Telex Test'
-        const asn1 = new asn1js.TeletexString({ value: testString })
+        const asn1 = der.teletexString(testString)
 
         const teletexString = TeletexString.fromAsn1(asn1)
 
@@ -73,9 +73,7 @@ describe('TeletexString', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => TeletexString.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected TeletexString',

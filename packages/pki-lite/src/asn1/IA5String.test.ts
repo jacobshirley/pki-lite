@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { IA5String } from './IA5String.js'
-import * as asn1js from 'asn1js'
 
 describe('IA5String', () => {
     test('should create IA5String from string value', () => {
@@ -61,17 +61,17 @@ describe('IA5String', () => {
         const ia5String = new IA5String({ value: testString })
         const asn1 = ia5String.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.IA5String)
+        expect(asn1.is(UniversalTag.IA5String)).toBe(true)
 
         // Verify the bytes are preserved in ASN.1
-        const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
+        const valueHex = asn1.content
         const expectedBytes = new TextEncoder().encode(testString)
         expect(valueHex).toEqual(expectedBytes)
     })
 
     test('should parse from ASN.1 structure correctly', () => {
         const testString = 'asn1@test.example'
-        const asn1 = new asn1js.IA5String({ value: testString })
+        const asn1 = der.ia5String(testString)
 
         const ia5String = IA5String.fromAsn1(asn1)
 
@@ -80,9 +80,7 @@ describe('IA5String', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => IA5String.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected IA5String',

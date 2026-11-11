@@ -20,6 +20,14 @@ describe('builders', () => {
         expect(toHex(der.constructed(3, [a]).encode())).toBe('a303020101')
     })
 
+    test('primitive copies the content', () => {
+        const content = new Uint8Array([1])
+        const node = der.primitive(4, content)
+        content[0] = 2
+        expect(toHex(node.encode())).toBe('040101')
+        expect(toHex(der.primitive(0, content, 2).encode())).toBe('800102')
+    })
+
     test('boolean and null match asn1js', () => {
         expect(toHex(der.boolean(true).encode())).toBe('0101ff')
         expect(toHex(der.boolean(false).encode())).toBe('010100')

@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
 /**
@@ -146,25 +146,19 @@ export class Integer extends PkiBase<Integer> {
     /**
      * Converts the Integer to an ASN.1 INTEGER structure
      */
-    toAsn1(): asn1js.Integer {
+    toAsn1(): Asn1Node {
         // `bytes` is already the two's-complement content
-        return new asn1js.Integer({ valueHex: this.bytes })
+        return der.primitive(UniversalTag.Integer, this.bytes)
     }
 
     /**
      * Creates an Integer from an ASN.1 INTEGER structure
      */
-    static fromAsn1(asn1: Asn1BaseBlock): Integer {
-        if (!(asn1 instanceof asn1js.Integer)) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected INTEGER',
-            )
-        }
-
+    static fromAsn1(asn1: Asn1Node): Integer {
         // The content is two's complement, so store it as-is rather than through
         // the constructor (which reads byte arrays as unsigned)
         const integer = new Integer({ value: 0 })
-        integer.bytes = new Uint8Array(asn1.valueBlock.valueHexView)
+        integer.bytes = new Uint8Array(der.readIntegerBytes(asn1))
         return integer
     }
 
