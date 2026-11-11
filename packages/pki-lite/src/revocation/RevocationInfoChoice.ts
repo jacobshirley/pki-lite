@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, Choice } from '../core/PkiBase.js'
+import { Asn1Node, Choice, UniversalTag } from '../core/PkiBase.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { OtherRevocationInfoFormat } from './OtherRevocationInfoFormat.js'
 
@@ -23,10 +23,12 @@ export type RevocationInfoChoice = CertificateList | OtherRevocationInfoFormat
 export const RevocationInfoChoice = Choice('RevocationInfoChoice', {
     CertificateList,
     OtherRevocationInfoFormat,
-    fromAsn1: (value: Asn1BaseBlock): RevocationInfoChoice => {
-        const tagNumber = value.idBlock.tagNumber
-        if (tagNumber === 1) {
-            return OtherRevocationInfoFormat.fromAsn1(value)
+    fromAsn1: (value: Asn1Node): RevocationInfoChoice => {
+        if (value.isContext(1)) {
+            // other [1] IMPLICIT OtherRevocationInfoFormat
+            return OtherRevocationInfoFormat.fromAsn1(
+                value.retag(UniversalTag.Sequence),
+            )
         } else {
             return CertificateList.fromAsn1(value)
         }

@@ -9,7 +9,7 @@ import { TBSCertList } from '../x509/TBSCertList.js'
 import { Name } from '../x509/Name.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { OtherRevInfo } from './OtherRevInfo.js'
 
 describe('RevocationInfoArchival', () => {
@@ -60,7 +60,7 @@ describe('RevocationInfoArchival', () => {
     function createTestOtherRevInfo(): OtherRevInfo {
         return new OtherRevInfo({
             type: '1.2.3.4.5',
-            value: new Uint8Array([6, 7, 8, 9, 10]),
+            value: new Uint8Array([0x04, 0x03, 8, 9, 10]), // OCTET STRING
         })
     }
     it('should instantiate with empty options', () => {
@@ -94,8 +94,8 @@ describe('RevocationInfoArchival', () => {
             otherRevInfo: [ori],
         })
         const asn1 = ria.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toEqual(3)
         expect(ria.toString()).toMatchInlineSnapshot(`
           "[RevocationInfoArchival] SEQUENCE :
             [0] :
@@ -127,13 +127,13 @@ describe('RevocationInfoArchival', () => {
               SEQUENCE :
                 SEQUENCE :
                   OBJECT IDENTIFIER : 1.2.3.4.5
-                  OBJECT IDENTIFIER : empty"
-    `)
+                  OCTET STRING : 08090a"
+        `)
     })
 
     it('should throw if fromAsn1 is not a sequence', () => {
-        expect(() =>
-            RevocationInfoArchival.fromAsn1(new asn1js.Null()),
-        ).toThrow('Invalid ASN.1 structure: expected SEQUENCE')
+        expect(() => RevocationInfoArchival.fromAsn1(der.nullValue())).toThrow(
+            'Invalid ASN.1 structure: expected SEQUENCE',
+        )
     })
 })
