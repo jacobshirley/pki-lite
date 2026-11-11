@@ -7,11 +7,7 @@ import {
 import { GeneralName } from '../GeneralName.js'
 import { RDNSequence } from '../RDNSequence.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
-import {
-    implicitTag,
-    isContextTag,
-    withUniversalTag,
-} from '../../core/tagging.js'
+import { implicitTag, isContextTag } from '../../core/tagging.js'
 
 /**
  * Represents a GeneralSubtree structure used in name constraints.
@@ -93,8 +89,11 @@ export class GeneralSubtree extends PkiBase<GeneralSubtree> {
             const integer =
                 element instanceof asn1js.Integer
                     ? element
-                    : withUniversalTag(element, 2)
-            return (integer as asn1js.Integer).valueBlock.valueDec
+                    : new asn1js.Integer({
+                          valueHex: (element as asn1js.Primitive).valueBlock
+                              .valueHexView,
+                      })
+            return integer.valueBlock.valueDec
         }
 
         let minimum: number | undefined

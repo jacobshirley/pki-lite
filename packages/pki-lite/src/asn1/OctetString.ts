@@ -1,4 +1,3 @@
-import { contentOctets } from '../core/tagging.js'
 import {
     Asn1BaseBlock,
     asn1js,
@@ -94,7 +93,7 @@ export class OctetString extends PkiBase<OctetString> {
                 return out
             }
         }
-        return contentOctets(asn1)
+        return (asn1 as asn1js.Primitive).valueBlock.valueHexView
     }
 
     static fromDer(der: Uint8Array<ArrayBuffer>): OctetString {

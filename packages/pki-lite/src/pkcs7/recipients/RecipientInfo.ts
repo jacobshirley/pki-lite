@@ -1,11 +1,10 @@
-import { Asn1BaseBlock, Choice } from '../../core/PkiBase.js'
+import { Asn1BaseBlock, asn1js, Choice } from '../../core/PkiBase.js'
 import { KeyTransRecipientInfo } from './KeyTransRecipientInfo.js'
 import { KeyAgreeRecipientInfo } from './KeyAgreeRecipientInfo.js'
 import { KEKRecipientInfo } from './KEKRecipientInfo.js'
 import { PasswordRecipientInfo } from './PasswordRecipientInfo.js'
 import { OtherRecipientInfo } from './OtherRecipientInfo.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
-import { withUniversalTag } from '../../core/tagging.js'
 
 /**
  * Represents a CMS RecipientInfo structure as defined in RFC 5652.
@@ -39,7 +38,9 @@ export const RecipientInfo = Choice('RecipientInfo', {
         // children sit directly in the context tag. Put the universal SEQUENCE tag back
         // so the individual parsers can read them.
         if (asn1.idBlock.tagClass === 3) {
-            const sequence = withUniversalTag(asn1, 16)
+            const sequence = new asn1js.Sequence({
+                value: (asn1 as asn1js.Constructed).valueBlock.value,
+            })
             switch (asn1.idBlock.tagNumber) {
                 case 1:
                     return KeyAgreeRecipientInfo.fromAsn1(sequence)

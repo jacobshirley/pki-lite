@@ -2,7 +2,7 @@ import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { CMSVersion } from '../CMSVersion.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
-import { implicitTag, withUniversalTag } from '../../core/tagging.js'
+import { implicitTag } from '../../core/tagging.js'
 
 /**
  * Represents a PasswordRecipientInfo structure as defined in RFC 5652.
@@ -116,7 +116,10 @@ export class PasswordRecipientInfo extends PkiBase<PasswordRecipientInfo> {
                 constructed.valueBlock.value.length === 1 &&
                     first instanceof asn1js.Sequence
                     ? first
-                    : withUniversalTag(constructed, 16),
+                    : // [0] IMPLICIT AlgorithmIdentifier: its fields are the children
+                      new asn1js.Sequence({
+                          value: constructed.valueBlock.value,
+                      }),
             )
             currentIndex++
         }
