@@ -12,6 +12,24 @@ PKI-Lite is designed to be:
 - **Extensible**: Easy to add new algorithms and structures
 - **Secure**: Prioritizes security best practices in all implementations
 
+## Development Environment
+
+The repository ships a [Nix flake](https://nixos.org/) with everything needed to build and test:
+Node 24, the exact pnpm version pinned in `package.json`, OpenSSL (used by the OpenSSL
+compatibility tests when docker is not available) and, on Linux, a Chromium for the browser
+tests.
+
+```sh
+nix develop          # or, with direnv: `direnv allow` (see .envrc)
+pnpm install
+pnpm compile && pnpm test
+```
+
+The flake provides pnpm itself because pnpm >= 11 switches to the pinned `packageManager`
+version by downloading a generic Linux binary, which NixOS cannot run. When Renovate bumps
+pnpm, refresh the hashes with `scripts/update-pnpm-nix.sh` (needs `jq`), otherwise
+`nix develop` stops with a message saying `nix/pnpm.json` is out of date.
+
 ## Project Structure
 
 ```
