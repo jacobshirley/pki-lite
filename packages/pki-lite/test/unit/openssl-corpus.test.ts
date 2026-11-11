@@ -6,10 +6,11 @@
  * that re-encoding the parsed object gives back the original bytes, plus a handful of
  * semantic checks (verify a signature, decrypt, extract PKCS#12 items, ...).
  *
- * Cases that currently fail because of a real pki-lite defect are registered in
- * `KNOWN_ISSUES` and run with `test.fails`: CI stays green, and as soon as a defect is
- * fixed the matching tests start failing with "expected to fail", pointing at the entry
- * to delete.
+ * Cases that currently fail are registered in `KNOWN_ISSUES` and run with `test.fails`:
+ * CI stays green, and as soon as the gap is closed the matching tests start failing with
+ * "expected to fail", pointing at the entry to delete. What is left there are unsupported
+ * features (EdDSA/RSA-PSS keys, RSA PKCS#1 v1.5 key transport, 3DES PBE, explicit EC
+ * parameters, AuthEnvelopedData), not encoding defects.
  */
 import { describe, expect, test } from 'vitest'
 import { opensslCorpus } from '../../test-fixtures/openssl-corpus/corpus.js'
@@ -62,7 +63,9 @@ type KnownIssue = {
 const KNOWN_ISSUES: KnownIssue[] = [
     {
         id: 'SIGNATURE-ALGORITHMS-UNSUPPORTED',
-        why: 'isSelfSigned/verify does not support Ed25519, Ed448 or RSA-PSS keys.',
+        why:
+            'Unsupported feature: isSelfSigned/verify does not support Ed25519, Ed448 or RSA-PSS keys. ' +
+            'Needs new algorithm types and key models in the crypto provider (and Ed448 has no WebCrypto support).',
         match: (t, c) =>
             (c === 'isSelfSigned' &&
                 /key_ed25519|key_ed448|key_rsapss/.test(t)) ||
@@ -70,21 +73,29 @@ const KNOWN_ISSUES: KnownIssue[] = [
     },
     {
         id: 'ECPRIVATEKEY-EXPLICIT-PARAMS',
-        why: 'ECPrivateKey cannot parse explicit (non-namedCurve) EC parameters.',
+        why:
+            'Unsupported feature: ECPrivateKey cannot parse explicit (non-namedCurve) EC parameters, ' +
+            'which RFC 5480 deprecates; only named curves are modelled.',
         match: (t, c) =>
             /^(parse|roundtrip)$/.test(c) &&
             t === 'key/ecprivate_explicitparams.der',
     },
     {
         id: 'CMS-RSA-PKCS1V15-KEY-TRANSPORT',
-        why: 'EnvelopedData.decrypt cannot unwrap RSA PKCS#1 v1.5 key transport (rsaEncryption), the OpenSSL default.',
+        why:
+            'Unsupported feature: EnvelopedData.decrypt cannot unwrap RSA PKCS#1 v1.5 key transport ' +
+            '(rsaEncryption), the OpenSSL default. WebCrypto only offers RSA-OAEP; doing it here would mean ' +
+            'implementing raw RSA decryption and padding checks in JavaScript, which is easy to get wrong ' +
+            '(Bleichenbacher), so it is deliberately left out.',
         match: (t, c) =>
             c === 'envelopedData:decrypt' &&
             /ed_rsa_(3des|aes128|aes256|keyid)|ed_stream|ed_empty/.test(t),
     },
     {
         id: 'PKCS12-3DES-UNSUPPORTED',
-        why: 'PKCS#12 pbeWithSHAAnd3-KeyTripleDES-CBC is not supported.',
+        why:
+            'Unsupported feature: PKCS#12 pbeWithSHAAnd3-KeyTripleDES-CBC (legacy 3DES) is not supported; ' +
+            'WebCrypto has no 3DES.',
         match: (t, c) => c === 'extractItems' && t === 'p12/legacy_3des.p12',
     },
 ]
