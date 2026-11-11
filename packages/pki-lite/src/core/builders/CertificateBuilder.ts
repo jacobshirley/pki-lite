@@ -281,6 +281,56 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
     }
 
     /**
+     * Adds a Certificate Policies extension (RFC 5280 4.2.1.4).
+     *
+     * @param policies Policy OIDs, or full PolicyInformation objects
+     * @returns This builder for chaining
+     */
+    addCertificatePolicies(
+        ...policies: Parameters<typeof Extension.certificatePolicies>[0]
+    ): this {
+        this.extensions.push(Extension.certificatePolicies(policies))
+        return this
+    }
+
+    /**
+     * Adds a Policy Mappings extension (RFC 5280 4.2.1.5); CA certificates only.
+     *
+     * @param mappings issuer domain policy -> subject domain policy pairs
+     * @returns This builder for chaining
+     */
+    addPolicyMappings(
+        ...mappings: Parameters<typeof Extension.policyMappings>[0]
+    ): this {
+        this.extensions.push(Extension.policyMappings(mappings))
+        return this
+    }
+
+    /**
+     * Adds a (critical) Policy Constraints extension (RFC 5280 4.2.1.11).
+     *
+     * @param options requireExplicitPolicy / inhibitPolicyMapping skip counts
+     * @returns This builder for chaining
+     */
+    addPolicyConstraints(
+        options: Parameters<typeof Extension.policyConstraints>[0],
+    ): this {
+        this.extensions.push(Extension.policyConstraints(options))
+        return this
+    }
+
+    /**
+     * Adds a (critical) Inhibit Any Policy extension (RFC 5280 4.2.1.14).
+     *
+     * @param skipCerts Number of additional certificates before anyPolicy stops matching
+     * @returns This builder for chaining
+     */
+    addInhibitAnyPolicy(skipCerts: number): this {
+        this.extensions.push(Extension.inhibitAnyPolicy(skipCerts))
+        return this
+    }
+
+    /**
      * Adds a Subject Alternative Name extension to the certificate.
      * Strings are automatically converted to DNS names.
      *

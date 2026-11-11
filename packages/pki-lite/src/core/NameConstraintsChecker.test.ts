@@ -18,6 +18,7 @@ import {
     dnWithin,
     emailWithin,
     ipWithin,
+    normalizeHost,
     uriHost,
     uriWithin,
 } from './NameConstraintsChecker.js'
@@ -33,6 +34,32 @@ describe('matching rules (RFC 5280 4.2.1.10)', () => {
         expect(dnsWithin('example.com.evil.org', 'example.com')).toBe(false)
         // case and a trailing dot do not matter
         expect(dnsWithin('WWW.Example.COM.', 'example.com')).toBe(true)
+    })
+
+    test('internationalised names compare in A-label form (RFC 5280 7.2)', () => {
+        expect(normalizeHost('Bücher.Example')).toBe('xn--bcher-kva.example')
+        expect(normalizeHost('*.bücher.example')).toBe(
+            '*.xn--bcher-kva.example',
+        )
+        expect(normalizeHost('.bücher.example')).toBe('.xn--bcher-kva.example')
+        expect(normalizeHost('XN--BCHER-KVA.example.')).toBe(
+            'xn--bcher-kva.example',
+        )
+
+        // U-label and A-label spellings of the same domain match either way round
+        expect(dnsWithin('www.xn--bcher-kva.example', 'bücher.example')).toBe(
+            true,
+        )
+        expect(dnsWithin('www.bücher.example', 'xn--bcher-kva.example')).toBe(
+            true,
+        )
+        expect(dnsWithin('www.bucher.example', 'bücher.example')).toBe(false)
+        expect(emailWithin('a@xn--bcher-kva.example', 'bücher.example')).toBe(
+            true,
+        )
+        expect(
+            uriWithin('https://bücher.example/x', 'xn--bcher-kva.example'),
+        ).toBe(true)
     })
 
     test('dNSName: a leading dot matches subdomains only', () => {

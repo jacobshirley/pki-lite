@@ -33,6 +33,7 @@ const examples = [
     '024-asn1-and-pem',
     '025-reading-openssl-output',
     '026-openssl-defaults-with-extended-crypto',
+    '027-certificate-policies',
 ]
 
 /** Silences console output while an example runs, keeping what went to stderr. */

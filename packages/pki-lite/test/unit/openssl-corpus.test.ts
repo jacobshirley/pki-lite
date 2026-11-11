@@ -25,6 +25,10 @@ import { AuthorityKeyIdentifier } from '../../src/x509/extensions/AuthorityKeyId
 import { CRLDistributionPoints } from '../../src/x509/extensions/CRLDistributionPoints.js'
 import { AuthorityInfoAccess } from '../../src/x509/extensions/AuthorityInfoAccess.js'
 import { NameConstraints } from '../../src/x509/extensions/NameConstraints.js'
+import { CertificatePolicies } from '../../src/x509/extensions/CertificatePolicies.js'
+import { PolicyMappings } from '../../src/x509/extensions/PolicyMappings.js'
+import { PolicyConstraints } from '../../src/x509/extensions/PolicyConstraints.js'
+import { InhibitAnyPolicy } from '../../src/x509/extensions/InhibitAnyPolicy.js'
 import { SubjectKeyIdentifier } from '../../src/keys/SubjectKeyIdentifier.js'
 import { PrivateKeyInfo } from '../../src/keys/PrivateKeyInfo.js'
 import { SubjectPublicKeyInfo } from '../../src/keys/SubjectPublicKeyInfo.js'
@@ -124,6 +128,10 @@ const EXTENSIONS: Record<string, [string, any]> = {
     '1.3.6.1.5.5.7.1.1': ['authorityInfoAccess', AuthorityInfoAccess],
     '1.3.6.1.5.5.7.1.11': ['subjectInfoAccess', AuthorityInfoAccess],
     '2.5.29.30': ['nameConstraints', NameConstraints],
+    '2.5.29.32': ['certificatePolicies', CertificatePolicies],
+    '2.5.29.33': ['policyMappings', PolicyMappings],
+    '2.5.29.36': ['policyConstraints', PolicyConstraints],
+    '2.5.29.54': ['inhibitAnyPolicy', InhibitAnyPolicy],
 }
 
 describe('OpenSSL corpus: certificates', () => {

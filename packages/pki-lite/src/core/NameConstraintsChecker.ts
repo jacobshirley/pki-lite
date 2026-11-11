@@ -66,8 +66,25 @@ const SUPPORTED: ReadonlySet<NameType> = new Set<NameType>([
 
 // --- matching ------------------------------------------------------------------------
 
-const normalizeDns = (value: string) =>
-    value.trim().toLowerCase().replace(/\.$/, '')
+/**
+ * A host name in comparable form: lower case, no trailing dot, internationalised labels
+ * as A-labels ("bücher.example" -> "xn--bcher-kva.example", RFC 5280 7.2), so that U-label
+ * and A-label spellings of a name compare equal. Leading "." or "*." prefixes are kept.
+ */
+export function normalizeHost(value: string): string {
+    const host = value.trim().toLowerCase().replace(/\.$/, '')
+    // eslint-disable-next-line no-control-regex
+    if (/^[\x00-\x7f]*$/.test(host)) return host
+    const prefix = /^(\*\.|\.)/.exec(host)?.[0] ?? ''
+    try {
+        // the WHATWG URL parser applies UTS #46 / punycode in browsers and Node alike
+        return prefix + new URL(`http://${host.slice(prefix.length)}`).hostname
+    } catch {
+        return host // not a valid IDN: compared as is, so it matches nothing ASCII
+    }
+}
+
+const normalizeDns = normalizeHost
 
 /**
  * Whether the DNS name is the constraint or a subdomain of it (RFC 5280: "any DNS name
@@ -113,16 +130,16 @@ export function emailWithin(mailbox: string, constraint: string): boolean {
     const at = mailbox.lastIndexOf('@')
     if (at < 0) return false
     const local = mailbox.slice(0, at)
-    const host = mailbox.slice(at + 1).toLowerCase()
+    const host = normalizeHost(mailbox.slice(at + 1))
 
     const constraintAt = constraint.lastIndexOf('@')
     if (constraintAt >= 0) {
         return (
             local === constraint.slice(0, constraintAt) &&
-            host === constraint.slice(constraintAt + 1).toLowerCase()
+            host === normalizeHost(constraint.slice(constraintAt + 1))
         )
     }
-    const c = constraint.toLowerCase()
+    const c = normalizeHost(constraint)
     return c.startsWith('.') ? host.endsWith(c) : host === c
 }
 
@@ -133,7 +150,7 @@ export function uriHost(uri: string): string | undefined {
     let authority = match[1]
     authority = authority.slice(authority.lastIndexOf('@') + 1) // drop userinfo
     if (authority.startsWith('[')) return undefined // an IPv6 literal is not a DNS name
-    const host = authority.replace(/:\d*$/, '').toLowerCase()
+    const host = normalizeHost(authority.replace(/:\d*$/, ''))
     if (host === '' || /^\d+(\.\d+){3}$/.test(host)) return undefined // empty or IPv4 literal
     return host
 }
@@ -145,7 +162,7 @@ export function uriHost(uri: string): string | undefined {
 export function uriWithin(uri: string, constraint: string): boolean {
     const host = uriHost(uri)
     if (host === undefined) return false
-    const c = constraint.toLowerCase()
+    const c = normalizeHost(constraint)
     return c.startsWith('.') ? host.endsWith(c) : host === c
 }
 
