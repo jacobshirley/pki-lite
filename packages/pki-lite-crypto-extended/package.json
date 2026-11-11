@@ -2,6 +2,7 @@
     "name": "pki-lite-crypto-extended",
     "version": "1.2.5",
     "description": "Extended cryptographic provider for pki-lite with MD5 hashing and AES ECB/CBC support",
+    "type": "module",
     "main": "dist/index.js",
     "scripts": {
         "compile": "pnpm compile:validate && tsc -p tsconfig.prod.json",

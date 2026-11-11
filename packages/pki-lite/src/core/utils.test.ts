@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest'
-import { padUint8Array, hexToUint8Array, uint8ArrayToHex } from './utils.js'
+import {
+    bigEndianBytes,
+    padUint8Array,
+    hexToUint8Array,
+    uint8ArrayToHex,
+} from './utils.js'
 
 describe('padUint8Array', () => {
     test('should pad array with zeros on the left', () => {
@@ -59,6 +64,19 @@ describe('padUint8Array', () => {
 
         expect(result.slice(-4)).toEqual(input) // Last 4 bytes should match original
         expect(result.slice(0, 4)).toEqual(new Uint8Array([0, 0, 0, 0])) // First 4 should be zeros
+    })
+})
+
+describe('bigEndianBytes', () => {
+    test('gives the minimal big-endian bytes', () => {
+        expect(bigEndianBytes(0)).toEqual(new Uint8Array([0]))
+        expect(bigEndianBytes(3)).toEqual(new Uint8Array([3]))
+        expect(bigEndianBytes(255)).toEqual(new Uint8Array([0xff]))
+        expect(bigEndianBytes(256)).toEqual(new Uint8Array([1, 0]))
+        expect(bigEndianBytes(65537)).toEqual(new Uint8Array([1, 0, 1]))
+        expect(bigEndianBytes(2 ** 40 + 2)).toEqual(
+            new Uint8Array([1, 0, 0, 0, 0, 2]),
+        )
     })
 })
 
