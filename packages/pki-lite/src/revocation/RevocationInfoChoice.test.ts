@@ -1,4 +1,3 @@
-import * as asn1js from 'asn1js'
 import { RevocationInfoChoice } from './RevocationInfoChoice.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { OtherRevocationInfoFormat } from './OtherRevocationInfoFormat.js'
@@ -8,7 +7,7 @@ import { Name } from '../x509/Name.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
 import { describe, test, expect } from 'vitest'
-import { derToAsn1 } from '../core/PkiBase.js'
+import { der, derToAsn1 } from '../core/PkiBase.js'
 
 describe('RevocationInfoChoice', () => {
     // Helper function to create a simple CRL for testing
@@ -51,9 +50,6 @@ describe('RevocationInfoChoice', () => {
         const crl = createSimpleCRL()
         const asn1 = crl.toAsn1()
 
-        // Set tag number explicitly to ensure it's 0 (default for CRL)
-        asn1.idBlock.tagNumber = 0
-
         const result = RevocationInfoChoice.fromAsn1(asn1)
 
         expect(result).toBeInstanceOf(CertificateList)
@@ -72,11 +68,9 @@ describe('RevocationInfoChoice', () => {
         })
         const asn1 = otherRevInfo.toAsn1()
 
-        // Set tag number to 1 for OtherRevocationInfoFormat
-        asn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC: [1], not UNIVERSAL 1
-        asn1.idBlock.tagNumber = 1
+        // other [1] IMPLICIT OtherRevocationInfoFormat
 
-        const result = RevocationInfoChoice.fromAsn1(asn1)
+        const result = RevocationInfoChoice.fromAsn1(asn1.implicit(1))
 
         expect(result).toBeInstanceOf(OtherRevocationInfoFormat)
         expect(
@@ -87,48 +81,29 @@ describe('RevocationInfoChoice', () => {
     // Integration test with real objects
     test('fromAsn1 integration test for CertificateList', () => {
         // Create a simplified real ASN.1 structure for a CRL
-        const tbsCertListAsn1 = new asn1js.Sequence({
-            value: [
-                // Version (optional)
-                new asn1js.Integer({ value: 1 }),
-                // Signature
-                new asn1js.Sequence({
-                    value: [
-                        new asn1js.ObjectIdentifier({
-                            value: '1.2.840.113549.1.1.11',
-                        }), // sha256WithRSAEncryption
-                    ],
-                }),
-                // Issuer
-                new asn1js.Sequence({ value: [] }),
-                // ThisUpdate
-                new asn1js.UTCTime({ value: new Date().toISOString() }),
-                // NextUpdate (optional)
-                new asn1js.UTCTime({
-                    value: new Date(Date.now() + 86400000).toISOString(),
-                }), // tomorrow
-                // RevocationEntries and Extensions omitted for simplicity
-            ],
-        })
+        const tbsCertListAsn1 = der.sequence([
+            // Version (optional)
+            der.integer(1),
+            // Signature
+            der.sequence([
+                der.oid('1.2.840.113549.1.1.11'), // sha256WithRSAEncryption
+            ]),
+            // Issuer
+            der.sequence([]),
+            // ThisUpdate
+            der.utcTime(new Date()),
+            // NextUpdate (optional)
+            der.utcTime(new Date(Date.now() + 86400000)), // tomorrow
+            // RevocationEntries and Extensions omitted for simplicity
+        ])
 
-        const asn1 = new asn1js.Sequence({
-            value: [
-                tbsCertListAsn1,
-                new asn1js.Sequence({
-                    value: [
-                        new asn1js.ObjectIdentifier({
-                            value: '1.2.840.113549.1.1.11',
-                        }), // sha256WithRSAEncryption
-                    ],
-                }),
-                new asn1js.BitString({
-                    valueHex: new Uint8Array([1, 2, 3, 4]),
-                }),
-            ],
-        })
-
-        // Set tag number explicitly to ensure it's 0
-        asn1.idBlock.tagNumber = 0
+        const asn1 = der.sequence([
+            tbsCertListAsn1,
+            der.sequence([
+                der.oid('1.2.840.113549.1.1.11'), // sha256WithRSAEncryption
+            ]),
+            der.bitString(new Uint8Array([1, 2, 3, 4])),
+        ])
 
         try {
             const result = RevocationInfoChoice.fromAsn1(asn1)
@@ -145,20 +120,14 @@ describe('RevocationInfoChoice', () => {
     // Integration test with real objects
     test('fromAsn1 integration test for OtherRevocationInfoFormat', () => {
         // Create a real ASN.1 structure for OtherRevocationInfoFormat
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '1.3.6.1.5.5.7.48.1' }), // OCSP OID
-                new asn1js.OctetString({
-                    valueHex: new Uint8Array([1, 2, 3, 4]),
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.oid('1.3.6.1.5.5.7.48.1'), // OCSP OID
+            der.octetString(new Uint8Array([1, 2, 3, 4])),
+        ])
 
-        // Set tag number to 1 for OtherRevocationInfoFormat
-        asn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC: [1], not UNIVERSAL 1
-        asn1.idBlock.tagNumber = 1
+        // other [1] IMPLICIT OtherRevocationInfoFormat
 
-        const result = RevocationInfoChoice.fromAsn1(asn1)
+        const result = RevocationInfoChoice.fromAsn1(asn1.implicit(1))
 
         expect(result).toBeInstanceOf(OtherRevocationInfoFormat)
         expect(

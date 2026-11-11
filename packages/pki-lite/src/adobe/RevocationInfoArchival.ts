@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, derToAsn1, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -35,50 +41,33 @@ export class RevocationInfoArchival extends PkiBase<RevocationInfoArchival> {
         this.otherRevInfo = options.otherRevInfo
     }
 
-    toAsn1(): asn1js.Sequence {
-        const values: asn1js.Constructed[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         if (this.crls && this.crls.length > 0) {
-            const crlSeq = new asn1js.Sequence({
-                value: this.crls.map((crl) => crl.toAsn1()),
-            })
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 0 },
-                    value: [crlSeq],
-                }),
-            )
+            const crlSeq = der.sequence(this.crls.map((crl) => crl.toAsn1()))
+            values.push(der.constructed(0, [crlSeq]))
         }
 
         if (this.ocsps && this.ocsps.length > 0) {
-            const ocspSeq = new asn1js.Sequence({
-                value: this.ocsps.map((ocsp) => ocsp.toAsn1()),
-            })
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 1 },
-                    value: [ocspSeq],
-                }),
+            const ocspSeq = der.sequence(
+                this.ocsps.map((ocsp) => ocsp.toAsn1()),
             )
+            values.push(der.constructed(1, [ocspSeq]))
         }
 
         if (this.otherRevInfo && this.otherRevInfo.length > 0) {
-            const otherRevInfoSeq = new asn1js.Sequence({
-                value: this.otherRevInfo.map((ori) => ori.toAsn1()),
-            })
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 2 },
-                    value: [otherRevInfoSeq],
-                }),
+            const otherRevInfoSeq = der.sequence(
+                this.otherRevInfo.map((ori) => ori.toAsn1()),
             )
+            values.push(der.constructed(2, [otherRevInfoSeq]))
         }
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): RevocationInfoArchival {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RevocationInfoArchival {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
@@ -88,48 +77,48 @@ export class RevocationInfoArchival extends PkiBase<RevocationInfoArchival> {
         const ocsps: OCSPResponse[] = []
         const otherRevInfo: OtherRevInfo[] = []
 
-        for (const element of asn1.valueBlock.value) {
-            if (!(element instanceof asn1js.Constructed)) {
+        for (const element of asn1.children) {
+            if (!element?.constructed) {
                 continue
             }
 
-            const tagNumber = element.idBlock.tagNumber
+            const tagNumber = element.tag
 
             if (tagNumber === 0) {
-                const crlSeq = element.valueBlock.value[0]
+                const crlSeq = element.children[0]
 
-                if (!(crlSeq instanceof asn1js.Sequence)) {
+                if (!crlSeq.is(UniversalTag.Sequence)) {
                     throw new Asn1ParseError(
                         'Invalid ASN.1 structure for CRL sequence',
                     )
                 }
 
-                for (const crlAsn1 of crlSeq.valueBlock.value) {
+                for (const crlAsn1 of crlSeq.children) {
                     crls.push(CertificateList.fromAsn1(crlAsn1))
                 }
             } else if (tagNumber === 1) {
-                const ocspSeq = element.valueBlock.value[0]
+                const ocspSeq = element.children[0]
 
-                if (!(ocspSeq instanceof asn1js.Sequence)) {
+                if (!ocspSeq.is(UniversalTag.Sequence)) {
                     throw new Asn1ParseError(
                         'Invalid ASN.1 structure for OCSP sequence',
                     )
                 }
 
-                for (const ocspAsn1 of ocspSeq.valueBlock.value) {
+                for (const ocspAsn1 of ocspSeq.children) {
                     ocsps.push(OCSPResponse.fromAsn1(ocspAsn1))
                 }
             } else if (tagNumber === 2) {
-                const oriSeq = element.valueBlock.value[0]
+                const oriSeq = element.children[0]
 
-                if (!(oriSeq instanceof asn1js.Sequence)) {
+                if (!oriSeq.is(UniversalTag.Sequence)) {
                     throw new Asn1ParseError(
                         'Invalid ASN.1 structure for OtherRevInfo sequence',
                     )
                 }
 
-                for (const oriAsn1 of oriSeq.valueBlock.value) {
-                    if (!(oriAsn1 instanceof asn1js.Sequence)) {
+                for (const oriAsn1 of oriSeq.children) {
+                    if (!oriAsn1.is(UniversalTag.Sequence)) {
                         throw new Asn1ParseError(
                             'Invalid ASN.1 structure for OtherRevInfo item',
                         )

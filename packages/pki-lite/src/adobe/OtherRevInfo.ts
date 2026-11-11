@@ -1,6 +1,6 @@
 import { Any } from '../asn1/Any.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
-import { Asn1Any, Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Any, Asn1Node, der, PkiBase } from '../core/PkiBase.js'
 
 /**
  * Represents the OtherRevInfo structure used in RevocationInfoArchival.
@@ -23,18 +23,16 @@ export class OtherRevInfo extends PkiBase<OtherRevInfo> {
         this.value = new Any({ derBytes: options.value })
     }
 
-    toAsn1(): asn1js.Sequence {
-        return new asn1js.Sequence({
-            value: [this.type.toAsn1(), this.value.toAsn1()],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([this.type.toAsn1(), this.value.toAsn1()])
     }
 
-    static fromAsn1(asn1: asn1js.Sequence): OtherRevInfo {
-        const type = asn1.valueBlock.value[0] as asn1js.ObjectIdentifier
-        const value = asn1.valueBlock.value[1]
+    static fromAsn1(asn1: Asn1Node): OtherRevInfo {
+        const type = asn1.children[0]
+        const value = asn1.children[1]
 
         return new OtherRevInfo({
-            type: type.valueBlock.toString(),
+            type: der.readOid(type),
             value: new Any({ derBytes: value }),
         })
     }
