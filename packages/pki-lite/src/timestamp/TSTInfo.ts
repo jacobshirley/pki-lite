@@ -10,6 +10,7 @@ import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { Extension } from '../x509/Extension.js'
 import { GeneralName } from '../x509/GeneralName.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { implicitTag, isContextTag } from '../core/tagging.js'
 
 /**
  * Accuracy structure for RFC 3161 Time-Stamp Protocol.
@@ -94,29 +95,16 @@ export class Accuracy extends PkiBase<Accuracy> {
             values.push(new asn1js.Integer({ value: this.seconds }))
         }
 
+        // the RFC 3161 module has IMPLICIT TAGS: millis/micros are [0]/[1] IMPLICIT INTEGER
         if (this.millis !== undefined) {
             values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                        isConstructed: true,
-                    },
-                    value: [new asn1js.Integer({ value: this.millis })],
-                }),
+                implicitTag(new asn1js.Integer({ value: this.millis }), 0),
             )
         }
 
         if (this.micros !== undefined) {
             values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 1, // [1]
-                        isConstructed: true,
-                    },
-                    value: [new asn1js.Integer({ value: this.micros })],
-                }),
+                implicitTag(new asn1js.Integer({ value: this.micros }), 1),
             )
         }
 
@@ -151,28 +139,34 @@ export class Accuracy extends PkiBase<Accuracy> {
         let micros: number | undefined
 
         for (const value of asn1.valueBlock.value) {
-            if (value instanceof asn1js.Integer) {
-                // Untagged INTEGER is seconds
+            // check the tag first: an in-memory [n] IMPLICIT INTEGER is still an Integer
+            if (isContextTag(value, 0)) {
+                millis = Accuracy.taggedInteger(value)
+            } else if (isContextTag(value, 1)) {
+                micros = Accuracy.taggedInteger(value)
+            } else if (value instanceof asn1js.Integer) {
                 seconds = value.valueBlock.valueDec
-            } else if (value instanceof asn1js.Constructed) {
-                const tagNumber = value.idBlock.tagNumber
-                const innerValue = value.valueBlock.value[0]
-
-                if (!(innerValue instanceof asn1js.Integer)) {
-                    throw new Asn1ParseError(
-                        'Invalid ASN.1 structure: expected INTEGER in context-specific tag',
-                    )
-                }
-
-                if (tagNumber === 0) {
-                    millis = innerValue.valueBlock.valueDec
-                } else if (tagNumber === 1) {
-                    micros = innerValue.valueBlock.valueDec
-                }
             }
         }
 
         return new Accuracy({ seconds, millis, micros })
+    }
+
+    /** The value of an [n] IMPLICIT INTEGER (or, as older pki-lite wrote it, EXPLICIT) */
+    private static taggedInteger(value: Asn1BaseBlock): number {
+        if (value instanceof asn1js.Integer) return value.valueBlock.valueDec
+        if (value instanceof asn1js.Constructed) {
+            const inner = value.valueBlock.value[0]
+            if (!(inner instanceof asn1js.Integer)) {
+                throw new Asn1ParseError(
+                    'Invalid ASN.1 structure: expected INTEGER in context-specific tag',
+                )
+            }
+            return inner.valueBlock.valueDec
+        }
+        return new asn1js.Integer({
+            valueHex: (value as asn1js.Primitive).valueBlock.valueHexView,
+        }).valueBlock.valueDec
     }
 }
 
