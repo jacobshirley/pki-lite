@@ -1904,11 +1904,9 @@ for (const host of ['www.example.com', 'www.evil.com', 'secret.example.com']) {
     const result = await validator.validate(certificate, {
         validateChain: true,
         validateNameConstraints: true,
-        // Constraints are applied when given with the trust anchor. (The validator does not
-        // yet read name constraints from the extensions of CAs inside the chain.)
-        trustAnchors: [
-            { certificate: caCertificate, nameConstraints: constraints },
-        ],
+        // The constraints in the CA certificate itself are enforced. (They can also be
+        // given with the trust anchor: `{ certificate, nameConstraints }`.)
+        trustAnchors: [{ certificate: caCertificate }],
     })
     console.log(`  ${host.padEnd(20)} valid: ${result.isValid}`)
     if (!result.isValid) {
