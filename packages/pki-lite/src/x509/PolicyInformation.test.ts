@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { PolicyInformation, PolicyQualifierInfo } from './PolicyInformation.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { Any } from '../asn1/Any.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der } from '../core/PkiBase.js'
 
 describe('PolicyQualifierInfo', () => {
     it('should encode and decode ASN.1 correctly', () => {
         const pqid = '1.3.6.1.5.5.7.2.1' // id-qt-cps
         const qualifier = new Uint8Array([
             0x13,
-            0x0b,
+            0x0a, // 'http://cps' is 10 bytes
             ...new TextEncoder().encode('http://cps'),
         ])
         const pqInfo = new PolicyQualifierInfo({
@@ -23,7 +23,7 @@ describe('PolicyQualifierInfo', () => {
     })
 
     it('should throw if ASN.1 is not a sequence', () => {
-        expect(() => PolicyQualifierInfo.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => PolicyQualifierInfo.fromAsn1(der.nullValue())).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
     })
@@ -34,7 +34,7 @@ describe('PolicyInformation', () => {
         const pqid = '1.3.6.1.5.5.7.2.1'
         const qualifier = new Uint8Array([
             0x13,
-            0x0b,
+            0x0a, // 'http://cps' is 10 bytes
             ...new TextEncoder().encode('http://cps'),
         ])
         const pqInfo = new PolicyQualifierInfo({
@@ -66,7 +66,7 @@ describe('PolicyInformation', () => {
     })
 
     it('should throw if ASN.1 is not a sequence', () => {
-        expect(() => PolicyInformation.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => PolicyInformation.fromAsn1(der.nullValue())).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
     })

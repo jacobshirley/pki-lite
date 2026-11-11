@@ -2,7 +2,7 @@ import { assert, describe, expect, test } from 'vitest'
 import { Name } from './Name.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { UniversalTag } from '../core/PkiBase.js'
 
 describe('Name', () => {
     test('can be created empty', () => {
@@ -55,12 +55,12 @@ describe('Name', () => {
 
         const asn1 = name.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
         // Each item should be a Set (the ASN.1 representation of RelativeDistinguishedName)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Set)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Set)
+        expect(asn1.children[0].is(UniversalTag.Set)).toBe(true)
+        expect(asn1.children[1].is(UniversalTag.Set)).toBe(true)
     })
 
     test('can create a distinguished name', () => {
@@ -94,8 +94,8 @@ describe('Name', () => {
 
         // Check that the ASN.1 representation has the correct structure
         const asn1 = name.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(4)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(4)
     })
 
     test('toString snapshot', () => {

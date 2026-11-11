@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { asn1js } from '../../core/PkiBase.js'
+import { der, UniversalTag } from '../../core/PkiBase.js'
 import { ESSCertIDv2, SigningCertificateV2 } from './SigningCertificateV2.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../../asn1/OctetString.js'
@@ -11,7 +11,7 @@ import { IssuerSerial } from '../IssuerSerial.js'
 
 function makeIssuerSerial(): IssuerSerial {
     // Minimal RDNSequence/Name: use Name.fromAsn1 on an empty RDN sequence
-    const emptyRdn = new asn1js.Sequence({ value: [] })
+    const emptyRdn = der.sequence([])
     const name = Name.fromAsn1(emptyRdn)
     return new IssuerSerial({
         issuer: name,
@@ -24,7 +24,7 @@ describe('ESSCertIDv2', () => {
         const certHash = new Uint8Array([1, 2, 3, 4])
         const ess = new ESSCertIDv2({ certHash })
         const asn1 = ess.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
         const round = ESSCertIDv2.fromAsn1(asn1)
         expect(round.hashAlgorithm).toBeUndefined()
@@ -55,11 +55,9 @@ describe('ESSCertIDv2', () => {
     })
 
     it('throws when certHash is not OCTET STRING', () => {
-        const bad = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '1.2.3' }), // mistaken alg position but not a SEQUENCE
-            ],
-        })
+        const bad = der.sequence([
+            der.oid('1.2.3'), // mistaken alg position but not a SEQUENCE
+        ])
         expect(() => ESSCertIDv2.fromAsn1(bad)).toThrow(
             'Invalid ESSCertIDv2: expected OCTET STRING for certHash',
         )
@@ -70,19 +68,17 @@ describe('PolicyQualifierInfo', () => {
     it('round-trips toAsn1/fromAsn1', () => {
         const pq = new PolicyQualifierInfo({
             policyQualifierId: '1.3.6.1.5.5.7.2.1',
-            qualifier: new asn1js.Utf8String({ value: 'CPS' }),
+            qualifier: der.utf8String('CPS'),
         })
         const asn1 = pq.toAsn1()
         const round = PolicyQualifierInfo.fromAsn1(asn1)
         expect(round.policyQualifierId.value).toEqual('1.3.6.1.5.5.7.2.1')
         // We can only check that qualifier is Any; content is preserved as DER
-        expect(round.qualifier.toAsn1()).toBeInstanceOf(asn1js.Utf8String)
+        expect(round.qualifier.toAsn1().is(UniversalTag.UTF8String)).toBe(true)
     })
 
     it('throws for wrong element count', () => {
-        const bad = new asn1js.Sequence({
-            value: [new asn1js.ObjectIdentifier({ value: '1.2.3' })],
-        })
+        const bad = der.sequence([der.oid('1.2.3')])
         expect(() => PolicyQualifierInfo.fromAsn1(bad)).toThrow(
             'Invalid PolicyQualifierInfo: expected 2 elements',
         )
@@ -101,7 +97,7 @@ describe('PolicyInformation', () => {
     it('encodes with qualifiers', () => {
         const pq = new PolicyQualifierInfo({
             policyQualifierId: '1.2.3',
-            qualifier: new asn1js.Utf8String({ value: 'ok' }),
+            qualifier: der.utf8String('ok'),
         })
         const pi = new PolicyInformation({
             policyIdentifier: new ObjectIdentifier({ value: '1.2.3.4.5' }),
@@ -117,7 +113,7 @@ describe('PolicyInformation', () => {
     })
 
     it('throws for wrong element count', () => {
-        const bad = new asn1js.Sequence({ value: [] })
+        const bad = der.sequence([])
         expect(() => PolicyInformation.fromAsn1(bad)).toThrow(
             'Invalid PolicyInformation: expected 1 to 2 elements',
         )
@@ -138,7 +134,7 @@ describe('SigningCertificateV2', () => {
         const ess = new ESSCertIDv2({ certHash: new Uint8Array([1]) })
         const pq = new PolicyQualifierInfo({
             policyQualifierId: '1.3.6.1.5.5.7.2.1',
-            qualifier: new asn1js.Utf8String({ value: 'CPS' }),
+            qualifier: der.utf8String('CPS'),
         })
         const pi = new PolicyInformation({
             policyIdentifier: '2.5.29.32.0',
@@ -168,15 +164,13 @@ describe('SigningCertificateV2', () => {
     })
 
     it('throws for non-sequence', () => {
-        expect(() => SigningCertificateV2.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => SigningCertificateV2.fromAsn1(der.nullValue())).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
     })
 
     it('throws when certs is not a sequence', () => {
-        const bad = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 1 })],
-        })
+        const bad = der.sequence([der.integer(1)])
         expect(() => SigningCertificateV2.fromAsn1(bad)).toThrow(
             'Invalid SigningCertificateV2: expected SEQUENCE for certs',
         )
@@ -184,12 +178,7 @@ describe('SigningCertificateV2', () => {
 
     it('throws when policies is not a sequence', () => {
         const ess = new ESSCertIDv2({ certHash: new Uint8Array([1, 2]) })
-        const bad = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [ess.toAsn1()] }),
-                new asn1js.Integer({ value: 1 }),
-            ],
-        })
+        const bad = der.sequence([der.sequence([ess.toAsn1()]), der.integer(1)])
         expect(() => SigningCertificateV2.fromAsn1(bad)).toThrow(
             'Invalid SigningCertificateV2: expected SEQUENCE for policies',
         )

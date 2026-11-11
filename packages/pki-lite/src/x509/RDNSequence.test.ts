@@ -2,7 +2,7 @@ import { assert, describe, expect, test } from 'vitest'
 import { RDNSequence } from './RDNSequence.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('RDNSequence', () => {
     test('can be created empty', () => {
@@ -57,12 +57,12 @@ describe('RDNSequence', () => {
 
         const asn1 = rdnSequence.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
         // Each item should be a Set (the ASN.1 representation of RelativeDistinguishedName)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Set)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Set)
+        expect(asn1.children[0].is(UniversalTag.Set)).toBe(true)
+        expect(asn1.children[1].is(UniversalTag.Set)).toBe(true)
     })
 
     test('handles multiple RDNs', () => {
@@ -95,36 +95,22 @@ describe('RDNSequence', () => {
 
     test('can be parsed from ASN.1', () => {
         // Create ASN.1 structure for a DN like "CN=Test,OU=Unit"
-        const asn1 = new asn1js.Sequence({
-            value: [
-                // First RDN - CN=Test
-                new asn1js.Set({
-                    value: [
-                        new asn1js.Sequence({
-                            value: [
-                                new asn1js.ObjectIdentifier({
-                                    value: '2.5.4.3',
-                                }), // CN OID
-                                new asn1js.PrintableString({ value: 'Test' }),
-                            ],
-                        }),
-                    ],
-                }),
-                // Second RDN - OU=Unit
-                new asn1js.Set({
-                    value: [
-                        new asn1js.Sequence({
-                            value: [
-                                new asn1js.ObjectIdentifier({
-                                    value: '2.5.4.11',
-                                }), // OU OID
-                                new asn1js.PrintableString({ value: 'Unit' }),
-                            ],
-                        }),
-                    ],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            // First RDN - CN=Test
+            der.set([
+                der.sequence([
+                    der.oid('2.5.4.3'), // CN OID
+                    der.printableString('Test'),
+                ]),
+            ]),
+            // Second RDN - OU=Unit
+            der.set([
+                der.sequence([
+                    der.oid('2.5.4.11'), // OU OID
+                    der.printableString('Unit'),
+                ]),
+            ]),
+        ])
 
         const rdnSequence = RDNSequence.fromAsn1(asn1)
         expect(rdnSequence).toBeInstanceOf(RDNSequence)
@@ -145,14 +131,10 @@ describe('RDNSequence', () => {
 
     test('throws an error when parsing invalid ASN.1', () => {
         // Create an ASN.1 structure that's not a SEQUENCE
-        const asn1 = new asn1js.Set({
-            value: [
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-            ],
-        })
+        const asn1 = der.set([der.octetString(new Uint8Array([1, 2, 3]))])
 
         expect(() => RDNSequence.fromAsn1(asn1)).toThrow(
-            'Invalid ASN.1 structure: expected SEQUENCE but got Set',
+            'Invalid ASN.1 structure: expected SEQUENCE but got SET',
         )
     })
 

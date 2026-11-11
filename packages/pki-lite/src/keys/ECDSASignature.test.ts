@@ -103,8 +103,8 @@ describe('ECDSASignature', () => {
     test('toDer/fromDer roundtrip works correctly', () => {
         // Use values that don't need padding to simplify the test
         const originalSignature = new ECDSASignature({ r, s: sNoPad })
-        const der = originalSignature.toDer()
-        const parsedSignature = ECDSASignature.fromDer(der)
+        const encoded = originalSignature.toDer()
+        const parsedSignature = ECDSASignature.fromDer(encoded)
 
         expect(parsedSignature.r.bytes).toEqual(originalSignature.r.bytes)
         expect(parsedSignature.s.bytes).toEqual(originalSignature.s.bytes)

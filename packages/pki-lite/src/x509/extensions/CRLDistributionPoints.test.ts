@@ -6,7 +6,7 @@ import {
     dNSName,
     uniformResourceIdentifier,
 } from '../GeneralName.js'
-import { asn1js, derToAsn1 } from '../../core/PkiBase.js'
+import { der, derToAsn1 } from '../../core/PkiBase.js'
 import { ReasonFlags } from '../ReasonFlags.js'
 
 function makeGeneralNames(uri: string) {
@@ -34,7 +34,7 @@ describe('CRLDistributionPoints', () => {
     })
 
     it('should throw if ASN.1 is not a sequence', () => {
-        expect(() => CRLDistributionPoints.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => CRLDistributionPoints.fromAsn1(der.nullValue())).toThrow(
             'Invalid ASN.1 structure for CRLDistributionPoints',
         )
     })
@@ -97,9 +97,9 @@ describe('CRLDistributionPoints', () => {
                     new dNSName({ value: 'ca.example' }),
                 ),
             })
-            const der = dp.toDer()
-            const parsed = DistributionPoint.fromAsn1(derToAsn1(der))
-            expect(toHex(parsed.toDer())).toBe(toHex(der))
+            const encoded = dp.toDer()
+            const parsed = DistributionPoint.fromAsn1(derToAsn1(encoded))
+            expect(toHex(parsed.toDer())).toBe(toHex(encoded))
             expect(parsed.reasons?.keyCompromise).toBe(true)
             expect(parsed.cRLIssuer?.length).toBe(1)
         })

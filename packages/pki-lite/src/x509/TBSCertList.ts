@@ -1,5 +1,11 @@
 import { Time } from '../asn1/Time.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Name } from './Name.js'
 import { RevokedCertificate } from './RevokedCertificate.js'
@@ -60,12 +66,12 @@ export class TBSCertList extends PkiBase<TBSCertList> {
     /**
      * Converts the TBSCertList to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        const tbsValues: Asn1BaseBlock[] = []
+    toAsn1(): Asn1Node {
+        const tbsValues: Asn1Node[] = []
 
         // Version (optional, default is v1)
         if (this.version !== undefined) {
-            tbsValues.push(new asn1js.Integer({ value: this.version }))
+            tbsValues.push(der.integer(this.version))
         }
 
         // Signature Algorithm
@@ -88,33 +94,17 @@ export class TBSCertList extends PkiBase<TBSCertList> {
                 rc.toAsn1(),
             )
 
-            tbsValues.push(
-                new asn1js.Sequence({
-                    value: revokedCertsArray,
-                }),
-            )
+            tbsValues.push(der.sequence(revokedCertsArray))
         }
 
         // CRL Extensions (optional)
         if (this.extensions && this.extensions.length > 0) {
             const extensionsArray = this.extensions.map((ext) => ext.toAsn1())
 
-            tbsValues.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [
-                        new asn1js.Sequence({
-                            value: extensionsArray,
-                        }),
-                    ],
-                }),
-            )
+            tbsValues.push(der.constructed(0, [der.sequence(extensionsArray)]))
         }
 
-        return new asn1js.Sequence({ value: tbsValues })
+        return der.sequence(tbsValues)
     }
 
     /**
@@ -123,19 +113,14 @@ export class TBSCertList extends PkiBase<TBSCertList> {
      * @param asn1 The ASN.1 structure
      * @returns The TBSCertList object
      */
-    static fromAsn1(asn1: Asn1BaseBlock): TBSCertList {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): TBSCertList {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        // Define a type for the valueBlock structure we need to access
-        interface ValueBlock {
-            value: asn1js.BaseBlock[]
-        }
-
-        const values = (asn1.valueBlock as unknown as ValueBlock).value
+        const values = asn1.children
         if (values.length < 3) {
             // At minimum: signature, issuer, thisUpdate
             throw new Asn1ParseError(
@@ -147,13 +132,13 @@ export class TBSCertList extends PkiBase<TBSCertList> {
         let version: number | undefined = undefined
 
         // Check if first element is version (optional)
-        if (values[0] instanceof asn1js.Integer) {
-            version = values[0].valueBlock.valueDec
+        if (values[0]?.is(UniversalTag.Integer)) {
+            version = der.readNumber(values[0])
             index++
         }
 
         // Signature Algorithm
-        if (!(values[index] instanceof asn1js.Sequence)) {
+        if (!values[index]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for signature',
             )
@@ -162,7 +147,7 @@ export class TBSCertList extends PkiBase<TBSCertList> {
         index++
 
         // Issuer
-        if (!(values[index] instanceof asn1js.Sequence)) {
+        if (!values[index]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for issuer',
             )
@@ -178,8 +163,8 @@ export class TBSCertList extends PkiBase<TBSCertList> {
         let nextUpdate: Date | undefined = undefined
         if (
             index < values.length &&
-            (values[index] instanceof asn1js.UTCTime ||
-                values[index] instanceof asn1js.GeneralizedTime)
+            (values[index]?.is(UniversalTag.UTCTime) ||
+                values[index]?.is(UniversalTag.GeneralizedTime))
         ) {
             nextUpdate = Time.fromAsn1(values[index], 'nextUpdate').time
             index++
@@ -187,10 +172,8 @@ export class TBSCertList extends PkiBase<TBSCertList> {
 
         // RevokedCertificates (optional)
         let revokedCertificates: RevokedCertificate[] | undefined = undefined
-        if (index < values.length && values[index] instanceof asn1js.Sequence) {
-            const revokedCertsAsn1 = (
-                values[index].valueBlock as unknown as ValueBlock
-            ).value
+        if (index < values.length && values[index]?.is(UniversalTag.Sequence)) {
+            const revokedCertsAsn1 = values[index].children
             revokedCertificates = revokedCertsAsn1.map((cert) =>
                 RevokedCertificate.fromAsn1(cert),
             )
@@ -201,20 +184,18 @@ export class TBSCertList extends PkiBase<TBSCertList> {
         let extensions: Extension[] | undefined = undefined
         if (
             index < values.length &&
-            values[index] instanceof asn1js.Constructed &&
-            values[index].idBlock.tagClass === 3 &&
-            values[index].idBlock.tagNumber === 0
+            !!values[index]?.constructed &&
+            values[index].tagClass === TagClass.Context &&
+            values[index].tag === 0
         ) {
-            const extSeq = (values[index].valueBlock as unknown as ValueBlock)
-                .value[0]
-            if (!(extSeq instanceof asn1js.Sequence)) {
+            const extSeq = values[index].children[0]
+            if (!extSeq.is(UniversalTag.Sequence)) {
                 throw new Asn1ParseError(
                     'Invalid ASN.1 structure: expected SEQUENCE for extensions',
                 )
             }
 
-            const extensionsAsn1 = (extSeq.valueBlock as unknown as ValueBlock)
-                .value
+            const extensionsAsn1 = extSeq.children
             extensions = extensionsAsn1.map((ext) => Extension.fromAsn1(ext))
         }
 

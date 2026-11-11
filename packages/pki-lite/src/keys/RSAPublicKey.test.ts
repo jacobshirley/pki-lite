@@ -51,8 +51,8 @@ describe('RSAPublicKey', () => {
 
     test('toDer/fromDer roundtrip works correctly', () => {
         const originalKey = new RSAPublicKey({ modulus, publicExponent })
-        const der = originalKey.toDer()
-        const parsedKey = RSAPublicKey.fromDer(der)
+        const encoded = originalKey.toDer()
+        const parsedKey = RSAPublicKey.fromDer(encoded)
 
         expect(parsedKey.modulus).toEqual(originalKey.modulus)
         expect(parsedKey.publicExponent).toEqual(originalKey.publicExponent)

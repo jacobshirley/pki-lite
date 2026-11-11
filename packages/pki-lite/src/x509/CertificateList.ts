@@ -1,9 +1,10 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     derToAsn1,
     pemToDer,
     PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { TBSCertList } from './TBSCertList.js'
@@ -198,18 +199,16 @@ export class CertificateList extends PkiBase<CertificateList> {
      * @example
      * ```typescript
      * const asn1 = crl.toAsn1()
-     * const der = asn1.toBER(false) // Convert to DER encoding
+     * const der = asn1.encode() // Convert to DER encoding
      * ```
      */
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         // Create the main CertificateList sequence
-        return new asn1js.Sequence({
-            value: [
-                this.tbsCertList.toAsn1(),
-                this.signatureAlgorithm.toAsn1(),
-                this.signatureValue.toAsn1(),
-            ],
-        })
+        return der.sequence([
+            this.tbsCertList.toAsn1(),
+            this.signatureAlgorithm.toAsn1(),
+            this.signatureValue.toAsn1(),
+        ])
     }
 
     /**
@@ -228,15 +227,15 @@ export class CertificateList extends PkiBase<CertificateList> {
      * const crl = CertificateList.fromAsn1(asn1)
      * ```
      */
-    static fromAsn1(asn1: Asn1BaseBlock): CertificateList {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): CertificateList {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE but got ' +
-                    asn1.constructor.name,
+                    asn1.describe(),
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length !== 3) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 3 elements',
@@ -244,7 +243,7 @@ export class CertificateList extends PkiBase<CertificateList> {
         }
 
         // Extract tbsCertList
-        if (!(values[0] instanceof asn1js.Sequence)) {
+        if (!values[0]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for tbsCertList',
             )
@@ -252,7 +251,7 @@ export class CertificateList extends PkiBase<CertificateList> {
         const tbsCertList = TBSCertList.fromAsn1(values[0])
 
         // Extract signatureAlgorithm
-        if (!(values[1] instanceof asn1js.Sequence)) {
+        if (!values[1]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for signatureAlgorithm',
             )
@@ -260,12 +259,12 @@ export class CertificateList extends PkiBase<CertificateList> {
         const signatureAlgorithm = AlgorithmIdentifier.fromAsn1(values[1])
 
         // Extract signatureValue
-        if (!(values[2] instanceof asn1js.BitString)) {
+        if (!values[2]?.is(UniversalTag.BitString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected BIT STRING for signatureValue',
             )
         }
-        const signatureValue = new Uint8Array(values[2].valueBlock.valueHexView)
+        const signatureValue = der.readBitString(values[2]).bytes
 
         return new CertificateList({
             tbsCertList,

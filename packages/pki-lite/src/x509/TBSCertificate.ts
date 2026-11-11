@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import {
     AlgorithmIdentifier,
     SignatureAlgorithmIdentifier,
@@ -73,20 +79,12 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
     /**
      * Converts the TBSCertificate to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         const tbsValues = []
 
         // Version [0] EXPLICIT, DEFAULT v1: DER leaves the default out
         if (this.version !== 0) {
-            tbsValues.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [new asn1js.Integer({ value: this.version })],
-                }),
-            )
+            tbsValues.push(der.constructed(0, [der.integer(this.version)]))
         }
 
         tbsValues.push(this.serialNumber.toAsn1())
@@ -109,25 +107,13 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
         // Optional fields
         if (this.issuerUniqueID) {
             tbsValues.push(
-                new asn1js.Primitive({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 1, // [1]
-                    },
-                    valueHex: this.issuerUniqueID,
-                }),
+                der.primitive(1, this.issuerUniqueID, TagClass.Context),
             )
         }
 
         if (this.subjectUniqueID) {
             tbsValues.push(
-                new asn1js.Primitive({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 2, // [2]
-                    },
-                    valueHex: this.subjectUniqueID,
-                }),
+                der.primitive(2, this.subjectUniqueID, TagClass.Context),
             )
         }
 
@@ -135,22 +121,10 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
         if (this.extensions && this.extensions.length > 0) {
             const extensionsArray = this.extensions.map((ext) => ext.toAsn1())
 
-            tbsValues.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 3, // [3]
-                    },
-                    value: [
-                        new asn1js.Sequence({
-                            value: extensionsArray,
-                        }),
-                    ],
-                }),
-            )
+            tbsValues.push(der.constructed(3, [der.sequence(extensionsArray)]))
         }
 
-        return new asn1js.Sequence({ value: tbsValues })
+        return der.sequence(tbsValues)
     }
 
     /**
@@ -159,14 +133,14 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
      * @param asn1 The ASN.1 structure
      * @returns The TBSCertificate
      */
-    static fromAsn1(asn1: Asn1BaseBlock): TBSCertificate {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): TBSCertificate {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: TBSCertificate must be a SEQUENCE',
             )
         }
 
-        const tbsSequenceValue = asn1.valueBlock.value
+        const tbsSequenceValue = asn1.children
 
         // Start with basic defaults
         let version = 0 // default v1
@@ -175,34 +149,34 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
         // Check if first element is version tag [0]
         const firstElement = tbsSequenceValue[0]
         if (
-            firstElement instanceof asn1js.Constructed &&
-            firstElement.idBlock.tagClass === 3 &&
-            firstElement.idBlock.tagNumber === 0
+            firstElement?.constructed &&
+            firstElement.tagClass === TagClass.Context &&
+            firstElement.tag === 0
         ) {
             // Version is present as explicit tag [0]
-            const versionInt = firstElement.valueBlock.value[0]
-            if (!(versionInt instanceof asn1js.Integer)) {
+            const versionInt = firstElement.children[0]
+            if (!versionInt.is(UniversalTag.Integer)) {
                 throw new Asn1ParseError(
                     'Invalid TBSCertificate: version must be an INTEGER',
                 )
             }
-            version = versionInt.valueBlock.valueDec
+            version = der.readNumber(versionInt)
             currentIndex++
         }
 
         // Serial Number (required)
         const serialAsn1 = tbsSequenceValue[currentIndex]
-        if (!(serialAsn1 instanceof asn1js.Integer)) {
+        if (!serialAsn1.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid TBSCertificate: serialNumber must be an INTEGER',
             )
         }
-        const serialNumber = serialAsn1.valueBlock.valueHexView
+        const serialNumber = serialAsn1.bytes()
         currentIndex++
 
         // Signature Algorithm (required)
         const signatureAsn1 = tbsSequenceValue[currentIndex]
-        if (!(signatureAsn1 instanceof asn1js.Sequence)) {
+        if (!signatureAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid TBSCertificate: signature must be a SEQUENCE',
             )
@@ -212,7 +186,7 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
 
         // Issuer (required)
         const issuerAsn1 = tbsSequenceValue[currentIndex]
-        if (!(issuerAsn1 instanceof asn1js.Sequence)) {
+        if (!issuerAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid TBSCertificate: issuer must be a SEQUENCE',
             )
@@ -222,7 +196,7 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
 
         // Validity (required)
         const validityAsn1 = tbsSequenceValue[currentIndex]
-        if (!(validityAsn1 instanceof asn1js.Sequence)) {
+        if (!validityAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid TBSCertificate: validity must be a SEQUENCE',
             )
@@ -232,7 +206,7 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
 
         // Subject (required)
         const subjectAsn1 = tbsSequenceValue[currentIndex]
-        if (!(subjectAsn1 instanceof asn1js.Sequence)) {
+        if (!subjectAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid TBSCertificate: subject must be a SEQUENCE',
             )
@@ -242,7 +216,7 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
 
         // SubjectPublicKeyInfo (required)
         const spkiAsn1 = tbsSequenceValue[currentIndex]
-        if (!(spkiAsn1 instanceof asn1js.Sequence)) {
+        if (!spkiAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid TBSCertificate: subjectPublicKeyInfo must be a SEQUENCE',
             )
@@ -258,49 +232,39 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
         // Parse issuerUniqueID [1] IMPLICIT (optional)
         if (
             currentIndex < tbsSequenceValue.length &&
-            tbsSequenceValue[currentIndex] instanceof asn1js.Primitive &&
-            tbsSequenceValue[currentIndex].idBlock.tagClass === 3 && // CONTEXT-SPECIFIC
-            tbsSequenceValue[currentIndex].idBlock.tagNumber === 1 // [1]
+            !tbsSequenceValue[currentIndex].constructed &&
+            tbsSequenceValue[currentIndex].tagClass === TagClass.Context && // CONTEXT-SPECIFIC
+            tbsSequenceValue[currentIndex].tag === 1 // [1]
         ) {
-            const issuerUniqueIDAsn1 = tbsSequenceValue[
-                currentIndex
-            ] as asn1js.BitString
-            issuerUniqueID = new Uint8Array(
-                issuerUniqueIDAsn1.valueBlock.valueHexView,
-            )
+            const issuerUniqueIDAsn1 = tbsSequenceValue[currentIndex]
+            issuerUniqueID = issuerUniqueIDAsn1.bytes()
             currentIndex++
         }
 
         // Parse subjectUniqueID [2] IMPLICIT (optional)
         if (
             currentIndex < tbsSequenceValue.length &&
-            tbsSequenceValue[currentIndex] instanceof asn1js.Primitive &&
-            tbsSequenceValue[currentIndex].idBlock.tagClass === 3 && // CONTEXT-SPECIFIC
-            tbsSequenceValue[currentIndex].idBlock.tagNumber === 2 // [2]
+            !tbsSequenceValue[currentIndex].constructed &&
+            tbsSequenceValue[currentIndex].tagClass === TagClass.Context && // CONTEXT-SPECIFIC
+            tbsSequenceValue[currentIndex].tag === 2 // [2]
         ) {
-            const subjectUniqueIDAsn1 = tbsSequenceValue[
-                currentIndex
-            ] as asn1js.BitString
-            subjectUniqueID = new Uint8Array(
-                subjectUniqueIDAsn1.valueBlock.valueHexView,
-            )
+            const subjectUniqueIDAsn1 = tbsSequenceValue[currentIndex]
+            subjectUniqueID = subjectUniqueIDAsn1.bytes()
             currentIndex++
         }
 
         // Parse extensions [3] EXPLICIT (optional)
         if (
             currentIndex < tbsSequenceValue.length &&
-            tbsSequenceValue[currentIndex] instanceof asn1js.Constructed &&
-            tbsSequenceValue[currentIndex].idBlock.tagClass === 3 && // CONTEXT-SPECIFIC
-            tbsSequenceValue[currentIndex].idBlock.tagNumber === 3 // [3]
+            !!tbsSequenceValue[currentIndex]?.constructed &&
+            tbsSequenceValue[currentIndex].tagClass === TagClass.Context && // CONTEXT-SPECIFIC
+            tbsSequenceValue[currentIndex].tag === 3 // [3]
         ) {
-            const extensionsContainer = tbsSequenceValue[
-                currentIndex
-            ] as asn1js.Constructed
-            if (extensionsContainer.valueBlock.value.length > 0) {
-                const extensionsSeq = extensionsContainer.valueBlock.value[0]
-                if (extensionsSeq instanceof asn1js.Sequence) {
-                    extensions = extensionsSeq.valueBlock.value.map((ext) =>
+            const extensionsContainer = tbsSequenceValue[currentIndex]
+            if (extensionsContainer.children.length > 0) {
+                const extensionsSeq = extensionsContainer.children[0]
+                if (extensionsSeq.is(UniversalTag.Sequence)) {
+                    extensions = extensionsSeq.children.map((ext) =>
                         Extension.fromAsn1(ext),
                     )
                 }

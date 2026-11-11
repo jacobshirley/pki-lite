@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from 'vitest'
 import { Validity } from './Validity.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('Validity', () => {
     test('can be created', () => {
@@ -27,13 +27,13 @@ describe('Validity', () => {
         })
         const asn1 = validity.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
-        const [notBeforeBlock, notAfterBlock] = asn1.valueBlock.value
+        const [notBeforeBlock, notAfterBlock] = asn1.children
 
-        expect(notBeforeBlock).toBeInstanceOf(asn1js.UTCTime)
-        expect(notAfterBlock).toBeInstanceOf(asn1js.UTCTime)
+        expect(notBeforeBlock.is(UniversalTag.UTCTime)).toBe(true)
+        expect(notAfterBlock.is(UniversalTag.UTCTime)).toBe(true)
     })
 
     test('handles different date formats', () => {
@@ -52,7 +52,7 @@ describe('Validity', () => {
 
         // Verify toAsn1 works with these dates
         const asn1 = validity.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
     })
 
     test('can be parsed from ASN.1 with UTCTime', () => {
@@ -60,12 +60,10 @@ describe('Validity', () => {
         const notAfter = new Date('2026-01-01')
 
         // Create ASN.1 sequence with UTCTime values
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.UTCTime({ valueDate: notBefore }),
-                new asn1js.UTCTime({ valueDate: notAfter }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.utcTime(notBefore),
+            der.utcTime(notAfter),
+        ])
 
         const validity = Validity.fromAsn1(asn1)
         expect(validity).toBeInstanceOf(Validity)
@@ -84,12 +82,10 @@ describe('Validity', () => {
         const notAfter = new Date('2026-01-01')
 
         // Create ASN.1 sequence with GeneralizedTime values
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.GeneralizedTime({ valueDate: notBefore }),
-                new asn1js.GeneralizedTime({ valueDate: notAfter }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.generalizedTime(notBefore),
+            der.generalizedTime(notAfter),
+        ])
 
         const validity = Validity.fromAsn1(asn1)
         expect(validity).toBeInstanceOf(Validity)
@@ -105,21 +101,17 @@ describe('Validity', () => {
 
     test('throws an error when parsing invalid ASN.1', () => {
         // Create an ASN.1 structure that's not a sequence
-        const asn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const asn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => Validity.fromAsn1(asn1)).toThrow('Expected Sequence')
     })
 
     test('throws an error when notBefore is not a valid time format', () => {
         // Create an ASN.1 sequence with an invalid notBefore field
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-                new asn1js.UTCTime({ valueDate: new Date() }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.octetString(new Uint8Array([1, 2, 3])),
+            der.utcTime(new Date()),
+        ])
 
         expect(() => Validity.fromAsn1(asn1)).toThrow(
             'Expected UTCTime or GeneralizedTime for notBefore',
@@ -128,12 +120,10 @@ describe('Validity', () => {
 
     test('throws an error when notAfter is not a valid time format', () => {
         // Create an ASN.1 sequence with an invalid notAfter field
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.UTCTime({ valueDate: new Date() }),
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.utcTime(new Date()),
+            der.octetString(new Uint8Array([1, 2, 3])),
+        ])
 
         expect(() => Validity.fromAsn1(asn1)).toThrow(
             'Expected UTCTime or GeneralizedTime for notAfter',

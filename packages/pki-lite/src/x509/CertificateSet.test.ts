@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CertificateSet } from './CertificateSet.js'
 import { Certificate } from './Certificate.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 
 describe('CertificateSet', () => {
@@ -11,8 +11,8 @@ describe('CertificateSet', () => {
 
         // Check that the ASN.1 encoding produces a SET
         const asn1 = certSet.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toEqual(true)
-        expect((asn1 as any).valueBlock.value.length).toEqual(0)
+        expect(asn1.is(UniversalTag.Set)).toEqual(true)
+        expect(asn1.children.length).toEqual(0)
     })
 
     it('should create a CertificateSet with certificates', () => {
@@ -25,8 +25,8 @@ describe('CertificateSet', () => {
 
         // Check that the ASN.1 encoding is correct
         const asn1 = certSet.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toEqual(true)
-        expect((asn1 as any).valueBlock.value.length).toEqual(1)
+        expect(asn1.is(UniversalTag.Set)).toEqual(true)
+        expect(asn1.children.length).toEqual(1)
     })
 
     it('should decode a CertificateSet from ASN.1', () => {
@@ -62,8 +62,8 @@ describe('CertificateSet', () => {
 
         // Check that the ASN.1 encoding is correct
         const asn1 = certSet.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toEqual(true)
-        expect((asn1 as any).valueBlock.value.length).toEqual(2)
+        expect(asn1.is(UniversalTag.Set)).toEqual(true)
+        expect(asn1.children.length).toEqual(2)
 
         // Decode it back
         const decodedSet = CertificateSet.fromAsn1(asn1)
@@ -72,7 +72,7 @@ describe('CertificateSet', () => {
 
     it('should throw when trying to decode from an invalid ASN.1 structure', () => {
         // Try to decode from a non-Set ASN.1 structure
-        const invalidAsn1 = new asn1js.Sequence()
+        const invalidAsn1 = der.sequence([])
         expect(() => CertificateSet.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected Set for CertificateSet',
         )

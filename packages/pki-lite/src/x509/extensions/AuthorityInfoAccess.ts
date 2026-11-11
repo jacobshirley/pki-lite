@@ -1,11 +1,12 @@
 import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     ObjectIdentifierString,
     PkiBase,
     PkiSequence,
+    UniversalTag,
 } from '../../core/PkiBase.js'
 import { GeneralName } from '../GeneralName.js'
 
@@ -36,24 +37,24 @@ export class AccessDescription extends PkiBase<AccessDescription> {
     }
 
     toAsn1() {
-        return new asn1js.Sequence({
-            value: [this.accessMethod.toAsn1(), this.accessLocation.toAsn1()],
-        })
+        return der.sequence([
+            this.accessMethod.toAsn1(),
+            this.accessLocation.toAsn1(),
+        ])
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock) {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node) {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('ASN.1 structure should be a sequence')
         }
 
-        if (asn1.valueBlock.value.length !== 2) {
+        if (asn1.children.length !== 2) {
             throw new Asn1ParseError('ASN.1 sequence should have 2 elements')
         }
 
         return new AccessDescription({
-            accessMethod: ObjectIdentifier.fromAsn1(asn1.valueBlock.value[0])
-                .value,
-            accessLocation: GeneralName.fromAsn1(asn1.valueBlock.value[1]),
+            accessMethod: ObjectIdentifier.fromAsn1(asn1.children[0]).value,
+            accessLocation: GeneralName.fromAsn1(asn1.children[1]),
         })
     }
 }
@@ -75,13 +76,13 @@ export class AccessDescription extends PkiBase<AccessDescription> {
  * ```
  */
 export class AuthorityInfoAccess extends PkiSequence<AccessDescription> {
-    static fromAsn1(asn1: Asn1BaseBlock) {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node) {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('ASN.1 structure should be a sequence')
         }
 
         return new AuthorityInfoAccess(
-            ...asn1.valueBlock.value.map(AccessDescription.fromAsn1),
+            ...asn1.children.map(AccessDescription.fromAsn1),
         )
     }
 }

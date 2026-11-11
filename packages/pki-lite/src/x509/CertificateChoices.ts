@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, Choice } from '../core/PkiBase.js'
+import { Asn1Node, Choice, TagClass, UniversalTag } from '../core/PkiBase.js'
 import { Certificate } from './Certificate.js'
 import { ExtendedCertificate } from './legacy/ExtendedCertificate.js'
 import { AttributeCertificateV1 } from './attribute-certs/AttributeCertificateV1.js'
@@ -40,35 +40,37 @@ export const CertificateChoices = Choice('CertificateChoices', {
     AttributeCertificateV1,
     AttributeCertificate,
     OtherCertificateFormat,
-    fromAsn1: (value: Asn1BaseBlock): CertificateChoices => {
+    fromAsn1: (value: Asn1Node): CertificateChoices => {
         // Check the tag class and tag number to determine the type
-        const tagClass = value.idBlock.tagClass
-        const tagNumber = value.idBlock.tagNumber
+        const tagClass = value.tagClass
+        const tagNumber = value.tag
 
-        // Standard X.509 Certificate has universal tag class and sequence tag number (16)
-        if (tagClass === 1 && tagNumber === 16) {
+        // Standard X.509 Certificate is a universal SEQUENCE
+        if (value.is(UniversalTag.Sequence)) {
             return Certificate.fromAsn1(value)
         }
 
-        if (tagClass !== 3) {
+        if (tagClass !== TagClass.Context) {
             throw new Asn1ParseError(
                 `Unknown CertificateChoices tag class: ${tagClass}`,
             )
         }
-        // Context-specific tag class indicates an alternative choice
+        // Context-specific tag class indicates an alternative choice; each is an
+        // IMPLICIT tag over a SEQUENCE type, so read it back as a SEQUENCE
+        const sequence = value.retag(UniversalTag.Sequence)
         switch (tagNumber) {
             case 0:
                 // [0] IMPLICIT ExtendedCertificate (obsolete)
-                return ExtendedCertificate.fromAsn1(value)
+                return ExtendedCertificate.fromAsn1(sequence)
             case 1:
                 // [1] IMPLICIT AttributeCertificateV1 (obsolete)
-                return AttributeCertificateV1.fromAsn1(value)
+                return AttributeCertificateV1.fromAsn1(sequence)
             case 2:
                 // [2] IMPLICIT AttributeCertificate (AttributeCertificateV2)
-                return AttributeCertificate.fromAsn1(value)
+                return AttributeCertificate.fromAsn1(sequence)
             case 3:
                 // [3] IMPLICIT OtherCertificateFormat
-                return OtherCertificateFormat.fromAsn1(value)
+                return OtherCertificateFormat.fromAsn1(sequence)
             default:
                 throw new Asn1ParseError(
                     `Unknown CertificateChoices tag number: ${tagNumber}`,

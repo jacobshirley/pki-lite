@@ -1,7 +1,7 @@
 import { assert, describe, expect, test } from 'vitest'
 import { RevokedCertificate } from './RevokedCertificate.js'
 import { Extension } from './Extension.js'
-import { asn1js, ObjectIdentifierString } from '../core/PkiBase.js'
+import { der, ObjectIdentifierString, UniversalTag } from '../core/PkiBase.js'
 
 describe('RevokedCertificate', () => {
     test('can be created with serial number and date', () => {
@@ -67,19 +67,17 @@ describe('RevokedCertificate', () => {
         })
         const asn1 = revoked.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2) // userCertificate, revocationDate
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2) // userCertificate, revocationDate
 
-        const [serialBlock, dateBlock] = asn1.valueBlock.value
+        const [serialBlock, dateBlock] = asn1.children
 
-        expect(serialBlock).toBeInstanceOf(asn1js.Integer)
-        expect((serialBlock as asn1js.Integer).valueBlock.valueDec).toEqual(
-            serialNumber,
-        )
+        expect(serialBlock.is(UniversalTag.Integer)).toBe(true)
+        expect(der.readNumber(serialBlock)).toEqual(serialNumber)
 
-        expect(dateBlock).toBeInstanceOf(asn1js.UTCTime)
+        expect(dateBlock.is(UniversalTag.UTCTime)).toBe(true)
         // Just check the type is correct as exact date comparison is complex
-        expect(dateBlock).toBeInstanceOf(asn1js.UTCTime)
+        expect(dateBlock.is(UniversalTag.UTCTime)).toBe(true)
     })
 
     test('can be converted to ASN.1 with extensions', () => {
@@ -100,15 +98,13 @@ describe('RevokedCertificate', () => {
         })
         const asn1 = revoked.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3) // userCertificate, revocationDate, extensions
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3) // userCertificate, revocationDate, extensions
 
         // Check that the third element is a sequence (extensions)
-        const extensionsBlock = asn1.valueBlock.value[2]
-        expect(extensionsBlock).toBeInstanceOf(asn1js.Sequence)
-        expect(
-            (extensionsBlock as asn1js.Sequence).valueBlock.value.length,
-        ).toEqual(1) // one extension
+        const extensionsBlock = asn1.children[2]
+        expect(extensionsBlock.is(UniversalTag.Sequence)).toBe(true)
+        expect(extensionsBlock.children.length).toEqual(1) // one extension
     })
 
     test('can be parsed from ASN.1 without extensions', () => {
@@ -116,12 +112,10 @@ describe('RevokedCertificate', () => {
         const revocationDate = new Date('2025-05-01')
 
         // Create the ASN.1 structure
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: serialNumber }),
-                new asn1js.UTCTime({ valueDate: revocationDate }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(serialNumber),
+            der.utcTime(revocationDate),
+        ])
 
         const revoked = RevokedCertificate.fromAsn1(asn1)
         expect(revoked).toBeInstanceOf(RevokedCertificate)
@@ -152,17 +146,13 @@ describe('RevokedCertificate', () => {
 
         try {
             // Create the ASN.1 structure with extensions
-            const asn1 = new asn1js.Sequence({
-                value: [
-                    new asn1js.Integer({ value: serialNumber }),
-                    new asn1js.UTCTime({ valueDate: revocationDate }),
-                    new asn1js.Sequence({
-                        value: [
-                            new asn1js.Sequence({}), // dummy extension
-                        ],
-                    }),
-                ],
-            })
+            const asn1 = der.sequence([
+                der.integer(serialNumber),
+                der.utcTime(revocationDate),
+                der.sequence([
+                    der.sequence([]), // dummy extension
+                ]),
+            ])
 
             const revoked = RevokedCertificate.fromAsn1(asn1)
             expect(revoked).toBeInstanceOf(RevokedCertificate)
@@ -178,31 +168,27 @@ describe('RevokedCertificate', () => {
     })
 
     test('fromAsn1 throws error for non-sequence', () => {
-        const asn1 = new asn1js.Integer({ value: 1 })
+        const asn1 = der.integer(1)
         expect(() => RevokedCertificate.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
     })
 
     test('fromAsn1 throws error for wrong number of elements', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 1 }),
-                // Missing revocationDate
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(1),
+            // Missing revocationDate
+        ])
         expect(() => RevokedCertificate.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected 2 or 3 elements',
         )
     })
 
     test('fromAsn1 throws error for invalid userCertificate', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.UTCTime({ valueDate: new Date() }), // Not an Integer
-                new asn1js.UTCTime({ valueDate: new Date() }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.utcTime(new Date()), // Not an Integer
+            der.utcTime(new Date()),
+        ])
         expect(() => RevokedCertificate.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: userCertificate must be an INTEGER',
         )

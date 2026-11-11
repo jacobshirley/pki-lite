@@ -140,8 +140,8 @@ describe('RSAPrivateKey', () => {
             coefficient,
         })
 
-        const der = key.toDer()
-        const parsedKey = RSAPrivateKey.fromDer(der)
+        const encoded = key.toDer()
+        const parsedKey = RSAPrivateKey.fromDer(encoded)
 
         expect(parsedKey.version).toEqual(key.version)
         expect(parsedKey.modulus).toEqual(key.modulus)
