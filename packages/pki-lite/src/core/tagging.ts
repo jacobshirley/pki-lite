@@ -1,0 +1,25 @@
+import { Asn1BaseBlock } from './PkiBase.js'
+
+/**
+ * Re-tags a block with a context-specific tag, i.e. applies an IMPLICIT tag.
+ *
+ * The X.509 / CMS ASN.1 modules use IMPLICIT TAGS, so a `[n] Type` field is encoded as
+ * the underlying value with its universal tag replaced by `[n]` (and nothing wrapped
+ * around it). Only a tagged CHOICE (e.g. `directoryName [4] Name`) is EXPLICIT.
+ */
+export function implicitTag<T extends Asn1BaseBlock>(
+    block: T,
+    tagNumber: number,
+): T {
+    block.idBlock.tagClass = 3 // CONTEXT-SPECIFIC
+    block.idBlock.tagNumber = tagNumber
+    return block
+}
+
+/** Whether a block carries the context-specific tag `[tagNumber]`. */
+export const isContextTag = (asn1: Asn1BaseBlock, tagNumber: number) =>
+    asn1.idBlock.tagClass === 3 && asn1.idBlock.tagNumber === tagNumber
+
+/** The content octets of a primitive (implicitly tagged) block. */
+export const contentOctets = (asn1: Asn1BaseBlock): Uint8Array =>
+    (asn1.valueBlock as unknown as { valueHexView: Uint8Array }).valueHexView

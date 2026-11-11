@@ -73,18 +73,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             /^ext:(crlDistributionPoints|freshestCRL):roundtrip$/.test(c),
     },
     {
-        id: 'AKI-KEYIDENTIFIER-EXPLICIT-TAG',
-        why: 'AuthorityKeyIdentifier writes keyIdentifier [0] as an explicit wrapper (A0 16 04 14 ...) instead of IMPLICIT (80 14 ...).',
-        match: (_t, c) => c === 'ext:authorityKeyIdentifier:roundtrip',
-    },
-    {
-        id: 'AKI-AUTHORITYCERTISSUER-PARSE',
-        why: 'AuthorityKeyIdentifier cannot parse authorityCertIssuer [1] (GeneralNames is implicit, so the content is the GeneralName elements, not a SEQUENCE).',
-        match: (t, c) =>
-            c === 'ext:authorityKeyIdentifier:parse' &&
-            /akid_(issuer_only|keyid_issuer)/.test(t),
-    },
-    {
         id: 'KEYUSAGE-NOT-MINIMAL-DER',
         why: 'KeyUsage always encodes a two-byte BIT STRING; DER requires trailing zero bits of a named bit list to be dropped (03 02 07 80, not 03 03 07 80 00).',
         match: (t, c) =>
