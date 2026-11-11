@@ -131,12 +131,12 @@ export class SignerInfo extends PkiBase<SignerInfo> {
 
         const signerIdAsn1 = this.sid.toAsn1()
         // Add the SignerIdentifier (CHOICE)
-        if (this.sid instanceof IssuerAndSerialNumber) {
-            values.push(signerIdAsn1)
-        } else {
+        if (!(this.sid instanceof IssuerAndSerialNumber)) {
+            // subjectKeyIdentifier [0] IMPLICIT SubjectKeyIdentifier
             signerIdAsn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC
             signerIdAsn1.idBlock.tagNumber = 0 // [0]
         }
+        values.push(signerIdAsn1)
 
         values.push(this.digestAlgorithm.toAsn1())
 

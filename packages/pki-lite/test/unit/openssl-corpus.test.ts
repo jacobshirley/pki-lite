@@ -81,13 +81,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             t === 'key/ecprivate_explicitparams.der',
     },
     {
-        id: 'SIGNERIDENTIFIER-SKI',
-        why: 'A SignerInfo/KeyTransRecipientInfo identified by subjectKeyIdentifier ([0] IMPLICIT) cannot be parsed.',
-        match: (t, c) =>
-            /^(signedData|envelopedData):(parse|roundtrip|decrypt)$/.test(c) &&
-            /sd_keyid|ed_rsa_keyid/.test(t),
-    },
-    {
         id: 'RECIPIENTINFO-KARI-KEKRI-PWRI',
         why: 'EnvelopedData cannot parse KeyAgreeRecipientInfo, KEKRecipientInfo or PasswordRecipientInfo (implicitly tagged choices expected to be plain SEQUENCEs).',
         match: (t, c) =>
@@ -124,7 +117,7 @@ const KNOWN_ISSUES: KnownIssue[] = [
         why: 'EnvelopedData.decrypt cannot unwrap RSA PKCS#1 v1.5 key transport (rsaEncryption), the OpenSSL default.',
         match: (t, c) =>
             c === 'envelopedData:decrypt' &&
-            /ed_rsa_(3des|aes128|aes256)|ed_stream|ed_empty/.test(t),
+            /ed_rsa_(3des|aes128|aes256|keyid)|ed_stream|ed_empty/.test(t),
     },
     {
         id: 'PKCS12-3DES-UNSUPPORTED',
