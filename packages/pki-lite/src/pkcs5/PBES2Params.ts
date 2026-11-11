@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, derToAsn1, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 
 /**
@@ -26,27 +32,21 @@ export class PBES2Params extends PkiBase<PBES2Params> {
     }
 
     toAsn1() {
-        return new asn1js.Sequence({
-            value: [
-                this.keyDerivationFunc.toAsn1(),
-                this.encryptionScheme.toAsn1(),
-            ],
-        })
+        return der.sequence([
+            this.keyDerivationFunc.toAsn1(),
+            this.encryptionScheme.toAsn1(),
+        ])
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): PBES2Params {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): PBES2Params {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Error('PBES2Params: expected SEQUENCE')
         }
-        if (asn1.valueBlock.value.length !== 2) {
+        if (asn1.children.length !== 2) {
             throw new Error('PBES2Params: expected 2 elements in SEQUENCE')
         }
-        const keyDerivationFunc = AlgorithmIdentifier.fromAsn1(
-            asn1.valueBlock.value[0],
-        )
-        const encryptionScheme = AlgorithmIdentifier.fromAsn1(
-            asn1.valueBlock.value[1],
-        )
+        const keyDerivationFunc = AlgorithmIdentifier.fromAsn1(asn1.children[0])
+        const encryptionScheme = AlgorithmIdentifier.fromAsn1(asn1.children[1])
         return new PBES2Params({
             keyDerivationFunc,
             encryptionScheme,

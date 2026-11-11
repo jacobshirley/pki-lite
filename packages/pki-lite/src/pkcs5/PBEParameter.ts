@@ -1,5 +1,5 @@
 import { OctetString } from '../asn1/OctetString.js'
-import { Asn1BaseBlock, PkiBase, asn1js } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 
 /**
  * PBEParameter ASN.1 structure
@@ -23,23 +23,21 @@ export class PBEParameter extends PkiBase<PBEParameter> {
     }
 
     toAsn1() {
-        return new asn1js.Sequence({
-            value: [
-                this.salt.toAsn1(),
-                new asn1js.Integer({ value: this.iterationCount }),
-            ],
-        })
+        return der.sequence([
+            this.salt.toAsn1(),
+            der.integer(this.iterationCount),
+        ])
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): PBEParameter {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): PBEParameter {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Error(
                 'Invalid ASN.1 structure: expected Sequence but got ' +
                     asn1.constructor.name,
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length !== 2) {
             throw new Error(
                 `Invalid ASN.1 structure: expected 2 elements, got ${values.length}`,
@@ -49,21 +47,21 @@ export class PBEParameter extends PkiBase<PBEParameter> {
         const saltAsn1 = values[0]
         const iterationCountAsn1 = values[1]
 
-        if (!(saltAsn1 instanceof asn1js.OctetString)) {
+        if (!saltAsn1.is(UniversalTag.OctetString)) {
             throw new Error(
                 'Invalid ASN.1 structure: expected OctetString for salt',
             )
         }
 
-        if (!(iterationCountAsn1 instanceof asn1js.Integer)) {
+        if (!iterationCountAsn1.is(UniversalTag.Integer)) {
             throw new Error(
                 'Invalid ASN.1 structure: expected Integer for iterationCount',
             )
         }
 
         return new PBEParameter({
-            salt: saltAsn1.valueBlock.valueHexView,
-            iterationCount: iterationCountAsn1.valueBlock.valueDec,
+            salt: saltAsn1.bytes(),
+            iterationCount: der.readNumber(iterationCountAsn1),
         })
     }
 }
