@@ -88,15 +88,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             /ed_ec_kari|ed_multi|ed_kekri|ed_pwri/.test(t),
     },
     {
-        id: 'CMS-RSA-SIGNERINFO-ALGORITHM',
-        why: 'SignerInfo.signatureAlgorithm = rsaEncryption (what OpenSSL writes for RSA PKCS#1 v1.5) is rejected with "Unsupported algorithm: RSA", so plain RSA CMS signatures cannot be verified.',
-        match: (t, c) =>
-            c === 'signedData:verify' &&
-            /sd_(big|certfile_chain|detached_rsa|attached_rsa|noattr|nosmimecap|econtent_type|keyid|sha512|empty_content)/.test(
-                t,
-            ),
-    },
-    {
         id: 'AUTHENVELOPEDDATA-MISPARSED',
         why:
             'AuthEnvelopedData (1.2.840.113549.1.9.16.1.23, what `openssl cms -encrypt -aes-256-gcm` writes) is ' +
