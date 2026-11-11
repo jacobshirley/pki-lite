@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { Integer } from '../asn1/Integer.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -52,28 +52,26 @@ export class GCMParameters extends PkiBase<GCMParameters> {
      * @param asn1 The ASN.1 structure
      * @returns A new GCMParameters instance
      */
-    static fromAsn1(asn1: Asn1BaseBlock): GCMParameters {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): GCMParameters {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('GCMParameters must be a SEQUENCE')
         }
 
-        const sequenceValue = asn1.valueBlock.value
+        const sequenceValue = asn1.children
         if (sequenceValue.length < 1 || sequenceValue.length > 2) {
             throw new Asn1ParseError(
                 'GCMParameters sequence must have 1 or 2 elements',
             )
         }
 
-        const aesNonce = new Uint8Array(
-            (sequenceValue[0] as asn1js.OctetString).valueBlock.valueHexView,
-        )
+        const aesNonce = der.readOctetString(sequenceValue[0])
 
         let aesICVlen: number | undefined
         if (sequenceValue.length > 1) {
-            if (!(sequenceValue[1] instanceof asn1js.Integer)) {
+            if (!sequenceValue[1].is(UniversalTag.Integer)) {
                 throw new Asn1ParseError('aes-ICVlen must be an INTEGER')
             }
-            aesICVlen = sequenceValue[1].valueBlock.valueDec
+            aesICVlen = der.readNumber(sequenceValue[1])
         }
 
         return new GCMParameters({ aesNonce, aesICVlen })
@@ -84,9 +82,7 @@ export class GCMParameters extends PkiBase<GCMParameters> {
      *
      * @returns The ASN.1 representation of the GCMParameters
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [this.aesNonce.toAsn1(), this.aesICVlen.toAsn1()],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([this.aesNonce.toAsn1(), this.aesICVlen.toAsn1()])
     }
 }

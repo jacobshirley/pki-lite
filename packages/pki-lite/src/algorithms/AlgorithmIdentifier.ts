@@ -1,7 +1,8 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     PkiBase,
+    UniversalTag,
     Asn1Any,
     ObjectIdentifierString,
     derToAsn1,
@@ -103,16 +104,11 @@ export class AlgorithmIdentifier extends PkiBase<AlgorithmIdentifier> {
      *
      * @returns The ASN.1 SEQUENCE structure
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [this.algorithm.toAsn1()]
-
-        if (this.parameters !== undefined) {
-            values.push(this.parameters.toAsn1())
-        }
-
-        return new asn1js.Sequence({
-            value: values,
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            this.algorithm.toAsn1(),
+            this.parameters?.toAsn1(),
+        ])
     }
 
     /**
@@ -132,26 +128,26 @@ export class AlgorithmIdentifier extends PkiBase<AlgorithmIdentifier> {
      * @param asn1 The ASN.1 structure
      * @returns An AlgorithmIdentifier
      */
-    static fromAsn1(asn1: Asn1BaseBlock): AlgorithmIdentifier {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): AlgorithmIdentifier {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
-                'Expected Sequence but got ' + asn1.constructor.name,
+                'Expected Sequence but got ' + asn1.describe(),
             )
         }
 
-        const algorithm = asn1.valueBlock.value[0]
-        if (!(algorithm instanceof asn1js.ObjectIdentifier)) {
+        const algorithm = asn1.children[0]
+        if (!algorithm?.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError(
                 'Expected ObjectIdentifier for algorithm but got ' +
-                    algorithm.constructor.name,
+                    (algorithm?.describe() ?? 'nothing'),
             )
         }
 
-        const algorithmOid = algorithm.valueBlock.toString()
+        const algorithmOid = der.readOid(algorithm)
 
         let parameters: Asn1Any | undefined = undefined
-        if (asn1.valueBlock.value.length > 1) {
-            const param = asn1.valueBlock.value[1]
+        if (asn1.children.length > 1) {
+            const param = asn1.children[1]
             // Convert parameter to appropriate Asn1Any type
             parameters = new Any({ derBytes: param })
         }
@@ -278,7 +274,7 @@ export class DigestAlgorithmIdentifier extends AlgorithmIdentifier {
         )
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): DigestAlgorithmIdentifier {
+    static fromAsn1(asn1: Asn1Node): DigestAlgorithmIdentifier {
         const algId = AlgorithmIdentifier.fromAsn1(asn1)
         return new DigestAlgorithmIdentifier({
             algorithm: algId.algorithm.value,
@@ -406,7 +402,7 @@ export class SignatureAlgorithmIdentifier extends AlgorithmIdentifier {
         )
     }
 
-    static fromAsn1(asn1: asn1js.BaseBlock): SignatureAlgorithmIdentifier {
+    static fromAsn1(asn1: Asn1Node): SignatureAlgorithmIdentifier {
         const algId = AlgorithmIdentifier.fromAsn1(asn1)
         return new SignatureAlgorithmIdentifier({
             algorithm: algId.algorithm.value,
@@ -465,7 +461,7 @@ export class KeyEncryptionAlgorithmIdentifier extends AlgorithmIdentifier {
         )
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): KeyEncryptionAlgorithmIdentifier {
+    static fromAsn1(asn1: Asn1Node): KeyEncryptionAlgorithmIdentifier {
         const algId = AlgorithmIdentifier.fromAsn1(asn1)
         return new KeyEncryptionAlgorithmIdentifier({
             algorithm: algId.algorithm.value,
@@ -533,9 +529,7 @@ export class ContentEncryptionAlgorithmIdentifier extends AlgorithmIdentifier {
         )
     }
 
-    static fromAsn1(
-        asn1: asn1js.BaseBlock,
-    ): ContentEncryptionAlgorithmIdentifier {
+    static fromAsn1(asn1: Asn1Node): ContentEncryptionAlgorithmIdentifier {
         const algId = AlgorithmIdentifier.fromAsn1(asn1)
         return new ContentEncryptionAlgorithmIdentifier({
             algorithm: algId.algorithm.value,
@@ -578,7 +572,7 @@ export class PSourceAlgorithm extends AlgorithmIdentifier {
         })
     }
 
-    static fromAsn1(value: Asn1BaseBlock): PSourceAlgorithm {
+    static fromAsn1(value: Asn1Node): PSourceAlgorithm {
         const algorithm = AlgorithmIdentifier.fromAsn1(value)
 
         if (algorithm.algorithm.toString() !== OIDs.RSA.PSPECIFIED) {
