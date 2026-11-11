@@ -83,9 +83,8 @@ export class RecipientKeyIdentifier extends PkiBase<RecipientKeyIdentifier> {
         let date: Date | undefined = undefined
         if (values[currentIndex] instanceof asn1js.GeneralizedTime) {
             date = new Date(
-                (
-                    values[currentIndex] as asn1js.GeneralizedTime
-                ).valueBlock.value,
+                (values[currentIndex] as asn1js.GeneralizedTime).valueBlock
+                    .value,
             )
             currentIndex++
         }

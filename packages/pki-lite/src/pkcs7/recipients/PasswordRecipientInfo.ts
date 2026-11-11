@@ -2,6 +2,7 @@ import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { CMSVersion } from '../CMSVersion.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
+import { implicitTag, withUniversalTag } from '../../core/tagging.js'
 
 /**
  * Represents a PasswordRecipientInfo structure as defined in RFC 5652.
@@ -53,17 +54,10 @@ export class PasswordRecipientInfo extends PkiBase<PasswordRecipientInfo> {
             new asn1js.Integer({ value: this.version }),
         ]
 
-        // Add keyDerivationAlgorithm if present
+        // keyDerivationAlgorithm [0] IMPLICIT AlgorithmIdentifier: the algorithm's
+        // OID and parameters sit directly inside the [0]
         if (this.keyDerivationAlgorithm) {
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT_SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [this.keyDerivationAlgorithm.toAsn1()],
-                }),
-            )
+            values.push(implicitTag(this.keyDerivationAlgorithm.toAsn1(), 0))
         }
 
         // Add keyEncryptionAlgorithm and encryptedKey
@@ -116,9 +110,14 @@ export class PasswordRecipientInfo extends PkiBase<PasswordRecipientInfo> {
             values[currentIndex].idBlock.tagNumber === 0
         ) {
             const constructed = values[currentIndex] as asn1js.Constructed
-            const keyDerivationAsn1 = constructed.valueBlock.value[0]
-            keyDerivationAlgorithm =
-                AlgorithmIdentifier.fromAsn1(keyDerivationAsn1)
+            const [first] = constructed.valueBlock.value
+            // Earlier versions of this library wrapped the SEQUENCE in an explicit [0]
+            keyDerivationAlgorithm = AlgorithmIdentifier.fromAsn1(
+                constructed.valueBlock.value.length === 1 &&
+                    first instanceof asn1js.Sequence
+                    ? first
+                    : withUniversalTag(constructed, 16),
+            )
             currentIndex++
         }
 

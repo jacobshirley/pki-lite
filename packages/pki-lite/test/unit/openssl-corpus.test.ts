@@ -81,13 +81,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
             t === 'key/ecprivate_explicitparams.der',
     },
     {
-        id: 'RECIPIENTINFO-KARI-KEKRI-PWRI',
-        why: 'EnvelopedData cannot parse KeyAgreeRecipientInfo, KEKRecipientInfo or PasswordRecipientInfo (implicitly tagged choices expected to be plain SEQUENCEs).',
-        match: (t, c) =>
-            /^envelopedData:(parse|roundtrip)$/.test(c) &&
-            /ed_ec_kari|ed_multi|ed_kekri|ed_pwri/.test(t),
-    },
-    {
         id: 'AUTHENVELOPEDDATA-MISPARSED',
         why:
             'AuthEnvelopedData (1.2.840.113549.1.9.16.1.23, what `openssl cms -encrypt -aes-256-gcm` writes) is ' +
