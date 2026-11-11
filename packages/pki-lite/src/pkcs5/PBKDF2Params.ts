@@ -4,7 +4,7 @@ import {
 } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { OIDs } from '../core/OIDs.js'
-import { asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 
 /**
  * Represents PBKDF2-params structure.
@@ -52,56 +52,52 @@ export class PBKDF2Params extends PkiBase<PBKDF2Params> {
     }
 
     toAsn1() {
-        const values = [
-            this.salt.toAsn1(),
-            new asn1js.Integer({ value: this.iterationCount }),
-        ]
+        const values = [this.salt.toAsn1(), der.integer(this.iterationCount)]
         if (this.keyLength !== undefined) {
-            values.push(new asn1js.Integer({ value: this.keyLength }))
+            values.push(der.integer(this.keyLength))
         }
         if (this.prf.parameters) {
             values.push(this.prf.toAsn1())
         }
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: asn1js.BaseBlock): PBKDF2Params {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): PBKDF2Params {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Error('PBKDF2: expected SEQUENCE')
         }
-        const valueBlocks = asn1.valueBlock.value
+        const valueBlocks = asn1.children
         if (valueBlocks.length < 2) {
             throw new Error('PBKDF2: expected at least 2 elements in SEQUENCE')
         }
 
         let salt: OctetString | AlgorithmIdentifier
         const saltBlock = valueBlocks[0]
-        if (saltBlock instanceof asn1js.OctetString) {
-            salt = new OctetString({ bytes: saltBlock.valueBlock.valueHexView })
-        } else if (saltBlock instanceof asn1js.Sequence) {
+        if (saltBlock.is(UniversalTag.OctetString)) {
+            salt = new OctetString({ bytes: saltBlock.bytes() })
+        } else if (saltBlock.is(UniversalTag.Sequence)) {
             salt = AlgorithmIdentifier.fromAsn1(saltBlock)
         } else {
             throw new Error('PBKDF2: invalid salt type')
         }
 
         const iterationCountBlock = valueBlocks[1]
-        if (!(iterationCountBlock instanceof asn1js.Integer)) {
+        if (!iterationCountBlock.is(UniversalTag.Integer)) {
             throw new Error('PBKDF2: iterationCount must be INTEGER')
         }
-        const iterationCount = iterationCountBlock.valueBlock.valueDec
+        const iterationCount = der.readNumber(iterationCountBlock)
 
         let keyLength: number | undefined
         let prf: AlgorithmIdentifier | undefined
 
         let index = 2
 
-        if (valueBlocks[index] instanceof asn1js.Integer) {
-            keyLength = (valueBlocks[index] as asn1js.Integer).valueBlock
-                .valueDec
+        if (valueBlocks[index]?.is(UniversalTag.Integer)) {
+            keyLength = der.readNumber(valueBlocks[index])
             index++
         }
 
-        if (valueBlocks[index] instanceof asn1js.Sequence) {
+        if (valueBlocks[index]?.is(UniversalTag.Sequence)) {
             prf = AlgorithmIdentifier.fromAsn1(valueBlocks[index])
         }
 
