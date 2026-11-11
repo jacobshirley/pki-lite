@@ -262,9 +262,9 @@ describe('CertificateBuilder', () => {
         expect(cert.tbsCertificate.extensions?.length).toBe(2)
     })
 
-    test('generateSerialNumber never yields a non-minimal DER integer', () => {
-        // Force the worst case: random bytes that start with 0x00 / 0x80
-        for (const first of [0x00, 0x80]) {
+    test('generateSerialNumber always yields a minimal 20-octet DER integer', () => {
+        // Force the worst cases: random bytes that start with 0x00 / 0x80 / 0xff
+        for (const first of [0x00, 0x80, 0xff]) {
             const spy = vi
                 .spyOn(crypto, 'getRandomValues')
                 .mockImplementation((array) => {
@@ -278,8 +278,11 @@ describe('CertificateBuilder', () => {
                 const serial = (
                     builder as unknown as { serialNumber: Uint8Array }
                 ).serialNumber
-                // Leading zero stripped (19 bytes), never a 21-byte sign-padded one
-                expect(serial).toEqual(new Uint8Array(19).fill(0x11))
+                // never a stripped 19-byte or sign-padded 21-byte one
+                expect(serial.length).toBe(20)
+                expect(serial[0] & 0x80).toBe(0)
+                expect(serial[0]).not.toBe(0)
+                expect(serial.slice(1)).toEqual(new Uint8Array(19).fill(0x11))
             } finally {
                 spy.mockRestore()
             }

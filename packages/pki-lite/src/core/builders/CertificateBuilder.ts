@@ -204,17 +204,17 @@ export class CertificateBuilder implements AsyncBuilder<Certificate> {
     }
 
     /**
-     * Generates a random serial number.
+     * Generates a random 20-octet serial number (158 random bits).
      *
      * @returns This builder for chaining
      */
     generateSerialNumber(): this {
         const serial = new Uint8Array(20)
         crypto.getRandomValues(serial)
-        // Clear the high bit so setSerialNumber() doesn't add a sign byte
-        // (RFC 5280 limits serials to 20 octets); it also strips a leading
-        // 0x00 so the result is always a minimal DER INTEGER.
-        serial[0] &= 0x7f
+        // First byte in 0x40..0x7f: the high bit clear, so no sign byte is needed
+        // (RFC 5280 limits serials to 20 octets), and never zero, so there is no
+        // leading 0x00 to strip. Every serial is a minimal DER INTEGER of exactly 20 octets.
+        serial[0] = (serial[0] & 0x7f) | 0x40
         return this.setSerialNumber(serial)
     }
 
