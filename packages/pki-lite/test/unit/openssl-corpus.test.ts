@@ -115,11 +115,6 @@ const KNOWN_ISSUES: KnownIssue[] = [
         why: 'PKCS#12 pbeWithSHAAnd3-KeyTripleDES-CBC is not supported.',
         match: (t, c) => c === 'extractItems' && t === 'p12/legacy_3des.p12',
     },
-    {
-        id: 'PKCS12-PLAIN-KEYBAG',
-        why: 'An unencrypted keyBag (openssl pkcs12 -keypbe NONE) is not returned by getPrivateKeys.',
-        match: (t, c) => c === 'extractItems' && t === 'p12/keypbe_none.p12',
-    },
 ]
 
 function register(
