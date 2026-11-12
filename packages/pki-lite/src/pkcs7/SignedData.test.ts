@@ -10,7 +10,7 @@ import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
 import { Certificate } from '../x509/Certificate.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { DigestAlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { UniversalTag } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 import { TBSCertList } from '../x509/TBSCertList.js'
 import { Extension } from '../x509/Extension.js'
@@ -182,8 +182,8 @@ describe('SignedData', () => {
 
         const asn1 = signedData.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect((asn1 as any).valueBlock.value).toHaveLength(4) // version, digestAlgorithms, encapContentInfo, signerInfos
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(4) // version, digestAlgorithms, encapContentInfo, signerInfos
     })
 
     it('should convert to string', () => {

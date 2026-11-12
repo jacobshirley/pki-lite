@@ -1,9 +1,11 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     derToAsn1,
     PkiBase,
     PkiSet,
+    TagClass,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import {
     AlgorithmIdentifier,
@@ -31,7 +33,7 @@ import { OctetString } from '../asn1/OctetString.js'
  * ```
  */
 export class UnsignedAttributes extends Attributes {
-    static fromAsn1(asn1: Asn1BaseBlock): UnsignedAttributes {
+    static fromAsn1(asn1: Asn1Node): UnsignedAttributes {
         return new UnsignedAttributes(...super.fromAsn1(asn1))
     }
 }
@@ -47,7 +49,7 @@ export class UnsignedAttributes extends Attributes {
  * ```
  */
 export class SignedAttributes extends Attributes {
-    static fromAsn1(asn1: Asn1BaseBlock): SignedAttributes {
+    static fromAsn1(asn1: Asn1Node): SignedAttributes {
         return new SignedAttributes(...super.fromAsn1(asn1))
     }
 }
@@ -124,17 +126,14 @@ export class SignerInfo extends PkiBase<SignerInfo> {
             : undefined
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
-            new asn1js.Integer({ value: this.version }),
-        ]
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [der.integer(this.version)]
 
-        const signerIdAsn1 = this.sid.toAsn1()
+        let signerIdAsn1 = this.sid.toAsn1()
         // Add the SignerIdentifier (CHOICE)
         if (!(this.sid instanceof IssuerAndSerialNumber)) {
             // subjectKeyIdentifier [0] IMPLICIT SubjectKeyIdentifier
-            signerIdAsn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC
-            signerIdAsn1.idBlock.tagNumber = 0 // [0]
+            signerIdAsn1 = signerIdAsn1.implicit(0) // [0] IMPLICIT
         }
         values.push(signerIdAsn1)
 
@@ -142,31 +141,24 @@ export class SignerInfo extends PkiBase<SignerInfo> {
 
         // SignedAttrs [0] IMPLICIT (optional)
         if (this.signedAttrs && this.signedAttrs.length > 0) {
-            const attributesAsn1 = this.signedAttrs.toAsn1()
-
-            attributesAsn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC
-            attributesAsn1.idBlock.tagNumber = 0 // [0]
-            attributesAsn1.idBlock.isConstructed = true
+            const attributesAsn1 = this.signedAttrs.toAsn1().implicit(0) // [0] IMPLICIT
 
             values.push(attributesAsn1)
         }
 
         values.push(
             this.signatureAlgorithm.toAsn1(),
-            new asn1js.OctetString({ valueHex: this.signature }),
+            der.octetString(this.signature),
         )
 
         // UnsignedAttrs [1] IMPLICIT (optional)
         if (this.unsignedAttrs && this.unsignedAttrs.length > 0) {
-            const attributesAsn1 = this.unsignedAttrs.toAsn1()
-            attributesAsn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC
-            attributesAsn1.idBlock.tagNumber = 1 // [1]
-            attributesAsn1.idBlock.isConstructed = true
+            const attributesAsn1 = this.unsignedAttrs.toAsn1().implicit(1) // [1] IMPLICIT
 
             values.push(attributesAsn1)
         }
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
     /**
@@ -175,14 +167,14 @@ export class SignerInfo extends PkiBase<SignerInfo> {
      * @param asn1 The ASN.1 structure
      * @returns A SignerInfo object
      */
-    static fromAsn1(asn1: Asn1BaseBlock): SignerInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): SignerInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 5) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected at least 5 elements, got ${values.length}`,
@@ -192,12 +184,12 @@ export class SignerInfo extends PkiBase<SignerInfo> {
         let index = 0
 
         // Version
-        if (!(values[index] instanceof asn1js.Integer)) {
+        if (!values[index]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Integer for version',
             )
         }
-        const version = (values[index] as asn1js.Integer).valueBlock.valueDec
+        const version = der.readNumber(values[index])
         index++
 
         // SignerIdentifier (CHOICE)
@@ -212,8 +204,8 @@ export class SignerInfo extends PkiBase<SignerInfo> {
         let signedAttrs: Attribute[] | undefined = undefined
         if (
             index < values.length &&
-            values[index].idBlock.tagClass === 3 && // CONTEXT-SPECIFIC
-            values[index].idBlock.tagNumber === 0 // [0]
+            values[index].tagClass === TagClass.Context && // CONTEXT-SPECIFIC
+            values[index].tag === 0 // [0]
         ) {
             signedAttrs = SignedAttributes.fromAsn1(values[index])
             index++
@@ -224,22 +216,20 @@ export class SignerInfo extends PkiBase<SignerInfo> {
         index++
 
         // Signature
-        if (!(values[index] instanceof asn1js.OctetString)) {
+        if (!values[index]?.is(UniversalTag.OctetString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OctetString for signature',
             )
         }
-        const signature = new Uint8Array(
-            (values[index] as asn1js.OctetString).valueBlock.valueHexView,
-        )
+        const signature = new Uint8Array(values[index].bytes())
         index++
 
         // UnsignedAttrs (optional)
         let unsignedAttrs: Attribute[] | undefined = undefined
         if (
             index < values.length &&
-            values[index].idBlock.tagClass === 3 && // CONTEXT-SPECIFIC
-            values[index].idBlock.tagNumber === 1 // [1]
+            values[index].tagClass === TagClass.Context && // CONTEXT-SPECIFIC
+            values[index].tag === 1 // [1]
         ) {
             unsignedAttrs = UnsignedAttributes.fromAsn1(values[index])
             index++
@@ -267,7 +257,7 @@ export class SignerInfo extends PkiBase<SignerInfo> {
             // When signed attributes are present, the signature is computed over the
             // DER encoding of the SignedAttributes value
             const asn1 = this.signedAttrs.toAsn1()
-            return new Uint8Array(asn1.toBER(false))
+            return asn1.encode()
         }
 
         if (data) {

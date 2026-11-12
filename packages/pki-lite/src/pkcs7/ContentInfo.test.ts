@@ -1,6 +1,6 @@
 import { describe, it, expect, assert } from 'vitest'
 import { ContentInfo } from './ContentInfo.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 
 describe('ContentInfo', () => {
@@ -28,9 +28,8 @@ describe('ContentInfo', () => {
         })
         const asn1 = contentInfo.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value).toHaveLength(1) // Only contentType
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(1) // Only contentType
     })
 
     it('should convert to ASN.1 structure with Uint8Array<ArrayBuffer> content', () => {
@@ -41,9 +40,8 @@ describe('ContentInfo', () => {
         })
         const asn1 = contentInfo.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value).toHaveLength(2) // contentType + content
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(2) // contentType + content
     })
 
     it('should convert to ASN.1 structure with string content', () => {
@@ -54,23 +52,21 @@ describe('ContentInfo', () => {
         })
         const asn1 = contentInfo.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value).toHaveLength(2) // contentType + content
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(2) // contentType + content
     })
 
     it('should convert to ASN.1 structure with ASN.1 content', () => {
         // Use a content that's compatible with anyToAsn1
-        const content = new Uint8Array([1, 2, 3, 4, 5]) // Use Uint8Array<ArrayBuffer> instead of asn1js.Integer
+        const content = new Uint8Array([0x04, 0x03, 1, 2, 3]) // OCTET STRING
         const contentInfo = new ContentInfo({
             contentType: OIDs.PKCS7.DATA,
             content: content,
         })
         const asn1 = contentInfo.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value).toHaveLength(2) // contentType + content
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(2) // contentType + content
     })
 
     it('should have correct properties', () => {
@@ -94,16 +90,15 @@ describe('ContentInfo', () => {
 
     it('should handle object with toAsn1 method as content', () => {
         // Use a simple TS-compatible content that implements PkiBase
-        const content = new Uint8Array([1, 2, 3, 4, 5])
+        const content = new Uint8Array([0x04, 0x03, 1, 2, 3]) // OCTET STRING
         const contentInfo = new ContentInfo({
             contentType: OIDs.PKCS7.DATA,
             content: content,
         })
         const asn1 = contentInfo.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value).toHaveLength(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(2)
     })
 
     it('should have correct PKCS#7 content type constants', () => {
@@ -129,7 +124,7 @@ describe('ContentInfo', () => {
     })
 
     it('should parse from ASN.1 structure with Uint8Array<ArrayBuffer> content', () => {
-        const content = new Uint8Array([1, 2, 3, 4, 5])
+        const content = new Uint8Array([0x04, 0x03, 1, 2, 3]) // OCTET STRING
         const originalContentInfo = new ContentInfo({
             contentType: OIDs.PKCS7.DATA,
             content: content,
@@ -179,7 +174,7 @@ describe('ContentInfo', () => {
     })
 
     it('should throw error on invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.Integer({ value: 123 }) // Not a Sequence
+        const invalidAsn1 = der.integer(123) // Not a Sequence
 
         expect(() => ContentInfo.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected Sequence',
@@ -195,7 +190,7 @@ describe('ContentInfo', () => {
     })
 
     it('ContentInfo toString snapshot with content', () => {
-        const content = new Uint8Array([1, 2, 3, 4, 5])
+        const content = new Uint8Array([0x04, 0x03, 1, 2, 3]) // OCTET STRING
         const contentInfo = new ContentInfo({
             contentType: OIDs.PKCS7.DATA,
             content: content,
@@ -204,7 +199,7 @@ describe('ContentInfo', () => {
           "[ContentInfo] SEQUENCE :
             OBJECT IDENTIFIER : 1.2.840.113549.1.7.1
             [0] :
-              BOOLEAN: TRUE"
+              OCTET STRING : 010203"
         `)
     })
 
@@ -225,7 +220,7 @@ describe('ContentInfo', () => {
         })
         expect(contentInfo.toPem()).toMatchInlineSnapshot(`
           "-----BEGIN CONTENTINFO-----
-          MBwGCSqGSIb3DQEHAaAPEw1IZWxsbywgV29ybGQh
+          MBwGCSqGSIb3DQEHAaAPDA1IZWxsbywgV29ybGQh
           -----END CONTENTINFO-----"
         `)
     })

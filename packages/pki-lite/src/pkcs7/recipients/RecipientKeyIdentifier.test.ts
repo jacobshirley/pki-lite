@@ -2,7 +2,7 @@ import { assert, describe, expect, test } from 'vitest'
 import { RecipientKeyIdentifier } from './RecipientKeyIdentifier.js'
 import { KeyIdentifier } from './KeyIdentifier.js'
 import { OtherKeyAttribute } from './OtherKeyAttribute.js'
-import { asn1js } from '../../core/PkiBase.js'
+import { der, UniversalTag } from '../../core/PkiBase.js'
 
 describe('RecipientKeyIdentifier', () => {
     test('can be created with only subjectKeyIdentifier', () => {
@@ -39,13 +39,11 @@ describe('RecipientKeyIdentifier', () => {
         const subjectKeyIdentifier = new KeyIdentifier({ bytes: keyId })
         const rki = new RecipientKeyIdentifier({ subjectKeyIdentifier })
         const asn1 = rki.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(1)
-        const keyIdBlock = asn1.valueBlock.value[0]
-        assert(keyIdBlock instanceof asn1js.OctetString)
-        expect(new Uint8Array(keyIdBlock.valueBlock.valueHexView)).toEqual(
-            keyId,
-        )
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(1)
+        const keyIdBlock = asn1.children[0]
+        assert(keyIdBlock.is(UniversalTag.OctetString))
+        expect(keyIdBlock.bytes()).toEqual(keyId)
     })
 
     test('can be converted to ASN.1 with date and other', () => {
@@ -59,10 +57,10 @@ describe('RecipientKeyIdentifier', () => {
             other,
         })
         const asn1 = rki.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3)
-        assert(asn1.valueBlock.value[1] instanceof asn1js.GeneralizedTime)
-        assert(asn1.valueBlock.value[2] instanceof asn1js.Sequence)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3)
+        assert(asn1.children[1]?.is(UniversalTag.GeneralizedTime))
+        assert(asn1.children[2]?.is(UniversalTag.Sequence))
     })
 
     test('can be parsed from ASN.1 with only subjectKeyIdentifier', () => {
@@ -96,14 +94,14 @@ describe('RecipientKeyIdentifier', () => {
     })
 
     test('throws error on invalid ASN.1 structure type', () => {
-        const asn1 = new asn1js.Integer({ value: 1 })
+        const asn1 = der.integer(1)
         expect(() => RecipientKeyIdentifier.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected Sequence for RecipientKeyIdentifier',
         )
     })
 
     test('throws error on invalid ASN.1 structure element count', () => {
-        const asn1 = new asn1js.Sequence({ value: [] })
+        const asn1 = der.sequence([])
         expect(() => RecipientKeyIdentifier.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected 1-3 elements, got 0',
         )
