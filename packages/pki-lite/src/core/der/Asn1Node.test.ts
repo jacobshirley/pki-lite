@@ -173,4 +173,15 @@ describe('Asn1Node', () => {
             }
         })
     })
+
+    test('isParsed tells parsed nodes from built ones', () => {
+        const built = new Asn1Node({ tag: 5, content: new Uint8Array(0) })
+        expect(built.isParsed).toBe(false)
+        built.encode() // caching the encoding does not make it parsed
+        expect(built.isParsed).toBe(false)
+        const parsed = Asn1Node.parse(hex('30 02 05 00'))
+        expect(parsed.isParsed).toBe(true)
+        expect(parsed.children[0].isParsed).toBe(true)
+        expect(parsed.implicit(1).isParsed).toBe(false)
+    })
 })

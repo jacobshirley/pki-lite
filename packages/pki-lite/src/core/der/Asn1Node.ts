@@ -29,6 +29,7 @@ export class Asn1Node {
     readonly children: readonly Asn1Node[]
 
     private raw?: Uint8Array<ArrayBuffer>
+    private parsed = false
 
     constructor(options: {
         tagClass?: TagClass
@@ -80,6 +81,11 @@ export class Asn1Node {
             this.raw = encode(this)
         }
         return this.raw
+    }
+
+    /** Whether this node was produced by {@link Asn1Node.parse} (not built in code). */
+    get isParsed(): boolean {
+        return this.parsed
     }
 
     /** Whether this node has the given tag (universal by default). */
@@ -285,7 +291,9 @@ function decode(
         }
     }
 
-    ;(node as unknown as { raw: Uint8Array }).raw = input.slice(start, end)
+    const internal = node as unknown as { raw: Uint8Array; parsed: boolean }
+    internal.raw = input.slice(start, end)
+    internal.parsed = true
     return [node, end]
 }
 

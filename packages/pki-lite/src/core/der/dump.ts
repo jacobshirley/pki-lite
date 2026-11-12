@@ -1,4 +1,4 @@
-import type { Asn1Node } from './Asn1Node.js'
+import { Asn1Node } from './Asn1Node.js'
 import { TagClass, UniversalTag } from './tags.js'
 import {
     readBigInt,
@@ -71,6 +71,13 @@ export function dump(node: Asn1Node, indent = ''): string {
             ...node.children.map((child) => dump(child, indent + '  ')),
         ].join('\n')
     }
+    // Like asn1js, show the content of a parsed OCTET STRING / BIT STRING that is
+    // itself exactly one DER value (extension values, public keys, ...) as a tree
+    const encapsulated =
+        universal && node.isParsed ? encapsulatedValue(node) : undefined
+    if (encapsulated) {
+        return `${indent}${name} :\n${dump(encapsulated, indent + '  ')}`
+    }
     if (universal && node.tag === UniversalTag.Null) {
         return `${indent}NULL`
     }
@@ -78,6 +85,30 @@ export function dump(node: Asn1Node, indent = ''): string {
         return `${indent}BOOLEAN: ${attempt(() => (readBoolean(node) ? 'TRUE' : 'FALSE'), node)}`
     }
     return `${indent}${name} : ${universal ? value(node) : hex(node.bytes())}`
+}
+
+function encapsulatedValue(node: Asn1Node): Asn1Node | undefined {
+    let content: Uint8Array
+    if (node.tag === UniversalTag.OctetString) {
+        content = node.bytes()
+    } else if (node.tag === UniversalTag.BitString) {
+        const bits = attemptValue(() => readBitString(node))
+        if (!bits || bits.unusedBits !== 0) return undefined
+        content = bits.bytes
+    } else {
+        return undefined
+    }
+    return content.length >= 2
+        ? attemptValue(() => Asn1Node.parse(content))
+        : undefined
+}
+
+function attemptValue<T>(fn: () => T): T | undefined {
+    try {
+        return fn()
+    } catch {
+        return undefined
+    }
 }
 
 function value(node: Asn1Node): string {
