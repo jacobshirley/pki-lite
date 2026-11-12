@@ -7,7 +7,7 @@ import {
     PKIFreeText,
 } from './TimeStampResp.js'
 import { ContentInfo } from '../pkcs7/ContentInfo.js'
-import { asn1js, derToAsn1 } from '../core/PkiBase.js'
+import { der, derToAsn1, UniversalTag } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 
 describe('PKIFreeText', () => {
@@ -39,12 +39,10 @@ describe('PKIFreeText', () => {
         const freeText = new PKIFreeText({ texts: ['Test message'] })
         const asn1 = freeText.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(1)
-        assert(asn1.valueBlock.value[0] instanceof asn1js.Utf8String)
-        expect(asn1.valueBlock.value[0].valueBlock.value).toEqual(
-            'Test message',
-        )
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(1)
+        assert(asn1.children[0]?.is(UniversalTag.UTF8String))
+        expect(der.readString(asn1.children[0])).toEqual('Test message')
     })
 
     test('roundtrip conversion preserves data', () => {
@@ -171,17 +169,15 @@ describe('PKIStatusInfo', () => {
         })
         const asn1 = statusInfo.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
         // Status
-        assert(asn1.valueBlock.value[0] instanceof asn1js.Integer)
-        expect(asn1.valueBlock.value[0].valueBlock.valueDec).toEqual(
-            PKIStatus.GRANTED,
-        )
+        assert(asn1.children[0]?.is(UniversalTag.Integer))
+        expect(der.readNumber(asn1.children[0])).toEqual(PKIStatus.GRANTED)
 
         // StatusString
-        assert(asn1.valueBlock.value[1] instanceof asn1js.Sequence)
+        assert(asn1.children[1]?.is(UniversalTag.Sequence))
     })
 
     test('roundtrip conversion preserves data', () => {
@@ -230,11 +226,11 @@ describe('TimeStampResp', () => {
         const resp = new TimeStampResp({ status })
         const asn1 = resp.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(1)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(1)
 
         // Status
-        assert(asn1.valueBlock.value[0] instanceof asn1js.Sequence)
+        assert(asn1.children[0]?.is(UniversalTag.Sequence))
     })
 
     test('can be converted to ASN.1 with timestamp token', () => {
@@ -245,14 +241,14 @@ describe('TimeStampResp', () => {
         const resp = new TimeStampResp({ status, timeStampToken })
         const asn1 = resp.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
         // Status
-        assert(asn1.valueBlock.value[0] instanceof asn1js.Sequence)
+        assert(asn1.children[0]?.is(UniversalTag.Sequence))
 
         // TimeStampToken
-        assert(asn1.valueBlock.value[1] instanceof asn1js.Sequence)
+        assert(asn1.children[1]?.is(UniversalTag.Sequence))
     })
 
     test('can be created from ASN.1', () => {
@@ -288,11 +284,11 @@ describe('TimeStampResp', () => {
         const asn1Again = recreated.toAsn1()
 
         expect(original.toDer()).toEqual(recreated.toDer())
-        expect(asn1.toBER(false)).toEqual(asn1Again.toBER(false))
+        expect(asn1.encode()).toEqual(asn1Again.encode())
     })
 
     test('fromAsn1 throws error for invalid structure', () => {
-        const invalidAsn1 = new asn1js.Integer({ value: 1 })
+        const invalidAsn1 = der.integer(1)
 
         expect(() => TimeStampResp.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -300,9 +296,7 @@ describe('TimeStampResp', () => {
     })
 
     test('fromAsn1 throws error for insufficient elements', () => {
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [], // No elements
-        })
+        const invalidAsn1 = der.sequence([]) /* No elements */
 
         expect(() => TimeStampResp.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected at least 1 element',

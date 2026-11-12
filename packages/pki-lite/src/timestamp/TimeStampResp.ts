@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, derToAsn1, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { ContentInfo } from '../pkcs7/ContentInfo.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -104,12 +110,8 @@ export class PKIFreeText extends PkiBase<PKIFreeText> {
      *
      * @returns ASN.1 SEQUENCE of UTF8String values
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: this.texts.map(
-                (text) => new asn1js.Utf8String({ value: text }),
-            ),
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence(this.texts.map((text) => der.utf8String(text)))
     }
 
     /**
@@ -119,20 +121,20 @@ export class PKIFreeText extends PkiBase<PKIFreeText> {
      * @returns The parsed PKIFreeText object
      * @throws Asn1ParseError if the ASN.1 structure is invalid
      */
-    static fromAsn1(asn1: Asn1BaseBlock): PKIFreeText {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): PKIFreeText {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const texts = asn1.valueBlock.value.map((value) => {
-            if (!(value instanceof asn1js.Utf8String)) {
+        const texts = asn1.children.map((value) => {
+            if (!value.is(UniversalTag.UTF8String)) {
                 throw new Asn1ParseError(
                     'Invalid ASN.1 structure: expected UTF8String in PKIFreeText',
                 )
             }
-            return value.valueBlock.value
+            return der.readString(value)
         })
 
         return new PKIFreeText({ texts })
@@ -206,10 +208,8 @@ export class PKIStatusInfo extends PkiBase<PKIStatusInfo> {
      *
      * @returns ASN.1 SEQUENCE containing status and optional fields
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
-            new asn1js.Integer({ value: this.status }),
-        ]
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [der.integer(this.status)]
 
         if (this.statusString) {
             values.push(this.statusString.toAsn1())
@@ -221,17 +221,10 @@ export class PKIStatusInfo extends PkiBase<PKIStatusInfo> {
             const bit = this.failInfo
             const bytes = new Uint8Array(Math.floor(bit / 8) + 1)
             bytes[bytes.length - 1] = 0x80 >> bit % 8
-            values.push(
-                new asn1js.BitString({
-                    valueHex: bytes,
-                    unusedBits: 7 - (bit % 8),
-                }),
-            )
+            values.push(der.bitString(bytes, 7 - (bit % 8)))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
     /**
@@ -241,14 +234,14 @@ export class PKIStatusInfo extends PkiBase<PKIStatusInfo> {
      * @returns The parsed PKIStatusInfo object
      * @throws Asn1ParseError if the ASN.1 structure is invalid
      */
-    static fromAsn1(asn1: Asn1BaseBlock): PKIStatusInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): PKIStatusInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length === 0) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected at least 1 element',
@@ -256,12 +249,12 @@ export class PKIStatusInfo extends PkiBase<PKIStatusInfo> {
         }
 
         // Status
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected INTEGER for status',
             )
         }
-        const status = values[0].valueBlock.valueDec as PKIStatus
+        const status = der.readNumber(values[0]) as PKIStatus
 
         // Optional statusString
         let statusString: PKIFreeText | undefined
@@ -270,11 +263,11 @@ export class PKIStatusInfo extends PkiBase<PKIStatusInfo> {
         for (let i = 1; i < values.length; i++) {
             const value = values[i]
 
-            if (value instanceof asn1js.Sequence) {
+            if (value.is(UniversalTag.Sequence)) {
                 statusString = PKIFreeText.fromAsn1(value)
-            } else if (value instanceof asn1js.BitString) {
+            } else if (value.is(UniversalTag.BitString)) {
                 // the first (normally the only) bit set is the failure
-                const bytes = value.valueBlock.valueHexView
+                const { bytes } = der.readBitString(value)
                 const index = Array.from(bytes).findIndex((byte) => byte !== 0)
                 if (index >= 0) {
                     const leading = Math.clz32(bytes[index]) - 24
@@ -349,16 +342,14 @@ export class TimeStampResp extends PkiBase<TimeStampResp> {
     /**
      * Converts the TimeStampResp to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [this.status.toAsn1()]
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [this.status.toAsn1()]
 
         if (this.timeStampToken) {
             values.push(this.timeStampToken.toAsn1())
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
     /**
@@ -367,14 +358,14 @@ export class TimeStampResp extends PkiBase<TimeStampResp> {
      * @param asn1 The ASN.1 structure
      * @returns A TimeStampResp
      */
-    static fromAsn1(asn1: Asn1BaseBlock): TimeStampResp {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): TimeStampResp {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 1) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected at least 1 element',

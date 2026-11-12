@@ -4,7 +4,7 @@ import { MessageImprint } from './MessageImprint.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Extension } from '../x509/Extension.js'
 import { GeneralName } from '../x509/GeneralName.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, TagClass, UniversalTag } from '../core/PkiBase.js'
 const hex = (b: Uint8Array) =>
     Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
 
@@ -63,32 +63,25 @@ describe('Accuracy', () => {
         })
 
         const asn1 = accuracy.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3)
 
         // Seconds
-        assert(asn1.valueBlock.value[0] instanceof asn1js.Integer)
-        expect(asn1.valueBlock.value[0].valueBlock.valueDec).toEqual(1)
+        assert(asn1.children[0]?.is(UniversalTag.Integer))
+        expect(der.readNumber(asn1.children[0])).toEqual(1)
 
         // Millis [0] and micros [1]: IMPLICIT (primitive), as in the RFC 3161 module
-        expect(asn1.valueBlock.value[1].idBlock.tagClass).toEqual(3)
-        expect(asn1.valueBlock.value[1].idBlock.tagNumber).toEqual(0)
-        expect(asn1.valueBlock.value[1].idBlock.isConstructed).toBe(false)
-        expect(asn1.valueBlock.value[2].idBlock.tagClass).toEqual(3)
-        expect(asn1.valueBlock.value[2].idBlock.tagNumber).toEqual(1)
-        expect(asn1.valueBlock.value[2].idBlock.isConstructed).toBe(false)
+        expect(asn1.children[1].tagClass).toEqual(TagClass.Context)
+        expect(asn1.children[1].tag).toEqual(0)
+        expect(asn1.children[1].constructed).toBe(false)
+        expect(asn1.children[2].tagClass).toEqual(TagClass.Context)
+        expect(asn1.children[2].tag).toEqual(1)
+        expect(asn1.children[2].constructed).toBe(false)
         expect(hex(accuracy.toDer())).toBe('300b020101800201f4810200fa')
     })
 
     test('reads the explicitly tagged form older versions wrote', () => {
-        const explicit = new asn1js.Sequence({
-            value: [
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 0 },
-                    value: [new asn1js.Integer({ value: 500 })],
-                }),
-            ],
-        })
+        const explicit = der.sequence([der.constructed(0, [der.integer(500)])])
         expect(Accuracy.fromAsn1(explicit).millis).toBe(500)
     })
 
@@ -118,7 +111,7 @@ describe('Accuracy', () => {
         const recreated = Accuracy.fromAsn1(asn1)
         const asn1Again = recreated.toAsn1()
 
-        expect(asn1.toBER(false)).toEqual(asn1Again.toBER(false))
+        expect(asn1.encode()).toEqual(asn1Again.encode())
     })
 })
 
@@ -203,24 +196,24 @@ describe('TSTInfo', () => {
         })
 
         const asn1 = tstInfo.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(5)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(5)
 
         // Version
-        assert(asn1.valueBlock.value[0] instanceof asn1js.Integer)
-        expect(asn1.valueBlock.value[0].valueBlock.valueDec).toEqual(1)
+        assert(asn1.children[0]?.is(UniversalTag.Integer))
+        expect(der.readNumber(asn1.children[0])).toEqual(1)
 
         // Policy
-        assert(asn1.valueBlock.value[1] instanceof asn1js.ObjectIdentifier)
+        assert(asn1.children[1]?.is(UniversalTag.ObjectIdentifier))
 
         // MessageImprint
-        assert(asn1.valueBlock.value[2] instanceof asn1js.Sequence)
+        assert(asn1.children[2]?.is(UniversalTag.Sequence))
 
         // SerialNumber
-        assert(asn1.valueBlock.value[3] instanceof asn1js.Integer)
+        assert(asn1.children[3]?.is(UniversalTag.Integer))
 
         // GenTime
-        assert(asn1.valueBlock.value[4] instanceof asn1js.GeneralizedTime)
+        assert(asn1.children[4]?.is(UniversalTag.GeneralizedTime))
     })
 
     test('can be converted to ASN.1 with all parameters', () => {
@@ -249,8 +242,8 @@ describe('TSTInfo', () => {
         })
 
         const asn1 = tstInfo.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(10)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(10)
 
         // Version, Policy, MessageImprint, SerialNumber, GenTime
         // Accuracy, Ordering, Nonce, TSA, Extensions
@@ -329,11 +322,11 @@ describe('TSTInfo', () => {
         const asn1Again = recreated.toAsn1()
 
         expect(original.toDer()).toEqual(recreated.toDer())
-        expect(asn1.toBER(false)).toEqual(asn1Again.toBER(false))
+        expect(asn1.encode()).toEqual(asn1Again.encode())
     })
 
     test('fromAsn1 throws error for invalid structure', () => {
-        const invalidAsn1 = new asn1js.Integer({ value: 1 })
+        const invalidAsn1 = der.integer(1)
 
         expect(() => TSTInfo.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -341,12 +334,7 @@ describe('TSTInfo', () => {
     })
 
     test('fromAsn1 throws error for insufficient elements', () => {
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 1 }),
-                new asn1js.ObjectIdentifier({ value: '1.2.3' }),
-            ],
-        })
+        const invalidAsn1 = der.sequence([der.integer(1), der.oid('1.2.3')])
 
         expect(() => TSTInfo.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected at least 5 elements',
@@ -356,15 +344,13 @@ describe('TSTInfo', () => {
     test('fromAsn1 throws error for unsupported version', () => {
         const messageImprint = createTestMessageImprint()
 
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 2 }), // Version 2, unsupported
-                new asn1js.ObjectIdentifier({ value: '1.2.3' }),
-                messageImprint.toAsn1(),
-                new asn1js.Integer({ value: 1 }),
-                new asn1js.GeneralizedTime({ valueDate: new Date() }),
-            ],
-        })
+        const invalidAsn1 = der.sequence([
+            der.integer(2), // Version 2, unsupported
+            der.oid('1.2.3'),
+            messageImprint.toAsn1(),
+            der.integer(1),
+            der.generalizedTime(new Date()),
+        ])
 
         expect(() => TSTInfo.fromAsn1(invalidAsn1)).toThrow(
             'Unsupported TSTInfo version: 2',
@@ -403,10 +389,8 @@ describe('TSTInfo', () => {
 
         // Should not be included in ASN.1 when false (DEFAULT)
         const asn1 = tstInfo.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        const hasBoolean = asn1.valueBlock.value.some(
-            (v) => v instanceof asn1js.Boolean,
-        )
+        assert(asn1.is(UniversalTag.Sequence))
+        const hasBoolean = asn1.children.some((v) => v.is(UniversalTag.Boolean))
         expect(hasBoolean).toEqual(false)
     })
 
@@ -422,11 +406,9 @@ describe('TSTInfo', () => {
         })
 
         const asn1 = tstInfo.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
+        assert(asn1.is(UniversalTag.Sequence))
 
-        const hasBoolean = asn1.valueBlock.value.some(
-            (v) => v instanceof asn1js.Boolean,
-        )
+        const hasBoolean = asn1.children.some((v) => v.is(UniversalTag.Boolean))
         expect(hasBoolean).toEqual(true)
     })
 })
