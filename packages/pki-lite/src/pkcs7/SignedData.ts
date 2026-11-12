@@ -1,9 +1,10 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
+    derToAsn1,
     PkiBase,
     PkiSet,
-    derToAsn1,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { EncapsulatedContentInfo } from './EncapsulatedContentInfo.js'
 import { SignerInfo } from './SignerInfo.js'
@@ -197,35 +198,30 @@ export class SignedData extends PkiBase<SignedData> {
     /**
      * Converts the SignedData to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         const values = [
-            new asn1js.Integer({ value: this.version }),
+            der.integer(this.version),
             this.digestAlgorithms.toAsn1(),
             this.encapContentInfo.toAsn1(),
         ]
 
         // Certificates [0] IMPLICIT (optional)
         if (this.certificates && this.certificates.length > 0) {
-            const certificatesAsn1 = this.certificates.toAsn1()
-            certificatesAsn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC
-            certificatesAsn1.idBlock.tagNumber = 0 // [0]
+            const certificatesAsn1 = this.certificates.toAsn1().implicit(0) // [0] IMPLICIT
 
             values.push(certificatesAsn1)
         }
 
         // CRLs [1] IMPLICIT (optional)
         if (this.crls && this.crls.length > 0) {
-            const crlsAsn1 = this.crls.toAsn1()
-
-            crlsAsn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC
-            crlsAsn1.idBlock.tagNumber = 1 // [1]
+            const crlsAsn1 = this.crls.toAsn1().implicit(1) // [1] IMPLICIT
 
             values.push(crlsAsn1)
         }
 
         values.push(this.signerInfos.toAsn1())
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
     /**
@@ -234,48 +230,47 @@ export class SignedData extends PkiBase<SignedData> {
      * @param asn1 The ASN.1 structure
      * @returns The SignedData object
      */
-    static fromAsn1(asn1: Asn1BaseBlock): SignedData {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): SignedData {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure for SignedData: expected SEQUENCE',
             )
         }
 
         // Extract the components from the ASN.1 structure
-        if (asn1.valueBlock.value.length < 4) {
+        if (asn1.children.length < 4) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure for SignedData: insufficient elements',
             )
         }
 
         // Extract the version
-        const versionAsn1 = asn1.valueBlock.value[0]
-        if (!(versionAsn1 instanceof asn1js.Integer)) {
+        const versionAsn1 = asn1.children[0]
+        if (!versionAsn1.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure for SignedData: expected INTEGER for version',
             )
         }
 
-        const version = versionAsn1.valueBlock.valueDec
+        const version = der.readNumber(versionAsn1)
 
         // Extract digest algorithms
-        const digestAlgorithmsAsn1 = asn1.valueBlock.value[1]
-        if (!(digestAlgorithmsAsn1 instanceof asn1js.Set)) {
+        const digestAlgorithmsAsn1 = asn1.children[1]
+        if (!digestAlgorithmsAsn1.is(UniversalTag.Set)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure for SignedData: expected SET for digestAlgorithms',
             )
         }
 
         const digestAlgorithms: DigestAlgorithmIdentifier[] = []
-        for (const digestAlgorithmAsn1 of digestAlgorithmsAsn1.valueBlock
-            .value) {
+        for (const digestAlgorithmAsn1 of digestAlgorithmsAsn1.children) {
             digestAlgorithms.push(
                 DigestAlgorithmIdentifier.fromAsn1(digestAlgorithmAsn1),
             )
         }
 
         // Extract encapsulated content info
-        const encapContentInfoAsn1 = asn1.valueBlock.value[2]
+        const encapContentInfoAsn1 = asn1.children[2]
         const encapContentInfo =
             EncapsulatedContentInfo.fromAsn1(encapContentInfoAsn1)
 
@@ -286,17 +281,14 @@ export class SignedData extends PkiBase<SignedData> {
 
         // Check for certificates [0] IMPLICIT
         if (
-            currentIndex < asn1.valueBlock.value.length &&
-            asn1.valueBlock.value[currentIndex] instanceof asn1js.Constructed &&
-            (asn1.valueBlock.value[currentIndex] as asn1js.Constructed).idBlock
-                .tagNumber === 0
+            currentIndex < asn1.children.length &&
+            asn1.children[currentIndex]?.constructed &&
+            asn1.children[currentIndex].tag === 0
         ) {
-            const certificatesAsn1 = asn1.valueBlock.value[
-                currentIndex
-            ] as asn1js.Constructed
+            const certificatesAsn1 = asn1.children[currentIndex]
             certificates = []
 
-            for (const certAsn1 of certificatesAsn1.valueBlock.value) {
+            for (const certAsn1 of certificatesAsn1.children) {
                 certificates.push(CertificateChoices.fromAsn1(certAsn1))
             }
 
@@ -305,17 +297,14 @@ export class SignedData extends PkiBase<SignedData> {
 
         // Check for CRLs [1] IMPLICIT
         if (
-            currentIndex < asn1.valueBlock.value.length &&
-            asn1.valueBlock.value[currentIndex] instanceof asn1js.Constructed &&
-            (asn1.valueBlock.value[currentIndex] as asn1js.Constructed).idBlock
-                .tagNumber === 1
+            currentIndex < asn1.children.length &&
+            asn1.children[currentIndex]?.constructed &&
+            asn1.children[currentIndex].tag === 1
         ) {
-            const crlsAsn1 = asn1.valueBlock.value[
-                currentIndex
-            ] as asn1js.Constructed
+            const crlsAsn1 = asn1.children[currentIndex]
             crls = []
 
-            for (const crlAsn1 of crlsAsn1.valueBlock.value) {
+            for (const crlAsn1 of crlsAsn1.children) {
                 crls.push(RevocationInfoChoice.fromAsn1(crlAsn1))
             }
 
@@ -323,21 +312,21 @@ export class SignedData extends PkiBase<SignedData> {
         }
 
         // Extract signer infos
-        if (currentIndex >= asn1.valueBlock.value.length) {
+        if (currentIndex >= asn1.children.length) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure for SignedData: missing signerInfos',
             )
         }
 
-        const signerInfosAsn1 = asn1.valueBlock.value[currentIndex]
-        if (!(signerInfosAsn1 instanceof asn1js.Set)) {
+        const signerInfosAsn1 = asn1.children[currentIndex]
+        if (!signerInfosAsn1.is(UniversalTag.Set)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure for SignedData: expected SET for signerInfos',
             )
         }
 
         const signerInfos: SignerInfo[] = []
-        for (const signerInfoAsn1 of signerInfosAsn1.valueBlock.value) {
+        for (const signerInfoAsn1 of signerInfosAsn1.children) {
             signerInfos.push(SignerInfo.fromAsn1(signerInfoAsn1))
         }
 

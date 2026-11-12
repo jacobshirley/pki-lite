@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from 'vitest'
 import { OtherKeyAttribute } from './OtherKeyAttribute.js'
-import { asn1js } from '../../core/PkiBase.js'
+import { der, UniversalTag } from '../../core/PkiBase.js'
 import { Any } from '../../asn1/Any.js'
 
 describe('OtherKeyAttribute', () => {
@@ -16,9 +16,7 @@ describe('OtherKeyAttribute', () => {
     test('can be created with keyAttrId and keyAttr', () => {
         const keyAttrId = '1.2.840.113549.1.9.52' // CMSAlgorithmProtection
         const keyAttr = new Any({
-            derBytes: new asn1js.OctetString({
-                valueHex: new Uint8Array([1, 2, 3, 4]),
-            }).toBER(),
+            derBytes: der.octetString(new Uint8Array([1, 2, 3, 4])).encode(),
         })
         const otherKeyAttr = new OtherKeyAttribute({ keyAttrId, keyAttr })
 
@@ -32,33 +30,31 @@ describe('OtherKeyAttribute', () => {
         const otherKeyAttr = new OtherKeyAttribute({ keyAttrId })
         const asn1 = otherKeyAttr.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(1)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(1)
 
-        const keyAttrIdBlock = asn1.valueBlock.value[0]
-        assert(keyAttrIdBlock instanceof asn1js.ObjectIdentifier)
-        expect(keyAttrIdBlock.valueBlock.toString()).toContain(keyAttrId)
+        const keyAttrIdBlock = asn1.children[0]
+        assert(keyAttrIdBlock.is(UniversalTag.ObjectIdentifier))
+        expect(der.readOid(keyAttrIdBlock)).toContain(keyAttrId)
     })
 
     test('can be converted to ASN.1 with keyAttrId and keyAttr', () => {
         const keyAttrId = '1.2.840.113549.1.9.52' // CMSAlgorithmProtection
         const keyAttr = new Any({
-            derBytes: new asn1js.OctetString({
-                valueHex: new Uint8Array([1, 2, 3, 4]),
-            }).toBER(),
+            derBytes: der.octetString(new Uint8Array([1, 2, 3, 4])).encode(),
         })
         const otherKeyAttr = new OtherKeyAttribute({ keyAttrId, keyAttr })
         const asn1 = otherKeyAttr.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
-        const keyAttrIdBlock = asn1.valueBlock.value[0]
-        assert(keyAttrIdBlock instanceof asn1js.ObjectIdentifier)
-        expect(keyAttrIdBlock.valueBlock.toString()).toContain(keyAttrId)
+        const keyAttrIdBlock = asn1.children[0]
+        assert(keyAttrIdBlock.is(UniversalTag.ObjectIdentifier))
+        expect(der.readOid(keyAttrIdBlock)).toContain(keyAttrId)
 
-        const keyAttrBlock = asn1.valueBlock.value[1]
-        assert(keyAttrBlock instanceof asn1js.OctetString)
+        const keyAttrBlock = asn1.children[1]
+        assert(keyAttrBlock.is(UniversalTag.OctetString))
     })
 
     test('can be parsed from ASN.1 with only keyAttrId', () => {
@@ -97,9 +93,7 @@ describe('OtherKeyAttribute', () => {
 
         const keyAttrId = '1.2.840.113549.1.9.52'
         const keyAttr = new Any({
-            derBytes: new asn1js.OctetString({
-                valueHex: new Uint8Array([1, 2, 3, 4]),
-            }).toBER(),
+            derBytes: der.octetString(new Uint8Array([1, 2, 3, 4])).encode(),
         })
         const otherKeyAttr = new OtherKeyAttribute({ keyAttrId, keyAttr })
 
@@ -125,29 +119,25 @@ describe('OtherKeyAttribute', () => {
     })
 
     test('throws error on invalid ASN.1 structure type', () => {
-        const asn1 = new asn1js.Integer({ value: 1 })
+        const asn1 = der.integer(1)
         expect(() => OtherKeyAttribute.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected Sequence for OtherKeyAttribute',
         )
     })
 
     test('throws error on invalid ASN.1 structure element count', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '1.2.840.113549.1.9.52' }),
-                new asn1js.OctetString({ valueHex: new Uint8Array([1]) }),
-                new asn1js.OctetString({ valueHex: new Uint8Array([2]) }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.oid('1.2.840.113549.1.9.52'),
+            der.octetString(new Uint8Array([1])),
+            der.octetString(new Uint8Array([2])),
+        ])
         expect(() => OtherKeyAttribute.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected 1-2 elements, got 3',
         )
     })
 
     test('throws error on invalid keyAttrId type', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [new asn1js.OctetString({ valueHex: new Uint8Array([1]) })],
-        })
+        const asn1 = der.sequence([der.octetString(new Uint8Array([1]))])
         expect(() => OtherKeyAttribute.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected ObjectIdentifier for keyAttrId',
         )

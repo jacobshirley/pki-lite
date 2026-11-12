@@ -1,4 +1,11 @@
-import { Asn1BaseBlock, asn1js, PkiBase, PkiSet } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    PkiBase,
+    PkiSet,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { RecipientInfo } from './recipients/RecipientInfo.js'
 import { OriginatorInfo } from './recipients/OriginatorInfo.js'
 import { Attribute } from '../x509/Attribute.js'
@@ -21,14 +28,14 @@ import { MessageAuthenticationCode } from './MessageAuthenticationCode.js'
  * ```
  */
 class AuthAttributes extends PkiSet<Attribute> {
-    static fromAsn1(asn1: Asn1BaseBlock): AuthAttributes {
-        if (!(asn1 instanceof asn1js.Set)) {
+    static fromAsn1(asn1: Asn1Node): AuthAttributes {
+        if (!asn1.is(UniversalTag.Set)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Set for AuthAttributes',
             )
         }
 
-        const attributes = asn1.valueBlock.value.map((attrAsn1) =>
+        const attributes = asn1.children.map((attrAsn1) =>
             Attribute.fromAsn1(attrAsn1),
         )
 
@@ -45,14 +52,14 @@ class AuthAttributes extends PkiSet<Attribute> {
  * ```
  */
 class UnauthAttributes extends PkiSet<Attribute> {
-    static fromAsn1(asn1: Asn1BaseBlock): UnauthAttributes {
-        if (!(asn1 instanceof asn1js.Set)) {
+    static fromAsn1(asn1: Asn1Node): UnauthAttributes {
+        if (!asn1.is(UniversalTag.Set)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Set for UnauthAttributes',
             )
         }
 
-        const attributes = asn1.valueBlock.value.map((attrAsn1) =>
+        const attributes = asn1.children.map((attrAsn1) =>
             Attribute.fromAsn1(attrAsn1),
         )
 
@@ -74,20 +81,18 @@ class RecipientInfos extends PkiSet<RecipientInfo> {
      * pwri [3] and ori [4] get their context tag (a bare SEQUENCE would be read as
      * a KeyTransRecipientInfo).
      */
-    toAsn1(): asn1js.Set {
-        return new asn1js.Set({
-            value: this.map((recipient) => RecipientInfo.toAsn1(recipient)),
-        })
+    toAsn1(): Asn1Node {
+        return der.set(this.map((recipient) => RecipientInfo.toAsn1(recipient)))
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): RecipientInfos {
-        if (!(asn1 instanceof asn1js.Set)) {
+    static fromAsn1(asn1: Asn1Node): RecipientInfos {
+        if (!asn1.is(UniversalTag.Set)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Set for RecipientInfos',
             )
         }
 
-        const recipients = asn1.valueBlock.value.map((recAsn1) =>
+        const recipients = asn1.children.map((recAsn1) =>
             RecipientInfo.fromAsn1(recAsn1),
         )
 
@@ -229,17 +234,15 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
     /**
      * Converts the AuthenticatedData to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         const values = []
 
         // Version is always present
-        values.push(new asn1js.Integer({ value: this.version }))
+        values.push(der.integer(this.version))
 
         // Add originatorInfo if present
         if (this.originatorInfo) {
-            const asn1 = this.originatorInfo.toAsn1()
-            asn1.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            asn1.idBlock.tagNumber = 0 // [0]
+            const asn1 = this.originatorInfo.toAsn1().implicit(0) // [0] IMPLICIT
             values.push(asn1)
         }
 
@@ -251,9 +254,7 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
 
         // Add digestAlgorithm if present
         if (this.digestAlgorithm) {
-            const asn1 = this.digestAlgorithm.toAsn1()
-            asn1.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            asn1.idBlock.tagNumber = 1 // [1]
+            const asn1 = this.digestAlgorithm.toAsn1().implicit(1) // [1] IMPLICIT
             values.push(asn1)
         }
 
@@ -262,9 +263,7 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
 
         // Add authAttrs if present
         if (this.authAttrs && this.authAttrs.length > 0) {
-            const asn1 = this.authAttrs.toAsn1()
-            asn1.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            asn1.idBlock.tagNumber = 2 // [2]
+            const asn1 = this.authAttrs.toAsn1().implicit(2) // [2] IMPLICIT
             values.push(asn1)
         }
 
@@ -273,28 +272,24 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
 
         // Add unauthAttrs if present
         if (this.unauthAttrs && this.unauthAttrs.length > 0) {
-            const asn1 = this.unauthAttrs.toAsn1()
-            asn1.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            asn1.idBlock.tagNumber = 3 // [3]
+            const asn1 = this.unauthAttrs.toAsn1().implicit(3) // [3] IMPLICIT
             values.push(asn1)
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
     /**
      * Creates an AuthenticatedData from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): AuthenticatedData {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): AuthenticatedData {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 5) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected at least 5 elements, got ${values.length}`,
@@ -304,14 +299,13 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
         let currentIndex = 0
 
         // Version - always first
-        if (!(values[currentIndex] instanceof asn1js.Integer)) {
+        if (!values[currentIndex]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Integer for version',
             )
         }
 
-        const version = (values[currentIndex] as asn1js.Integer).valueBlock
-            .valueDec
+        const version = der.readNumber(values[currentIndex])
 
         currentIndex++
 
@@ -319,13 +313,11 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
         let originatorInfo: OriginatorInfo | undefined
         if (
             currentIndex < values.length &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
-            values[currentIndex].idBlock.tagNumber === 0 // [0]
+            values[currentIndex]?.constructed &&
+            values[currentIndex].tagClass === TagClass.Context && // CONTEXT_SPECIFIC
+            values[currentIndex].tag === 0 // [0]
         ) {
-            const originatorInfoAsn1 = (
-                values[currentIndex] as asn1js.Constructed
-            ).valueBlock.value[0]
+            const originatorInfoAsn1 = values[currentIndex].children[0]
             originatorInfo = OriginatorInfo.fromAsn1(originatorInfoAsn1)
             currentIndex++
         }
@@ -343,13 +335,11 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
         let digestAlgorithm: DigestAlgorithmIdentifier | undefined
         if (
             currentIndex < values.length &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
-            values[currentIndex].idBlock.tagNumber === 1 // [1]
+            values[currentIndex]?.constructed &&
+            values[currentIndex].tagClass === TagClass.Context && // CONTEXT_SPECIFIC
+            values[currentIndex].tag === 1 // [1]
         ) {
-            const digestAlgorithmAsn1 = (
-                values[currentIndex] as asn1js.Constructed
-            ).valueBlock.value[0]
+            const digestAlgorithmAsn1 = values[currentIndex].children[0]
             digestAlgorithm =
                 DigestAlgorithmIdentifier.fromAsn1(digestAlgorithmAsn1)
             currentIndex++
@@ -370,12 +360,11 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
         let authAttrs: AuthAttributes | undefined
         if (
             currentIndex < values.length &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
-            values[currentIndex].idBlock.tagNumber === 2 // [2]
+            values[currentIndex]?.constructed &&
+            values[currentIndex].tagClass === TagClass.Context && // CONTEXT_SPECIFIC
+            values[currentIndex].tag === 2 // [2]
         ) {
-            const authAttrsAsn1 = (values[currentIndex] as asn1js.Constructed)
-                .valueBlock.value[0]
+            const authAttrsAsn1 = values[currentIndex].children[0]
             authAttrs = AuthAttributes.fromAsn1(authAttrsAsn1)
             currentIndex++
         }
@@ -391,12 +380,11 @@ export class AuthenticatedData extends PkiBase<AuthenticatedData> {
         let unauthAttrs: UnauthAttributes | undefined
         if (
             currentIndex < values.length &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
-            values[currentIndex].idBlock.tagNumber === 3 // [3]
+            values[currentIndex]?.constructed &&
+            values[currentIndex].tagClass === TagClass.Context && // CONTEXT_SPECIFIC
+            values[currentIndex].tag === 3 // [3]
         ) {
-            const unauthAttrsAsn1 = (values[currentIndex] as asn1js.Constructed)
-                .valueBlock.value[0]
+            const unauthAttrsAsn1 = values[currentIndex].children[0]
             unauthAttrs = UnauthAttributes.fromAsn1(unauthAttrsAsn1)
         }
 

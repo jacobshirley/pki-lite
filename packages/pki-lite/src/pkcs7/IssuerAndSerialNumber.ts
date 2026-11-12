@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 import { Name } from '../x509/Name.js'
 import { RDNSequence } from '../x509/RDNSequence.js'
 import { Integer } from '../asn1/Integer.js'
@@ -38,10 +38,8 @@ export class IssuerAndSerialNumber extends PkiBase<IssuerAndSerialNumber> {
     /**
      * Converts the IssuerAndSerialNumber to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [this.issuer.toAsn1(), this.serialNumber.toAsn1()],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([this.issuer.toAsn1(), this.serialNumber.toAsn1()])
     }
 
     /**
@@ -50,24 +48,24 @@ export class IssuerAndSerialNumber extends PkiBase<IssuerAndSerialNumber> {
      * @param asn1 The ASN.1 structure
      * @returns An IssuerAndSerialNumber
      */
-    static fromAsn1(asn1: Asn1BaseBlock): IssuerAndSerialNumber {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): IssuerAndSerialNumber {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE but got ' +
-                    asn1.constructor.name,
+                    asn1.describe(),
             )
         }
 
-        if (asn1.valueBlock.value.length !== 2) {
+        if (asn1.children.length !== 2) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 2 elements',
             )
         }
 
-        const issuerAsn1 = asn1.valueBlock.value[0]
-        const serialNumberAsn1 = asn1.valueBlock.value[1]
+        const issuerAsn1 = asn1.children[0]
+        const serialNumberAsn1 = asn1.children[1]
 
-        if (!(issuerAsn1 instanceof asn1js.Sequence)) {
+        if (!issuerAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: issuer must be a SEQUENCE',
             )

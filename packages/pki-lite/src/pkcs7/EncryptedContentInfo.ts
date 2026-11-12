@@ -1,9 +1,11 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     ObjectIdentifierString,
     ParseableAsn1,
     PkiBase,
+    TagClass,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import {
     AlgorithmIdentifier,
@@ -52,33 +54,31 @@ export class EncryptedContentInfo extends PkiBase<EncryptedContentInfo> {
     /**
      * Converts the EncryptedContentInfo to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         const values = [
             this.contentType.toAsn1(),
             this.contentEncryptionAlgorithm.toAsn1(),
         ]
 
         if (this.encryptedContent) {
-            const encryptedData = this.encryptedContent.toAsn1()
-            encryptedData.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            encryptedData.idBlock.tagNumber = 0 // [0]
+            const encryptedData = this.encryptedContent.toAsn1().implicit(0) // [0] IMPLICIT
             values.push(encryptedData)
         }
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
     /**
      * Creates an EncryptedContentInfo from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): EncryptedContentInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): EncryptedContentInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 2 || values.length > 3) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 2-3 elements, got ${values.length}`,
@@ -86,12 +86,12 @@ export class EncryptedContentInfo extends PkiBase<EncryptedContentInfo> {
         }
 
         // ContentType
-        if (!(values[0] instanceof asn1js.ObjectIdentifier)) {
+        if (!values[0]?.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected ObjectIdentifier for contentType',
             )
         }
-        const contentType = values[0].valueBlock.toString()
+        const contentType = der.readOid(values[0])
 
         // ContentEncryptionAlgorithm
         const contentEncryptionAlgorithm = AlgorithmIdentifier.fromAsn1(
@@ -104,12 +104,10 @@ export class EncryptedContentInfo extends PkiBase<EncryptedContentInfo> {
         // that stream (`openssl cms -stream`) use a constructed [0] of OCTET STRING chunks
         if (
             values.length > 2 &&
-            values[2].idBlock.tagClass === 3 &&
-            values[2].idBlock.tagNumber === 0
+            values[2].tagClass === TagClass.Context &&
+            values[2].tag === 0
         ) {
-            encryptedContent = new Uint8Array(
-                OctetString.contentBytes(values[2]),
-            )
+            encryptedContent = values[2].bytes()
         }
 
         return new EncryptedContentInfo({

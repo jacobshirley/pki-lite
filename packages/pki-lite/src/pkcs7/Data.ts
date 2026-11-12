@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase } from '../core/PkiBase.js'
 
 /**
  * Represents PKCS#7 Data content.
@@ -22,7 +22,7 @@ export class Data extends PkiBase<Data> {
     /**
      * Converts the Data to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.OctetString({ valueHex: this.data })
+    toAsn1(): Asn1Node {
+        return der.octetString(this.data)
     }
 }

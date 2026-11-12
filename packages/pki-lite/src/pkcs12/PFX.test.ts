@@ -30,7 +30,7 @@ describe('PFX', () => {
     it('encodes and decodes with MacData', () => {
         const authSafe = new ContentInfo({
             contentType: '1.2.840.113549.1.7.1',
-            content: new Uint8Array([1, 2, 3]),
+            content: new Uint8Array([0x04, 0x03, 1, 2, 3]), // OCTET STRING
         })
         const mac = new DigestInfo({
             digestAlgorithm: new AlgorithmIdentifier({

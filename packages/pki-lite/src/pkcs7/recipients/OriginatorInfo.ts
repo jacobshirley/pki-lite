@@ -1,5 +1,11 @@
 import { CertificateSet } from '../../x509/CertificateSet.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../../core/PkiBase.js'
 import { RevocationInfoChoices } from '../../revocation/RevocationInfoChoices.js'
 import { RevocationInfoChoice } from '../../revocation/RevocationInfoChoice.js'
 import { CertificateChoices } from '../../x509/CertificateChoices.js'
@@ -40,41 +46,27 @@ export class OriginatorInfo extends PkiBase<OriginatorInfo> {
     /**
      * Converts the OriginatorInfo to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        const sequence = new asn1js.Sequence()
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         // Add certs if present
         if (this.certs && this.certs.length > 0) {
-            const certsElement = new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // CONTEXT_SPECIFIC
-                    tagNumber: 0, // [0]
-                },
-                value: [this.certs.toAsn1()],
-            })
-            sequence.valueBlock.value.push(certsElement)
+            values.push(der.constructed(0, [this.certs.toAsn1()]))
         }
 
         // Add crls if present
         if (this.crls && this.crls.length > 0) {
-            const crlsElement = new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // CONTEXT_SPECIFIC
-                    tagNumber: 1, // [1]
-                },
-                value: [this.crls.toAsn1()],
-            })
-            sequence.valueBlock.value.push(crlsElement)
+            values.push(der.constructed(1, [this.crls.toAsn1()]))
         }
 
-        return sequence
+        return der.sequence(values)
     }
 
     /**
      * Creates an OriginatorInfo from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): OriginatorInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): OriginatorInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for OriginatorInfo',
             )
@@ -83,28 +75,25 @@ export class OriginatorInfo extends PkiBase<OriginatorInfo> {
         let certs: CertificateSet | undefined
         let crls: RevocationInfoChoices | undefined
 
-        for (const element of asn1.valueBlock.value) {
-            if (!(element instanceof asn1js.Constructed)) {
+        for (const element of asn1.children) {
+            if (!element?.constructed) {
                 continue
             }
 
-            const tagClass = element.idBlock.tagClass
-            const tagNumber = element.idBlock.tagNumber
+            const tagNumber = element.tag
 
-            if (tagClass === 3) {
+            if (element.tagClass === TagClass.Context) {
                 // CONTEXT_SPECIFIC
                 if (tagNumber === 0) {
                     // [0] certs
-                    if (element.valueBlock.value.length > 0) {
-                        certs = CertificateSet.fromAsn1(
-                            element.valueBlock.value[0],
-                        )
+                    if (element.children.length > 0) {
+                        certs = CertificateSet.fromAsn1(element.children[0])
                     }
                 } else if (tagNumber === 1) {
                     // [1] crls
-                    if (element.valueBlock.value.length > 0) {
+                    if (element.children.length > 0) {
                         crls = RevocationInfoChoices.fromAsn1(
-                            element.valueBlock.value[0],
+                            element.children[0],
                         )
                     }
                 }
