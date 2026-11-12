@@ -69,4 +69,43 @@ describe('dump', () => {
         )
         expect(dump(node)).toBe('OCTET STRING : aabb')
     })
+
+    test('shows DER inside a parsed OCTET STRING or BIT STRING as a tree', () => {
+        const inner = der.sequence([der.integer(5)])
+        const parsed = Asn1Node.parse(
+            der
+                .sequence([
+                    der.octetString(inner.encode()),
+                    der.bitString(inner.encode()),
+                ])
+                .encode(),
+        )
+        expect(dump(parsed)).toBe(
+            [
+                'SEQUENCE :',
+                '  OCTET STRING :',
+                '    SEQUENCE :',
+                '      INTEGER : 5',
+                '  BIT STRING :',
+                '    SEQUENCE :',
+                '      INTEGER : 5',
+            ].join('\n'),
+        )
+    })
+
+    test('shows content that is not exactly one DER value, or a built node, as hex', () => {
+        const inner = der.sequence([der.integer(5)]).encode()
+        // built in code: shown as hex, like asn1js
+        expect(dump(der.octetString(inner))).toBe('OCTET STRING : 3003020105')
+        // trailing byte: not a single value
+        const parsed = Asn1Node.parse(
+            der.octetString(new Uint8Array([...inner, 0])).encode(),
+        )
+        expect(dump(parsed)).toBe('OCTET STRING : 300302010500')
+        // a BIT STRING with unused bits is shown as bits
+        expect(dump(Asn1Node.parse(der.bitString(inner, 1).encode()))).toBe(
+            'BIT STRING : ' +
+                '0011000000000011000000100000000100000101'.slice(0, -1),
+        )
+    })
 })
