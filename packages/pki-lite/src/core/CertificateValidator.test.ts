@@ -512,6 +512,8 @@ describe('CertificateValidator', () => {
             test('should accept trust anchors for validation', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                 }
@@ -530,6 +532,8 @@ describe('CertificateValidator', () => {
             test('should fail validation without trust anchor', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [], // No trust anchors
                     otherCertificates: [intermediateCert],
                 }
@@ -548,6 +552,8 @@ describe('CertificateValidator', () => {
             test('should build complete certificate chain', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                 }
@@ -565,6 +571,8 @@ describe('CertificateValidator', () => {
             test('should handle incomplete chain gracefully', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [], // Missing intermediate
                 }
@@ -584,6 +592,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [circularCert1, circularCert2],
                 }
@@ -601,6 +611,8 @@ describe('CertificateValidator', () => {
             test('should validate entire certificate chain', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                     enforceCAConstraints: true,
@@ -620,6 +632,8 @@ describe('CertificateValidator', () => {
             test('should validate CA constraints', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                     enforceCAConstraints: true,
@@ -640,6 +654,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [invalidCA], // Using non-CA cert as intermediate
                     enforceCAConstraints: true,
@@ -678,6 +694,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchorWithConstraints],
                     otherCertificates: [intermediateCert],
                     validateNameConstraints: true,
@@ -711,6 +729,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchorWithConstraints],
                     otherCertificates: [intermediateCert],
                     validateNameConstraints: true,
@@ -750,6 +770,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchorWithConstraints],
                     otherCertificates: [intermediateCert],
                     validateNameConstraints: true,
@@ -789,6 +811,8 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [{ certificate: rootCert, nameConstraints }],
                     otherCertificates: [intermediateCert],
                     validateNameConstraints: true,
@@ -803,6 +827,8 @@ describe('CertificateValidator', () => {
             test('should validate certificate policies', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                     validatePolicies: true,
@@ -817,6 +843,8 @@ describe('CertificateValidator', () => {
             test('should check required policies', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                     validatePolicies: true,
@@ -836,6 +864,8 @@ describe('CertificateValidator', () => {
             test('should provide detailed diagnostic information', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                 }
@@ -855,6 +885,8 @@ describe('CertificateValidator', () => {
             test('should include chain information in result', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                 }
@@ -914,6 +946,8 @@ describe('CertificateValidator', () => {
 
                 const validator = new CertificateValidator()
                 const result = await validator.validateChain(chain, {
+                    // the test certificates are not signed
+                    checkSignature: false,
                     enforceCAConstraints: true,
                 })
                 expect(result.isValid).toEqual(false)
@@ -939,6 +973,8 @@ describe('CertificateValidator', () => {
 
                 const validator = new CertificateValidator()
                 const result = await validator.validateChain(chain, {
+                    // the test certificates are not signed
+                    checkSignature: false,
                     enforceCAConstraints: true,
                 })
                 expect(result.isValid).toEqual(true)
@@ -1560,6 +1596,8 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
 
         const result = await validator.validate(leaf, {
             validateChain: true,
+            // the test certificates are not signed
+            checkSignature: false,
             trustAnchors: [{ certificate: root }],
             otherCertificates: [ca],
             enforceCAConstraints: true,
@@ -1577,6 +1615,8 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
 
         const result = await validator.validate(leaf, {
             validateChain: true,
+            // the test certificates are not signed
+            checkSignature: false,
             trustAnchors: [{ certificate: root }],
             otherCertificates: [ca],
             enforceCAConstraints: true,
@@ -1593,6 +1633,8 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
 
         const result = await validator.validate(caAsEndCertificate, {
             validateChain: true,
+            // the test certificates are not signed
+            checkSignature: false,
             trustAnchors: [{ certificate: root }],
             enforceCAConstraints: true,
         })
@@ -1612,6 +1654,8 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
             target.tbsCertificate.extensions.push(extension)
             return validator.validate(leaf, {
                 validateChain: true,
+                // the test certificates are not signed
+                checkSignature: false,
                 trustAnchors: [{ certificate: root }],
                 otherCertificates: [ca],
             })
@@ -1648,6 +1692,52 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
             eku.critical = true
             const result = await validateWith(eku, 'leaf')
             expect(result.isValid, result.messages.join('; ')).toBe(true)
+        })
+    })
+
+    describe('defaults', () => {
+        test('signatures are checked unless checkSignature is false', async () => {
+            const root = createRootCertificate()
+            const leaf = createEndEntityCertificateFor(root)
+            const options = {
+                validateChain: true,
+                trustAnchors: [{ certificate: root }],
+            }
+
+            // the test certificates are not signed
+            const result = await validator.validate(leaf, options)
+            expect(result.status).toBe(
+                CertificateValidationStatus.SIGNATURE_INVALID,
+            )
+            const unchecked = await validator.validate(leaf, {
+                ...options,
+                checkSignature: false,
+            })
+            expect(unchecked.isValid, unchecked.messages.join('; ')).toBe(true)
+        })
+
+        test('CA constraints are enforced unless enforceCAConstraints is false', async () => {
+            const root = createRootCertificate()
+            const ca = createIntermediateCertificate(root)
+            ca.tbsCertificate.extensions!.push(
+                Extension.keyUsage({ digitalSignature: true }),
+            )
+            const leaf = createEndEntityCertificateFor(ca)
+            const options = {
+                validateChain: true,
+                trustAnchors: [{ certificate: root }],
+                otherCertificates: [ca],
+                checkSignature: false,
+            }
+
+            const result = await validator.validate(leaf, options)
+            expect(result.isValid).toBe(false)
+            expect(result.messages.join('; ')).toContain('keyCertSign')
+            const unchecked = await validator.validate(leaf, {
+                ...options,
+                enforceCAConstraints: false,
+            })
+            expect(unchecked.isValid, unchecked.messages.join('; ')).toBe(true)
         })
     })
 

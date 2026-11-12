@@ -269,9 +269,7 @@ describe('NIST PKITS section 4', () => {
                         otherCertificates: certificates
                             .slice(1, -1)
                             .map((n) => Certificate.fromDer(der(n))),
-                        // both are opt-in; a relying party that follows RFC 5280 6.1 needs them
-                        checkSignature: true,
-                        enforceCAConstraints: true,
+                        // signatures and CA constraints are checked by default
                         checkCRL: true,
                         ...settings,
                     },

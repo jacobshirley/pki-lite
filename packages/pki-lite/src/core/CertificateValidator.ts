@@ -131,7 +131,11 @@ export interface CertificateValidationOptions {
     timeTolerance?: number
     /** Custom validation date (defaults to current time) */
     validationTime?: Date
-    /** Whether to perform signature validation */
+    /**
+     * Whether to verify each certificate's signature with its issuer's public key
+     * (RFC 5280 6.1.3 (a)(1)). On by default; set to `false` only for certificates
+     * whose signatures were checked some other way.
+     */
     checkSignature?: boolean
     /** Trust anchors to use for chain validation */
     trustAnchors?: TrustAnchor[]
@@ -139,7 +143,10 @@ export interface CertificateValidationOptions {
     otherCertificates?: Certificate[]
     /** Whether to build and validate the full certificate chain */
     validateChain?: boolean
-    /** Whether to enforce CA constraints and key usage */
+    /**
+     * Whether to enforce CA constraints on the issuing certificates (RFC 5280 6.1.4):
+     * basicConstraints cA, keyUsage keyCertSign and pathLenConstraint. On by default.
+     */
     enforceCAConstraints?: boolean
     /**
      * Whether to enforce name constraints (RFC 5280 4.2.1.10): the `NameConstraints`
@@ -617,7 +624,7 @@ export class CertificateValidator {
                 }
 
                 // Verify signature (if requested)
-                if (options.checkSignature) {
+                if (options.checkSignature !== false) {
                     try {
                         const signatureValid = await cert.isIssuedBy(issuer)
                         if (!signatureValid) {
@@ -660,7 +667,7 @@ export class CertificateValidator {
             }
 
             // Check CA constraints for non-end-entity certificates
-            if (!isEndEntity && options.enforceCAConstraints) {
+            if (!isEndEntity && options.enforceCAConstraints !== false) {
                 const caValidationResult =
                     this.validateCertificateAuthority(cert)
                 if (!caValidationResult.isValid) {
