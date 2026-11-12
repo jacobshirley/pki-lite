@@ -156,5 +156,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## Acknowledgments
 
-- Uses [asn1js](https://www.npmjs.com/package/asn1js) for ASN.1 parsing and serialization
+- ASN.1 is parsed and serialised by a small built-in DER/BER codec (`core/der`); [asn1js](https://www.npmjs.com/package/asn1js) is used in its tests as a reference implementation
 - Extended crypto functionality provided by [noble-hashes](https://github.com/paulmillr/noble-hashes) and [noble-ciphers](https://github.com/paulmillr/noble-ciphers) and [node-forge](https://github.com/digitalbazaar/forge)
