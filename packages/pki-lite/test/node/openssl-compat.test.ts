@@ -4,8 +4,13 @@ import { Certificate } from '../../src/x509/Certificate.js'
 import { describe, test, expect } from 'vitest'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 import {
+    opensslAsn1Generate,
     opensslCmsDecrypt,
+    opensslCmsReencode,
     opensslCmsToText,
+    opensslIssueAndRevoke,
+    opensslSelfSignedWithExtension,
+    opensslTsReencode,
     opensslPkcs12Parse,
     opensslValidate,
     opensslVerifyCertificate,
@@ -24,6 +29,20 @@ import { UTCTime } from '../../src/asn1/UTCTime.js'
 import { ecP256SigningKeys } from '../../test-fixtures/signing-keys/ec-p256/index.js'
 import { PFX } from '../../src/pkcs12/PFX.js'
 import { CertificateRequest } from '../../src/x509/CertificateRequest.js'
+import { Integer } from '../../src/asn1/Integer.js'
+import { UniversalString } from '../../src/asn1/UniversalString.js'
+import { derToAsn1, pemToDer } from '../../src/core/PkiBase.js'
+import { CertificateValidator } from '../../src/core/CertificateValidator.js'
+import { EncapsulatedContentInfo } from '../../src/pkcs7/EncapsulatedContentInfo.js'
+import { OriginatorInfo } from '../../src/pkcs7/recipients/OriginatorInfo.js'
+import { OtherCertificateFormat } from '../../src/x509/legacy/OtherCertificateFormat.js'
+import { OtherRevocationInfoFormat } from '../../src/revocation/OtherRevocationInfoFormat.js'
+import { CertificateSet } from '../../src/x509/CertificateSet.js'
+import { SignerLocation } from '../../src/x509/attributes/SignerLocation.js'
+import { TimeStampReq } from '../../src/timestamp/TimeStampReq.js'
+import { TSTInfo } from '../../src/timestamp/TSTInfo.js'
+import { MessageImprint } from '../../src/timestamp/MessageImprint.js'
+import { AlgorithmIdentifier } from '../../src/algorithms/AlgorithmIdentifier.js'
 
 describe('OpenSSL compatibility', { timeout: 60000 }, () => {
     describe('EnvelopedData', () => {
@@ -758,3 +777,284 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
         })
     })
 })
+
+/**
+ * Each class below had an encoding or parsing defect; these check the fixed
+ * behaviour against OpenSSL rather than against pki-lite's own output.
+ */
+describe(
+    'OpenSSL interoperability of fixed classes',
+    { timeout: 60000 },
+    () => {
+        const hex = (bytes: Uint8Array) =>
+            Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+
+        describe('Integer', () => {
+            test.each([0, 1, 127, 128, 255, 256, -1, -128, -129, -256, -65536])(
+                'INTEGER %d matches OpenSSL both ways',
+                async (value) => {
+                    const openssl = await opensslAsn1Generate({
+                        genstr: `INTEGER:${value}`,
+                    })
+                    expect(hex(new Integer({ value }).toDer())).toBe(
+                        hex(openssl),
+                    )
+                    const parsed = Integer.fromAsn1(derToAsn1(openssl))
+                    expect(parsed.toInteger()).toBe(value)
+                    expect(parsed.toDer()).toEqual(openssl)
+                },
+            )
+        })
+
+        describe('UniversalString', () => {
+            test('matches OpenSSL (UTF-32BE) both ways', async () => {
+                const text = 'Zoë 東京'
+                const openssl = await opensslAsn1Generate({
+                    genstr: `FORMAT:UTF8,UNIVERSALSTRING:${text}`,
+                })
+                expect(hex(new UniversalString({ value: text }).toDer())).toBe(
+                    hex(openssl),
+                )
+                const parsed = UniversalString.fromAsn1(derToAsn1(openssl))
+                expect(parsed.toString()).toBe(text)
+            })
+        })
+
+        describe('Extension (Any)', () => {
+            test('keeps an OpenSSL extension value that is not one DER value', async () => {
+                // `DER:` writes the bytes as-is; 05 04 03 02 01 is not a single TLV
+                const pem = await opensslSelfSignedWithExtension(
+                    '1.2.3.4=DER:0504030201',
+                )
+                const certificate = Certificate.fromPem(pem)
+                const extension = certificate.tbsCertificate.extensions?.find(
+                    (ext) => ext.extnID.value === '1.2.3.4',
+                )
+                expect(hex(extension!.extnValue.bytes)).toBe('0504030201')
+                // re-encodes byte-identically, so the signature still verifies
+                expect(hex(certificate.toDer())).toBe(
+                    hex(pemToDer(pem, 'CERTIFICATE')),
+                )
+                const verified = await opensslVerifyCertificate({
+                    certificate: certificate.toPem(),
+                    selfSigned: true,
+                })
+                expect(verified.success, verified.error).toBe(true)
+            })
+        })
+
+        describe('CertificateChoices and RevocationInfoChoice', () => {
+            test('OpenSSL reads the other [3] certificate and other [1] revocation alternatives', async () => {
+                const signedData = new SignedData({
+                    version: 3,
+                    digestAlgorithms: [],
+                    encapContentInfo: new EncapsulatedContentInfo({
+                        eContentType: OIDs.PKCS7.DATA,
+                    }),
+                    certificates: [
+                        new OtherCertificateFormat({
+                            otherCertFormat: '1.2.3.4',
+                            otherCert: 'cert',
+                        }),
+                    ],
+                    crls: [
+                        new OtherRevocationInfoFormat({
+                            otherRevInfoFormat: '1.2.3.5',
+                            otherRevInfo: 'crl',
+                        }),
+                    ],
+                    signerInfos: [],
+                })
+                const der = signedData.toCms().toDer()
+
+                const openssl = await opensslCmsReencode(der)
+                expect(openssl.text).toMatch(
+                    /certificates:\s+d\.other:[\s\S]*1\.2\.3\.4/,
+                )
+                expect(openssl.text).toMatch(
+                    /crls:\s+d\.other:[\s\S]*1\.2\.3\.5/,
+                )
+                expect(hex(openssl.der)).toBe(hex(der))
+
+                // and pki-lite reads OpenSSL's encoding back
+                const parsed = SignedData.fromCms(openssl.der)
+                expect(parsed.certificates?.[0]).toBeInstanceOf(
+                    OtherCertificateFormat,
+                )
+                expect(parsed.crls?.[0]).toBeInstanceOf(
+                    OtherRevocationInfoFormat,
+                )
+            })
+        })
+
+        describe('OriginatorInfo', () => {
+            test('an EnvelopedData carrying originator certificates is decryptable with OpenSSL', async () => {
+                const certificate = Certificate.fromPem(rsaSigningKeys.certPem)
+                const envelopedData = await EnvelopedData.builder()
+                    .setData('with originator info')
+                    .addRecipient({ certificate })
+                    .build()
+                envelopedData.originatorInfo = new OriginatorInfo({
+                    certs: new CertificateSet(certificate),
+                })
+                envelopedData.version = 2
+                const der = envelopedData.toCms().toDer()
+
+                const decrypted = await opensslCmsDecrypt({
+                    envelopedData: der,
+                    recipientCertificatePem: rsaSigningKeys.certPem,
+                    recipientPrivateKeyPem: rsaSigningKeys.privateKeyPem,
+                })
+                expect(decrypted.success, decrypted.error).toBe(true)
+                expect(new TextDecoder().decode(decrypted.plaintext)).toBe(
+                    'with originator info',
+                )
+
+                const openssl = await opensslCmsReencode(der)
+                expect(openssl.text).toMatch(
+                    /originatorInfo:\s+certificates:\s+d\.certificate:/,
+                )
+                expect(
+                    EnvelopedData.fromCms(openssl.der).originatorInfo?.certs
+                        ?.length,
+                ).toBe(1)
+            })
+        })
+
+        describe('TimeStampReq and TSTInfo extensions', () => {
+            const extensions = [
+                new Extension({ extnID: '1.2.3.4', extnValue: 123 }),
+                new Extension({
+                    extnID: '1.2.3.5',
+                    critical: true,
+                    extnValue: 456,
+                }),
+            ]
+            const extensionIds = (list?: Extension[]) =>
+                list?.map((ext) => [ext.extnID.value, ext.critical])
+
+            test('OpenSSL reads a request with extensions', async () => {
+                let builder = TimeStampReq.builder()
+                    .setData('hello')
+                    .setCertReq(true)
+                for (const ext of extensions)
+                    builder = builder.addExtension(ext)
+                const request = await builder.build()
+
+                const openssl = await opensslTsReencode(
+                    request.toDer(),
+                    'query',
+                )
+                expect(openssl.text).toMatch(
+                    /Extensions:\s+1\.2\.3\.4:[\s\S]*1\.2\.3\.5: critical/,
+                )
+                expect(hex(openssl.der)).toBe(hex(request.toDer()))
+                expect(
+                    extensionIds(TimeStampReq.fromDer(openssl.der).extensions),
+                ).toEqual([
+                    ['1.2.3.4', false],
+                    ['1.2.3.5', true],
+                ])
+            })
+
+            test('OpenSSL reads a token whose TSTInfo has extensions', async () => {
+                const tstInfo = new TSTInfo({
+                    policy: '1.2.3.4.5',
+                    messageImprint: new MessageImprint({
+                        hashAlgorithm: new AlgorithmIdentifier({
+                            algorithm: '2.16.840.1.101.3.4.2.1',
+                        }),
+                        hashedMessage: new Uint8Array(32),
+                    }),
+                    serialNumber: new Uint8Array([1, 2, 3, 4]),
+                    genTime: new Date('2026-01-02T03:04:05Z'),
+                    extensions,
+                })
+                const token = await SignedData.builder()
+                    .setData(tstInfo.toDer())
+                    .setContentType(OIDs.PKCS7.TST_INFO)
+                    .addCertificate(Certificate.fromPem(rsaSigningKeys.certPem))
+                    .addSigner({
+                        certificate: Certificate.fromPem(
+                            rsaSigningKeys.certPem,
+                        ),
+                        privateKeyInfo: PrivateKeyInfo.fromPem(
+                            rsaSigningKeys.privateKeyPem,
+                        ),
+                    })
+                    .build()
+
+                const openssl = await opensslTsReencode(
+                    token.toCms().toDer(),
+                    'token',
+                )
+                expect(openssl.text).toMatch(
+                    /Extensions:\s+1\.2\.3\.4:[\s\S]*1\.2\.3\.5: critical/,
+                )
+                const content = SignedData.fromCms(openssl.der).encapContentInfo
+                    .eContent!
+                expect(
+                    extensionIds(TSTInfo.fromDer(content).extensions),
+                ).toEqual([
+                    ['1.2.3.4', false],
+                    ['1.2.3.5', true],
+                ])
+            })
+        })
+
+        describe('SignerLocation', () => {
+            test('parses and re-encodes the encoding OpenSSL generates from RFC 5126', async () => {
+                const openssl = await opensslAsn1Generate({
+                    genconf: [
+                        'asn1 = SEQUENCE:signerLocation',
+                        '[signerLocation]',
+                        'countryName = EXP:0,UTF8:GB',
+                        'localityName = EXP:1,UTF8:London',
+                        'postalAddress = EXP:2,SEQUENCE:postalAddress',
+                        '[postalAddress]',
+                        'line1 = UTF8:1 High St',
+                        'line2 = UTF8:Westminster',
+                        '',
+                    ].join('\n'),
+                })
+                const parsed = SignerLocation.fromAsn1(derToAsn1(openssl))
+                expect(parsed.countryName?.toString()).toBe('GB')
+                expect(parsed.localityName?.toString()).toBe('London')
+                expect([...(parsed.postalAddress ?? [])].map(String)).toEqual([
+                    '1 High St',
+                    'Westminster',
+                ])
+                expect(hex(parsed.toDer())).toBe(hex(openssl))
+            })
+        })
+
+        describe('CRL revocation (RevokedCertificate)', () => {
+            test('a certificate revoked with openssl ca is reported revoked', async () => {
+                // OpenSSL issues random 20-octet serials, larger than a JS number and
+                // usually containing hex letters
+                const { leafCertPem, crlPem } = await opensslIssueAndRevoke()
+                const leaf = Certificate.fromPem(leafCertPem)
+                const crl = CertificateList.fromPem(crlPem)
+                expect(
+                    leaf.tbsCertificate.serialNumber.toUnsigned(),
+                ).toHaveLength(20)
+
+                const entry = crl.tbsCertList.revokedCertificates?.[0]
+                expect(entry?.serialAsBigInt()).toBe(
+                    leaf.tbsCertificate.serialNumber.toBigInt(),
+                )
+
+                const result = await new CertificateValidator().validate(
+                    leaf,
+                    { checkCRL: true },
+                    { crls: [crl] },
+                )
+                expect(result.revocationStatus.isRevoked).toBe(true)
+                expect(result.revocationStatus.source).toBe('CRL')
+
+                // and the CRL re-encodes to OpenSSL's bytes
+                expect(hex(crl.toDer())).toBe(hex(pemToDer(crlPem, 'X509 CRL')))
+            })
+        })
+    },
+)
