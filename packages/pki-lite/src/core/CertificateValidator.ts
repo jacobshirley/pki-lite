@@ -16,6 +16,30 @@ import { KeyUsage } from '../x509/extensions/KeyUsage.js'
 /**
  * Enumeration of certificate validation status codes.
  */
+/**
+ * Certificate extensions that path validation processes, or that the library understands
+ * and that place no constraint on the path (key identifiers, alternative names, CRL and
+ * access locations, extended key usage, which applications check). A critical extension
+ * not in this list makes the path invalid (RFC 5280 4.2).
+ */
+const PROCESSED_EXTENSIONS = new Set<string>([
+    OIDs.EXTENSION.KEY_USAGE,
+    OIDs.EXTENSION.BASIC_CONSTRAINTS,
+    OIDs.EXTENSION.NAME_CONSTRAINTS,
+    OIDs.EXTENSION.CERTIFICATE_POLICIES,
+    OIDs.EXTENSION.POLICY_MAPPINGS,
+    OIDs.EXTENSION.POLICY_CONSTRAINTS,
+    OIDs.EXTENSION.INHIBIT_ANY_POLICY,
+    OIDs.EXTENSION.SUBJECT_ALT_NAME,
+    OIDs.EXTENSION.ISSUER_ALT_NAME,
+    OIDs.EXTENSION.SUBJECT_KEY_IDENTIFIER,
+    OIDs.EXTENSION.AUTHORITY_KEY_IDENTIFIER,
+    OIDs.EXTENSION.EXTENDED_KEY_USAGE,
+    OIDs.EXTENSION.CRL_DISTRIBUTION_POINTS,
+    OIDs.EXTENSION.FRESHEST_CRL,
+    OIDs.EXTENSION.AUTHORITY_INFO_ACCESS,
+])
+
 export const CertificateValidationStatus = {
     VALID: 'VALID',
     EXPIRED: 'EXPIRED',
@@ -545,6 +569,30 @@ export class CertificateValidator {
                     validatedAt: new Date(),
                     chain,
                     diagnostics,
+                }
+            }
+
+            // RFC 5280 6.1.4 (o), 6.1.5 (f): a critical extension that is not processed
+            // makes the path invalid (the trust anchor's extensions are not processed)
+            if (!isRoot) {
+                const unknown = cert.tbsCertificate.extensions?.find(
+                    (extension) =>
+                        extension.critical &&
+                        !PROCESSED_EXTENSIONS.has(extension.extnID.value),
+                )
+                if (unknown) {
+                    return {
+                        status: CertificateValidationStatus.CHAIN_INVALID,
+                        isValid: false,
+                        messages: [
+                            `Certificate ${i + 1} has an unrecognised critical extension ${unknown.extnID.value}`,
+                        ],
+                        revocationStatus: { isRevoked: false, source: 'NONE' },
+                        certificate: chain.certificates[0],
+                        validatedAt: new Date(),
+                        chain,
+                        diagnostics,
+                    }
                 }
             }
 

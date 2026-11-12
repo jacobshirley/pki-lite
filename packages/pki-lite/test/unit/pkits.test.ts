@@ -210,12 +210,9 @@ const UNDETERMINED = new Set([
  */
 const DSA =
     'WebCrypto has no DSA, so these DSA-signed paths cannot be verified (they fail closed). Not planned for the core package.'
-const CRITICAL =
-    'Unrecognised critical certificate extensions are not rejected (RFC 5280 4.2, 6.1.3).'
 const KNOWN_ISSUES: Record<string, string> = {
     '4.1.4': DSA,
     '4.1.5': DSA,
-    '4.16.2': CRITICAL,
 }
 
 const SECTION_COUNTS: Record<string, number> = {

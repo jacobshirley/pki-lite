@@ -37,6 +37,7 @@ import {
 import { GeneralName } from '../x509/GeneralName.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { CRLReason } from '../x509/CRLReason.js'
+import { OIDs } from './OIDs.js'
 import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 
@@ -1596,6 +1597,58 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
             enforceCAConstraints: true,
         })
         expect(result.isValid, result.messages.join('; ')).toBe(true)
+    })
+
+    describe('critical extensions (RFC 5280 6.1.4 (o), 6.1.5 (f))', () => {
+        const validateWith = async (
+            extension: Extension,
+            on: 'leaf' | 'ca' | 'root',
+        ) => {
+            const root = createRootCertificate()
+            const ca = createIntermediateCertificate(root)
+            const leaf = createEndEntityCertificateFor(ca)
+            const target = { leaf, ca, root }[on]
+            target.tbsCertificate.extensions ??= []
+            target.tbsCertificate.extensions.push(extension)
+            return validator.validate(leaf, {
+                validateChain: true,
+                trustAnchors: [{ certificate: root }],
+                otherCertificates: [ca],
+            })
+        }
+        const unknown = (critical: boolean) =>
+            new Extension({
+                extnID: '1.2.3.4.5',
+                critical,
+                extnValue: new Integer({ value: 1 }),
+            })
+
+        test('an unrecognised critical extension makes the path invalid', async () => {
+            for (const on of ['leaf', 'ca'] as const) {
+                const result = await validateWith(unknown(true), on)
+                expect(result.isValid, on).toBe(false)
+                expect(result.messages.join('; ')).toContain(
+                    'unrecognised critical extension 1.2.3.4.5',
+                )
+            }
+        })
+
+        test('an unrecognised non-critical extension is ignored', async () => {
+            const result = await validateWith(unknown(false), 'leaf')
+            expect(result.isValid, result.messages.join('; ')).toBe(true)
+        })
+
+        test("the trust anchor's extensions are not processed", async () => {
+            const result = await validateWith(unknown(true), 'root')
+            expect(result.isValid, result.messages.join('; ')).toBe(true)
+        })
+
+        test('a critical extendedKeyUsage is recognised', async () => {
+            const eku = Extension.extendedKeyUsage({ serverAuth: true })
+            eku.critical = true
+            const result = await validateWith(eku, 'leaf')
+            expect(result.isValid, result.messages.join('; ')).toBe(true)
+        })
     })
 
     test('a signature that cannot be verified fails validation', async () => {
