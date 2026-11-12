@@ -1,5 +1,6 @@
 import { assert, describe, expect, test } from 'vitest'
 import { Certificate } from './Certificate.js'
+import { TBSCertificate } from './TBSCertificate.js'
 import { SubjectPublicKeyInfo } from '../keys/SubjectPublicKeyInfo.js'
 import { Validity } from './Validity.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
@@ -10,6 +11,8 @@ import { asn1js } from '../core/PkiBase.js'
 import { Extension } from './Extension.js'
 import { KeyUsage } from './extensions/KeyUsage.js'
 import { BasicConstraints } from './extensions/BasicConstraints.js'
+import { pkitsFiles } from '../../test-fixtures/pkits/pkits.js'
+import { derToAsn1 } from '../core/PkiBase.js'
 
 /**
  * Creates a sample name for testing.
@@ -397,5 +400,53 @@ describe('TBSCertificate', () => {
                   BOOLEAN: TRUE
                   OCTET STRING : 30030101ff"
         `)
+    })
+})
+
+const pkitsDer = (name: string) =>
+    Uint8Array.from(atob(pkitsFiles[name]), (c) => c.charCodeAt(0))
+
+describe('TBSCertificate.toOriginalDer', () => {
+    // NIST PKITS 4.2.4: notBefore is a GeneralizedTime in 2002, which pki-lite
+    // re-encodes as UTCTime, so the re-encoded TBSCertificate differs from the signed one
+    const parse = () =>
+        Certificate.fromDer(
+            pkitsDer('ValidGeneralizedTimenotBeforeDateTest4EE'),
+        )
+
+    test('returns the bytes a parsed structure came from', () => {
+        const original = pkitsDer('ValidGeneralizedTimenotBeforeDateTest4EE')
+        const certificate = parse()
+        const tbs = certificate.tbsCertificate.toOriginalDer()
+        expect(certificate.tbsCertificate.toDer()).not.toEqual(tbs)
+        // the TBSCertificate is the first element of the certificate's SEQUENCE
+        const asText = (b: Uint8Array) => Array.from(b).join(',')
+        expect(asText(original)).toContain(asText(tbs))
+    })
+
+    test('a certificate whose re-encoding differs still verifies', async () => {
+        const certificate = parse()
+        const issuer = Certificate.fromDer(pkitsDer('GoodCACert'))
+        expect(await certificate.isIssuedBy(issuer)).toBe(true)
+    })
+
+    test('a modified structure uses its current encoding', () => {
+        const certificate = parse()
+        const tbs = certificate.tbsCertificate
+        tbs.validity.notAfter = new Date('2040-01-01T00:00:00Z')
+        expect(tbs.toOriginalDer()).toEqual(tbs.toDer())
+    })
+
+    test('structures built in code use their encoding', () => {
+        const tbs = parse().tbsCertificate
+        const copy = TBSCertificate.fromAsn1(derToAsn1(tbs.toDer()))
+        expect(copy.toOriginalDer()).toEqual(copy.toDer())
+    })
+
+    test('the original bytes are not a property and take no part in equality', () => {
+        const tbs = parse().tbsCertificate
+        const copy = TBSCertificate.fromAsn1(derToAsn1(tbs.toDer()))
+        expect(Object.keys(tbs)).toEqual(Object.keys(copy))
+        expect(tbs.equals(copy)).toBe(true)
     })
 })

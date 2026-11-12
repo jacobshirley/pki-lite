@@ -12,7 +12,6 @@ import {
     x400Address,
 } from '../x509/GeneralName.js'
 import { RDNSequence } from '../x509/RDNSequence.js'
-import { nameWithin } from './NameMatching.js'
 import {
     GeneralSubtree,
     NameConstraints,
@@ -183,9 +182,13 @@ export function ipWithin(ip: Uint8Array, constraint: Uint8Array): boolean {
     return true
 }
 
-/** A comparable form of an RDN: its attributes as "oid=value", sorted. */
-/** directoryName constraint: the constraint's RDNs must be a prefix of the name's. */
-export const dnWithin = nameWithin
+/**
+ * directoryName constraint: the constraint's RDNs must match the first RDNs of the name
+ * (RFC 5280 7.1 matching). The same as `name.isWithin(constraint)`.
+ */
+export function dnWithin(name: RDNSequence, constraint: RDNSequence): boolean {
+    return name.isWithin(constraint)
+}
 
 // --- names of a certificate ----------------------------------------------------------
 

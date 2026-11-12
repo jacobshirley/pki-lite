@@ -1,5 +1,4 @@
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
-import { namesMatch } from '../core/NameMatching.js'
 import { Name } from '../x509/Name.js'
 import { RDNSequence } from '../x509/RDNSequence.js'
 import { Integer } from '../asn1/Integer.js'
@@ -83,7 +82,7 @@ export class IssuerAndSerialNumber extends PkiBase<IssuerAndSerialNumber> {
     matchesCertificate(cert: CertificateChoices): boolean {
         if (cert instanceof Certificate) {
             return (
-                namesMatch(cert.tbsCertificate.issuer, this.issuer) &&
+                cert.tbsCertificate.issuer.matches(this.issuer) &&
                 cert.tbsCertificate.serialNumber.equals(this.serialNumber)
             )
         } else {

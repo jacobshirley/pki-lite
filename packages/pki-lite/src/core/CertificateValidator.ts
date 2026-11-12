@@ -4,7 +4,6 @@ import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { BasicConstraints } from '../x509/extensions/BasicConstraints.js'
 import { NameConstraints } from '../x509/extensions/NameConstraints.js'
 import { checkNameConstraints } from './NameConstraintsChecker.js'
-import { namesMatch } from './NameMatching.js'
 import { SubjectKeyIdentifier } from '../keys/SubjectKeyIdentifier.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { AuthorityKeyIdentifier } from '../x509/extensions/AuthorityKeyIdentifier.js'
@@ -1122,7 +1121,7 @@ export class CertificateValidator {
 
         // Basic check: subject matches issuer
         return (
-            namesMatch(subject, issuer) &&
+            subject.matches(issuer) &&
             (await certificate.isIssuedBy(certificate))
         )
     }
@@ -1140,7 +1139,7 @@ export class CertificateValidator {
             const candidateSubject = candidate.tbsCertificate.subject
 
             // Check if subject name matches issuer name (RFC 5280 7.1)
-            if (namesMatch(candidateSubject, issuerName)) {
+            if (candidateSubject.matches(issuerName)) {
                 // Additional check: verify key identifiers if present
                 if (this.verifyKeyIdentifiers(certificate, candidate)) {
                     return candidate
@@ -1236,8 +1235,7 @@ export class CertificateValidator {
         certificate: Certificate,
         issuer: Certificate,
     ): boolean {
-        return namesMatch(
-            certificate.tbsCertificate.issuer,
+        return certificate.tbsCertificate.issuer.matches(
             issuer.tbsCertificate.subject,
         )
     }
@@ -1391,8 +1389,7 @@ export class CertificateValidator {
 
     /** Whether a certificate's issuer and subject are the same name. */
     private isSelfIssued(certificate: Certificate): boolean {
-        return namesMatch(
-            certificate.tbsCertificate.issuer,
+        return certificate.tbsCertificate.issuer.matches(
             certificate.tbsCertificate.subject,
         )
     }

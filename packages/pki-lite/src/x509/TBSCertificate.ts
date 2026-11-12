@@ -1,5 +1,9 @@
-import { rememberOriginalEncoding } from '../core/OriginalEncoding.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1BaseBlock,
+    asn1js,
+    PkiBase,
+    keepOriginalDer,
+} from '../core/PkiBase.js'
 import {
     AlgorithmIdentifier,
     SignatureAlgorithmIdentifier,
@@ -321,7 +325,7 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
             extensions,
         })
         // keep the signed bytes: re-encoding may not reproduce them
-        rememberOriginalEncoding(tbsCertificate, asn1)
+        keepOriginalDer(tbsCertificate, asn1)
         return tbsCertificate
     }
 

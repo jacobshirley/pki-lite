@@ -9,6 +9,8 @@ import { TBSCertList } from './TBSCertList.js'
 import { RevokedCertificate } from './RevokedCertificate.js'
 import { Extension } from './Extension.js'
 import { CRLReason } from './CRLReason.js'
+import { pkitsFiles } from '../../test-fixtures/pkits/pkits.js'
+import { Certificate } from './Certificate.js'
 
 describe('CertificateList', () => {
     test('can be created', () => {
@@ -258,3 +260,79 @@ function createSampleCRL(): CertificateList {
         signatureValue,
     })
 }
+
+const pkitsDer = (name: string) =>
+    Uint8Array.from(atob(pkitsFiles[name]), (c) => c.charCodeAt(0))
+
+// real CRLs from NIST PKITS (see test-fixtures/pkits)
+const crl = (name: string) => CertificateList.fromDer(pkitsDer(name))
+const cert = (name: string) => Certificate.fromDer(pkitsDer(name))
+
+describe('CertificateList checks', () => {
+    test('verify: true for the CRL issuer, false for another certificate', async () => {
+        const goodCrl = crl('GoodCACRL')
+        expect(await goodCrl.verify(cert('GoodCACert'))).toBe(true)
+        expect(await goodCrl.verify(cert('TrustAnchorRootCertificate'))).toBe(
+            false,
+        )
+    })
+
+    test('verify: false for an issuer whose key may not sign CRLs', async () => {
+        const issuer = cert('keyUsageCriticalcRLSignFalseCACert')
+        expect(issuer.allowsKeyUsage('cRLSign')).toBe(false)
+        expect(
+            await crl('keyUsageCriticalcRLSignFalseCACRL').verify(issuer),
+        ).toBe(false)
+    })
+
+    test('verify: false for a CRL with a bad signature', async () => {
+        expect(
+            await crl('BadCRLSignatureCACRL').verify(
+                cert('BadCRLSignatureCACert'),
+            ),
+        ).toBe(false)
+    })
+
+    test('isCurrent checks thisUpdate and nextUpdate', () => {
+        const at = new Date('2026-01-01T00:00:00Z')
+        expect(crl('GoodCACRL').isCurrent(at)).toBe(true)
+        expect(
+            crl('GoodCACRL').isCurrent(new Date('2000-01-01T00:00:00Z')),
+        ).toBe(false)
+        expect(crl('OldCRLnextUpdateCACRL').isCurrent(at)).toBe(false)
+    })
+
+    test('isRevoked / getRevokedEntry find the certificate on the CRL', () => {
+        const goodCrl = crl('GoodCACRL')
+        const revoked = cert('InvalidRevokedEETest3EE')
+        expect(goodCrl.isRevoked(revoked)).toBe(true)
+        expect(goodCrl.getRevokedEntry(revoked)?.reason).toBe(1) // keyCompromise
+        expect(goodCrl.isRevoked(cert('ValidCertificatePathTest1EE'))).toBe(
+            false,
+        )
+    })
+
+    test("isRevoked uses an indirect CRL's certificateIssuer entries", () => {
+        // indirect CRL from CA5 listing a certificate issued by CA6 (PKITS 4.14.31)
+        const indirect = crl('indirectCRLCA5CRL')
+        expect(indirect.issuingDistributionPoint?.indirectCRL).toBe(true)
+        expect(indirect.isRevoked(cert('InvalidcRLIssuerTest31EE'))).toBe(true)
+    })
+
+    test('crlNumber, baseCrlNumber and isDelta', () => {
+        const complete = crl('deltaCRLCA1CRL')
+        const delta = crl('deltaCRLCA1deltaCRL')
+        expect(complete.isDelta).toBe(false)
+        expect(complete.crlNumber).toBeTypeOf('bigint')
+        expect(delta.isDelta).toBe(true)
+        expect(delta.baseCrlNumber).toBe(complete.crlNumber)
+    })
+
+    test('issuingDistributionPoint', () => {
+        expect(
+            crl('onlyContainsCACertsCACRL').issuingDistributionPoint
+                ?.onlyContainsCACerts,
+        ).toBe(true)
+        expect(crl('GoodCACRL').issuingDistributionPoint).toBeUndefined()
+    })
+})

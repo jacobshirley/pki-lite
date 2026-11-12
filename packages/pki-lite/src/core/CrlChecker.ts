@@ -1,7 +1,6 @@
 import { Certificate } from '../x509/Certificate.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { RevokedCertificate } from '../x509/RevokedCertificate.js'
-import { Extension } from '../x509/Extension.js'
 import { RDNSequence } from '../x509/RDNSequence.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import {
@@ -9,21 +8,9 @@ import {
     GeneralName,
     GeneralNames,
 } from '../x509/GeneralName.js'
-import { BasicConstraints } from '../x509/extensions/BasicConstraints.js'
-import { KeyUsage } from '../x509/extensions/KeyUsage.js'
-import {
-    CRLDistributionPoints,
-    DistributionPoint,
-} from '../x509/extensions/CRLDistributionPoints.js'
-import { IssuingDistributionPoint } from '../x509/extensions/IssuingDistributionPoint.js'
+import { DistributionPoint } from '../x509/extensions/CRLDistributionPoints.js'
 import { ReasonFlags } from '../x509/ReasonFlags.js'
-import { CRLReason } from '../x509/CRLReason.js'
-import { Integer } from '../asn1/Integer.js'
-import { SignatureAlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OIDs } from './OIDs.js'
-import { derToAsn1 } from './PkiBase.js'
-import { namesMatch } from './NameMatching.js'
-import { signedBytes } from './OriginalEncoding.js'
 
 /** The revocation reasons a set of CRLs has to cover between them (RFC 5280 6.3.3). */
 const ALL_REASONS = [
@@ -84,42 +71,14 @@ export type CrlCheckerOptions = {
     validateSigner: (signer: Certificate) => Promise<boolean>
 }
 
-const extensionOf = (extensions: Extension[] | undefined, oid: string) =>
-    extensions?.find((extension) => extension.extnID.value === oid)
-
-const parseExtension = <T>(
-    extension: Extension | undefined,
-    type: { fromAsn1(asn1: ReturnType<typeof derToAsn1>): T },
-): T | undefined =>
-    extension ? type.fromAsn1(derToAsn1(extension.extnValue.bytes)) : undefined
-
 const reasonsOf = (flags: ReasonFlags | undefined): Set<Reason> =>
     new Set(flags ? ALL_REASONS.filter((reason) => flags[reason]) : ALL_REASONS)
 
-const crlNumberOf = (crl: CertificateList, oid: string): bigint | undefined => {
-    const extension = extensionOf(crl.tbsCertList.extensions, oid)
-    return extension
-        ? Integer.fromAsn1(derToAsn1(extension.extnValue.bytes)).toBigInt()
-        : undefined
-}
-
-const isCa = (certificate: Certificate) => {
-    const extension = certificate.getExtensionByOid(
-        OIDs.EXTENSION.BASIC_CONSTRAINTS,
-    )
-    return extension ? extension.extnValue.parseAs(BasicConstraints).cA : false
-}
-
-const sameBytes = (a: Uint8Array, b: Uint8Array) =>
-    a.length === b.length && a.every((byte, i) => byte === b[i])
-
 /** Whether two GeneralNames are the same name (directory names per RFC 5280 7.1). */
-function generalNamesEqual(a: GeneralName, b: GeneralName): boolean {
-    if (a instanceof directoryName && b instanceof directoryName) {
-        return namesMatch(a, b)
-    }
-    return a.constructor === b.constructor && sameBytes(a.toDer(), b.toDer())
-}
+const sameName = (a: GeneralName, b: GeneralName): boolean =>
+    a instanceof directoryName && b instanceof directoryName
+        ? a.matches(b)
+        : String(a.toDer()) === String(b.toDer())
 
 /** The full names a distribution point name stands for (RFC 5280 4.2.1.13). */
 function fullNames(
@@ -129,10 +88,16 @@ function fullNames(
     if (!name) return []
     if (name instanceof RelativeDistinguishedName) {
         // nameRelativeToCRLIssuer: the CRL issuer's name with this RDN appended
-        const full = new RDNSequence(...crlIssuer, name)
-        return [directoryName.fromName(full)]
+        return [directoryName.fromName(new RDNSequence(...crlIssuer, name))]
     }
     return [...name]
+}
+
+/** Whether two CRLs have the same scope (the same issuingDistributionPoint, or none). */
+function sameScope(a: CertificateList, b: CertificateList): boolean {
+    const scopeA = a.getExtensionByName('ISSUING_DISTRIBUTION_POINT')?.extnValue
+    const scopeB = b.getExtensionByName('ISSUING_DISTRIBUTION_POINT')?.extnValue
+    return scopeA && scopeB ? scopeA.equals(scopeB) : scopeA === scopeB
 }
 
 /**
@@ -143,6 +108,9 @@ function fullNames(
  * this checker cannot process, and are signed by a key whose certificate allows CRL
  * signing and validates. A certificate is "good" only if such CRLs cover every
  * revocation reason; otherwise its status is undetermined.
+ *
+ * For a single CRL, `crl.verify(issuer)`, `crl.isCurrent()` and `crl.isRevoked(cert)` do
+ * the individual checks; CertificateValidator uses this class with `checkCRL`.
  */
 export class CrlChecker {
     private readonly options: CrlCheckerOptions
@@ -152,12 +120,7 @@ export class CrlChecker {
     }
 
     async check(certificate: Certificate): Promise<CrlStatus> {
-        const extension = certificate.getExtensionByOid(
-            OIDs.EXTENSION.CRL_DISTRIBUTION_POINTS,
-        )
-        const points = extension
-            ? [...extension.extnValue.parseAs(CRLDistributionPoints)]
-            : []
+        const points = certificate.getCrlDistributionPoints()
         // a certificate without distribution points is covered by its issuer's CRLs
         if (points.length === 0) points.push(new DistributionPoint())
 
@@ -165,14 +128,14 @@ export class CrlChecker {
         const problems: string[] = []
 
         for (const point of points) {
-            for (const crl of this.completeCrls()) {
-                const interim = await this.usableFor(
+            for (const crl of this.options.crls.filter((c) => !c.isDelta)) {
+                const reasons = await this.usableFor(
                     certificate,
                     point,
                     crl,
                     problems,
                 )
-                if (!interim) continue
+                if (!reasons) continue
 
                 const deltas = await this.deltasFor(crl, problems)
                 const entry = this.findEntry(certificate, crl, deltas)
@@ -180,11 +143,11 @@ export class CrlChecker {
                     return {
                         status: 'revoked',
                         reason: entry.reason,
-                        revocationTime: entry.entry.revocationDate,
+                        revocationTime: entry.revocationDate,
                         details: `Certificate found in the CRL of '${crl.tbsCertList.issuer.toHumanString()}'`,
                     }
                 }
-                for (const reason of interim) covered.add(reason)
+                for (const reason of reasons) covered.add(reason)
             }
         }
 
@@ -204,19 +167,9 @@ export class CrlChecker {
         }
     }
 
-    private completeCrls(): CertificateList[] {
-        return this.options.crls.filter(
-            (crl) =>
-                !extensionOf(
-                    crl.tbsCertList.extensions,
-                    OIDs.EXTENSION.DELTA_CRL_INDICATOR,
-                ),
-        )
-    }
-
     /**
-     * RFC 5280 6.3.3 (a) to (i) for one complete CRL: the reasons it covers for
-     * this certificate and distribution point, or undefined if it cannot be used.
+     * RFC 5280 6.3.3 (a) to (i) for one complete CRL: the reasons it covers for this
+     * certificate and distribution point, or undefined if it cannot be used.
      */
     private async usableFor(
         certificate: Certificate,
@@ -224,25 +177,17 @@ export class CrlChecker {
         crl: CertificateList,
         problems: string[],
     ): Promise<Set<Reason> | undefined> {
-        const tbs = crl.tbsCertList
-        const issuer = tbs.issuer
-        const idp = parseExtension(
-            extensionOf(
-                tbs.extensions,
-                OIDs.EXTENSION.ISSUING_DISTRIBUTION_POINT,
-            ),
-            IssuingDistributionPoint,
-        )
+        const issuer = crl.tbsCertList.issuer
+        const idp = crl.issuingDistributionPoint
 
         // (b)(1) issued for this certificate: by its issuer, or, for an indirect CRL, by
         // one of the cRLIssuer names of the distribution point
         if (point.cRLIssuer) {
             const named = [...point.cRLIssuer].some(
-                (name) =>
-                    name instanceof directoryName && namesMatch(name, issuer),
+                (name) => name instanceof directoryName && name.matches(issuer),
             )
             if (!named || !idp?.indirectCRL) return undefined
-        } else if (!namesMatch(issuer, certificate.tbsCertificate.issuer)) {
+        } else if (!issuer.matches(certificate.tbsCertificate.issuer)) {
             return undefined
         }
 
@@ -254,18 +199,18 @@ export class CrlChecker {
                     ? fullNames(point.distributionPoint, issuer)
                     : [...(point.cRLIssuer ?? [])]
                 const shared = idpNames.some((a) =>
-                    pointNames.some((b) => generalNamesEqual(a, b)),
+                    pointNames.some((b) => sameName(a, b)),
                 )
                 if (!shared) {
                     problems.push('a CRL is for another distribution point')
                     return undefined
                 }
             }
-            if (idp.onlyContainsUserCerts && isCa(certificate)) {
+            if (idp.onlyContainsUserCerts && certificate.isCA()) {
                 problems.push('a CRL only covers end-entity certificates')
                 return undefined
             }
-            if (idp.onlyContainsCACerts && !isCa(certificate)) {
+            if (idp.onlyContainsCACerts && !certificate.isCA()) {
                 problems.push('a CRL only covers CA certificates')
                 return undefined
             }
@@ -276,12 +221,12 @@ export class CrlChecker {
         }
 
         // (d)/(e) the reasons this CRL covers for this distribution point, if any
-        const interim = reasonsOf(idp?.onlySomeReasons)
+        const reasons = reasonsOf(idp?.onlySomeReasons)
         const pointReasons = reasonsOf(point.reasons)
-        for (const reason of [...interim]) {
-            if (!pointReasons.has(reason)) interim.delete(reason)
+        for (const reason of [...reasons]) {
+            if (!pointReasons.has(reason)) reasons.delete(reason)
         }
-        if (interim.size === 0) return undefined
+        if (reasons.size === 0) return undefined
 
         // (a) current
         const problem = this.crlProblem(crl)
@@ -291,27 +236,29 @@ export class CrlChecker {
         }
 
         // (f)/(g) signed by a key allowed to sign CRLs, whose path validates
-        if (!(await this.verifySignature(crl))) {
+        if (!(await this.signedByValidSigner(crl))) {
             problems.push(
                 `the CRL of '${issuer.toHumanString()}' has no valid signature from a CRL signer that validates`,
             )
             return undefined
         }
-        return interim
+        return reasons
     }
 
     /** Why a CRL cannot be used regardless of the certificate, if it cannot. */
     private crlProblem(crl: CertificateList): string | undefined {
-        const tbs = crl.tbsCertList
-        const name = `the CRL of '${tbs.issuer.toHumanString()}'`
-        const time = this.options.time
-        if (tbs.thisUpdate > time) return `${name} is not yet valid`
-        // RFC 5280 5.1.2.5: conforming CRLs include nextUpdate; without it, freshness
-        // cannot be established
-        if (!tbs.nextUpdate) return `${name} has no nextUpdate`
-        if (tbs.nextUpdate < time)
-            return `${name} is out of date (nextUpdate ${tbs.nextUpdate.toISOString()})`
-        for (const extension of tbs.extensions ?? []) {
+        const { thisUpdate, nextUpdate, extensions, revokedCertificates } =
+            crl.tbsCertList
+        const name = `the CRL of '${crl.tbsCertList.issuer.toHumanString()}'`
+        if (!crl.isCurrent(this.options.time)) {
+            if (thisUpdate > this.options.time)
+                return `${name} is not yet valid`
+            // RFC 5280 5.1.2.5: conforming CRLs include nextUpdate; without it,
+            // freshness cannot be established
+            if (!nextUpdate) return `${name} has no nextUpdate`
+            return `${name} is out of date (nextUpdate ${nextUpdate.toISOString()})`
+        }
+        for (const extension of extensions ?? []) {
             if (
                 extension.critical &&
                 !KNOWN_CRL_EXTENSIONS.has(extension.extnID.value)
@@ -319,7 +266,7 @@ export class CrlChecker {
                 return `${name} has an unsupported critical extension ${extension.extnID.value}`
             }
         }
-        for (const entry of tbs.revokedCertificates ?? []) {
+        for (const entry of revokedCertificates ?? []) {
             for (const extension of entry.crlEntryExtensions ?? []) {
                 if (
                     extension.critical &&
@@ -332,34 +279,22 @@ export class CrlChecker {
         return undefined
     }
 
-    /** Whether a CRL is signed by a certificate with its issuer's name that may sign CRLs. */
-    private async verifySignature(crl: CertificateList): Promise<boolean> {
-        const issuer = crl.tbsCertList.issuer
-        const algorithm = new SignatureAlgorithmIdentifier(
-            crl.signatureAlgorithm,
-        )
-        const bytes = signedBytes(crl.tbsCertList)
+    /** Whether a CRL verifies with an available signer that is trusted or validates. */
+    private async signedByValidSigner(crl: CertificateList): Promise<boolean> {
         for (const signer of this.options.certificates) {
-            if (!namesMatch(signer.tbsCertificate.subject, issuer)) continue
-            const keyUsage = signer.getExtensionByOid(OIDs.EXTENSION.KEY_USAGE)
-            if (keyUsage && !keyUsage.extnValue.parseAs(KeyUsage).cRLSign)
-                continue
-            let valid = false
+            let signed = false
             try {
-                valid = await algorithm.verify(
-                    bytes,
-                    crl.signatureValue.bytes,
-                    signer.getSubjectPublicKeyInfo(),
-                )
+                signed = await crl.verify(signer)
             } catch {
-                valid = false
+                // an unsupported algorithm or malformed key: not a usable signature
             }
-            if (!valid) continue
+            if (!signed) continue
             const anchor = this.options.trustAnchors.some((trusted) =>
                 trusted.equals(signer),
             )
-            if (anchor || (await this.options.validateSigner(signer)))
+            if (anchor || (await this.options.validateSigner(signer))) {
                 return true
+            }
         }
         return false
     }
@@ -369,35 +304,23 @@ export class CrlChecker {
         base: CertificateList,
         problems: string[],
     ): Promise<CertificateList[]> {
-        const baseNumber = crlNumberOf(base, OIDs.EXTENSION.CRL_NUMBER)
+        const baseNumber = base.crlNumber
+        if (baseNumber === undefined) return []
         const usable: CertificateList[] = []
         for (const delta of this.options.crls) {
-            const baseOfDelta = crlNumberOf(
-                delta,
-                OIDs.EXTENSION.DELTA_CRL_INDICATOR,
-            )
-            if (baseOfDelta === undefined || baseNumber === undefined) continue
-            if (!namesMatch(delta.tbsCertList.issuer, base.tbsCertList.issuer))
+            const deltaBase = delta.baseCrlNumber
+            if (deltaBase === undefined) continue
+            if (!delta.tbsCertList.issuer.matches(base.tbsCertList.issuer)) {
                 continue
-            // the delta must build on this complete CRL or an earlier one
-            if (baseOfDelta > baseNumber) continue
-            const sameScope = sameBytes(
-                extensionOf(
-                    delta.tbsCertList.extensions,
-                    OIDs.EXTENSION.ISSUING_DISTRIBUTION_POINT,
-                )?.extnValue.bytes ?? new Uint8Array(),
-                extensionOf(
-                    base.tbsCertList.extensions,
-                    OIDs.EXTENSION.ISSUING_DISTRIBUTION_POINT,
-                )?.extnValue.bytes ?? new Uint8Array(),
-            )
-            if (!sameScope) continue
+            }
+            // the delta must build on this complete CRL or an earlier one, with its scope
+            if (deltaBase > baseNumber || !sameScope(delta, base)) continue
             const problem = this.crlProblem(delta)
             if (problem) {
                 problems.push(problem.replace('the CRL', 'the delta CRL'))
                 continue
             }
-            if (!(await this.verifySignature(delta))) {
+            if (!(await this.signedByValidSigner(delta))) {
                 problems.push('a delta CRL has no valid signature')
                 continue
             }
@@ -414,60 +337,11 @@ export class CrlChecker {
         certificate: Certificate,
         base: CertificateList,
         deltas: CertificateList[],
-    ): { entry: RevokedCertificate; reason?: number } | undefined {
-        let found: { entry: RevokedCertificate; reason?: number } | undefined
+    ): RevokedCertificate | undefined {
+        let found: RevokedCertificate | undefined
         for (const crl of [base, ...deltas]) {
-            const entry = this.entryOn(certificate, crl)
-            if (entry) found = entry
+            found = crl.getRevokedEntry(certificate) ?? found
         }
         return found
-    }
-
-    private entryOn(
-        certificate: Certificate,
-        crl: CertificateList,
-    ): { entry: RevokedCertificate; reason?: number } | undefined {
-        const serial = certificate.tbsCertificate.serialNumber.toBigInt()
-        const idp = parseExtension(
-            extensionOf(
-                crl.tbsCertList.extensions,
-                OIDs.EXTENSION.ISSUING_DISTRIBUTION_POINT,
-            ),
-            IssuingDistributionPoint,
-        )
-        // on an indirect CRL, entries name their certificate issuer (RFC 5280 5.3.3): it
-        // applies to that entry and the ones after it, starting from the CRL issuer
-        let entryIssuer: GeneralName[] = [
-            directoryName.fromName(crl.tbsCertList.issuer),
-        ]
-        for (const entry of crl.tbsCertList.revokedCertificates ?? []) {
-            const issuerExtension = extensionOf(
-                entry.crlEntryExtensions,
-                OIDs.EXTENSION.CERTIFICATE_ISSUER,
-            )
-            if (issuerExtension && idp?.indirectCRL) {
-                entryIssuer = [
-                    ...GeneralNames.fromAsn1(
-                        derToAsn1(issuerExtension.extnValue.bytes),
-                    ),
-                ]
-            }
-            if (entry.serialAsBigInt() !== serial) continue
-            const issuedBy = entryIssuer.some(
-                (name) =>
-                    name instanceof directoryName &&
-                    namesMatch(name, certificate.tbsCertificate.issuer),
-            )
-            if (!issuedBy) continue
-            const reasonExtension = extensionOf(
-                entry.crlEntryExtensions,
-                OIDs.EXTENSION.CRL_REASON_CODE,
-            )
-            return {
-                entry,
-                reason: reasonExtension?.extnValue.parseAs(CRLReason).value,
-            }
-        }
-        return undefined
     }
 }

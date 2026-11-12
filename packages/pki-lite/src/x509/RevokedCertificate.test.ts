@@ -3,6 +3,9 @@ import { derToAsn1 } from '../core/PkiBase.js'
 import { RevokedCertificate } from './RevokedCertificate.js'
 import { Extension } from './Extension.js'
 import { asn1js, ObjectIdentifierString } from '../core/PkiBase.js'
+import { pkitsFiles } from '../../test-fixtures/pkits/pkits.js'
+import { CertificateList } from './CertificateList.js'
+import { directoryName } from './GeneralName.js'
 
 describe('RevokedCertificate', () => {
     test('can be created with serial number and date', () => {
@@ -333,5 +336,31 @@ describe('RevokedCertificate', () => {
             )
             expect(parsed.userCertificate).toBe('ffffffffffffffffffff')
         })
+    })
+})
+
+const pkitsDer = (name: string) =>
+    Uint8Array.from(atob(pkitsFiles[name]), (c) => c.charCodeAt(0))
+
+describe('RevokedCertificate extension helpers', () => {
+    const entries = (name: string) =>
+        CertificateList.fromDer(pkitsDer(name)).tbsCertList.revokedCertificates!
+
+    test('reason', () => {
+        expect(entries('GoodCACRL').map((entry) => entry.reason)).toContain(1)
+        expect(
+            new RevokedCertificate({
+                userCertificate: 1,
+                revocationDate: new Date(),
+            }).reason,
+        ).toBeUndefined()
+    })
+
+    test('certificateIssuer on an indirect CRL', () => {
+        const named = entries('indirectCRLCA5CRL')
+            .map((entry) => entry.certificateIssuer)
+            .filter((names) => names !== undefined)
+        expect(named.length).toBeGreaterThan(0)
+        expect(named[0][0]).toBeInstanceOf(directoryName)
     })
 })
