@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { der } from '../PkiBase.js'
 import { AuthEnvelopedData } from '../../pkcs7/AuthEnvelopedData.js'
 import { ContentInfo } from '../../pkcs7/ContentInfo.js'
 import { EnvelopedData } from '../../pkcs7/EnvelopedData.js'
@@ -7,7 +8,6 @@ import { Attribute } from '../../x509/Attribute.js'
 import { PrivateKeyInfo } from '../../keys/PrivateKeyInfo.js'
 import { rsaSigningKeys } from '../../../test-fixtures/signing-keys/rsa-2048/index.js'
 import { OIDs } from '../OIDs.js'
-import { asn1js } from '../PkiBase.js'
 
 const recipient = () => ({
     certificate: Certificate.fromPem(rsaSigningKeys.certPem),
@@ -89,7 +89,7 @@ describe('AuthEnvelopedDataBuilder', () => {
     test('authenticated attributes are covered by the tag', async () => {
         const marker = new Attribute({
             type: '1.2.3.4.5',
-            values: [new asn1js.Integer({ value: 42 })],
+            values: [der.integer(42)],
         })
         const authEnvelopedData = await AuthEnvelopedData.builder()
             .setData('attributes')
@@ -109,7 +109,7 @@ describe('AuthEnvelopedDataBuilder', () => {
             attribute.type.value === '1.2.3.4.5'
                 ? new Attribute({
                       type: '1.2.3.4.5',
-                      values: [new asn1js.Integer({ value: 43 })],
+                      values: [der.integer(43)],
                   })
                 : attribute,
         ) as typeof tampered.authAttrs
