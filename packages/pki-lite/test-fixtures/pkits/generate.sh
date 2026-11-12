@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Regenerates pkits.ts (NIST PKITS certificates and certification paths for sections 4.8
-# to 4.13) used by test/unit/pkits.test.ts.
+# Regenerates pkits.ts (NIST PKITS certificates, CRLs and certification paths for every
+# test in section 4) used by test/unit/pkits.test.ts.
 #
 #   ./generate.sh        (rewrites pkits.ts next to this script)
 #
@@ -22,5 +22,5 @@ EOF
 mkdir "$WORK/data"
 unzip -q "$WORK/PKITS_data.zip" -d "$WORK/data"
 pdftotext -layout "$WORK/PKITS.pdf" "$WORK/PKITS.txt"
-python3 "$HERE/emit-ts.py" "$WORK/PKITS.txt" "$WORK/data/certs" > "$HERE/pkits.ts"
+python3 "$HERE/emit-ts.py" "$WORK/PKITS.txt" "$WORK/data" > "$HERE/pkits.ts"
 echo "wrote $HERE/pkits.ts"
