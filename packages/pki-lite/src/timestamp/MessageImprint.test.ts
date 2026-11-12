@@ -1,7 +1,7 @@
 import { assert, describe, expect, test } from 'vitest'
 import { MessageImprint } from './MessageImprint.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('MessageImprint', () => {
     test('can be created', () => {
@@ -31,18 +31,16 @@ describe('MessageImprint', () => {
         })
         const asn1 = messageImprint.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
         // First element should be AlgorithmIdentifier
-        assert(asn1.valueBlock.value[0] instanceof asn1js.Sequence)
+        assert(asn1.children[0]?.is(UniversalTag.Sequence))
 
         // Second element should be OCTET STRING
-        assert(asn1.valueBlock.value[1] instanceof asn1js.OctetString)
-        const octetString = asn1.valueBlock.value[1] as asn1js.OctetString
-        expect(new Uint8Array(octetString.valueBlock.valueHexView)).toEqual(
-            hashedMessage,
-        )
+        assert(asn1.children[1]?.is(UniversalTag.OctetString))
+        const octetString = asn1.children[1]
+        expect(octetString.bytes()).toEqual(hashedMessage)
     })
 
     test('can be created from ASN.1', () => {
@@ -73,11 +71,11 @@ describe('MessageImprint', () => {
         const asn1Again = recreated.toAsn1()
 
         expect(original.toDer()).toEqual(recreated.toDer())
-        expect(asn1.toBER(false)).toEqual(asn1Again.toBER(false))
+        expect(asn1.encode()).toEqual(asn1Again.encode())
     })
 
     test('fromAsn1 throws error for invalid structure', () => {
-        const invalidAsn1 = new asn1js.Integer({ value: 1 })
+        const invalidAsn1 = der.integer(1)
 
         expect(() => MessageImprint.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -85,9 +83,9 @@ describe('MessageImprint', () => {
     })
 
     test('fromAsn1 throws error for wrong number of elements', () => {
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 1 })], // Only 1 element instead of 2
-        })
+        const invalidAsn1 = der.sequence([
+            der.integer(1),
+        ]) /* Only 1 element instead of 2 */
 
         expect(() => MessageImprint.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected exactly 2 elements',
@@ -98,12 +96,10 @@ describe('MessageImprint', () => {
         const hashAlgorithm = new AlgorithmIdentifier({
             algorithm: '2.16.840.1.101.3.4.2.1',
         })
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [
-                hashAlgorithm.toAsn1(),
-                new asn1js.Integer({ value: 123 }), // Should be OCTET STRING
-            ],
-        })
+        const invalidAsn1 = der.sequence([
+            hashAlgorithm.toAsn1(),
+            der.integer(123), // Should be OCTET STRING
+        ])
 
         expect(() => MessageImprint.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected OCTET STRING for hashedMessage',

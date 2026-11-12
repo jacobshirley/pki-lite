@@ -1,9 +1,11 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
-    PkiBase,
+    Asn1Node,
+    der,
     derToAsn1,
     ObjectIdentifierString,
+    PkiBase,
+    TagClass,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { MessageImprint } from './MessageImprint.js'
 import { Extension } from '../x509/Extension.js'
@@ -137,12 +139,12 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
      * @example
      * ```typescript
      * const asn1 = tsReq.toAsn1()
-     * const der = asn1.toBER(false) // Convert to DER for transmission
+     * const der = asn1.encode() // Convert to DER for transmission
      * ```
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
-            new asn1js.Integer({ value: this.version }),
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [
+            der.integer(this.version),
             this.messageImprint.toAsn1(),
         ]
 
@@ -151,24 +153,20 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
         }
 
         if (this.nonce) {
-            values.push(new asn1js.Integer({ valueHex: this.nonce }))
+            values.push(der.primitive(UniversalTag.Integer, this.nonce))
         }
 
         if (this.certReq) {
-            values.push(new asn1js.Boolean({ value: this.certReq }))
+            values.push(der.boolean(this.certReq))
         }
 
         if (this.extensions && this.extensions.length > 0) {
             const extensionsArray = this.extensions.map((ext) => ext.toAsn1())
             // Extensions are [0] IMPLICIT
-            values.push(
-                implicitTag(new asn1js.Sequence({ value: extensionsArray }), 0),
-            )
+            values.push(implicitTag(der.sequence(extensionsArray), 0))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
     /**
@@ -191,14 +189,14 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
      * console.log(request.certReq) // Certificate requested
      * ```
      */
-    static fromAsn1(asn1: Asn1BaseBlock): TimeStampReq {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): TimeStampReq {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 2) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected at least 2 elements',
@@ -206,12 +204,12 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
         }
 
         // Version
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected INTEGER for version',
             )
         }
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
         if (version !== 1) {
             throw new Asn1ParseError(
                 `Unsupported TimeStampReq version: ${version}`,
@@ -230,22 +228,22 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
         for (let i = 2; i < values.length; i++) {
             const value = values[i]
 
-            if (value instanceof asn1js.ObjectIdentifier) {
+            if (value.is(UniversalTag.ObjectIdentifier)) {
                 reqPolicy = new ObjectIdentifier({
-                    value: value.valueBlock.toString(),
+                    value: der.readOid(value),
                 })
-            } else if (value instanceof asn1js.Integer) {
-                nonce = new Uint8Array(value.valueBlock.valueHexView)
-            } else if (value instanceof asn1js.Boolean) {
-                certReq = value.valueBlock.value
+            } else if (value.is(UniversalTag.Integer)) {
+                nonce = value.bytes()
+            } else if (value.is(UniversalTag.Boolean)) {
+                certReq = der.readBoolean(value)
             } else if (
-                value instanceof asn1js.Constructed &&
-                value.idBlock.tagClass === 3 && // CONTEXT-SPECIFIC
-                value.idBlock.tagNumber === 0 // [0]
+                value?.constructed &&
+                value.tagClass === TagClass.Context && // CONTEXT-SPECIFIC
+                value.tag === 0 // [0]
             ) {
                 // extensions [0] IMPLICIT Extensions
-                extensions = implicitSequenceOf(value).valueBlock.value.map(
-                    (ext) => Extension.fromAsn1(ext),
+                extensions = implicitSequenceOf(value).children.map((ext) =>
+                    Extension.fromAsn1(ext),
                 )
             }
         }
