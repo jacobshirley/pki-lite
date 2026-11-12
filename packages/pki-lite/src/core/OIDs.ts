@@ -206,6 +206,14 @@ export const OIDs = {
         AUTHORITY_INFO_ACCESS: '1.3.6.1.5.5.7.1.1',
         /** CRL Reason Code */
         CRL_REASON_CODE: '2.5.29.21',
+        /** Delta CRL Indicator */
+        DELTA_CRL_INDICATOR: '2.5.29.27',
+        /** Issuing Distribution Point */
+        ISSUING_DISTRIBUTION_POINT: '2.5.29.28',
+        /** Certificate Issuer (CRL entry extension) */
+        CERTIFICATE_ISSUER: '2.5.29.29',
+        /** Freshest CRL */
+        FRESHEST_CRL: '2.5.29.46',
     },
 
     /**
@@ -469,6 +477,10 @@ export const OIDToFriendlyName: Record<string, string> = {
     [OIDs.EXTENSION.SUBJECT_ALT_NAME]: 'Subject Alternative Name',
     [OIDs.EXTENSION.BASIC_CONSTRAINTS]: 'Basic Constraints',
     [OIDs.EXTENSION.CRL_NUMBER]: 'CRL Number',
+    [OIDs.EXTENSION.DELTA_CRL_INDICATOR]: 'Delta CRL Indicator',
+    [OIDs.EXTENSION.ISSUING_DISTRIBUTION_POINT]: 'Issuing Distribution Point',
+    [OIDs.EXTENSION.CERTIFICATE_ISSUER]: 'Certificate Issuer',
+    [OIDs.EXTENSION.FRESHEST_CRL]: 'Freshest CRL',
     [OIDs.EXTENSION.CRL_DISTRIBUTION_POINTS]: 'CRL Distribution Points',
     [OIDs.EXTENSION.CERTIFICATE_POLICIES]: 'Certificate Policies',
     [OIDs.EXTENSION.ANY_POLICY]: 'Any Policy',
