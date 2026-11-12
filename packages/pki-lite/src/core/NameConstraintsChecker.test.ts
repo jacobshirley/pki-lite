@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, test } from 'vitest'
+import { der } from './PkiBase.js'
 import { KeyGen } from './KeyGen.js'
 import { Certificate } from '../x509/Certificate.js'
 import {
@@ -11,7 +12,10 @@ import {
     GeneralName,
 } from '../x509/GeneralName.js'
 import { Name } from '../x509/Name.js'
-import { GeneralSubtree, NameConstraints } from '../x509/extensions/NameConstraints.js'
+import {
+    GeneralSubtree,
+    NameConstraints,
+} from '../x509/extensions/NameConstraints.js'
 import {
     checkNameConstraints,
     dnsWithin,
@@ -22,7 +26,6 @@ import {
     uriHost,
     uriWithin,
 } from './NameConstraintsChecker.js'
-import { asn1js } from './PkiBase.js'
 
 describe('matching rules (RFC 5280 4.2.1.10)', () => {
     test('dNSName: the constraint itself or any name below it', () => {
@@ -375,7 +378,7 @@ describe('checkNameConstraints', () => {
         const other = () =>
             new otherName({
                 typeID: '1.3.6.1.4.1.311.20.2.3',
-                value: new asn1js.Utf8String({ value: 'user@example.com' }),
+                value: der.utf8String('user@example.com'),
             })
         const constraints = permit(other())
 

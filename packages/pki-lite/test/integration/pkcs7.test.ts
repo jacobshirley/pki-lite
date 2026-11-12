@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, assert } from 'vitest'
+import { UniversalTag } from '../../src/core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../src/algorithms/AlgorithmIdentifier.js'
 import { Name } from '../../src/x509/Name.js'
 import { RelativeDistinguishedName } from '../../src/x509/RelativeDistinguishedName.js'
@@ -7,7 +8,6 @@ import { IssuerAndSerialNumber } from '../../src/pkcs7/IssuerAndSerialNumber.js'
 import { EncapsulatedContentInfo } from '../../src/pkcs7/EncapsulatedContentInfo.js'
 import { SignerInfo } from '../../src/pkcs7/SignerInfo.js'
 import { SignedData } from '../../src/pkcs7/SignedData.js'
-import { asn1js } from '../../src/core/PkiBase.js'
 import { DigestedData } from '../../src/pkcs7/DigestedData.js'
 import { RecipientInfo } from '../../src/pkcs7/recipients/RecipientInfo.js'
 import { EnvelopedData } from '../../src/pkcs7/EnvelopedData.js'
@@ -86,8 +86,8 @@ describe('PKCS#7 Integration Tests', () => {
 
         // Convert to ASN.1 and verify it's a valid structure
         const asn1 = signedData.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(4) // version, digestAlgorithms, contentInfo, signerInfos
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toBe(4) // version, digestAlgorithms, contentInfo, signerInfos
     })
 
     it('should create a EncapsulatedContentInfo wrapper for SignedData', () => {
@@ -133,8 +133,8 @@ describe('PKCS#7 Integration Tests', () => {
         expect(outerContentInfo.eContent).toEqual(signedData.toDer())
 
         const asn1 = outerContentInfo.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2) // contentType + content
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toBe(2) // contentType + content
     })
 
     it('should create a DigestedData structure', () => {
@@ -167,8 +167,8 @@ describe('PKCS#7 Integration Tests', () => {
         expect(digestedData.digest.length).toBe(32)
 
         const asn1 = digestedData.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(4) // version, digestAlgorithm, contentInfo, digest
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toBe(4) // version, digestAlgorithm, contentInfo, digest
     })
 
     it('should create an EnvelopedData structure', () => {
@@ -217,8 +217,8 @@ describe('PKCS#7 Integration Tests', () => {
         expect(envelopedData.encryptedContentInfo).toBe(encryptedContentInfo)
 
         const asn1 = envelopedData.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(3) // version, recipientInfos, encryptedContentInfo
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toBe(3) // version, recipientInfos, encryptedContentInfo
     })
 
     it('should create an EncryptedData structure', () => {
@@ -245,8 +245,8 @@ describe('PKCS#7 Integration Tests', () => {
         expect(encryptedData.encryptedContentInfo).toBe(encryptedContentInfo)
 
         const asn1 = encryptedData.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBe(2) // version, encryptedContentInfo
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toBe(2) // version, encryptedContentInfo
     })
 
     it('should handle nested EncapsulatedContentInfo structures', () => {
@@ -281,6 +281,6 @@ describe('PKCS#7 Integration Tests', () => {
         expect(outerContentInfo.eContent).toEqual(digestedData.toDer())
 
         const asn1 = outerContentInfo.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
+        assert(asn1.is(UniversalTag.Sequence))
     })
 })

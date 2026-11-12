@@ -1604,7 +1604,7 @@ console.log(
 
 ```typescript
 import { KeyGen } from 'pki-lite/core/KeyGen.js'
-import { asn1js } from 'pki-lite/core/PkiBase.js'
+import { der } from 'pki-lite/core/PkiBase.js'
 import { AuthEnvelopedData } from 'pki-lite/pkcs7/AuthEnvelopedData.js'
 import { Attribute } from 'pki-lite/x509/Attribute.js'
 import { Certificate } from 'pki-lite/x509/Certificate.js'
@@ -1635,17 +1635,17 @@ console.log('Ciphertext bytes:', cipher.encryptedContent?.bytes.length)
 console.log('Authentication tag (mac) bytes:', authEnvelopedData.mac.length)
 
 // Send it as DER (this is what `openssl cms -decrypt -inform DER` reads) ...
-const der = authEnvelopedData.toCms().toDer()
-console.log('CMS size:', der.length, 'bytes')
+const encoded = authEnvelopedData.toCms().toDer()
+console.log('CMS size:', encoded.length, 'bytes')
 
 // ... and the recipient parses and decrypts it
-const received = AuthEnvelopedData.fromCms(der)
+const received = AuthEnvelopedData.fromCms(encoded)
 const plaintext = await received.decrypt(keyPair.privateKey)
 console.log('Decrypted:', new TextDecoder().decode(plaintext))
 
 // Tampering is detected: flipping one bit of the ciphertext or the tag makes
 // decryption fail instead of returning altered data.
-const tampered = AuthEnvelopedData.fromCms(der)
+const tampered = AuthEnvelopedData.fromCms(encoded)
 tampered.mac[0] ^= 1
 try {
     await tampered.decrypt(keyPair.privateKey)
@@ -1661,7 +1661,7 @@ const withAttributes = await AuthEnvelopedData.builder()
     .addAuthenticatedAttribute(
         new Attribute({
             type: '1.2.3.4.5', // an application-specific OID
-            values: [new asn1js.Integer({ value: 42 })],
+            values: [der.integer(42)],
         }),
     )
     .addRecipient({ certificate })
