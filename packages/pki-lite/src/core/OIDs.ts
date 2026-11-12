@@ -214,6 +214,12 @@ export const OIDs = {
         CERTIFICATE_ISSUER: '2.5.29.29',
         /** Freshest CRL */
         FRESHEST_CRL: '2.5.29.46',
+        /** Issuer Alternative Name */
+        ISSUER_ALT_NAME: '2.5.29.18',
+        /** Invalidity Date (CRL entry extension) */
+        INVALIDITY_DATE: '2.5.29.24',
+        /** Hold Instruction Code (CRL entry extension) */
+        HOLD_INSTRUCTION_CODE: '2.5.29.23',
     },
 
     /**
@@ -481,6 +487,9 @@ export const OIDToFriendlyName: Record<string, string> = {
     [OIDs.EXTENSION.ISSUING_DISTRIBUTION_POINT]: 'Issuing Distribution Point',
     [OIDs.EXTENSION.CERTIFICATE_ISSUER]: 'Certificate Issuer',
     [OIDs.EXTENSION.FRESHEST_CRL]: 'Freshest CRL',
+    [OIDs.EXTENSION.ISSUER_ALT_NAME]: 'Issuer Alternative Name',
+    [OIDs.EXTENSION.INVALIDITY_DATE]: 'Invalidity Date',
+    [OIDs.EXTENSION.HOLD_INSTRUCTION_CODE]: 'Hold Instruction Code',
     [OIDs.EXTENSION.CRL_DISTRIBUTION_POINTS]: 'CRL Distribution Points',
     [OIDs.EXTENSION.CERTIFICATE_POLICIES]: 'Certificate Policies',
     [OIDs.EXTENSION.ANY_POLICY]: 'Any Policy',

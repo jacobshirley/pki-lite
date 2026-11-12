@@ -37,6 +37,8 @@ import {
 import { GeneralName } from '../x509/GeneralName.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { CRLReason } from '../x509/CRLReason.js'
+import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
+import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 
 describe('CertificateValidator', () => {
     let validator: CertificateValidator
@@ -108,7 +110,7 @@ describe('CertificateValidator', () => {
         test('should detect revoked certificate via CRL', async () => {
             const revokedCertSerial =
                 sampleCertificate.tbsCertificate.serialNumber
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -123,6 +125,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -135,7 +138,7 @@ describe('CertificateValidator', () => {
         })
 
         test('should not detect non-revoked certificate via CRL', async () => {
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: 'DEADBEEF', // Different serial
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -149,19 +152,20 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                 },
             )
 
             expect(result.isValid).toEqual(true)
             expect(result.status).toEqual(CertificateValidationStatus.VALID)
             expect(result.revocationStatus.isRevoked).toEqual(false)
-            expect(result.revocationStatus.source).toEqual('NONE')
+            expect(result.revocationStatus.source).toEqual('CRL')
         })
 
         test('should detect a revoked serial that contains hex letters', async () => {
             const cert = createSampleCertificate()
             cert.tbsCertificate.serialNumber = new Integer({ value: 0xabcdef })
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: 0xabcdef,
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -171,7 +175,7 @@ describe('CertificateValidator', () => {
             const result = await validator.validate(
                 cert,
                 { checkCRL: true },
-                { crls: [crl] },
+                { crls: [crl], issuerCertificate: await testCa() },
             )
 
             expect(result.revocationStatus.isRevoked).toEqual(true)
@@ -185,7 +189,7 @@ describe('CertificateValidator', () => {
             ])
             const cert = createSampleCertificate()
             cert.tbsCertificate.serialNumber = new Integer({ value: serial })
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber:
                         cert.tbsCertificate.serialNumber.toHexString(),
@@ -196,7 +200,10 @@ describe('CertificateValidator', () => {
             const result = await validator.validate(
                 cert,
                 { checkCRL: true },
-                { crls: [CertificateList.fromDer(crl.toDer())] },
+                {
+                    crls: [CertificateList.fromDer(crl.toDer())],
+                    issuerCertificate: await testCa(),
+                },
             )
 
             expect(result.revocationStatus.isRevoked).toEqual(true)
@@ -205,13 +212,13 @@ describe('CertificateValidator', () => {
         test('should handle multiple CRLs', async () => {
             const revokedCertSerial =
                 sampleCertificate.tbsCertificate.serialNumber
-            const crl1 = createSampleCRL([
+            const crl1 = await createSampleCRL([
                 {
                     serialNumber: 'DEADBEEF',
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
                 },
             ])
-            const crl2 = createSampleCRL([
+            const crl2 = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-02-15T00:00:00.000Z'),
@@ -226,6 +233,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl1, crl2],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -321,7 +329,7 @@ describe('CertificateValidator', () => {
                 sampleCertificate.tbsCertificate.serialNumber
 
             // CRL says revoked
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -342,6 +350,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                     ocspResponses: [ocspResponse],
                 },
             )
@@ -357,7 +366,7 @@ describe('CertificateValidator', () => {
         test('should check both expiry and revocation', async () => {
             const revokedCertSerial =
                 expiredCertificate.tbsCertificate.serialNumber
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -371,6 +380,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -383,7 +393,7 @@ describe('CertificateValidator', () => {
         test('should report revocation if certificate is valid but revoked', async () => {
             const revokedCertSerial =
                 sampleCertificate.tbsCertificate.serialNumber
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -397,6 +407,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -407,7 +418,7 @@ describe('CertificateValidator', () => {
     })
 
     describe('Error Handling', () => {
-        test('should handle empty revocation data gracefully', async () => {
+        test('fails closed when no CRL covers the certificate (RFC 5280 6.3)', async () => {
             const result = await validator.validate(
                 sampleCertificate,
                 {
@@ -420,8 +431,10 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toEqual(true)
-            expect(result.status).toEqual(CertificateValidationStatus.VALID)
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(
+                CertificateValidationStatus.CRL_UNAVAILABLE,
+            )
             expect(result.revocationStatus.source).toEqual('NONE')
         })
 
@@ -1018,51 +1031,47 @@ function createNotYetValidCertificate(): Certificate {
     return cert
 }
 
-function createSampleCRL(
+/** A CRL signed by the "CN=Test CA" CA (the issuer of the sample certificates). */
+async function createSampleCRL(
     revokedCertificates: Array<{
         serialNumber: string | number
         revocationDate: Date
         reason?: number
     }>,
-): CertificateList {
-    const issuerRdn = new RelativeDistinguishedName()
-    issuerRdn.push(
-        new AttributeTypeAndValue({ type: '2.5.4.3', value: 'Test CA' }),
-    )
-    const issuerName = new Name.RDNSequence()
-    issuerName.push(issuerRdn)
+): Promise<CertificateList> {
+    const builder = CertificateList.builder()
+        .setIssuerFromCertificate(await testCa())
+        .setPrivateKey(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+        .setThisUpdate(new Date(Date.now() - 60 * 60 * 1000))
+        .setNextUpdate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+    for (const cert of revokedCertificates) {
+        builder.addRevokedCertificate({
+            serialNumber: cert.serialNumber,
+            revocationDate: cert.revocationDate,
+            crlEntryExtensions: cert.reason
+                ? [createReasonExtension(new CRLReason(cert.reason))]
+                : undefined,
+        })
+    }
+    return builder.build()
+}
 
-    const revokedCerts: RevokedCertificate[] = revokedCertificates.map(
-        (cert) => {
-            return new RevokedCertificate({
-                userCertificate: cert.serialNumber,
-                revocationDate: cert.revocationDate,
-                crlEntryExtensions: cert.reason
-                    ? [createReasonExtension(new CRLReason(cert.reason))]
-                    : undefined,
-            })
-        },
-    )
+let testCaCertificate: Promise<Certificate> | undefined
 
-    const tbsCertList = new TBSCertList({
-        signature: new AlgorithmIdentifier({
-            algorithm: '1.2.840.113549.1.1.11',
-        }), // SHA256withRSA
-        issuer: issuerName,
-        thisUpdate: new Date(), // thisUpdate
-        nextUpdate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // nextUpdate (+30 days)
-        revokedCertificates: revokedCerts,
-    })
-
-    const signatureValue = new Uint8Array(256) // Mock signature
-
-    return new CertificateList({
-        tbsCertList,
-        signatureAlgorithm: new AlgorithmIdentifier({
-            algorithm: '1.2.840.113549.1.1.11',
-        }), // SHA256withRSA
-        signatureValue,
-    })
+/** A real CA certificate named "CN=Test CA", with the key the sample CRLs are signed with. */
+function testCa(): Promise<Certificate> {
+    testCaCertificate ??= Certificate.builder()
+        .setSubject('CN=Test CA')
+        .setPublicKey(
+            Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                .subjectPublicKeyInfo,
+        )
+        .setPrivateKey(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+        .setValidityDays(3650)
+        .addBasicConstraints(true)
+        .addKeyUsage({ keyCertSign: true, cRLSign: true })
+        .selfSign()
+    return testCaCertificate
 }
 
 function createReasonExtension(reason: CRLReason) {
