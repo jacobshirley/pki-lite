@@ -1,3 +1,4 @@
+import { rememberOriginalEncoding } from '../core/OriginalEncoding.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import {
     AlgorithmIdentifier,
@@ -307,7 +308,7 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
             }
         }
 
-        return new TBSCertificate({
+        const tbsCertificate = new TBSCertificate({
             version,
             serialNumber,
             signature,
@@ -319,6 +320,9 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
             subjectUniqueID,
             extensions,
         })
+        // keep the signed bytes: re-encoding may not reproduce them
+        rememberOriginalEncoding(tbsCertificate, asn1)
+        return tbsCertificate
     }
 
     getExtensionByOid(oid: string): Extension | undefined {

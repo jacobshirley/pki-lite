@@ -1,3 +1,4 @@
+import { rememberOriginalEncoding } from '../core/OriginalEncoding.js'
 import { Time } from '../asn1/Time.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
@@ -224,7 +225,7 @@ export class TBSCertList extends PkiBase<TBSCertList> {
             )
         }
 
-        return new TBSCertList({
+        const tbsCertList = new TBSCertList({
             signature,
             issuer,
             thisUpdate,
@@ -233,5 +234,8 @@ export class TBSCertList extends PkiBase<TBSCertList> {
             extensions,
             version,
         })
+        // keep the signed bytes: re-encoding may not reproduce them
+        rememberOriginalEncoding(tbsCertList, asn1)
+        return tbsCertList
     }
 }

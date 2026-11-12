@@ -4,6 +4,7 @@ import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { BasicConstraints } from '../x509/extensions/BasicConstraints.js'
 import { NameConstraints } from '../x509/extensions/NameConstraints.js'
 import { checkNameConstraints } from './NameConstraintsChecker.js'
+import { namesMatch } from './NameMatching.js'
 import { SubjectKeyIdentifier } from '../keys/SubjectKeyIdentifier.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { AuthorityKeyIdentifier } from '../x509/extensions/AuthorityKeyIdentifier.js'
@@ -1016,9 +1017,9 @@ export class CertificateValidator {
         const subject = certificate.tbsCertificate.subject
         const issuer = certificate.tbsCertificate.issuer
 
-        // Basic check: subject equals issuer
+        // Basic check: subject matches issuer
         return (
-            subject.equals(issuer) &&
+            namesMatch(subject, issuer) &&
             (await certificate.isIssuedBy(certificate))
         )
     }
@@ -1035,8 +1036,8 @@ export class CertificateValidator {
         for (const candidate of candidates) {
             const candidateSubject = candidate.tbsCertificate.subject
 
-            // Check if subject name matches issuer name
-            if (candidateSubject.toString() === issuerName.toString()) {
+            // Check if subject name matches issuer name (RFC 5280 7.1)
+            if (namesMatch(candidateSubject, issuerName)) {
                 // Additional check: verify key identifiers if present
                 if (this.verifyKeyIdentifiers(certificate, candidate)) {
                     return candidate
@@ -1132,10 +1133,10 @@ export class CertificateValidator {
         certificate: Certificate,
         issuer: Certificate,
     ): boolean {
-        const certIssuer = certificate.tbsCertificate.issuer.toString()
-        const issuerSubject = issuer.tbsCertificate.subject.toString()
-
-        return certIssuer === issuerSubject
+        return namesMatch(
+            certificate.tbsCertificate.issuer,
+            issuer.tbsCertificate.subject,
+        )
     }
 
     /**
@@ -1287,7 +1288,8 @@ export class CertificateValidator {
 
     /** Whether a certificate's issuer and subject are the same name. */
     private isSelfIssued(certificate: Certificate): boolean {
-        return certificate.tbsCertificate.issuer.equals(
+        return namesMatch(
+            certificate.tbsCertificate.issuer,
             certificate.tbsCertificate.subject,
         )
     }

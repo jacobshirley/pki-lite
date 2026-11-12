@@ -157,10 +157,6 @@ const describeSettings = (settings: Settings) => {
  */
 const DSA =
     'WebCrypto has no DSA, so these DSA-signed paths cannot be verified (they fail closed). Not planned for the core package.'
-const REENCODE =
-    "The signature check re-encodes the TBSCertificate instead of using the signed bytes: this end certificate's GeneralizedTime notBefore (before 2050) is re-encoded as UTCTime, so a valid signature fails."
-const NAMES =
-    'Name chaining compares distinguished names exactly; RFC 5280 7.1 requires the comparison to ignore case and extra whitespace and to treat PrintableString and UTF8String values alike.'
 const CRL =
     "CRL checking does not follow RFC 5280 6.3: it looks for the serial number in every CRL regardless of issuer, does not verify the CRL's signature, issuer or dates, does not require a CRL for each certificate, and the serial comparison is case-sensitive hex."
 const DP =
@@ -171,12 +167,6 @@ const CRITICAL =
 const KNOWN_ISSUES: Record<string, string> = {
     '4.1.4': DSA,
     '4.1.5': DSA,
-    '4.2.4': REENCODE,
-    '4.3.3': NAMES,
-    '4.3.4': NAMES,
-    '4.3.5': NAMES,
-    '4.3.10': NAMES,
-    '4.3.11': NAMES,
     '4.4.1': CRL,
     '4.4.2': CRL,
     '4.4.3': CRL,
@@ -187,6 +177,7 @@ const KNOWN_ISSUES: Record<string, string> = {
     '4.4.10': CRL,
     '4.4.11': CRL,
     '4.4.12': CRL,
+    '4.4.15': CRL,
     '4.4.18': CRL,
     '4.4.21': CRL,
     '4.7.4': CRL,

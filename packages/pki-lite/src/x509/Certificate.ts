@@ -1,3 +1,5 @@
+import { signedBytes } from '../core/OriginalEncoding.js'
+import { namesMatch } from '../core/NameMatching.js'
 import {
     Asn1Any,
     Asn1BaseBlock,
@@ -223,7 +225,7 @@ export class Certificate extends PkiBase<Certificate> {
         algorithm: HashAlgorithm = 'SHA-1',
     ): Promise<Uint8Array<ArrayBuffer>> {
         return AlgorithmIdentifier.digestAlgorithm(algorithm).digest(
-            this.tbsCertificate.toDer(),
+            signedBytes(this.tbsCertificate),
         )
     }
 
@@ -584,7 +586,7 @@ export class Certificate extends PkiBase<Certificate> {
         const thisIssuer = this.tbsCertificate.issuer
         const issuerSubject = issuer.tbsCertificate.subject
 
-        if (thisIssuer.toString() !== issuerSubject.toString()) {
+        if (!namesMatch(thisIssuer, issuerSubject)) {
             return false
         }
 
@@ -592,7 +594,7 @@ export class Certificate extends PkiBase<Certificate> {
         const issuerPubKeyInfo = issuer.getSubjectPublicKeyInfo()
 
         return await thisSignatureAlg.verify(
-            this.tbsCertificate.toDer(),
+            signedBytes(this.tbsCertificate),
             this.signatureValue.bytes,
             issuerPubKeyInfo,
         )
