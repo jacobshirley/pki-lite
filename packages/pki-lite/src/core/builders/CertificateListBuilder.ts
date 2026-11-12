@@ -152,7 +152,8 @@ export class CertificateListBuilder implements AsyncBuilder<CertificateList> {
      */
     revokeCertificate(certificate: Certificate, revocationDate?: Date): this {
         return this.addRevokedCertificate({
-            serialNumber: certificate.tbsCertificate.serialNumber.toString(),
+            // a string serial is read as hex (RevokedCertificate.serialAsBigInt)
+            serialNumber: certificate.tbsCertificate.serialNumber.toHexString(),
             revocationDate: revocationDate ?? new Date(),
         })
     }
