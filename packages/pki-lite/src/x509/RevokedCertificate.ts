@@ -33,18 +33,32 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
     }
 
     /**
+     * The serial number as a bigint. A string `userCertificate` is read as hex;
+     * separators such as `:` and a `0x` prefix are ignored.
+     */
+    serialAsBigInt(): bigint {
+        if (typeof this.userCertificate === 'number') {
+            return BigInt(this.userCertificate)
+        }
+        const hex = this.userCertificate
+            .replace(/^0x/i, '')
+            .replace(/[^0-9a-f]/gi, '')
+        if (hex.length === 0) {
+            throw new Asn1ParseError(
+                `Invalid serial number: ${this.userCertificate}`,
+            )
+        }
+        return BigInt('0x' + hex)
+    }
+
+    /**
      * Converts the revoked certificate to an ASN.1 structure.
      */
     toAsn1(): Asn1Node {
         const values: Asn1Node[] = []
 
-        // Serial Number - Convert string to number if necessary
-        const serialValue =
-            typeof this.userCertificate === 'string'
-                ? parseInt(this.userCertificate, 16) // Parse as hex since certificate serial numbers are typically hex
-                : this.userCertificate
-
-        values.push(der.integer(serialValue))
+        // Serial number, exact for serials of any size
+        values.push(der.integer(this.serialAsBigInt()))
 
         // Revocation Date
         values.push(new Time({ time: this.revocationDate }).toAsn1())

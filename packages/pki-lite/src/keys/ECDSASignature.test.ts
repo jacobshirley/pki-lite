@@ -35,8 +35,8 @@ describe('ECDSASignature', () => {
     test('constructor creates a valid ECDSASignature', () => {
         const signature = new ECDSASignature({ r, s })
 
-        expect(signature.r.bytes).toEqual(r)
-        expect(signature.s.bytes).toEqual(s)
+        expect(signature.r.toUnsigned()).toEqual(r)
+        expect(signature.s.toUnsigned()).toEqual(s)
     })
 
     test('toAsn1 creates correct ASN.1 structure with proper padding', () => {
@@ -140,8 +140,8 @@ describe('ECDSASignature', () => {
 
         const signature = ECDSASignature.fromRaw(raw)
 
-        expect(signature.r.bytes).toEqual(r)
-        expect(signature.s.bytes).toEqual(s)
+        expect(signature.r.toUnsigned()).toEqual(r)
+        expect(signature.s.toUnsigned()).toEqual(s)
     })
 
     test('fromRaw throws error on odd-length input', () => {

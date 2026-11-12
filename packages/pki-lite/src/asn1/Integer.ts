@@ -26,7 +26,12 @@ export class Integer extends PkiBase<Integer> {
         if (value instanceof Integer) {
             this.bytes = value.bytes
         } else if (value instanceof Uint8Array) {
-            this.bytes = new Uint8Array(value)
+            // A byte array is an unsigned big-endian magnitude (e.g. a serial
+            // number): prefix 00 when the high bit is set so it stays positive
+            this.bytes =
+                value.length > 0 && (value[0] & 0x80) !== 0
+                    ? new Uint8Array([0, ...value])
+                    : new Uint8Array(value)
         } else if (typeof value === 'bigint') {
             this.bytes = this.bigIntToBytes(value)
         } else if (typeof value === 'string') {
@@ -142,26 +147,19 @@ export class Integer extends PkiBase<Integer> {
      * Converts the Integer to an ASN.1 INTEGER structure
      */
     toAsn1(): Asn1Node {
-        // For ASN.1 encoding, check if we need to add padding for high bit values
-        let valueHex = this.bytes
-
-        // If the high bit is set (and this is a positive number),
-        // we need to pad with a leading zero byte for ASN.1 DER encoding
-        if ((this.bytes[0] & 0x80) !== 0) {
-            // Add a leading zero byte to ensure it's interpreted as positive
-            valueHex = new Uint8Array(this.bytes.length + 1)
-            valueHex[0] = 0
-            valueHex.set(this.bytes, 1)
-        }
-
-        return der.primitive(UniversalTag.Integer, valueHex)
+        // `bytes` is already the two's-complement content
+        return der.primitive(UniversalTag.Integer, this.bytes)
     }
 
     /**
      * Creates an Integer from an ASN.1 INTEGER structure
      */
     static fromAsn1(asn1: Asn1Node): Integer {
-        return new Integer({ value: der.readIntegerBytes(asn1) })
+        // The content is two's complement, so store it as-is rather than through
+        // the constructor (which reads byte arrays as unsigned)
+        const integer = new Integer({ value: 0 })
+        integer.bytes = der.readIntegerBytes(asn1)
+        return integer
     }
 
     /**
