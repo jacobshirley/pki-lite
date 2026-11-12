@@ -39,3 +39,22 @@ export function implicitSequence(block: Asn1BaseBlock): asn1js.Sequence {
     }
     return new asn1js.Sequence({ value })
 }
+
+/**
+ * Reads an IMPLICIT `[n] SEQUENCE OF X`, where each X is itself a SEQUENCE (e.g.
+ * `[1] IMPLICIT Extensions`), back as the SEQUENCE. Earlier versions of this library
+ * wrote the SEQUENCE wrapped inside the [n] (explicit tagging); that form - a single
+ * SEQUENCE child whose own elements are all SEQUENCEs - is still accepted.
+ */
+export function implicitSequenceOf(block: Asn1BaseBlock): asn1js.Sequence {
+    const children = implicitSequence(block).valueBlock.value
+    const [only] = children
+    if (
+        children.length === 1 &&
+        only instanceof asn1js.Sequence &&
+        only.valueBlock.value.every((item) => item instanceof asn1js.Sequence)
+    ) {
+        return only
+    }
+    return new asn1js.Sequence({ value: children })
+}
