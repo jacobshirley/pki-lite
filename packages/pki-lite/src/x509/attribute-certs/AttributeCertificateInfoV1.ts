@@ -1,3 +1,4 @@
+import { GeneralizedTime } from '../../asn1/GeneralizedTime.js'
 import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { Attribute } from '../Attribute.js'
@@ -97,8 +98,12 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
             this.signature.toAsn1(),
             der.primitive(UniversalTag.Integer, this.serialNumber),
             der.sequence([
-                der.generalizedTime(this.validityPeriod.notBefore),
-                der.generalizedTime(this.validityPeriod.notAfter),
+                new GeneralizedTime({
+                    time: this.validityPeriod.notBefore,
+                }).toAsn1(),
+                new GeneralizedTime({
+                    time: this.validityPeriod.notAfter,
+                }).toAsn1(),
             ]),
             der.sequence(this.attributes.map((attr) => attr.toAsn1())),
         ]

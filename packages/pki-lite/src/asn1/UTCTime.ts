@@ -1,3 +1,4 @@
+import { GeneralizedTime as GeneralizedTimeValue } from './GeneralizedTime.js'
 import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 
 /**
@@ -39,7 +40,7 @@ export class GeneralizedTime extends PkiBase<Date> {
     }
 
     toAsn1(): Asn1Node {
-        return der.generalizedTime(this.date)
+        return new GeneralizedTimeValue({ time: this.date }).toAsn1()
     }
 
     static fromAsn1(asn1: Asn1Node): GeneralizedTime {

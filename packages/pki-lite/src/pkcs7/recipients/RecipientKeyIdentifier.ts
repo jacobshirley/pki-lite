@@ -1,3 +1,4 @@
+import { GeneralizedTime } from '../../asn1/GeneralizedTime.js'
 import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { KeyIdentifier } from './KeyIdentifier.js'
 import { OctetString } from '../../asn1/OctetString.js'
@@ -49,7 +50,7 @@ export class RecipientKeyIdentifier extends PkiBase<RecipientKeyIdentifier> {
         const values = [this.subjectKeyIdentifier.toAsn1()]
 
         if (this.date) {
-            values.push(der.generalizedTime(this.date))
+            values.push(new GeneralizedTime({ time: this.date }).toAsn1())
         }
 
         if (this.other) {

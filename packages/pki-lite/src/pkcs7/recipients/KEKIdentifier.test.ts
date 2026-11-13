@@ -193,4 +193,13 @@ describe('KEKIdentifier', () => {
             'Invalid ASN.1 structure: expected OctetString for keyIdentifier',
         )
     })
+
+    test('encodes the date in whole seconds', () => {
+        const der = new KEKIdentifier({
+            keyIdentifier: new Uint8Array([1, 2, 3]),
+            date: new Date('2026-11-13T08:03:23.166Z'),
+        }).toDer()
+        expect(String.fromCharCode(...der)).toContain('20261113080323Z')
+        expect(String.fromCharCode(...der)).not.toContain('.166')
+    })
 })

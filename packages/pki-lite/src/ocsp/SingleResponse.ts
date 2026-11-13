@@ -44,6 +44,18 @@ export class SingleResponse extends PkiBase<SingleResponse> {
         this.singleExtensions = options.singleExtensions
     }
 
+    /**
+     * Whether the status is current at `time` (RFC 6960 3.2, 4.2.2.1): given at or before
+     * it (thisUpdate), and not yet due for replacement (nextUpdate). Without nextUpdate
+     * the responder has newer information at any time, so only thisUpdate is checked.
+     *
+     * @param time The time to check at (default now)
+     */
+    isCurrent(time: Date = new Date()): boolean {
+        if (this.thisUpdate.time > time) return false
+        return !this.nextUpdate || time <= this.nextUpdate.time
+    }
+
     toAsn1(): Asn1Node {
         const values: Asn1Node[] = [
             this.certID.toAsn1(),

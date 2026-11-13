@@ -1,4 +1,11 @@
-import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
+import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
+import {
+    Asn1Node,
+    der,
+    keepOriginalDer,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { Extension } from '../x509/Extension.js'
 import { ResponderID } from './ResponderID.js'
 import { SingleResponse } from './SingleResponse.js'
@@ -47,7 +54,7 @@ export class ResponseData extends PkiBase<ResponseData> {
 
         values.push(
             responderIdAsn1,
-            der.generalizedTime(this.producedAt),
+            new GeneralizedTime({ time: this.producedAt }).toAsn1(),
             der.sequence(this.responses.map((resp) => resp.toAsn1())),
         )
 
@@ -126,12 +133,15 @@ export class ResponseData extends PkiBase<ResponseData> {
             )
         }
 
-        return new ResponseData({
+        const responseData = new ResponseData({
             responses,
             responderID,
             producedAt,
             version,
             responseExtensions,
         })
+        // the signature covers these exact bytes (see BasicOCSPResponse.verify)
+        keepOriginalDer(responseData, asn1)
+        return responseData
     }
 }
