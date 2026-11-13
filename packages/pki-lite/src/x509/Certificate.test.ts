@@ -305,3 +305,36 @@ describe('Certificate.matchesHostname (RFC 9525)', () => {
         expect(cert.matchesHostname('not.used.example')).toBe(false)
     })
 })
+
+describe('Certificate.allowsExtendedKeyUsage (RFC 5280 4.2.1.12)', () => {
+    const withEku = (eku?: Record<string, boolean>) => {
+        const builder = Certificate.builder()
+            .setSubject('CN=EKU')
+            .setPublicKey(
+                Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                    .subjectPublicKeyInfo,
+            )
+            .setPrivateKey(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+            .setValidityDays(1)
+        if (eku) builder.addExtendedKeyUsage(eku)
+        return builder.selfSign()
+    }
+
+    test('no extendedKeyUsage extension places no limit', async () => {
+        expect((await withEku()).allowsExtendedKeyUsage('serverAuth')).toBe(
+            true,
+        )
+    })
+
+    test('the listed purposes only, by name or OID', async () => {
+        const cert = await withEku({ clientAuth: true })
+        expect(cert.allowsExtendedKeyUsage('clientAuth')).toBe(true)
+        expect(cert.allowsExtendedKeyUsage('1.3.6.1.5.5.7.3.2')).toBe(true)
+        expect(cert.allowsExtendedKeyUsage('serverAuth')).toBe(false)
+    })
+
+    test('anyExtendedKeyUsage allows every purpose', async () => {
+        const cert = await withEku({ '2.5.29.37.0': true })
+        expect(cert.allowsExtendedKeyUsage('codeSigning')).toBe(true)
+    })
+})

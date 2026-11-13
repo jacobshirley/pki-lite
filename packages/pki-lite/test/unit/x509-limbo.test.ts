@@ -53,10 +53,6 @@ function skipReason(c: LimboCase): string | undefined {
  * Cases pki-lite does not pass yet, each with the reason. They run with `test.fails`, so
  * fixing one makes its test fail with "expected to fail": delete the entry then.
  */
-const EKU =
-    'CertificateValidator cannot require an extended key usage of the leaf.'
-const MAX_DEPTH =
-    'CertificateValidator cannot limit the number of intermediates.'
 const PATH_BUILDING =
     'Path building takes the first chain it finds and does not backtrack to another when that one fails.'
 const DOS =
@@ -71,8 +67,6 @@ const KNOWN_ISSUES: Record<string, string> = {
     'crl::crlnumber-missing': CRL_PROFILE,
     'crl::crlnumber-critical': CRL_PROFILE,
     'cve::cve-2024-0567': PATH_BUILDING,
-    'pathlen::max-chain-depth-0-exhausted': MAX_DEPTH,
-    'pathlen::max-chain-depth-1-exhausted': MAX_DEPTH,
     'pathological::multiple-chains-expired-intermediate': PATH_BUILDING,
     'pathological::nc-dos-1': DOS,
     'pathological::nc-dos-2': DOS,
@@ -80,7 +74,6 @@ const KNOWN_ISSUES: Record<string, string> = {
     'rfc5280::aki::leaf-missing-aki': PROFILE,
     'rfc5280::aki::intermediate-missing-aki': PROFILE,
     'rfc5280::aki::cross-signed-root-missing-aki': PROFILE,
-    'rfc5280::eku::ee-wrong-eku': EKU,
     'rfc5280::eku::ee-eku-empty': PROFILE,
     'rfc5280::nc::permitted-dns-match-noncritical': PROFILE,
     'rfc5280::nc::permitted-empty-sequence-excluded-nonempty': PROFILE,
@@ -124,6 +117,8 @@ async function validate(c: LimboCase) {
                 : undefined,
             checkCRL: crls.length > 0,
             hostname: c.peerName?.value,
+            requiredExtendedKeyUsages: c.extendedKeyUsage,
+            maxPathLength: c.maxChainDepth,
         },
         crls.length > 0 ? { crls } : undefined,
     )

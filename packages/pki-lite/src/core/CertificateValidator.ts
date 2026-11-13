@@ -11,6 +11,7 @@ import { CrlChecker } from './CrlChecker.js'
 import { OIDs } from './OIDs.js'
 import { ANY_POLICY, processPolicies } from './PolicyProcessor.js'
 import { KeyUsage } from '../x509/extensions/KeyUsage.js'
+import { ExtKeyCommonNames } from '../x509/extensions/ExtKeyUsage.js'
 
 /**
  * Enumeration of certificate validation status codes.
@@ -51,6 +52,7 @@ export const CertificateValidationStatus = {
     CRL_UNAVAILABLE: 'CRL_UNAVAILABLE',
     OCSP_UNAVAILABLE: 'OCSP_UNAVAILABLE',
     HOSTNAME_MISMATCH: 'HOSTNAME_MISMATCH',
+    EXTENDED_KEY_USAGE_NOT_ALLOWED: 'EXTENDED_KEY_USAGE_NOT_ALLOWED',
 } as const
 
 export type CertificateValidationStatus =
@@ -133,6 +135,18 @@ export interface CertificateValidationOptions {
      * certificate does not match, the result is `HOSTNAME_MISMATCH`.
      */
     hostname?: string
+    /**
+     * Extended key usages the certificate must allow (by common name, e.g. `serverAuth`,
+     * or OID; see {@link Certificate.allowsExtendedKeyUsage}). If it does not, the result
+     * is `EXTENDED_KEY_USAGE_NOT_ALLOWED`.
+     */
+    requiredExtendedKeyUsages?: (ExtKeyCommonNames | string)[]
+    /**
+     * The most intermediate CA certificates a path may have, not counting self-issued
+     * ones: a pathLenConstraint the relying party sets on the trust anchor (RFC 5280
+     * 6.1.1 (k)). Part of chain validation.
+     */
+    maxPathLength?: number
     /** Tolerance for time-based validations (in milliseconds) */
     timeTolerance?: number
     /** Custom validation date (defaults to current time) */
@@ -262,6 +276,23 @@ export class CertificateValidator {
         }
 
         diagnostics.stepsPerformed.push('Starting certificate validation')
+
+        const disallowed = (options.requiredExtendedKeyUsages ?? []).filter(
+            (purpose) => !certificate.allowsExtendedKeyUsage(purpose),
+        )
+        if (disallowed.length > 0) {
+            return {
+                status: CertificateValidationStatus.EXTENDED_KEY_USAGE_NOT_ALLOWED,
+                isValid: false,
+                messages: [
+                    `Certificate's extendedKeyUsage does not allow: ${disallowed.join(', ')}`,
+                ],
+                revocationStatus: { isRevoked: false, source: 'NONE' },
+                certificate,
+                validatedAt: new Date(),
+                diagnostics,
+            }
+        }
 
         if (
             options.hostname !== undefined &&
@@ -564,6 +595,28 @@ export class CertificateValidator {
                 validatedAt: new Date(),
                 chain,
                 diagnostics,
+            }
+        }
+
+        if (options.maxPathLength !== undefined) {
+            // the certificates between the leaf and the trust anchor, not counting
+            // self-issued ones (as for pathLenConstraint)
+            const intermediates = chain.certificates
+                .slice(1, -1)
+                .filter((cert) => !this.isSelfIssued(cert)).length
+            if (intermediates > options.maxPathLength) {
+                return {
+                    status: CertificateValidationStatus.CHAIN_INVALID,
+                    isValid: false,
+                    messages: [
+                        `The path has ${intermediates} intermediate certificates, more than the maxPathLength of ${options.maxPathLength}`,
+                    ],
+                    revocationStatus: { isRevoked: false, source: 'NONE' },
+                    certificate: chain.certificates[0],
+                    validatedAt: new Date(),
+                    chain,
+                    diagnostics,
+                }
             }
         }
 

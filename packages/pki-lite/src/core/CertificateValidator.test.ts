@@ -1696,6 +1696,55 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
         })
     })
 
+    describe('relying party limits', () => {
+        test('maxPathLength limits the intermediates, not counting self-issued ones', async () => {
+            const root = createRootCertificate()
+            const ca = createIntermediateCertificate(root)
+            const leaf = createEndEntityCertificateFor(ca)
+            const validate = (maxPathLength: number) =>
+                validator.validate(leaf, {
+                    validateChain: true,
+                    trustAnchors: [{ certificate: root }],
+                    otherCertificates: [ca],
+                    // the test certificates are not signed
+                    checkSignature: false,
+                    maxPathLength,
+                })
+            expect((await validate(1)).isValid).toBe(true)
+            const tooLong = await validate(0)
+            expect(tooLong.isValid).toBe(false)
+            expect(tooLong.messages.join('; ')).toContain('maxPathLength')
+        })
+
+        test('requiredExtendedKeyUsages: the leaf must allow each', async () => {
+            const leaf = await Certificate.builder()
+                .setSubject('CN=Client')
+                .setPublicKey(
+                    Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                        .subjectPublicKeyInfo,
+                )
+                .setPrivateKey(
+                    PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem),
+                )
+                .setValidityDays(1)
+                .addExtendedKeyUsage({ clientAuth: true })
+                .selfSign()
+            expect(
+                (
+                    await validator.validate(leaf, {
+                        requiredExtendedKeyUsages: ['clientAuth'],
+                    })
+                ).isValid,
+            ).toBe(true)
+            const server = await validator.validate(leaf, {
+                requiredExtendedKeyUsages: ['serverAuth'],
+            })
+            expect(server.status).toEqual(
+                CertificateValidationStatus.EXTENDED_KEY_USAGE_NOT_ALLOWED,
+            )
+        })
+    })
+
     describe('defaults', () => {
         test('signatures are checked unless checkSignature is false', async () => {
             const root = createRootCertificate()

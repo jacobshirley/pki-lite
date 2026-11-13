@@ -27,6 +27,7 @@ import {
     DistributionPoint,
 } from './extensions/CRLDistributionPoints.js'
 import { BasicConstraints } from './extensions/BasicConstraints.js'
+import { ExtKeyCommonNames, ExtKeyUsage } from './extensions/ExtKeyUsage.js'
 import { KeyUsage, KeyUsageOptions } from './extensions/KeyUsage.js'
 import { GeneralName } from './GeneralName.js'
 import { normalizeHost } from '../core/NameConstraintsChecker.js'
@@ -455,6 +456,27 @@ export class Certificate extends PkiBase<Certificate> {
     allowsKeyUsage(usage: keyof KeyUsageOptions): boolean {
         const extension = this.getExtensionByName('KEY_USAGE')
         return extension ? extension.extnValue.parseAs(KeyUsage)[usage] : true
+    }
+
+    /**
+     * Whether the certificate may be used for an extended key usage `purpose` (by common
+     * name, e.g. `serverAuth`, or OID): it has no extendedKeyUsage extension (no limit),
+     * or the extension lists the purpose or anyExtendedKeyUsage (RFC 5280 4.2.1.12).
+     *
+     * @example
+     * ```typescript
+     * serverCert.allowsExtendedKeyUsage('serverAuth')
+     * ```
+     */
+    allowsExtendedKeyUsage(purpose: ExtKeyCommonNames | string): boolean {
+        const extension = this.getExtensionByName('EXTENDED_KEY_USAGE')
+        if (!extension) return true
+        const oid = ExtKeyUsage.oidOf(purpose)
+        return extension.extnValue
+            .parseAs(ExtKeyUsage)
+            .some(
+                (usage) => usage.value === oid || usage.value === OIDs.EKU.ANY,
+            )
     }
 
     /** The certificate's CRL distribution points (none if it has no such extension). */
