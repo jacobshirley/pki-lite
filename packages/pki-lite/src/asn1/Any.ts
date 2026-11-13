@@ -64,6 +64,15 @@ export class Any extends PkiBase<Any> {
         return derToAsn1(this.derBytes)
     }
 
+    /**
+     * Returns the stored bytes unchanged (DER NULL when there are none). They are
+     * not re-parsed: re-encoding a parse of bytes that are not exactly one ASN.1
+     * value would change them.
+     */
+    toDer(): Uint8Array<ArrayBuffer> {
+        return this.derBytes ?? asn1ToDer(new asn1js.Null())
+    }
+
     asString(): string {
         const asn1 = this.toAsn1()
         if (asn1 instanceof asn1js.PrintableString) {

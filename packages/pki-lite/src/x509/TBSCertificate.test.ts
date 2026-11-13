@@ -1,6 +1,7 @@
 import { assert, describe, expect, test } from 'vitest'
 import { Certificate } from './Certificate.js'
 import { TBSCertificate } from './TBSCertificate.js'
+import { Integer } from '../asn1/Integer.js'
 import { SubjectPublicKeyInfo } from '../keys/SubjectPublicKeyInfo.js'
 import { Validity } from './Validity.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
@@ -299,6 +300,33 @@ describe('TBSCertificate', () => {
         expect(
             (extensionsBlock as asn1js.Constructed).idBlock.tagNumber,
         ).toEqual(3) // [3]
+    })
+
+    test('a negative serial number survives a DER round trip', () => {
+        const tbsCert = new Certificate.TBSCertificate({
+            serialNumber: new Integer({ value: -1n }),
+            signature: new AlgorithmIdentifier({
+                algorithm: '1.2.840.113549.1.1.11',
+            }),
+            issuer: createSampleName(),
+            validity: new Validity({
+                notBefore: new Date('2025-01-01'),
+                notAfter: new Date('2026-01-01'),
+            }),
+            subject: createSampleName(),
+            subjectPublicKeyInfo: new SubjectPublicKeyInfo({
+                algorithm: new AlgorithmIdentifier({
+                    algorithm: '1.2.840.113549.1.1.1',
+                }),
+                subjectPublicKey: new Uint8Array([1, 2, 3]),
+            }),
+        })
+
+        const parsed = Certificate.TBSCertificate.fromAsn1(
+            derToAsn1(tbsCert.toDer()),
+        )
+        expect(parsed.serialNumber.toBigInt()).toBe(-1n)
+        expect(parsed.toDer()).toEqual(tbsCert.toDer())
     })
 
     test('TBSCertificate toString snapshot', () => {
