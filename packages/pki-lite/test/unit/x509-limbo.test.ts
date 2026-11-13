@@ -36,10 +36,13 @@ function skipReason(c: LimboCase): string | undefined {
     ) {
         return 'a "pedantic" CA/Browser Forum (Web PKI) rule, not RFC 5280'
     }
+    // the Web PKI host name cases test RFC 9525 matching; the rest are CA/Browser Forum
+    // Baseline Requirements rules (the CN must copy a SAN entry, the SAN may only be
+    // critical with an empty subject, ...)
     if (
         c.id.startsWith('webpki::') &&
-        !c.id.startsWith('webpki::san::') &&
-        !c.id.startsWith('webpki::cn::')
+        (!c.id.startsWith('webpki::san::') ||
+            c.id === 'webpki::san::san-critical-with-nonempty-subject')
     ) {
         return 'a CA/Browser Forum (Web PKI) profile rule, not RFC 5280'
     }
@@ -50,8 +53,6 @@ function skipReason(c: LimboCase): string | undefined {
  * Cases pki-lite does not pass yet, each with the reason. They run with `test.fails`, so
  * fixing one makes its test fail with "expected to fail": delete the entry then.
  */
-const PEER_NAME =
-    'CertificateValidator cannot check the expected peer name (DNS name or IP address against the leaf subjectAltName, RFC 9525).'
 const EKU =
     'CertificateValidator cannot require an extended key usage of the leaf.'
 const MAX_DEPTH =
@@ -75,7 +76,6 @@ const KNOWN_ISSUES: Record<string, string> = {
     'pathological::multiple-chains-expired-intermediate': PATH_BUILDING,
     'pathological::nc-dos-1': DOS,
     'pathological::nc-dos-2': DOS,
-    'pathological::nc-dos-3': DOS,
     'rfc5280::aki::critical-aki': PROFILE,
     'rfc5280::aki::leaf-missing-aki': PROFILE,
     'rfc5280::aki::intermediate-missing-aki': PROFILE,
@@ -93,10 +93,8 @@ const KNOWN_ISSUES: Record<string, string> = {
     'rfc5280::nc::nc-forbids-alternate-chain-ica': PATH_BUILDING,
     'rfc5280::nc::nc-forbids-same-chain-ica': PATH_BUILDING,
     'rfc5280::pc::ica-noncritical-pc': PROFILE,
-    'rfc5280::san::malformed': PROFILE,
     'rfc5280::san::noncritical-with-empty-subject': PROFILE,
     'rfc5280::san::underscore-dns': PROFILE,
-    'rfc5280::san::ip-in-dns': PEER_NAME,
     'rfc5280::serial::too-long': PROFILE,
     'rfc5280::serial::zero': PROFILE,
     'rfc5280::ski::root-missing-ski': PROFILE,
@@ -107,29 +105,6 @@ const KNOWN_ISSUES: Record<string, string> = {
     'rfc5280::leaf-ku-keycertsign': PROFILE,
     'rfc5280::ee-critical-aia-invalid': PROFILE,
     'rfc5280::duplicate-extensions': PROFILE,
-    'rfc5280::ca-as-leaf-wrong-san': PEER_NAME,
-    'webpki::cn::ipv4-hex-mismatch': PEER_NAME,
-    'webpki::cn::ipv4-leading-zeros-mismatch': PEER_NAME,
-    'webpki::cn::ipv6-uppercase-mismatch': PEER_NAME,
-    'webpki::cn::ipv6-uncompressed-mismatch': PEER_NAME,
-    'webpki::cn::ipv6-non-rfc5952-mismatch': PEER_NAME,
-    'webpki::cn::punycode-not-in-san': PEER_NAME,
-    'webpki::cn::utf8-vs-punycode-mismatch': PEER_NAME,
-    'webpki::cn::not-in-san': PEER_NAME,
-    'webpki::cn::case-mismatch': PEER_NAME,
-    'webpki::san::mismatch-domain-san': PEER_NAME,
-    'webpki::san::mismatch-subdomain-san': PEER_NAME,
-    'webpki::san::mismatch-subdomain-apex-san': PEER_NAME,
-    'webpki::san::mismatch-apex-subdomain-san': PEER_NAME,
-    'webpki::san::wildcard-embedded-leftmost-san': PEER_NAME,
-    'webpki::san::wildcard-not-in-leftmost-san': PEER_NAME,
-    'webpki::san::wildcard-match-across-labels-san': PEER_NAME,
-    'webpki::san::wildcard-embedded-ulabel-san': PEER_NAME,
-    'webpki::san::unicode-emoji-san': PEER_NAME,
-    'webpki::san::no-san': PEER_NAME,
-    'webpki::san::san-critical-with-nonempty-subject': PEER_NAME,
-    'webpki::san::san-wildcard-only': PEER_NAME,
-    'webpki::san::san-wildcard-only-tld': PEER_NAME,
 }
 
 async function validate(c: LimboCase) {
@@ -148,6 +123,7 @@ async function validate(c: LimboCase) {
                 ? new Date(c.validationTime)
                 : undefined,
             checkCRL: crls.length > 0,
+            hostname: c.peerName?.value,
         },
         crls.length > 0 ? { crls } : undefined,
     )

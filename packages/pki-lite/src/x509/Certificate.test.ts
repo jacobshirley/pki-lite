@@ -8,6 +8,9 @@ import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
 import { asn1js } from '../core/PkiBase.js'
 import { pkitsFiles } from '../../test-fixtures/pkits/pkits.js'
+import { GeneralName } from './GeneralName.js'
+import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
+import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 
 /**
  * Creates a sample certificate for testing.
@@ -230,5 +233,75 @@ describe('Certificate extension helpers', () => {
         expect(
             cert('ValidCertificatePathTest1EE').getCrlDistributionPoints(),
         ).toEqual([])
+    })
+})
+
+describe('Certificate.matchesHostname (RFC 9525)', () => {
+    const withNames = (...names: GeneralName[]) => {
+        const builder = Certificate.builder()
+            .setSubject('CN=not.used.example')
+            .setPublicKey(
+                Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                    .subjectPublicKeyInfo,
+            )
+            .setPrivateKey(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+            .setValidityDays(1)
+        if (names.length > 0) builder.addSubjectAltName(...names)
+        return builder.selfSign()
+    }
+    const dns = (value: string) => new GeneralName.dNSName({ value })
+    const ip = (value: string) => GeneralName.iPAddress.fromString(value)
+
+    test('DNS names: exact, ignoring case and a trailing dot', async () => {
+        const cert = await withNames(dns('www.example.com'))
+        expect(cert.matchesHostname('www.example.com')).toBe(true)
+        expect(cert.matchesHostname('WWW.Example.COM.')).toBe(true)
+        expect(cert.matchesHostname('example.com')).toBe(false)
+        expect(cert.matchesHostname('a.www.example.com')).toBe(false)
+    })
+
+    test('wildcards match one whole leftmost label', async () => {
+        const cert = await withNames(dns('*.example.com'))
+        expect(cert.matchesHostname('www.example.com')).toBe(true)
+        expect(cert.matchesHostname('example.com')).toBe(false)
+        expect(cert.matchesHostname('a.b.example.com')).toBe(false)
+        for (const pattern of ['*.com', '*', 'w*.example.com', 'www.*.com']) {
+            expect(
+                (await withNames(dns(pattern))).matchesHostname(
+                    'www.example.com',
+                ),
+                pattern,
+            ).toBe(false)
+        }
+    })
+
+    test('internationalised names compare as A-labels', async () => {
+        const cert = await withNames(dns('xn--bcher-kva.example'))
+        expect(cert.matchesHostname('bücher.example')).toBe(true)
+        expect(cert.matchesHostname('xn--bcher-kva.example')).toBe(true)
+        // a dNSName must be ASCII: a U-label in the certificate matches nothing
+        expect(
+            (await withNames(dns('bücher.example'))).matchesHostname(
+                'bücher.example',
+            ),
+        ).toBe(false)
+    })
+
+    test('IP addresses match iPAddress names only', async () => {
+        const cert = await withNames(
+            ip('192.0.2.1'),
+            ip('2001:db8::1'),
+            dns('192.0.2.9'),
+        )
+        expect(cert.matchesHostname('192.0.2.1')).toBe(true)
+        expect(cert.matchesHostname('2001:DB8:0::1')).toBe(true)
+        expect(cert.matchesHostname('[2001:db8::1]')).toBe(true)
+        // an IP address in a dNSName does not count
+        expect(cert.matchesHostname('192.0.2.9')).toBe(false)
+    })
+
+    test('the common name is not used', async () => {
+        const cert = await withNames()
+        expect(cert.matchesHostname('not.used.example')).toBe(false)
     })
 })

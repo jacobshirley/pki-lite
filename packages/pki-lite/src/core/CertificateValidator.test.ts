@@ -105,6 +105,37 @@ describe('CertificateValidator', () => {
             )
         })
 
+        test('hostname: the certificate must be valid for it', async () => {
+            const cert = await Certificate.builder()
+                .setSubject('CN=Host')
+                .setPublicKey(
+                    Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                        .subjectPublicKeyInfo,
+                )
+                .setPrivateKey(
+                    PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem),
+                )
+                .setValidityDays(1)
+                .addSubjectAltName(
+                    new GeneralName.dNSName({ value: 'www.example.com' }),
+                )
+                .selfSign()
+            expect(
+                (
+                    await validator.validate(cert, {
+                        hostname: 'www.example.com',
+                    })
+                ).status,
+            ).toEqual(CertificateValidationStatus.VALID)
+            const mismatch = await validator.validate(cert, {
+                hostname: 'other.example.com',
+            })
+            expect(mismatch.status).toEqual(
+                CertificateValidationStatus.HOSTNAME_MISMATCH,
+            )
+            expect(mismatch.isValid).toBe(false)
+        })
+
         test('should use custom validation time', async () => {
             const customTime = new Date('2023-06-01T00:00:00.000Z')
             const result = await validator.validate(sampleCertificate, {

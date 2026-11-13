@@ -50,6 +50,7 @@ export const CertificateValidationStatus = {
     CHAIN_INVALID: 'CHAIN_INVALID',
     CRL_UNAVAILABLE: 'CRL_UNAVAILABLE',
     OCSP_UNAVAILABLE: 'OCSP_UNAVAILABLE',
+    HOSTNAME_MISMATCH: 'HOSTNAME_MISMATCH',
 } as const
 
 export type CertificateValidationStatus =
@@ -126,6 +127,12 @@ export interface CertificateValidationOptions {
     checkCRL?: boolean
     /** Check certificate revocation using OCSP */
     checkOCSP?: boolean
+    /**
+     * The DNS name or IP address the certificate must be valid for, as a TLS client
+     * checks a server (RFC 9525; see {@link Certificate.matchesHostname}). If the
+     * certificate does not match, the result is `HOSTNAME_MISMATCH`.
+     */
+    hostname?: string
     /** Tolerance for time-based validations (in milliseconds) */
     timeTolerance?: number
     /** Custom validation date (defaults to current time) */
@@ -255,6 +262,23 @@ export class CertificateValidator {
         }
 
         diagnostics.stepsPerformed.push('Starting certificate validation')
+
+        if (
+            options.hostname !== undefined &&
+            !certificate.matchesHostname(options.hostname)
+        ) {
+            return {
+                status: CertificateValidationStatus.HOSTNAME_MISMATCH,
+                isValid: false,
+                messages: [
+                    `Certificate is not valid for '${options.hostname}': no matching subjectAltName`,
+                ],
+                revocationStatus: { isRevoked: false, source: 'NONE' },
+                certificate,
+                validatedAt: new Date(),
+                diagnostics,
+            }
+        }
         diagnostics.context.validationTime = validationTime
         diagnostics.context.timeTolerance = timeTolerance
 
