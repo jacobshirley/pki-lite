@@ -58,6 +58,9 @@ function nameTypeOf(name: GeneralName): NameType {
     throw new Error('Unknown GeneralName type')
 }
 
+/** The most name-to-constraint comparisons one check may take (as Go's crypto/x509). */
+export const MAX_COMPARISONS = 250_000
+
 /** Types that have matching rules in RFC 5280 4.2.1.10 and are implemented here. */
 const SUPPORTED: ReadonlySet<NameType> = new Set<NameType>([
     'dNSName',
@@ -301,6 +304,18 @@ export function checkNameConstraints(
                     })
                 }
             }
+        }
+    }
+
+    // Checking every name against every subtree is quadratic: a certificate with
+    // thousands of names under thousands of constraints is rejected rather than checked,
+    // with the same limit as Go's crypto/x509
+    const comparisons = names.length * (permitted.length + excluded.length)
+    if (comparisons > MAX_COMPARISONS) {
+        return {
+            name: `${names.length} names`,
+            type: names[0]?.type ?? 'dNSName',
+            message: `has ${names.length} names to check against ${permitted.length + excluded.length} name constraints, over the limit of ${MAX_COMPARISONS} comparisons`,
         }
     }
 

@@ -57,13 +57,8 @@ function skipReason(c: LimboCase): string | undefined {
  * Cases pki-lite does not pass yet, each with the reason. They run with `test.fails`, so
  * fixing one makes its test fail with "expected to fail": delete the entry then.
  */
-const DOS =
-    'No limit on name constraint checking work: a technically valid but pathological chain (thousands of names against thousands of constraints) is accepted, where implementations reject it to avoid quadratic blowup.'
 
-const KNOWN_ISSUES: Record<string, string> = {
-    'pathological::nc-dos-1': DOS,
-    'pathological::nc-dos-2': DOS,
-}
+const KNOWN_ISSUES: Record<string, string> = {}
 
 async function validate(c: LimboCase) {
     const crls = c.crls.map((i) => CertificateList.fromDer(der(i)))
