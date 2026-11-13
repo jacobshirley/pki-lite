@@ -1,3 +1,4 @@
+import { GeneralizedTime } from '../../asn1/GeneralizedTime.js'
 import { OtherKeyAttribute } from './OtherKeyAttribute.js'
 import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
@@ -37,7 +38,7 @@ export class KEKIdentifier extends PkiBase<KEKIdentifier> {
         const values: Asn1Node[] = [der.octetString(this.keyIdentifier)]
 
         if (this.date) {
-            values.push(der.generalizedTime(this.date))
+            values.push(new GeneralizedTime({ time: this.date }).toAsn1())
         }
 
         if (this.other) {

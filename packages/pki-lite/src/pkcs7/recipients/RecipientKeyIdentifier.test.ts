@@ -106,4 +106,15 @@ describe('RecipientKeyIdentifier', () => {
             'Invalid ASN.1 structure: expected 1-3 elements, got 0',
         )
     })
+
+    test('encodes the date in whole seconds', () => {
+        const der = new RecipientKeyIdentifier({
+            subjectKeyIdentifier: new KeyIdentifier({
+                bytes: new Uint8Array([1, 2, 3]),
+            }),
+            date: new Date('2026-11-13T08:03:23.166Z'),
+        }).toDer()
+        expect(String.fromCharCode(...der)).toContain('20261113080323Z')
+        expect(String.fromCharCode(...der)).not.toContain('.166')
+    })
 })

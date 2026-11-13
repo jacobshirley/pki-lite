@@ -1,6 +1,7 @@
 import {
     Asn1Node,
     der,
+    keepOriginalDer,
     PkiBase,
     TagClass,
     UniversalTag,
@@ -145,11 +146,14 @@ export class CertificateRequestInfo extends PkiBase<CertificateRequestInfo> {
             attributes = parsed.length > 0 ? [...parsed] : undefined
         }
 
-        return new CertificateRequestInfo({
+        const requestInfo = new CertificateRequestInfo({
             version,
             subject,
             publicKey,
             attributes,
         })
+        // keep the signed bytes: re-encoding may not reproduce them
+        keepOriginalDer(requestInfo, asn1)
+        return requestInfo
     }
 }

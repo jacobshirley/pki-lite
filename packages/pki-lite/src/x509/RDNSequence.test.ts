@@ -2,7 +2,7 @@ import { assert, describe, expect, test } from 'vitest'
 import { RDNSequence } from './RDNSequence.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
-import { der, UniversalTag } from '../core/PkiBase.js'
+import { Asn1Node, der, UniversalTag } from '../core/PkiBase.js'
 
 describe('RDNSequence', () => {
     test('can be created empty', () => {
@@ -214,5 +214,113 @@ describe('RDNSequence', () => {
           MDMxGTAXBgNVBAMTEFRlc3QgQ29tbW9uIE5hbWUxFjAUBgNVBAsTDVRlc3QgT3JnIFVuaXQ=
           -----END RDNSEQUENCE-----"
         `)
+    })
+})
+
+const CN = '2.5.4.3'
+const O = '2.5.4.10'
+const C = '2.5.4.6'
+
+/** A name from [type, value-block] pairs, one attribute per RDN */
+const name = (...rdns: [string, Asn1Node][]) => {
+    const sequence = new RDNSequence()
+    for (const [type, value] of rdns) {
+        const rdn = new RelativeDistinguishedName()
+        rdn.push(new AttributeTypeAndValue({ type, value }))
+        sequence.push(rdn)
+    }
+    return sequence
+}
+const printable = (value: string) => der.printableString(value)
+const utf8 = (value: string) => der.utf8String(value)
+
+describe('RDNSequence.matches / isWithin (RFC 5280 7.1)', () => {
+    test('ignores case', () => {
+        expect(
+            name([CN, printable('Test CA')]).matches(
+                name([CN, printable('TEST ca')]),
+            ),
+        ).toBe(true)
+    })
+
+    test('ignores leading, trailing and repeated whitespace', () => {
+        expect(
+            name([CN, printable('  Test   CA ')]).matches(
+                name([CN, printable('Test CA')]),
+            ),
+        ).toBe(true)
+    })
+
+    test('treats PrintableString and UTF8String values alike', () => {
+        expect(
+            name([CN, printable('Test CA')]).matches(
+                name([CN, utf8('test ca')]),
+            ),
+        ).toBe(true)
+    })
+
+    test('normalises Unicode (NFKC)', () => {
+        // "ﬁ" (U+FB01, a ligature) is "fi" after compatibility normalisation
+        expect(name([CN, utf8('ﬁle')]).matches(name([CN, utf8('file')]))).toBe(
+            true,
+        )
+    })
+
+    test('different values, types, RDN counts or order do not match', () => {
+        expect(
+            name([CN, utf8('Test CA')]).matches(name([CN, utf8('Test CA2')])),
+        ).toBe(false)
+        expect(name([CN, utf8('Acme')]).matches(name([O, utf8('Acme')]))).toBe(
+            false,
+        )
+        expect(
+            name([C, printable('US')]).matches(
+                name([C, printable('US')], [CN, utf8('x')]),
+            ),
+        ).toBe(false)
+        expect(
+            name([C, printable('US')], [O, utf8('Acme')]).matches(
+                name([O, utf8('Acme')], [C, printable('US')]),
+            ),
+        ).toBe(false)
+    })
+
+    test('compares non-string values by their encoding', () => {
+        const value = (n: number) =>
+            new AttributeTypeAndValue({
+                type: CN,
+                value: der.integer(n),
+            })
+        expect(value(1).matches(value(1))).toBe(true)
+        expect(value(1).matches(value(2))).toBe(false)
+    })
+
+    test('multi-valued RDNs match whatever the order of their attributes', () => {
+        const rdn = (...pairs: [string, string][]) => {
+            const value = new RelativeDistinguishedName()
+            for (const [type, v] of pairs)
+                value.push(new AttributeTypeAndValue({ type, value: utf8(v) }))
+            const sequence = new RDNSequence()
+            sequence.push(value)
+            return sequence
+        }
+        expect(rdn([CN, 'a'], [O, 'b']).matches(rdn([O, 'B'], [CN, 'A']))).toBe(
+            true,
+        )
+    })
+
+    test('isWithin checks for a prefix of RDNs', () => {
+        const full = name(
+            [C, printable('US')],
+            [O, utf8('Acme')],
+            [CN, utf8('Leaf')],
+        )
+        expect(
+            full.isWithin(name([C, printable('us')], [O, utf8('ACME')])),
+        ).toBe(true)
+        expect(
+            full.isWithin(name([C, printable('US')], [O, utf8('Other')])),
+        ).toBe(false)
+        expect(name([C, printable('US')]).isWithin(full)).toBe(false)
     })
 })

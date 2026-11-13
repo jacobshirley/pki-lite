@@ -5,6 +5,7 @@ import { AttributeCertificateV1 } from './attribute-certs/AttributeCertificateV1
 import { AttributeCertificate } from './attribute-certs/AttributeCertificate.js'
 import { OtherCertificateFormat } from './legacy/OtherCertificateFormat.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { implicitSequence } from '../core/tagging.js'
 
 /**
  * Represents a certificate choice structure used in PKCS#7/CMS.
@@ -56,8 +57,8 @@ export const CertificateChoices = Choice('CertificateChoices', {
             )
         }
         // Context-specific tag class indicates an alternative choice; each is an
-        // IMPLICIT tag over a SEQUENCE type, so read it back as a SEQUENCE
-        const sequence = value.retag(UniversalTag.Sequence)
+        // IMPLICIT tag over a SEQUENCE type, so read it back as that SEQUENCE
+        const sequence = implicitSequence(value)
         switch (tagNumber) {
             case 0:
                 // [0] IMPLICIT ExtendedCertificate (obsolete)

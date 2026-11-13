@@ -94,3 +94,17 @@ describe('PkiSequence', () => {
         )
     })
 })
+
+describe('toJSON', () => {
+    it('serialises objects that do not override it (it used to recurse forever)', () => {
+        const octets = new OctetString({ bytes: new Uint8Array([1, 2]) })
+        expect(octets.toJSON()).toEqual({ bytes: { 0: 1, 1: 2 } })
+        expect(() => JSON.stringify(octets)).not.toThrow()
+    })
+
+    it('serialises arrays of PKI objects', () => {
+        const set = new PkiSet(new OctetString({ bytes: new Uint8Array([7]) }))
+        expect(set.toJSON()).toEqual([{ bytes: { 0: 7 } }])
+        expect(JSON.parse(JSON.stringify(set))).toEqual([{ bytes: { 0: 7 } }])
+    })
+})

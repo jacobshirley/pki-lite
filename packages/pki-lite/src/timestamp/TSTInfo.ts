@@ -11,7 +11,11 @@ import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { Extension } from '../x509/Extension.js'
 import { GeneralName } from '../x509/GeneralName.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
-import { implicitTag, isContextTag } from '../core/tagging.js'
+import {
+    implicitSequenceOf,
+    implicitTag,
+    isContextTag,
+} from '../core/tagging.js'
 
 /**
  * Accuracy structure for RFC 3161 Time-Stamp Protocol.
@@ -336,7 +340,7 @@ export class TSTInfo extends PkiBase<TSTInfo> {
         if (this.extensions && this.extensions.length > 0) {
             const extensionsArray = this.extensions.map((ext) => ext.toAsn1())
             // Extensions are [1] IMPLICIT
-            values.push(der.sequence(extensionsArray).explicit(1))
+            values.push(implicitTag(der.sequence(extensionsArray), 1))
         }
 
         return der.sequence(values)
@@ -439,14 +443,9 @@ export class TSTInfo extends PkiBase<TSTInfo> {
                     }
                 } else if (tagNumber === 1) {
                     // [1] IMPLICIT Extensions
-                    if (value.children.length > 0) {
-                        const extensionsSeq = value.children[0]
-                        if (extensionsSeq.is(UniversalTag.Sequence)) {
-                            extensions = extensionsSeq.children.map((ext) =>
-                                Extension.fromAsn1(ext),
-                            )
-                        }
-                    }
+                    extensions = implicitSequenceOf(value).children.map((ext) =>
+                        Extension.fromAsn1(ext),
+                    )
                 }
             }
         }

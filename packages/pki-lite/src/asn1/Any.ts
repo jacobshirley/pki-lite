@@ -67,7 +67,11 @@ export class Any extends PkiBase<Any> {
         return derToAsn1(this.derBytes)
     }
 
-    /** The stored bytes as-is (NULL when empty); they are not re-parsed. */
+    /**
+     * Returns the stored bytes unchanged (DER NULL when there are none). They are
+     * not re-parsed: re-encoding a parse of bytes that are not exactly one ASN.1
+     * value would change them.
+     */
     toDer(): Uint8Array<ArrayBuffer> {
         return this.derBytes ?? der.nullValue().encode()
     }

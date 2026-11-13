@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { der, UniversalTag } from '../core/PkiBase.js'
-import { UTCTime } from './UTCTime.js'
+import { GeneralizedTime as LegacyGeneralizedTime, UTCTime } from './UTCTime.js'
 
 describe('UTCTime', () => {
     test('should create UTCTime from Date object', () => {
@@ -68,5 +68,15 @@ describe('UTCTime', () => {
 
             expect(decoded.time.getTime()).toEqual(testDate.getTime())
         }
+    })
+})
+
+describe('GeneralizedTime (deprecated duplicate in UTCTime.js)', () => {
+    test('still encodes and decodes for existing imports', () => {
+        const date = new Date('2051-01-02T03:04:05.000Z')
+        const legacy = new LegacyGeneralizedTime({ date })
+        expect(LegacyGeneralizedTime.fromAsn1(legacy.toAsn1()).date).toEqual(
+            date,
+        )
     })
 })

@@ -83,6 +83,7 @@ export class GCMParameters extends PkiBase<GCMParameters> {
      * @returns The ASN.1 representation of the GCMParameters
      */
     toAsn1(): Asn1Node {
+        // aes-ICVlen is written even at its DEFAULT of 12: OpenSSL requires it
         return der.sequence([this.aesNonce.toAsn1(), this.aesICVlen.toAsn1()])
     }
 }

@@ -15,6 +15,7 @@ import { Name } from '../x509/Name.js'
 import { AsymmetricEncryptionAlgorithmParams } from '../core/crypto/types.js'
 import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 import { CertID } from './CertID.js'
+import { SingleResponse } from './SingleResponse.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { OCSPResponseBuilder } from '../core/builders/OCSPResponseBuilder.js'
 
@@ -100,6 +101,62 @@ export class OCSPResponse extends PkiBase<OCSPResponse> {
 
     static fromDer(der: Uint8Array<ArrayBuffer>): OCSPResponse {
         return OCSPResponse.fromAsn1(derToAsn1(der))
+    }
+
+    /**
+     * Whether the responder answered (responseStatus successful). Other statuses
+     * (malformedRequest, tryLater, ...) carry no certificate status.
+     */
+    get isSuccessful(): boolean {
+        return (
+            this.responseStatus.value === 0 && this.responseBytes !== undefined
+        )
+    }
+
+    /**
+     * Verifies that a successful response comes from `issuer` or a responder it
+     * authorised; see {@link BasicOCSPResponse.verify}.
+     *
+     * @example
+     * ```typescript
+     * const response = OCSPResponse.fromDer(der)
+     * if (await response.verify(caCertificate)) {
+     *     const single = await response.getResponse(certificate, caCertificate)
+     *     if (single?.isCurrent()) console.log(single.certStatus.status)
+     * }
+     * ```
+     */
+    async verify(
+        issuer: Certificate,
+        options: { time?: Date } = {},
+    ): Promise<boolean> {
+        if (!this.isSuccessful) return false
+        return this.getBasicOCSPResponse().verify(issuer, options)
+    }
+
+    /**
+     * The status the response gives for `certificate`, issued by `issuer`: the single
+     * response whose CertID identifies it, if any (none for an unsuccessful response).
+     *
+     * Does not check that the response is genuine or current: see {@link verify} and
+     * {@link SingleResponse.isCurrent}.
+     */
+    async getResponse(
+        certificate: Certificate,
+        issuer: Certificate,
+    ): Promise<SingleResponse | undefined> {
+        if (!this.isSuccessful) return undefined
+        for (const single of this.getBasicOCSPResponse().tbsResponseData
+            .responses) {
+            try {
+                if (await single.certID.matches(certificate, issuer)) {
+                    return single
+                }
+            } catch {
+                // a hash algorithm that is not supported
+            }
+        }
+        return undefined
     }
 
     /**

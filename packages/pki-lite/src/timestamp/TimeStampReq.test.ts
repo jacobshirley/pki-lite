@@ -3,7 +3,9 @@ import { TimeStampReq } from './TimeStampReq.js'
 import { MessageImprint } from './MessageImprint.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Extension } from '../x509/Extension.js'
-import { der, derToAsn1, TagClass, UniversalTag } from '../core/PkiBase.js'
+import { Asn1Node, der, derToAsn1, TagClass, UniversalTag } from '../core/PkiBase.js'
+const hex = (b: Uint8Array) =>
+    Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
 
 describe('TimeStampReq', () => {
     const createTestMessageImprint = () => {
@@ -408,5 +410,59 @@ describe('TimeStampReq', () => {
         expect(req1.messageImprint.hashedMessage).toEqual(
             req2.messageImprint.hashedMessage,
         )
+    })
+})
+
+describe('TimeStampReq extensions: [0] IMPLICIT Extensions (RFC 3161)', () => {
+    const createTestMessageImprint = () => {
+        const hashAlgorithm = new AlgorithmIdentifier({
+            algorithm: '2.16.840.1.101.3.4.2.1',
+        }) // SHA-256
+        const hashedMessage = new Uint8Array([1, 2, 3, 4, 5])
+        return new MessageImprint({ hashAlgorithm, hashedMessage })
+    }
+    const extensions = [
+        new Extension({ extnID: '1.2.3.4', extnValue: 123 }),
+        new Extension({ extnID: '1.2.3.5', critical: true, extnValue: 456 }),
+    ]
+    const make = () =>
+        new TimeStampReq({
+            version: 1,
+            messageImprint: createTestMessageImprint(),
+            extensions,
+        })
+    const tagged = (value: Asn1Node[]) => der.constructed(0, value)
+    // The encoding of `make()` with its extensions field replaced, parsed from DER
+    const withExtensionsField = (field: Asn1Node) => {
+        const values = [...make().toAsn1().children]
+        values[values.length - 1] = field
+        return derToAsn1(der.sequence(values).encode())
+    }
+
+    test('writes the Extension elements directly inside [0]', () => {
+        const values = make().toAsn1().children
+        const field = values[values.length - 1]
+        const expected = tagged(extensions.map((ext) => ext.toAsn1()))
+        expect(hex(field.encode())).toBe(hex(expected.encode()))
+    })
+
+    test('parses the IMPLICIT form', () => {
+        const parsed = TimeStampReq.fromAsn1(
+            withExtensionsField(tagged(extensions.map((ext) => ext.toAsn1()))),
+        )
+        expect(parsed.extensions?.map((ext) => ext.extnID.value)).toEqual([
+            '1.2.3.4',
+            '1.2.3.5',
+        ])
+        expect(parsed.extensions?.[1].critical).toBe(true)
+    })
+
+    test('still parses the explicitly tagged form written by earlier versions', () => {
+        const legacy = tagged([der.sequence(extensions.map((ext) => ext.toAsn1()))])
+        const parsed = TimeStampReq.fromAsn1(withExtensionsField(legacy))
+        expect(parsed.extensions?.map((ext) => ext.extnID.value)).toEqual([
+            '1.2.3.4',
+            '1.2.3.5',
+        ])
     })
 })

@@ -13,6 +13,7 @@ import { TimeStampResp } from './TimeStampResp.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { TimeStampReqBuilder } from '../core/builders/TimeStampReqBuilder.js'
+import { implicitSequenceOf, implicitTag } from '../core/tagging.js'
 
 /**
  * Time-Stamp Request structure for RFC 3161 Time-Stamp Protocol.
@@ -162,7 +163,7 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
         if (this.extensions && this.extensions.length > 0) {
             const extensionsArray = this.extensions.map((ext) => ext.toAsn1())
             // Extensions are [0] IMPLICIT
-            values.push(der.sequence(extensionsArray).explicit(0))
+            values.push(implicitTag(der.sequence(extensionsArray), 0))
         }
 
         return der.sequence(values)
@@ -240,15 +241,10 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
                 value.tagClass === TagClass.Context && // CONTEXT-SPECIFIC
                 value.tag === 0 // [0]
             ) {
-                // Parse extensions from [0] EXPLICIT Extensions
-                if (value.children.length > 0) {
-                    const extensionsSeq = value.children[0]
-                    if (extensionsSeq.is(UniversalTag.Sequence)) {
-                        extensions = extensionsSeq.children.map((ext) =>
-                            Extension.fromAsn1(ext),
-                        )
-                    }
-                }
+                // extensions [0] IMPLICIT Extensions
+                extensions = implicitSequenceOf(value).children.map((ext) =>
+                    Extension.fromAsn1(ext),
+                )
             }
         }
 

@@ -35,6 +35,18 @@ export class RelativeDistinguishedName extends PkiSet<AttributeTypeAndValue> {
         return rdn
     }
 
+    /**
+     * Whether this RDN matches another (RFC 5280 7.1): the same set of attributes, each
+     * matching as {@link AttributeTypeAndValue.matches} describes, in any order.
+     */
+    matches(other: RelativeDistinguishedName): boolean {
+        return (
+            this.length === other.length &&
+            this.every((a) => other.some((b) => a.matches(b))) &&
+            other.every((b) => this.some((a) => a.matches(b)))
+        )
+    }
+
     static parse(humanString: string): RelativeDistinguishedName {
         const atvStrings = humanString.split('+').map((s) => s.trim())
         const rdn = new RelativeDistinguishedName()

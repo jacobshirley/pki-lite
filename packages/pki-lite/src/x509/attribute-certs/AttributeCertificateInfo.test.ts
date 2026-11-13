@@ -8,6 +8,8 @@ import { Attribute } from '../Attribute.js'
 import { describe, test, expect, beforeEach } from 'vitest'
 import { der, UniversalTag } from '../../core/PkiBase.js'
 
+const latin1 = (bytes: Uint8Array) => String.fromCharCode(...bytes)
+
 describe('AttributeCertificateInfo', () => {
     // Test Holder class
     describe('Holder', () => {
@@ -157,6 +159,24 @@ describe('AttributeCertificateInfo', () => {
             expect(info.attributes).toEqual(mockAttributes)
             expect(info.issuerUniqueID).toBeUndefined()
             expect(info.extensions).toBeUndefined()
+        })
+
+        test('encodes the validity period in whole seconds (RFC 5755)', () => {
+            const info = new AttributeCertificateInfo({
+                version: 1,
+                holder: mockHolder,
+                issuer: mockIssuer,
+                signature: mockSignature,
+                serialNumber: new Uint8Array([7]),
+                validityPeriod: {
+                    notBefore: new Date('2026-11-13T08:03:23.166Z'),
+                    notAfter: new Date('2027-11-13T08:03:23.999Z'),
+                },
+                attributes: mockAttributes,
+            })
+            const text = latin1(info.toDer())
+            expect(text).toContain('20261113080323Z')
+            expect(text).toContain('20271113080323Z')
         })
 
         test('toAsn1 should return correct ASN.1 structure', () => {

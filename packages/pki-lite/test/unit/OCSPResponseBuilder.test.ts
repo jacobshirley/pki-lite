@@ -268,16 +268,18 @@ describe('OCSPResponseBuilder', () => {
             })
             .build()
 
+        // encoded in whole seconds (RFC 6960 / RFC 5280 GeneralizedTime)
+        const seconds = (date: Date) => Math.floor(date.getTime() / 1000) * 1000
         const basicResp = response.getBasicOCSPResponse()
         expect(basicResp.tbsResponseData.producedAt.getTime()).toBe(
-            now.getTime(),
+            seconds(now),
         )
         expect(
             basicResp.tbsResponseData.responses[0].thisUpdate.time.getTime(),
-        ).toBe(thisUpdate.getTime())
+        ).toBe(seconds(thisUpdate))
         expect(
             basicResp.tbsResponseData.responses[0].nextUpdate?.time.getTime(),
-        ).toBe(nextUpdate.getTime())
+        ).toBe(seconds(nextUpdate))
     })
 
     test('can build OCSP response with included certificates', async () => {

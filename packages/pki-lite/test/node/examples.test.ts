@@ -34,7 +34,9 @@ const examples = [
     '025-reading-openssl-output',
     '026-openssl-defaults-with-extended-crypto',
     '027-certificate-policies',
-    '028-der-codec',
+    '028-crl-checks',
+    '029-der-codec',
+    '030-ocsp-checks',
 ]
 
 /** Silences console output while an example runs, keeping what went to stderr. */

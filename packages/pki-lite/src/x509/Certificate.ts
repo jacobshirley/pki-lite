@@ -23,7 +23,12 @@ import { Validity } from './Validity.js'
 import { Extension } from './Extension.js'
 import { OIDs } from '../core/OIDs.js'
 import { CertificateList } from './CertificateList.js'
-import { CRLDistributionPoints } from './extensions/CRLDistributionPoints.js'
+import {
+    CRLDistributionPoints,
+    DistributionPoint,
+} from './extensions/CRLDistributionPoints.js'
+import { BasicConstraints } from './extensions/BasicConstraints.js'
+import { KeyUsage, KeyUsageOptions } from './extensions/KeyUsage.js'
 import { GeneralName } from './GeneralName.js'
 import { SubjectAltName } from './extensions/SubjectAltName.js'
 import { OCSPResponse } from '../ocsp/OCSPResponse.js'
@@ -220,7 +225,7 @@ export class Certificate extends PkiBase<Certificate> {
         algorithm: HashAlgorithm = 'SHA-1',
     ): Promise<Uint8Array<ArrayBuffer>> {
         return AlgorithmIdentifier.digestAlgorithm(algorithm).digest(
-            this.tbsCertificate.toDer(),
+            this.tbsCertificate.toOriginalDer(),
         )
     }
 
@@ -369,17 +374,46 @@ export class Certificate extends PkiBase<Certificate> {
         return this.tbsCertificate.subjectPublicKeyInfo
     }
 
+    /**
+     * Whether this is a CA certificate: it has a basicConstraints extension with cA set
+     * (RFC 5280 4.2.1.9).
+     */
+    isCA(): boolean {
+        const extension = this.getExtensionByName('BASIC_CONSTRAINTS')
+        return extension
+            ? extension.extnValue.parseAs(BasicConstraints).cA
+            : false
+    }
+
+    /**
+     * Whether the certificate's key may be used for `usage`: its keyUsage extension sets
+     * that bit, or it has no keyUsage extension (which places no limit; RFC 5280 4.2.1.3).
+     *
+     * @example
+     * ```typescript
+     * ca.allowsKeyUsage('cRLSign')
+     * ```
+     */
+    allowsKeyUsage(usage: keyof KeyUsageOptions): boolean {
+        const extension = this.getExtensionByName('KEY_USAGE')
+        return extension ? extension.extnValue.parseAs(KeyUsage)[usage] : true
+    }
+
+    /** The certificate's CRL distribution points (none if it has no such extension). */
+    getCrlDistributionPoints(): DistributionPoint[] {
+        const extension = this.getExtensionByName('CRL_DISTRIBUTION_POINTS')
+        return extension
+            ? [...extension.extnValue.parseAs(CRLDistributionPoints)]
+            : []
+    }
+
     async requestCrl(options?: {
         crlDistributionPointUrls?: string[]
     }): Promise<CertificateList | undefined> {
-        const crlDp = this.getExtensionByName('CRL_DISTRIBUTION_POINTS')
-        if (!crlDp) {
+        const crlDistributionPoints = this.getCrlDistributionPoints()
+        if (crlDistributionPoints.length === 0) {
             return undefined
         }
-
-        const crlDistributionPoints = crlDp.extnValue.parseAs(
-            CRLDistributionPoints,
-        )
 
         const urls = options?.crlDistributionPointUrls ?? []
 
@@ -581,7 +615,7 @@ export class Certificate extends PkiBase<Certificate> {
         const thisIssuer = this.tbsCertificate.issuer
         const issuerSubject = issuer.tbsCertificate.subject
 
-        if (thisIssuer.toString() !== issuerSubject.toString()) {
+        if (!thisIssuer.matches(issuerSubject)) {
             return false
         }
 
@@ -589,7 +623,7 @@ export class Certificate extends PkiBase<Certificate> {
         const issuerPubKeyInfo = issuer.getSubjectPublicKeyInfo()
 
         return await thisSignatureAlg.verify(
-            this.tbsCertificate.toDer(),
+            this.tbsCertificate.toOriginalDer(),
             this.signatureValue.bytes,
             issuerPubKeyInfo,
         )

@@ -1,3 +1,4 @@
+import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
 import {
     Asn1Node,
     der,
@@ -64,7 +65,9 @@ export class CertStatus extends PkiBase<CertStatus> {
             return der.nullValue().implicit(0)
         } else if (this.status === 'revoked') {
             const values: Asn1Node[] = [
-                der.generalizedTime(this.revocationTime || new Date()),
+                new GeneralizedTime({
+                    time: this.revocationTime || new Date(),
+                }).toAsn1(),
             ]
 
             if (this.revocationReason !== undefined) {

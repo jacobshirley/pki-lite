@@ -123,7 +123,8 @@ export class SignerLocation extends PkiBase<SignerLocation> {
         }
         const value: SignerLocation = new SignerLocation()
 
-        // The fields are EXPLICIT [n]: each wraps the value it tags
+        // The fields are EXPLICIT [n] (RFC 5126 uses an EXPLICIT TAGS module), so
+        // each context-tagged element wraps the value it tags
         for (const element of asn1.children) {
             if (
                 element.tagClass !== TagClass.Context ||

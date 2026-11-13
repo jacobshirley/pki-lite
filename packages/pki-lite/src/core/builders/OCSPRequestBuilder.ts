@@ -135,17 +135,11 @@ export class OCSPRequestBuilder implements AsyncBuilder<OCSPRequest> {
         for (const entry of this.pendingCertificates) {
             const { certificate, issuerCertificate, singleRequestExtensions } =
                 entry
-            const certID = new CertID({
+            const certID = await CertID.forCertificate(
+                issuerCertificate,
+                certificate,
                 hashAlgorithm,
-                issuerNameHash: await hashAlgorithm.digest(
-                    issuerCertificate.tbsCertificate.subject.toDer(),
-                ),
-                issuerKeyHash: await hashAlgorithm.digest(
-                    issuerCertificate.getSubjectPublicKeyInfo()
-                        .subjectPublicKey,
-                ),
-                serialNumber: certificate.tbsCertificate.serialNumber,
-            })
+            )
             builtRequests.push(
                 new Request({
                     reqCert: certID,

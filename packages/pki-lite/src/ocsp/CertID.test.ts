@@ -3,6 +3,8 @@ import { CertID } from './CertID.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { der } from '../core/PkiBase.js'
+import { Certificate } from '../x509/Certificate.js'
+import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 
 describe('CertID', () => {
     it('should create a CertID with all fields', () => {
@@ -128,6 +130,21 @@ describe('CertID', () => {
         expect(parsed.serialNumber.bytes).toEqual(serialNumber)
     })
 
+    it('keeps a negative serial number negative when parsed', () => {
+        const original = new CertID({
+            hashAlgorithm: new AlgorithmIdentifier({
+                algorithm: '2.16.840.1.101.3.4.2.1',
+            }),
+            issuerNameHash: new OctetString({ bytes: new Uint8Array([1]) }),
+            issuerKeyHash: new OctetString({ bytes: new Uint8Array([2]) }),
+            serialNumber: -1n,
+        })
+
+        const parsed = CertID.fromDer(original.toDer())
+        expect(parsed.serialNumber.toBigInt()).toBe(-1n)
+        expect(parsed.toDer()).toEqual(original.toDer())
+    })
+
     it('should throw error on invalid ASN.1 structure', () => {
         const invalidAsn1 = der.integer(1) // not a SEQUENCE
 
@@ -142,5 +159,52 @@ describe('CertID', () => {
         expect(() => CertID.fromAsn1(invalidAsn1)).toThrow(
             'Invalid CertID: expected 4 elements',
         )
+    })
+
+    it('forCertificate hashes the issuer name and key bits (RFC 6960 4.1.1)', async () => {
+        const issuer = Certificate.fromPem(rsaSigningKeys.caCertPem)
+        const subject = Certificate.fromPem(rsaSigningKeys.certPem)
+        const sha1 = async (bytes: Uint8Array<ArrayBuffer>) =>
+            new Uint8Array(await crypto.subtle.digest('SHA-1', bytes))
+
+        const certID = await CertID.forCertificate(
+            issuer,
+            subject,
+            AlgorithmIdentifier.digestAlgorithm('SHA-1'),
+        )
+
+        expect(certID.issuerNameHash.bytes).toEqual(
+            await sha1(issuer.tbsCertificate.subject.toDer()),
+        )
+        // the key bits only: not the BIT STRING's tag, length and unused-bits octet
+        expect(certID.issuerKeyHash.bytes).toEqual(
+            await sha1(
+                issuer.tbsCertificate.subjectPublicKeyInfo.subjectPublicKey
+                    .bytes,
+            ),
+        )
+        expect(
+            certID.serialNumber.equals(subject.tbsCertificate.serialNumber),
+        ).toBe(true)
+    })
+})
+
+describe('CertID.matches', () => {
+    it('matches the certificate from its issuer only', async () => {
+        const issuer = Certificate.fromPem(rsaSigningKeys.caCertPem)
+        const subject = Certificate.fromPem(rsaSigningKeys.certPem)
+        for (const hash of ['SHA-1', 'SHA-256'] as const) {
+            const certID = await CertID.forCertificate(
+                issuer,
+                subject,
+                AlgorithmIdentifier.digestAlgorithm(hash),
+            )
+            expect(await certID.matches(subject, issuer)).toBe(true)
+            // another issuer: different name and key hashes
+            expect(await certID.matches(subject, subject)).toBe(false)
+        }
+        const certID = await CertID.forCertificate(issuer, subject)
+        // another certificate: different serial number
+        expect(await certID.matches(issuer, issuer)).toBe(false)
     })
 })

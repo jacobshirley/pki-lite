@@ -2,6 +2,7 @@ import { Time } from '../asn1/Time.js'
 import {
     Asn1Node,
     der,
+    keepOriginalDer,
     PkiBase,
     TagClass,
     UniversalTag,
@@ -205,7 +206,7 @@ export class TBSCertList extends PkiBase<TBSCertList> {
             )
         }
 
-        return new TBSCertList({
+        const tbsCertList = new TBSCertList({
             signature,
             issuer,
             thisUpdate,
@@ -214,5 +215,8 @@ export class TBSCertList extends PkiBase<TBSCertList> {
             extensions,
             version,
         })
+        // keep the signed bytes: re-encoding may not reproduce them
+        keepOriginalDer(tbsCertList, asn1)
+        return tbsCertList
     }
 }

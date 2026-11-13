@@ -1,7 +1,7 @@
 import { CertificateChoices } from './CertificateChoices.js'
 import { OtherCertificateFormat } from './legacy/OtherCertificateFormat.js'
 import { describe, test, expect } from 'vitest'
-import { der, TagClass } from '../core/PkiBase.js'
+import { der, derToAsn1, TagClass } from '../core/PkiBase.js'
 
 describe('CertificateChoices', () => {
     // Test for fromAsn1 method with Certificate
@@ -79,5 +79,17 @@ describe('CertificateChoices', () => {
         expect(() => CertificateChoices.fromAsn1(asn1)).toThrow(
             /Unknown CertificateChoices tag number/,
         )
+    })
+
+    test('fromAsn1 parses a DER-encoded [3] IMPLICIT OtherCertificateFormat', () => {
+        const other = new OtherCertificateFormat({
+            otherCertFormat: '1.2.3.4',
+            otherCert: 'x',
+        })
+        const der = other.toDer()
+        der[0] = 0xa3 // SEQUENCE -> [3] IMPLICIT
+        const result = CertificateChoices.fromAsn1(derToAsn1(der))
+        expect(result).toBeInstanceOf(OtherCertificateFormat)
+        expect(result.toDer()).toEqual(other.toDer())
     })
 })

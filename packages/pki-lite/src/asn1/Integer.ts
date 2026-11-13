@@ -158,7 +158,7 @@ export class Integer extends PkiBase<Integer> {
         // The content is two's complement, so store it as-is rather than through
         // the constructor (which reads byte arrays as unsigned)
         const integer = new Integer({ value: 0 })
-        integer.bytes = der.readIntegerBytes(asn1)
+        integer.bytes = new Uint8Array(der.readIntegerBytes(asn1))
         return integer
     }
 

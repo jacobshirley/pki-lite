@@ -2,6 +2,14 @@ import { describe, expect, test } from 'vitest'
 import { der, UniversalTag } from '../core/PkiBase.js'
 import { UniversalString } from './UniversalString.js'
 
+/** UTF-32BE, the UniversalString encoding */
+const utf32 = (value: string) => {
+    const points = Array.from(value, (c) => c.codePointAt(0)!)
+    const bytes = new Uint8Array(points.length * 4)
+    points.forEach((p, i) => new DataView(bytes.buffer).setUint32(i * 4, p))
+    return bytes
+}
+
 describe('UniversalString', () => {
     test('should create UniversalString from string value', () => {
         const testString = 'Hello, Universal!'
@@ -11,14 +19,12 @@ describe('UniversalString', () => {
         expect(universalString.toString()).toEqual(testString)
 
         // Should encode as UTF-8 bytes
-        const expectedBytes = new TextEncoder().encode(testString)
+        const expectedBytes = utf32(testString)
         expect(universalString.bytes).toEqual(expectedBytes)
     })
 
     test('should create UniversalString from Uint8Array<ArrayBuffer>', () => {
-        const bytes = new Uint8Array([
-            0x55, 0x6e, 0x69, 0x76, 0x65, 0x72, 0x73, 0x61, 0x6c,
-        ]) // "Universal"
+        const bytes = utf32('Universal')
         const universalString = new UniversalString({ value: bytes })
 
         expect(universalString.bytes).toEqual(bytes)
@@ -40,7 +46,7 @@ describe('UniversalString', () => {
         expect(universalString.toString()).toEqual(unicodeString)
 
         // Verify UTF-8 encoding
-        const expectedBytes = new TextEncoder().encode(unicodeString)
+        const expectedBytes = utf32(unicodeString)
         expect(universalString.bytes).toEqual(expectedBytes)
     })
 
@@ -60,7 +66,7 @@ describe('UniversalString', () => {
 
         // Verify the bytes are preserved in ASN.1
         const valueHex = asn1.content
-        const expectedBytes = new TextEncoder().encode(testString)
+        const expectedBytes = utf32(testString)
         expect(valueHex).toEqual(expectedBytes)
     })
 
@@ -85,9 +91,9 @@ describe('UniversalString', () => {
 
     test('should convert to hex string', () => {
         const testCases = [
-            { input: 'A', expected: '41' },
-            { input: 'UNI', expected: '554e49' },
-            { input: '123', expected: '313233' },
+            { input: 'A', expected: '00000041' },
+            { input: 'UNI', expected: '000000550000004e00000049' },
+            { input: '123', expected: '000000310000003200000033' },
             { input: '', expected: '' },
         ]
 
@@ -154,5 +160,15 @@ describe('UniversalString', () => {
         const asn1 = universalString.toAsn1()
         const decoded = UniversalString.fromAsn1(asn1)
         expect(decoded.toString()).toEqual(emojiString)
+    })
+
+    test('encodes as UTF-32BE and round-trips characters outside the BMP', () => {
+        const value = 'a😀'
+        const universalString = new UniversalString({ value })
+        expect(universalString.bytes).toEqual(
+            new Uint8Array([0, 0, 0, 0x61, 0, 1, 0xf6, 0]),
+        )
+        const parsed = UniversalString.fromAsn1(universalString.toAsn1())
+        expect(parsed.toString()).toBe(value)
     })
 })

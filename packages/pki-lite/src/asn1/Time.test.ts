@@ -41,4 +41,11 @@ describe('Time', () => {
             'Expected UTCTime or GeneralizedTime for notBefore',
         )
     })
+
+    it('encodes a GeneralizedTime (2050 on) in whole seconds (RFC 5280 4.1.2.5.2)', () => {
+        const der = new Time({
+            time: new Date('2051-03-04T05:06:07.890Z'),
+        }).toDer()
+        expect(String.fromCharCode(...der)).toContain('20510304050607Z')
+    })
 })

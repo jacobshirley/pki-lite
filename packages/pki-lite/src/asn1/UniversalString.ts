@@ -22,7 +22,7 @@ export class UniversalString extends PkiBase<UniversalString> {
         } else if (value instanceof Uint8Array) {
             this.bytes = value
         } else {
-            this.bytes = new TextEncoder().encode(value)
+            this.bytes = encodeUtf32BE(value)
         }
     }
 
@@ -41,8 +41,18 @@ export class UniversalString extends PkiBase<UniversalString> {
         })
     }
 
+    /** Decodes the UTF-32BE content (UniversalString is UCS-4, X.680 41.4). */
     toString() {
-        return new TextDecoder().decode(this.bytes)
+        const view = new DataView(
+            this.bytes.buffer,
+            this.bytes.byteOffset,
+            this.bytes.byteLength,
+        )
+        let result = ''
+        for (let i = 0; i + 4 <= this.bytes.length; i += 4) {
+            result += String.fromCodePoint(view.getUint32(i))
+        }
+        return result
     }
 
     /**
@@ -53,4 +63,12 @@ export class UniversalString extends PkiBase<UniversalString> {
             .map((byte) => byte.toString(16).padStart(2, '0'))
             .join('')
     }
+}
+
+function encodeUtf32BE(value: string): Uint8Array<ArrayBuffer> {
+    const codePoints = Array.from(value, (char) => char.codePointAt(0)!)
+    const bytes = new Uint8Array(codePoints.length * 4)
+    const view = new DataView(bytes.buffer)
+    codePoints.forEach((codePoint, i) => view.setUint32(i * 4, codePoint))
+    return bytes
 }

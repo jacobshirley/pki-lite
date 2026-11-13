@@ -1,3 +1,4 @@
+import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
 import {
     Asn1Node,
     der,
@@ -40,7 +41,9 @@ export class RevokedInfo extends PkiBase<RevokedInfo> {
     }
 
     toAsn1(): Asn1Node {
-        const values: Asn1Node[] = [der.generalizedTime(this.revocationTime)]
+        const values: Asn1Node[] = [
+            new GeneralizedTime({ time: this.revocationTime }).toAsn1(),
+        ]
 
         if (this.revocationReason !== undefined) {
             values.push(der.constructed(0, [this.revocationReason.toAsn1()]))
