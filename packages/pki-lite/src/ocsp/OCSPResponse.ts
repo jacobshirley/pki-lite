@@ -1,3 +1,4 @@
+import { OCSPRequest, nonceOf } from './OCSPRequest.js'
 import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 import { ResponseBytes } from './ResponseBytes.js'
@@ -140,6 +141,31 @@ export class OCSPResponse extends PkiBase<OCSPResponse> {
     ): Promise<boolean> {
         if (!this.isSuccessful) return false
         return this.getBasicOCSPResponse().verify(issuer, options)
+    }
+
+    /** The response's nonce (RFC 8954), if it is successful and has one. */
+    get nonce(): Uint8Array<ArrayBuffer> | undefined {
+        if (!this.isSuccessful) return undefined
+        return nonceOf(
+            this.getBasicOCSPResponse().tbsResponseData.responseExtensions,
+        )
+    }
+
+    /**
+     * Whether the response echoes the nonce of `request` (RFC 8954): true if it does,
+     * false if it has a different one (a reply to another request, perhaps replayed), and
+     * undefined if either has none. Many responders send pre-signed responses without
+     * a nonce; their freshness rests on thisUpdate and nextUpdate
+     * ({@link SingleResponse.isCurrent}).
+     */
+    nonceMatches(request: OCSPRequest): boolean | undefined {
+        const sent = request.nonce
+        const received = this.nonce
+        if (!sent || !received) return undefined
+        return (
+            sent.length === received.length &&
+            sent.every((byte, i) => byte === received[i])
+        )
     }
 
     /**

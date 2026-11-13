@@ -598,11 +598,18 @@ export class Certificate extends PkiBase<Certificate> {
 
         for (const uri of urls) {
             try {
-                const ocspRequest = await OCSPRequest.forCertificate({
-                    certificate: this,
-                    issuerCertificate,
-                })
+                // with a nonce (RFC 8954), so a replayed response is not taken
+                const ocspRequest = await OCSPRequest.builder()
+                    .addCertificate({ certificate: this, issuerCertificate })
+                    .addNonce()
+                    .build()
                 const response = await ocspRequest.request({ url: uri })
+                if (response.nonceMatches(ocspRequest) === false) {
+                    console.warn(
+                        `OCSP response from ${uri} has a different nonce than the request; ignoring it`,
+                    )
+                    continue
+                }
                 return response
             } catch (e) {
                 if (!(e instanceof Error)) {

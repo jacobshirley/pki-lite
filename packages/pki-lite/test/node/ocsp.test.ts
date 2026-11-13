@@ -1,47 +1,133 @@
-import { assert, describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048'
 import { Certificate } from '../../src/x509/Certificate'
 import { AuthorityInfoAccess } from '../../src/x509/extensions/AuthorityInfoAccess'
+import { Extension } from '../../src/x509/Extension'
+import { GeneralName } from '../../src/x509/GeneralName'
+import { OctetString } from '../../src/asn1/OctetString'
+import { OIDs } from '../../src/core/OIDs'
+import { OCSPRequest } from '../../src/ocsp/OCSPRequest'
+import { OCSPResponse } from '../../src/ocsp/OCSPResponse'
+import { PrivateKeyInfo } from '../../src/keys/PrivateKeyInfo'
 import http from 'http'
+import { AddressInfo } from 'net'
 
-describe('OCSP (Online Certificate Status Protocol)', () => {
-    test('can retrieve an OCSP response from a certificate with an Authority Information Access extension', async () => {
+/** A local HTTP OCSP responder answering each request with `answer(request body)`. */
+const responder = (answer: (body: Uint8Array) => Promise<Uint8Array>) =>
+    new Promise<{ url: string; close: () => void }>((resolve) => {
         const server = http
             .createServer((req, res) => {
-                res.writeHead(200, { 'Content-Type': 'application/pkix-crl' })
-                res.end(rsaSigningKeys.ocspResponse)
-                server.close()
+                const chunks: Buffer[] = []
+                req.on('data', (chunk) => chunks.push(chunk))
+                req.on('end', async () => {
+                    const body = await answer(
+                        new Uint8Array(Buffer.concat(chunks)),
+                    )
+                    res.writeHead(200, {
+                        'Content-Type': 'application/ocsp-response',
+                    })
+                    res.end(body)
+                })
             })
-            .listen(0)
-        const certificate = Certificate.fromPem(rsaSigningKeys.certPem)
+            .listen(0, () =>
+                resolve({
+                    url: `http://localhost:${(server.address() as AddressInfo).port}/ocsp`,
+                    close: () => server.close(),
+                }),
+            )
+    })
 
-        expect(
-            certificate.tbsCertificate
-                .getExtensionsByName('AUTHORITY_INFO_ACCESS')[0]
-                .extnValue.parseAs(AuthorityInfoAccess)
-                .map((ad) => ad.accessLocation.toString()),
-        ).toEqual([
-            'http://localhost:8080/ca.crt',
-            'http://localhost:8080/ocsp',
-            'http://localhost:8080/ocsp-backup',
-        ])
+describe('OCSP (Online Certificate Status Protocol)', () => {
+    test('requestOcsp sends a nonce and takes a response that echoes it', async () => {
+        const key = PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem)
+        const publicKey = Certificate.fromPem(rsaSigningKeys.certPem)
+            .tbsCertificate.subjectPublicKeyInfo
+        const ca = await Certificate.builder()
+            .setSubject('CN=OCSP Fetch CA')
+            .setPublicKey(publicKey)
+            .setPrivateKey(key)
+            .setValidityDays(1)
+            .addBasicConstraints(true)
+            .addKeyUsage({ keyCertSign: true, cRLSign: true })
+            .selfSign()
 
-        // NB: This will only work if the OCSP responder is accessible
-        const ocsp = await certificate.requestOcsp({
-            ocspResponderUrls: [
-                'http://localhost:' + (server.address() as any).port + '/ocsp',
-            ],
-            issuerCertificate: Certificate.fromPem(rsaSigningKeys.caCertPem),
+        let sentNonce: Uint8Array | undefined
+        const server = await responder(async (body) => {
+            const request = OCSPRequest.fromDer(new Uint8Array(body))
+            sentNonce = request.nonce
+            const builder = OCSPResponse.builder()
+                .setPrivateKey(key)
+                .setResponderFromCertificate(ca)
+                .addResponse(request.tbsRequest.requestList[0].reqCert, 'good')
+            if (request.nonce) {
+                builder.addResponseExtension(
+                    new Extension({
+                        extnID: OIDs.PKIX.ID_PKIX_OCSP_NONCE,
+                        extnValue: new OctetString({ bytes: request.nonce }),
+                    }),
+                )
+            }
+            return (await builder.build()).toDer()
         })
+        try {
+            const leaf = await Certificate.builder()
+                .setSubject('CN=leaf')
+                .setPublicKey(publicKey)
+                .setIssuer(ca)
+                .setIssuerPrivateKey(key)
+                .setValidityDays(1)
+                .addExtension(
+                    Extension.authorityInfoAccess([
+                        {
+                            accessMethod: OIDs.AUTHORITY_INFO_ACCESS.OCSP,
+                            accessLocation:
+                                new GeneralName.uniformResourceIdentifier({
+                                    value: server.url,
+                                }),
+                        },
+                    ]),
+                )
+                .sign()
 
-        assert(ocsp, 'No OCSP response found')
-        expect(ocsp.toString()).toMatchInlineSnapshot(`
-          "[OCSPResponse] SEQUENCE :
-            ENUMERATED : 0
-            [0] :
-              SEQUENCE :
-                OBJECT IDENTIFIER : 1.3.6.1.5.5.7.48.1.1
-                OCTET STRING : 308206e730820104a1663064310b3009060355040613025553310d300b06035504080c0454657374310e300c06035504070c054c6f63616c310e300c060355040a0c054d794f7267310d300b060355040b0c044f4353503117301506035504030c0e4f43535020526573706f6e646572180f32303236313030373137303332355a30643062304d300906052b0e03021a05000414c3015d4847d542630bdfe6900831b54d0686bdf6041486174eb64c961da9f9e57cfc8b62c94ae3cd290802145cc1a4638f8ba92232262f95191ec815a98093e98200180f32303236313030373137303332355aa1233021301f06092b0601050507300102041204107febfa49ecfc424fc42fad1c16a208e9300d06092a864886f70d01010b050003820101009ad650df60f9dc6eea33ef130ca302b75b1d4b26bfcb7d0ff174ed33b71524e6ddfc2a0abc7279c547dd266f27c23894199fda04edad324ef99574ffbb737f0ffbb882739d273bdd9eead65a56d2ca2a3cdb6470e2ae62bef9902abd67c4d855cda613a0d73d7fe2b24b41857d2dbae967b5df36422af3312ca85b1f6d8069a5d07996fafae05875b06ddeacfedf1ecbbda000f5d36319946ab32a53b464976cee3b75ad3c0135c255f3752ac5f40a0d315585bcfda47a45dc162a9637e822042a0186a3d4c8aeb1f6348d74bc109ef6dd2951b28b49c83f921bed6ca14447bbec03b1b44e1aec079cecff127166104c051e705cd6ed2658a9f534acfcf68ef6a08204c7308204c3308204bf308202a7a00302010202145cc1a4638f8ba92232262f95191ec815a98093ea300d06092a864886f70d01010b0500305c310b3009060355040613025553310d300b06035504080c0454657374310e300c06035504070c054c6f63616c310e300c060355040a0c054d794f7267310b3009060355040b0c0243413111300f06035504030c084d79526f6f7443413020170d3236313030373137303332355a180f39363932313132363137303332355a3064310b3009060355040613025553310d300b06035504080c0454657374310e300c06035504070c054c6f63616c310e300c060355040a0c054d794f7267310d300b060355040b0c044f4353503117301506035504030c0e4f43535020526573706f6e64657230820122300d06092a864886f70d01010105000382010f003082010a0282010100bd46b26ee97f0540138993a2aec1668e9cca3a323b115f4b48304160e806d5d6e847874e95c6f02d691167f6d0cccfba4c25f716922e9d46dd4847a35c189603417342902f9ac87ee1432809e5a5516a4fe519bf84e7a340b478bdcb951615219fa077f166f55040e2d063059837d6ffecfcf521d9fd675eb4466d2a480e2cb8f7bd9d3077b2ca22b4c018d5659f816c756164024dcf5b72ddc5b18b820a779886fd2282c427f559044f31bbeb6169077958d9bd6c0da6c85b9cf1a12a3ab41dcf74960eb782aaa6616853ac5bb208abc618a356402967ee3a9309c168ee4ac81ed13c7e6ef98d2ab288e0527bfe1cf6c990388a2be34dd644e215beb2625dc90203010001a36f306d30090603551d1304023000300b0603551d0f04040302078030130603551d25040c300a06082b06010505070309301d0603551d0e04160414e117b144bca62c5d6ae36f260c44788167f7d390301f0603551d2304183016801486174eb64c961da9f9e57cfc8b62c94ae3cd2908300d06092a864886f70d01010b050003820201001d75e4b35c8f617178a0036125e138db8c0a770b4e690d188f5dd8a4e2ca5504c5537bfd48d9ae22d03f8c6a4fdb1938f5cfcdc77a18975b463eec4d20dfad3c8938df0c7bf35d5c8d14198843df89a5a48780cff8f3f1108153ba57bc6131155ded0d1e83a0aa8ce0d035d2334b021f8a4726a1e1bcfce6d02214402731f615ae25ce2c846e47beb76776352bfbffbe2383385157edc94c43eb3c2e8734e33563ca3ca7a104d615a452d46b087d42139d5ab9f8feac9f6843374ae917bc24d89c2d7bf16eccdf0761281f3046a5d729a3a894991a023c63a42385893ac0902c2e4936260ccd39f0e5969bda7e2af8716a821e2cee5e0ce81b996f8a2596f23d9a98ee31e55f2f8bb7f2290e8c0036a39c29bebc1c29e76033fd1f5ee069da1167c99340692e8d2ba50e16c945a16e613c404cdb9a2e72401dbe566e83f42259e433b150e832b0ce88af14365a21f62a9654383168dd2b951776de2601e4e06ae2949e3c1b1b786f8915ab85337303dd84d95ae3c091babf482f14bae89bb7675d0c2cbbccb9a484ff45c6efa9fb6474fc5e1fc49d4e534d4805fa4ebc30c4e4a106b4fe315e98b187c2060995f87dd2b0706430bfe849cd9ff872c7f76cef4c196299e0a89dc272fb37895b52145ddf824439d3f136e8a5188c083ef0fc4d55732bca4b5adaaa7b304d2f26667a9130b906ebef228798d3efb410a0b5274c4f"
-        `)
+            const response = await leaf.requestOcsp({ issuerCertificate: ca })
+            expect(sentNonce).toHaveLength(32)
+            expect(response?.nonce).toEqual(sentNonce)
+            expect(
+                (await response?.getResponse(leaf, ca))?.certStatus.status,
+            ).toBe('good')
+        } finally {
+            server.close()
+        }
+    })
+
+    test("requestOcsp ignores a response with another request's nonce (a replay)", async () => {
+        // a canned response, recorded with a nonce of its own
+        const canned = OCSPResponse.fromDer(rsaSigningKeys.ocspResponse)
+        expect(canned.nonce).toBeDefined()
+        const server = await responder(async () => rsaSigningKeys.ocspResponse)
+        try {
+            const certificate = Certificate.fromPem(rsaSigningKeys.certPem)
+            expect(
+                certificate.tbsCertificate
+                    .getExtensionsByName('AUTHORITY_INFO_ACCESS')[0]
+                    .extnValue.parseAs(AuthorityInfoAccess)
+                    .map((ad) => ad.accessLocation.toString()),
+            ).toEqual([
+                'http://localhost:8080/ca.crt',
+                'http://localhost:8080/ocsp',
+                'http://localhost:8080/ocsp-backup',
+            ])
+
+            const ocsp = await certificate.requestOcsp({
+                // only the local server: the certificate's own URLs are not running
+                ocspResponderUrls: [server.url],
+                issuerCertificate: Certificate.fromPem(
+                    rsaSigningKeys.caCertPem,
+                ),
+            })
+            expect(ocsp).toBeUndefined()
+        } finally {
+            server.close()
+        }
     })
 })

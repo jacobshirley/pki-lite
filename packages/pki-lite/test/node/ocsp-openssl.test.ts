@@ -97,6 +97,21 @@ describe('OCSP against OpenSSL', () => {
             ).toBe('good')
         })
 
+        test('OpenSSL echoes the nonce of our request (RFC 8954)', async () => {
+            const request = await OCSPRequest.builder()
+                .addCertificate({
+                    certificate: cert('good'),
+                    issuerCertificate: cert('ca'),
+                })
+                .addNonce()
+                .build()
+            const response = OCSPResponse.fromDer(
+                new Uint8Array(await pki.respond({ request: request.toDer() })),
+            )
+            expect(response.nonce).toEqual(request.nonce)
+            expect(response.nonceMatches(request)).toBe(true)
+        })
+
         test('OpenSSL requests round-trip', async () => {
             const bytes = new Uint8Array(await pki.request({ cert: 'good' }))
             expect(hex(OCSPRequest.fromDer(bytes).toDer())).toBe(hex(bytes))

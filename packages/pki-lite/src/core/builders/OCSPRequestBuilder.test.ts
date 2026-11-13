@@ -222,4 +222,28 @@ describe('OCSPRequestBuilder', () => {
             expected.toDer(),
         )
     })
+
+    it('adds a nonce (RFC 8954), random or given', async () => {
+        const issuer = Certificate.fromPem(rsaSigningKeys.caCertPem)
+        const certificate = Certificate.fromPem(rsaSigningKeys.certPem)
+        const random = await OCSPRequest.builder()
+            .addCertificate({ certificate, issuerCertificate: issuer })
+            .addNonce()
+            .build()
+        expect(random.nonce).toHaveLength(32)
+        // survives encoding
+        expect(OCSPRequest.fromDer(random.toDer()).nonce).toEqual(random.nonce)
+
+        const given = await OCSPRequest.builder()
+            .addCertificate({ certificate, issuerCertificate: issuer })
+            .addNonce(new Uint8Array([1, 2, 3]))
+            .build()
+        expect(given.nonce).toEqual(new Uint8Array([1, 2, 3]))
+
+        for (const length of [0, 33]) {
+            expect(() =>
+                OCSPRequest.builder().addNonce(new Uint8Array(length)),
+            ).toThrow('1 to 32 octets')
+        }
+    })
 })

@@ -9,6 +9,10 @@ import { ResponseData } from './ResponseData.js'
 import { Name } from '../x509/Name.js'
 import { beforeAll } from 'vitest'
 import { ocspTestPki } from '../../test-fixtures/ocsp.js'
+import { OCSPRequest } from './OCSPRequest.js'
+import { Extension } from '../x509/Extension.js'
+import { OIDs } from '../core/OIDs.js'
+import { OctetString } from '../asn1/OctetString.js'
 
 describe('OCSPResponse', () => {
     it('should create an OCSPResponse with successful status', () => {
@@ -146,5 +150,42 @@ describe('OCSPResponse checks', () => {
         expect(
             await response.getResponse(pki.responder, pki.ca),
         ).toBeUndefined()
+    })
+})
+
+describe('OCSPResponse nonce (RFC 8954)', () => {
+    let pki: Awaited<ReturnType<typeof ocspTestPki>>
+    beforeAll(async () => {
+        pki = await ocspTestPki()
+    })
+    const nonceExtension = (bytes: Uint8Array<ArrayBuffer>) =>
+        new Extension({
+            extnID: OIDs.PKIX.ID_PKIX_OCSP_NONCE,
+            extnValue: new OctetString({ bytes }),
+        })
+    const respond = async (nonce?: Uint8Array<ArrayBuffer>) => {
+        const builder = OCSPResponse.builder()
+            .setPrivateKey(pki.caKey)
+            .setResponderFromCertificate(pki.ca)
+            .addResponse(pki.ca, pki.leaf, 'good')
+        if (nonce) builder.addResponseExtension(nonceExtension(nonce))
+        return OCSPResponse.fromDer((await builder.build()).toDer())
+    }
+
+    it('nonceMatches: echoed, different, or absent', async () => {
+        const request = await OCSPRequest.builder()
+            .addCertificate({
+                certificate: pki.leaf,
+                issuerCertificate: pki.ca,
+            })
+            .addNonce(new Uint8Array([7, 7, 7]))
+            .build()
+        const echoed = await respond(new Uint8Array([7, 7, 7]))
+        expect(echoed.nonce).toEqual(new Uint8Array([7, 7, 7]))
+        expect(echoed.nonceMatches(request)).toBe(true)
+        expect((await respond(new Uint8Array([8]))).nonceMatches(request)).toBe(
+            false,
+        )
+        expect((await respond()).nonceMatches(request)).toBeUndefined()
     })
 })
