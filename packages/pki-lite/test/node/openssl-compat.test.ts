@@ -1032,7 +1032,8 @@ describe(
             test('a certificate revoked with openssl ca is reported revoked', async () => {
                 // OpenSSL issues random 20-octet serials, larger than a JS number and
                 // usually containing hex letters
-                const { leafCertPem, crlPem } = await opensslIssueAndRevoke()
+                const { caCertPem, leafCertPem, crlPem } =
+                    await opensslIssueAndRevoke()
                 const leaf = Certificate.fromPem(leafCertPem)
                 const crl = CertificateList.fromPem(crlPem)
                 expect(
@@ -1047,7 +1048,11 @@ describe(
                 const result = await new CertificateValidator().validate(
                     leaf,
                     { checkCRL: true },
-                    { crls: [crl] },
+                    {
+                        crls: [crl],
+                        // the CRL signer, so the CRL's signature can be checked
+                        issuerCertificate: Certificate.fromPem(caCertPem),
+                    },
                 )
                 expect(result.revocationStatus.isRevoked).toBe(true)
                 expect(result.revocationStatus.source).toBe('CRL')
