@@ -356,7 +356,8 @@ export type OcspPkiName =
  * responder over it:
  *
  * - `ca` issues `good` (serial 1001), `revoked` (1002, revoked for keyCompromise on
- *   2025-01-01), `responder` (a delegated responder: extendedKeyUsage OCSPSigning) and
+ *   2025-01-01), `responder` (a delegated responder: extendedKeyUsage OCSPSigning and
+ *   id-pkix-ocsp-nocheck) and
  *   `notResponder` (no OCSPSigning)
  * - `otherCa` issues `otherCaSameSerial`, with the same serial as `revoked` (1002), which
  *   `otherCa`'s responder reports as good
@@ -439,6 +440,8 @@ export async function opensslOcspPki() {
     await issue('responder', 'ca', '1003', [
         ...leaf,
         'extendedKeyUsage=OCSPSigning',
+        // id-pkix-ocsp-nocheck: clients need not check the responder's own status
+        'noCheck=ignored',
     ])
     await issue('notResponder', 'ca', '1004', leaf)
     await issue('otherCaSameSerial', 'otherCa', '1002', leaf)

@@ -1,3 +1,5 @@
+import { Extension } from '../src/x509/Extension.js'
+import { OIDs } from '../src/core/OIDs.js'
 import { Certificate } from '../src/x509/Certificate.js'
 import { PrivateKeyInfo } from '../src/keys/PrivateKeyInfo.js'
 import { OCSPResponse } from '../src/ocsp/OCSPResponse.js'
@@ -7,8 +9,8 @@ import { rsaSigningKeys as otherKeys } from './signing-keys/rsa-3072/index.js'
 const DAY = 24 * 60 * 60 * 1000
 
 /**
- * A small PKI for OCSP unit tests (browser-safe, from the fixture keys): a CA, a delegated
- * responder (extendedKeyUsage OCSPSigning), a certificate of the CA without OCSPSigning,
+ * A small PKI for OCSP unit tests (browser-safe, from the fixture keys): a CA, delegated
+ * responders (extendedKeyUsage OCSPSigning; one also with id-pkix-ocsp-nocheck), a certificate of the CA without OCSPSigning,
  * an expired responder, another CA with the same name as `ca` but another key, and a leaf.
  */
 export async function ocspTestPki() {
@@ -34,7 +36,11 @@ export async function ocspTestPki() {
     const issue = (
         subject: string,
         serial: number,
-        options: { ocspSigning?: boolean; notAfter?: Date } = {},
+        options: {
+            ocspSigning?: boolean
+            noCheck?: boolean
+            notAfter?: Date
+        } = {},
     ) => {
         const builder = Certificate.builder()
             .setSubject(`CN=${subject}`)
@@ -48,10 +54,23 @@ export async function ocspTestPki() {
             )
         if (options.ocspSigning)
             builder.addExtendedKeyUsage({ ocspSigning: true })
+        if (options.noCheck) {
+            // id-pkix-ocsp-nocheck, whose value is NULL
+            builder.addExtension(
+                new Extension({
+                    extnID: OIDs.PKIX.ID_PKIX_OCSP_NOCHECK,
+                    extnValue: new Uint8Array([0x05, 0x00]),
+                }),
+            )
+        }
         return builder.sign()
     }
 
     const responder = await issue('Responder', 2, { ocspSigning: true })
+    const noCheckResponder = await issue('No Check Responder', 5, {
+        ocspSigning: true,
+        noCheck: true,
+    })
     const notResponder = await issue('Not A Responder', 3)
     const expiredResponder = await issue('Expired Responder', 4, {
         ocspSigning: true,
@@ -89,6 +108,7 @@ export async function ocspTestPki() {
         impostorCa,
         otherKey,
         responder,
+        noCheckResponder,
         notResponder,
         expiredResponder,
         leaf,

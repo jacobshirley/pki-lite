@@ -143,6 +143,18 @@ export class OCSPResponse extends PkiBase<OCSPResponse> {
     }
 
     /**
+     * The certificate that signed a successful response, if it is `issuer` or a responder
+     * it authorised; see {@link BasicOCSPResponse.getSigner}.
+     */
+    async getSigner(
+        issuer: Certificate,
+        options: { time?: Date } = {},
+    ): Promise<Certificate | undefined> {
+        if (!this.isSuccessful) return undefined
+        return this.getBasicOCSPResponse().getSigner(issuer, options)
+    }
+
+    /**
      * The status the response gives for `certificate`, issued by `issuer`: the single
      * response whose CertID identifies it, if any (none for an unsuccessful response).
      *
