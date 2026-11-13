@@ -112,8 +112,11 @@ export class CertID extends PkiBase<CertID> {
             issuerNameHash: await hash.digest(
                 issuerCertificate.tbsCertificate.subject.toDer(),
             ),
+            // RFC 6960 4.1.1: the hash of the subjectPublicKey BIT STRING's value, not
+            // its encoding (no tag, length or unused-bits octet)
             issuerKeyHash: await hash.digest(
-                issuerCertificate.tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.toDer(),
+                issuerCertificate.tbsCertificate.subjectPublicKeyInfo
+                    .subjectPublicKey.bytes,
             ),
             serialNumber: subjectCertificate.tbsCertificate.serialNumber,
         })
