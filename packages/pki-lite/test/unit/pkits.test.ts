@@ -152,59 +152,67 @@ const describeSettings = (settings: Settings) => {
 }
 
 /**
+ * Why the revocation tests fail, from each test's "Expected Result": the certificate (or
+ * one above it) "has been revoked" or "is on hold", or its status "can not be
+ * determined" / "no valid revocation information is available".
+ */
+const REVOKED = new Set([
+    '4.4.2',
+    '4.4.3',
+    '4.4.15',
+    '4.4.18',
+    '4.4.20',
+    '4.14.2',
+    '4.14.6',
+    '4.14.15',
+    '4.14.16',
+    '4.14.20',
+    '4.14.21',
+    '4.14.23',
+    '4.14.31',
+    '4.14.32',
+    '4.14.34',
+    '4.15.3',
+    '4.15.4',
+    '4.15.6',
+    '4.15.9',
+])
+const UNDETERMINED = new Set([
+    '4.4.1',
+    '4.4.4',
+    '4.4.5',
+    '4.4.6',
+    '4.4.8',
+    '4.4.9',
+    '4.4.10',
+    '4.4.11',
+    '4.4.12',
+    '4.4.21',
+    '4.7.4',
+    '4.7.5',
+    '4.14.3',
+    '4.14.8',
+    '4.14.9',
+    '4.14.11',
+    '4.14.12',
+    '4.14.14',
+    '4.14.17',
+    '4.14.26',
+    '4.14.27',
+    '4.14.35',
+    '4.15.1',
+    '4.15.10',
+])
+
+/**
  * Tests pki-lite does not pass yet, each with the reason. They run with `test.fails`, so
  * fixing one makes its test fail with "expected to fail": delete the entry then.
  */
 const DSA =
     'WebCrypto has no DSA, so these DSA-signed paths cannot be verified (they fail closed). Not planned for the core package.'
-const REENCODE =
-    "The signature check re-encodes the TBSCertificate instead of using the signed bytes: this end certificate's GeneralizedTime notBefore (before 2050) is re-encoded as UTCTime, so a valid signature fails."
-const NAMES =
-    'Name chaining compares distinguished names exactly; RFC 5280 7.1 requires the comparison to ignore case and extra whitespace and to treat PrintableString and UTF8String values alike.'
-const CRL =
-    "CRL checking does not follow RFC 5280 6.3: it looks for the serial number in every CRL regardless of issuer, does not verify the CRL's signature, issuer or dates, does not require a CRL for each certificate, and the serial comparison is case-sensitive hex."
-const DP =
-    'CRL distribution points, issuingDistributionPoint scopes, indirect CRLs and cRLIssuer are not supported.'
-const DELTA = 'Delta CRLs are not supported.'
-const CRITICAL =
-    'Unrecognised critical certificate extensions are not rejected (RFC 5280 4.2, 6.1.3).'
 const KNOWN_ISSUES: Record<string, string> = {
     '4.1.4': DSA,
     '4.1.5': DSA,
-    '4.2.4': REENCODE,
-    '4.3.3': NAMES,
-    '4.3.4': NAMES,
-    '4.3.5': NAMES,
-    '4.3.10': NAMES,
-    '4.3.11': NAMES,
-    '4.4.1': CRL,
-    '4.4.4': CRL,
-    '4.4.5': CRL,
-    '4.4.6': CRL,
-    '4.4.7': CRL,
-    '4.4.10': CRL,
-    '4.4.11': CRL,
-    '4.4.12': CRL,
-    '4.4.21': CRL,
-    '4.7.4': CRL,
-    '4.7.5': CRL,
-    '4.14.3': DP,
-    '4.14.8': DP,
-    '4.14.9': DP,
-    '4.14.11': DP,
-    '4.14.12': DP,
-    '4.14.14': DP,
-    '4.14.17': DP,
-    '4.14.25': DP,
-    '4.14.26': DP,
-    '4.14.27': DP,
-    '4.14.33': DP,
-    '4.14.35': DP,
-    '4.15.1': DELTA,
-    '4.15.5': DELTA,
-    '4.15.7': DELTA,
-    '4.15.10': DELTA,
-    '4.16.2': CRITICAL,
 }
 
 const SECTION_COUNTS: Record<string, number> = {
@@ -261,9 +269,7 @@ describe('NIST PKITS section 4', () => {
                         otherCertificates: certificates
                             .slice(1, -1)
                             .map((n) => Certificate.fromDer(der(n))),
-                        // both are opt-in; a relying party that follows RFC 5280 6.1 needs them
-                        checkSignature: true,
-                        enforceCAConstraints: true,
+                        // signatures and CA constraints are checked by default
                         checkCRL: true,
                         ...settings,
                     },
@@ -274,6 +280,10 @@ describe('NIST PKITS section 4', () => {
                     },
                 )
                 expect(result.isValid, result.messages.join('; ')).toBe(valid)
+                if (REVOKED.has(id)) expect(result.status).toBe('REVOKED')
+                if (UNDETERMINED.has(id)) {
+                    expect(result.status).toBe('CRL_UNAVAILABLE')
+                }
             })
         }
     }

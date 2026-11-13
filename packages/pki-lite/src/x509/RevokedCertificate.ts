@@ -3,6 +3,9 @@ import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { Extension } from './Extension.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { Integer } from '../asn1/Integer.js'
+import { OIDs } from '../core/OIDs.js'
+import { CRLReason } from './CRLReason.js'
+import { GeneralNames } from './GeneralName.js'
 
 /**
  * Represents a revoked certificate entry in a CRL.
@@ -50,6 +53,32 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
             )
         }
         return BigInt('0x' + hex)
+    }
+
+    /**
+     * The revocation reason code from the entry's reasonCode extension (RFC 5280 5.3.1:
+     * 1 keyCompromise, 6 certificateHold, 8 removeFromCRL, ...), if it has one.
+     */
+    get reason(): number | undefined {
+        return this.extension(
+            OIDs.EXTENSION.CRL_REASON_CODE,
+        )?.extnValue.parseAs(CRLReason).value
+    }
+
+    /**
+     * The certificateIssuer extension of an entry on an indirect CRL (RFC 5280 5.3.3): the
+     * issuer of the certificates from this entry on, until another entry names another.
+     */
+    get certificateIssuer(): GeneralNames | undefined {
+        return this.extension(
+            OIDs.EXTENSION.CERTIFICATE_ISSUER,
+        )?.extnValue.parseAs(GeneralNames)
+    }
+
+    private extension(oid: string): Extension | undefined {
+        return this.crlEntryExtensions?.find(
+            (extension) => extension.extnID.value === oid,
+        )
     }
 
     /**

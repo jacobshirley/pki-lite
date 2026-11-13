@@ -5,7 +5,16 @@ import {
     pemToDer,
     PkiBase,
 } from '../core/PkiBase.js'
-import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
+import {
+    AlgorithmIdentifier,
+    SignatureAlgorithmIdentifier,
+} from '../algorithms/AlgorithmIdentifier.js'
+import { Integer } from '../asn1/Integer.js'
+import { OIDs } from '../core/OIDs.js'
+import { Certificate } from './Certificate.js'
+import { Extension } from './Extension.js'
+import { directoryName, GeneralName } from './GeneralName.js'
+import { IssuingDistributionPoint } from './extensions/IssuingDistributionPoint.js'
 import { TBSCertList } from './TBSCertList.js'
 import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 import { Name } from './Name.js'
@@ -43,12 +52,17 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * // Fetch CRL from URL
  * const crlFromUrl = await CertificateList.fetch('http://example.com/ca.crl')
  *
- * // Check if certificate is revoked
- * const isRevoked = crl.tbsCertList.isRevoked(certificate.tbsCertificate.serialNumber)
+ * // Check the CRL is genuine and current, then whether it lists a certificate
+ * if ((await crl.verify(caCertificate)) && crl.isCurrent()) {
+ *     const revoked = crl.isRevoked(certificate)
+ * }
  * ```
  *
  * @see RFC 5280 Section 5 - CRL and CRL Extensions Profile
  */
+/** CRLReason removeFromCRL: a delta CRL entry lifting a hold */
+const REMOVE_FROM_CRL = 8
+
 export class CertificateList extends PkiBase<CertificateList> {
     /** The TBS (To Be Signed) portion of the CRL containing the revocation list */
     tbsCertList: TBSCertList
@@ -96,6 +110,129 @@ export class CertificateList extends PkiBase<CertificateList> {
      */
     get pemHeader() {
         return 'X509 CRL'
+    }
+
+    /** Whether this is a delta CRL (it has a deltaCRLIndicator extension). */
+    get isDelta(): boolean {
+        return this.baseCrlNumber !== undefined
+    }
+
+    /** The CRL number (cRLNumber extension), if present. */
+    get crlNumber(): bigint | undefined {
+        return this.getExtensionByName('CRL_NUMBER')
+            ?.extnValue.parseAs(Integer)
+            .toBigInt()
+    }
+
+    /** For a delta CRL, the number of the complete CRL it updates (deltaCRLIndicator). */
+    get baseCrlNumber(): bigint | undefined {
+        return this.getExtensionByName('DELTA_CRL_INDICATOR')
+            ?.extnValue.parseAs(Integer)
+            .toBigInt()
+    }
+
+    /** Which certificates and reasons the CRL covers (issuingDistributionPoint), if limited. */
+    get issuingDistributionPoint(): IssuingDistributionPoint | undefined {
+        return this.getExtensionByName(
+            'ISSUING_DISTRIBUTION_POINT',
+        )?.extnValue.parseAs(IssuingDistributionPoint)
+    }
+
+    getExtensionByOid(oid: string): Extension | undefined {
+        return this.tbsCertList.extensions?.find(
+            (extension) => extension.extnID.value === oid,
+        )
+    }
+
+    getExtensionByName(
+        name: keyof typeof OIDs.EXTENSION,
+    ): Extension | undefined {
+        return this.getExtensionByOid(OIDs.EXTENSION[name])
+    }
+
+    /**
+     * Whether the CRL is current at `time`: issued (thisUpdate) at or before it, and not
+     * yet due for replacement (nextUpdate). A CRL without nextUpdate is never current,
+     * since its freshness cannot be established (RFC 5280 5.1.2.5).
+     *
+     * @param time The time to check at (default now)
+     */
+    isCurrent(time: Date = new Date()): boolean {
+        const { thisUpdate, nextUpdate } = this.tbsCertList
+        return (
+            thisUpdate <= time && nextUpdate !== undefined && time <= nextUpdate
+        )
+    }
+
+    /**
+     * Verifies that `issuer` signed this CRL: the CRL's issuer name matches the
+     * certificate's subject (RFC 5280 7.1), the certificate's key may sign CRLs (keyUsage
+     * cRLSign), and the signature verifies over the bytes that were signed.
+     *
+     * This checks the CRL, not the issuer: whether the issuer's certificate is itself
+     * trusted is up to certification path validation (CertificateValidator).
+     *
+     * @param issuer The certificate of the CRL issuer
+     * @returns Whether the CRL is signed by `issuer`
+     * @throws If the signature algorithm is not supported
+     *
+     * @example
+     * ```typescript
+     * const crl = CertificateList.fromPem(crlPem)
+     * if (!(await crl.verify(caCertificate))) throw new Error('CRL not signed by the CA')
+     * ```
+     */
+    async verify(issuer: Certificate): Promise<boolean> {
+        if (!this.tbsCertList.issuer.matches(issuer.tbsCertificate.subject)) {
+            return false
+        }
+        if (!issuer.allowsKeyUsage('cRLSign')) return false
+        return new SignatureAlgorithmIdentifier(this.signatureAlgorithm).verify(
+            this.tbsCertList.toOriginalDer(),
+            this.signatureValue.bytes,
+            issuer.getSubjectPublicKeyInfo(),
+        )
+    }
+
+    /**
+     * The entry listing `certificate`, if this CRL has one: the same serial number, from
+     * the certificate's issuer. On an indirect CRL, the issuer of each entry comes from
+     * the certificateIssuer extensions (RFC 5280 5.3.3); otherwise it is the CRL issuer.
+     *
+     * Does not check that the CRL is genuine or current: see {@link verify} and
+     * {@link isCurrent}.
+     */
+    getRevokedEntry(certificate: Certificate): RevokedCertificate | undefined {
+        const serial = certificate.tbsCertificate.serialNumber.toBigInt()
+        const indirect = this.issuingDistributionPoint?.indirectCRL ?? false
+        let issuers: GeneralName[] = [
+            directoryName.fromName(this.tbsCertList.issuer),
+        ]
+        for (const entry of this.tbsCertList.revokedCertificates ?? []) {
+            const named = indirect ? entry.certificateIssuer : undefined
+            if (named) issuers = [...named]
+            if (entry.serialAsBigInt() !== serial) continue
+            const issuedBy = issuers.some(
+                (name) =>
+                    name instanceof directoryName &&
+                    name.matches(certificate.tbsCertificate.issuer),
+            )
+            if (issuedBy) return entry
+        }
+        return undefined
+    }
+
+    /**
+     * Whether this CRL lists `certificate` as revoked (or on hold). An entry with reason
+     * removeFromCRL, which a delta CRL uses to lift a hold, does not count.
+     *
+     * Does not check that the CRL is genuine or current: see {@link verify} and
+     * {@link isCurrent}. To check revocation as part of path validation, use
+     * CertificateValidator with `checkCRL`.
+     */
+    isRevoked(certificate: Certificate): boolean {
+        const entry = this.getRevokedEntry(certificate)
+        return entry !== undefined && entry.reason !== REMOVE_FROM_CRL
     }
 
     /**

@@ -37,6 +37,9 @@ import {
 import { GeneralName } from '../x509/GeneralName.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { CRLReason } from '../x509/CRLReason.js'
+import { OIDs } from './OIDs.js'
+import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
+import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 
 describe('CertificateValidator', () => {
     let validator: CertificateValidator
@@ -108,7 +111,7 @@ describe('CertificateValidator', () => {
         test('should detect revoked certificate via CRL', async () => {
             const revokedCertSerial =
                 sampleCertificate.tbsCertificate.serialNumber
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -123,6 +126,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -135,7 +139,7 @@ describe('CertificateValidator', () => {
         })
 
         test('should not detect non-revoked certificate via CRL', async () => {
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: 'DEADBEEF', // Different serial
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -149,19 +153,20 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                 },
             )
 
             expect(result.isValid).toEqual(true)
             expect(result.status).toEqual(CertificateValidationStatus.VALID)
             expect(result.revocationStatus.isRevoked).toEqual(false)
-            expect(result.revocationStatus.source).toEqual('NONE')
+            expect(result.revocationStatus.source).toEqual('CRL')
         })
 
         test('should detect a revoked serial that contains hex letters', async () => {
             const cert = createSampleCertificate()
             cert.tbsCertificate.serialNumber = new Integer({ value: 0xabcdef })
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: 0xabcdef,
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -171,7 +176,7 @@ describe('CertificateValidator', () => {
             const result = await validator.validate(
                 cert,
                 { checkCRL: true },
-                { crls: [crl] },
+                { crls: [crl], issuerCertificate: await testCa() },
             )
 
             expect(result.revocationStatus.isRevoked).toEqual(true)
@@ -185,7 +190,7 @@ describe('CertificateValidator', () => {
             ])
             const cert = createSampleCertificate()
             cert.tbsCertificate.serialNumber = new Integer({ value: serial })
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber:
                         cert.tbsCertificate.serialNumber.toHexString(),
@@ -196,7 +201,10 @@ describe('CertificateValidator', () => {
             const result = await validator.validate(
                 cert,
                 { checkCRL: true },
-                { crls: [CertificateList.fromDer(crl.toDer())] },
+                {
+                    crls: [CertificateList.fromDer(crl.toDer())],
+                    issuerCertificate: await testCa(),
+                },
             )
 
             expect(result.revocationStatus.isRevoked).toEqual(true)
@@ -205,13 +213,13 @@ describe('CertificateValidator', () => {
         test('should handle multiple CRLs', async () => {
             const revokedCertSerial =
                 sampleCertificate.tbsCertificate.serialNumber
-            const crl1 = createSampleCRL([
+            const crl1 = await createSampleCRL([
                 {
                     serialNumber: 'DEADBEEF',
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
                 },
             ])
-            const crl2 = createSampleCRL([
+            const crl2 = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-02-15T00:00:00.000Z'),
@@ -226,6 +234,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl1, crl2],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -321,7 +330,7 @@ describe('CertificateValidator', () => {
                 sampleCertificate.tbsCertificate.serialNumber
 
             // CRL says revoked
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -342,6 +351,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                     ocspResponses: [ocspResponse],
                 },
             )
@@ -357,7 +367,7 @@ describe('CertificateValidator', () => {
         test('should check both expiry and revocation', async () => {
             const revokedCertSerial =
                 expiredCertificate.tbsCertificate.serialNumber
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -371,6 +381,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -383,7 +394,7 @@ describe('CertificateValidator', () => {
         test('should report revocation if certificate is valid but revoked', async () => {
             const revokedCertSerial =
                 sampleCertificate.tbsCertificate.serialNumber
-            const crl = createSampleCRL([
+            const crl = await createSampleCRL([
                 {
                     serialNumber: revokedCertSerial.toHexString(),
                     revocationDate: new Date('2023-01-15T00:00:00.000Z'),
@@ -397,6 +408,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -407,7 +419,7 @@ describe('CertificateValidator', () => {
     })
 
     describe('Error Handling', () => {
-        test('should handle empty revocation data gracefully', async () => {
+        test('fails closed when no CRL covers the certificate (RFC 5280 6.3)', async () => {
             const result = await validator.validate(
                 sampleCertificate,
                 {
@@ -420,8 +432,10 @@ describe('CertificateValidator', () => {
                 },
             )
 
-            expect(result.isValid).toEqual(true)
-            expect(result.status).toEqual(CertificateValidationStatus.VALID)
+            expect(result.isValid).toEqual(false)
+            expect(result.status).toEqual(
+                CertificateValidationStatus.CRL_UNAVAILABLE,
+            )
             expect(result.revocationStatus.source).toEqual('NONE')
         })
 
@@ -498,6 +512,8 @@ describe('CertificateValidator', () => {
             test('should accept trust anchors for validation', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                 }
@@ -516,6 +532,8 @@ describe('CertificateValidator', () => {
             test('should fail validation without trust anchor', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [], // No trust anchors
                     otherCertificates: [intermediateCert],
                 }
@@ -534,6 +552,8 @@ describe('CertificateValidator', () => {
             test('should build complete certificate chain', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                 }
@@ -551,6 +571,8 @@ describe('CertificateValidator', () => {
             test('should handle incomplete chain gracefully', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [], // Missing intermediate
                 }
@@ -570,6 +592,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [circularCert1, circularCert2],
                 }
@@ -587,6 +611,8 @@ describe('CertificateValidator', () => {
             test('should validate entire certificate chain', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                     enforceCAConstraints: true,
@@ -606,6 +632,8 @@ describe('CertificateValidator', () => {
             test('should validate CA constraints', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                     enforceCAConstraints: true,
@@ -626,6 +654,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [invalidCA], // Using non-CA cert as intermediate
                     enforceCAConstraints: true,
@@ -664,6 +694,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchorWithConstraints],
                     otherCertificates: [intermediateCert],
                     validateNameConstraints: true,
@@ -697,6 +729,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchorWithConstraints],
                     otherCertificates: [intermediateCert],
                     validateNameConstraints: true,
@@ -736,6 +770,8 @@ describe('CertificateValidator', () => {
 
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchorWithConstraints],
                     otherCertificates: [intermediateCert],
                     validateNameConstraints: true,
@@ -775,6 +811,8 @@ describe('CertificateValidator', () => {
 
                 const result = await validator.validate(endEntityCert, {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [{ certificate: rootCert, nameConstraints }],
                     otherCertificates: [intermediateCert],
                     validateNameConstraints: true,
@@ -789,6 +827,8 @@ describe('CertificateValidator', () => {
             test('should validate certificate policies', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                     validatePolicies: true,
@@ -803,6 +843,8 @@ describe('CertificateValidator', () => {
             test('should check required policies', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                     validatePolicies: true,
@@ -822,6 +864,8 @@ describe('CertificateValidator', () => {
             test('should provide detailed diagnostic information', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                 }
@@ -841,6 +885,8 @@ describe('CertificateValidator', () => {
             test('should include chain information in result', async () => {
                 const options: CertificateValidationOptions = {
                     validateChain: true,
+                    // the test certificates are not signed
+                    checkSignature: false,
                     trustAnchors: [trustAnchor],
                     otherCertificates: [intermediateCert],
                 }
@@ -900,6 +946,8 @@ describe('CertificateValidator', () => {
 
                 const validator = new CertificateValidator()
                 const result = await validator.validateChain(chain, {
+                    // the test certificates are not signed
+                    checkSignature: false,
                     enforceCAConstraints: true,
                 })
                 expect(result.isValid).toEqual(false)
@@ -925,6 +973,8 @@ describe('CertificateValidator', () => {
 
                 const validator = new CertificateValidator()
                 const result = await validator.validateChain(chain, {
+                    // the test certificates are not signed
+                    checkSignature: false,
                     enforceCAConstraints: true,
                 })
                 expect(result.isValid).toEqual(true)
@@ -1018,51 +1068,47 @@ function createNotYetValidCertificate(): Certificate {
     return cert
 }
 
-function createSampleCRL(
+/** A CRL signed by the "CN=Test CA" CA (the issuer of the sample certificates). */
+async function createSampleCRL(
     revokedCertificates: Array<{
         serialNumber: string | number
         revocationDate: Date
         reason?: number
     }>,
-): CertificateList {
-    const issuerRdn = new RelativeDistinguishedName()
-    issuerRdn.push(
-        new AttributeTypeAndValue({ type: '2.5.4.3', value: 'Test CA' }),
-    )
-    const issuerName = new Name.RDNSequence()
-    issuerName.push(issuerRdn)
+): Promise<CertificateList> {
+    const builder = CertificateList.builder()
+        .setIssuerFromCertificate(await testCa())
+        .setPrivateKey(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+        .setThisUpdate(new Date(Date.now() - 60 * 60 * 1000))
+        .setNextUpdate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+    for (const cert of revokedCertificates) {
+        builder.addRevokedCertificate({
+            serialNumber: cert.serialNumber,
+            revocationDate: cert.revocationDate,
+            crlEntryExtensions: cert.reason
+                ? [createReasonExtension(new CRLReason(cert.reason))]
+                : undefined,
+        })
+    }
+    return builder.build()
+}
 
-    const revokedCerts: RevokedCertificate[] = revokedCertificates.map(
-        (cert) => {
-            return new RevokedCertificate({
-                userCertificate: cert.serialNumber,
-                revocationDate: cert.revocationDate,
-                crlEntryExtensions: cert.reason
-                    ? [createReasonExtension(new CRLReason(cert.reason))]
-                    : undefined,
-            })
-        },
-    )
+let testCaCertificate: Promise<Certificate> | undefined
 
-    const tbsCertList = new TBSCertList({
-        signature: new AlgorithmIdentifier({
-            algorithm: '1.2.840.113549.1.1.11',
-        }), // SHA256withRSA
-        issuer: issuerName,
-        thisUpdate: new Date(), // thisUpdate
-        nextUpdate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // nextUpdate (+30 days)
-        revokedCertificates: revokedCerts,
-    })
-
-    const signatureValue = new Uint8Array(256) // Mock signature
-
-    return new CertificateList({
-        tbsCertList,
-        signatureAlgorithm: new AlgorithmIdentifier({
-            algorithm: '1.2.840.113549.1.1.11',
-        }), // SHA256withRSA
-        signatureValue,
-    })
+/** A real CA certificate named "CN=Test CA", with the key the sample CRLs are signed with. */
+function testCa(): Promise<Certificate> {
+    testCaCertificate ??= Certificate.builder()
+        .setSubject('CN=Test CA')
+        .setPublicKey(
+            Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                .subjectPublicKeyInfo,
+        )
+        .setPrivateKey(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+        .setValidityDays(3650)
+        .addBasicConstraints(true)
+        .addKeyUsage({ keyCertSign: true, cRLSign: true })
+        .selfSign()
+    return testCaCertificate
 }
 
 function createReasonExtension(reason: CRLReason) {
@@ -1550,6 +1596,8 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
 
         const result = await validator.validate(leaf, {
             validateChain: true,
+            // the test certificates are not signed
+            checkSignature: false,
             trustAnchors: [{ certificate: root }],
             otherCertificates: [ca],
             enforceCAConstraints: true,
@@ -1567,6 +1615,8 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
 
         const result = await validator.validate(leaf, {
             validateChain: true,
+            // the test certificates are not signed
+            checkSignature: false,
             trustAnchors: [{ certificate: root }],
             otherCertificates: [ca],
             enforceCAConstraints: true,
@@ -1583,10 +1633,112 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
 
         const result = await validator.validate(caAsEndCertificate, {
             validateChain: true,
+            // the test certificates are not signed
+            checkSignature: false,
             trustAnchors: [{ certificate: root }],
             enforceCAConstraints: true,
         })
         expect(result.isValid, result.messages.join('; ')).toBe(true)
+    })
+
+    describe('critical extensions (RFC 5280 6.1.4 (o), 6.1.5 (f))', () => {
+        const validateWith = async (
+            extension: Extension,
+            on: 'leaf' | 'ca' | 'root',
+        ) => {
+            const root = createRootCertificate()
+            const ca = createIntermediateCertificate(root)
+            const leaf = createEndEntityCertificateFor(ca)
+            const target = { leaf, ca, root }[on]
+            target.tbsCertificate.extensions ??= []
+            target.tbsCertificate.extensions.push(extension)
+            return validator.validate(leaf, {
+                validateChain: true,
+                // the test certificates are not signed
+                checkSignature: false,
+                trustAnchors: [{ certificate: root }],
+                otherCertificates: [ca],
+            })
+        }
+        const unknown = (critical: boolean) =>
+            new Extension({
+                extnID: '1.2.3.4.5',
+                critical,
+                extnValue: new Integer({ value: 1 }),
+            })
+
+        test('an unrecognised critical extension makes the path invalid', async () => {
+            for (const on of ['leaf', 'ca'] as const) {
+                const result = await validateWith(unknown(true), on)
+                expect(result.isValid, on).toBe(false)
+                expect(result.messages.join('; ')).toContain(
+                    'unrecognised critical extension 1.2.3.4.5',
+                )
+            }
+        })
+
+        test('an unrecognised non-critical extension is ignored', async () => {
+            const result = await validateWith(unknown(false), 'leaf')
+            expect(result.isValid, result.messages.join('; ')).toBe(true)
+        })
+
+        test("the trust anchor's extensions are not processed", async () => {
+            const result = await validateWith(unknown(true), 'root')
+            expect(result.isValid, result.messages.join('; ')).toBe(true)
+        })
+
+        test('a critical extendedKeyUsage is recognised', async () => {
+            const eku = Extension.extendedKeyUsage({ serverAuth: true })
+            eku.critical = true
+            const result = await validateWith(eku, 'leaf')
+            expect(result.isValid, result.messages.join('; ')).toBe(true)
+        })
+    })
+
+    describe('defaults', () => {
+        test('signatures are checked unless checkSignature is false', async () => {
+            const root = createRootCertificate()
+            const leaf = createEndEntityCertificateFor(root)
+            const options = {
+                validateChain: true,
+                trustAnchors: [{ certificate: root }],
+            }
+
+            // the test certificates are not signed
+            const result = await validator.validate(leaf, options)
+            expect(result.status).toBe(
+                CertificateValidationStatus.SIGNATURE_INVALID,
+            )
+            const unchecked = await validator.validate(leaf, {
+                ...options,
+                checkSignature: false,
+            })
+            expect(unchecked.isValid, unchecked.messages.join('; ')).toBe(true)
+        })
+
+        test('CA constraints are enforced unless enforceCAConstraints is false', async () => {
+            const root = createRootCertificate()
+            const ca = createIntermediateCertificate(root)
+            ca.tbsCertificate.extensions!.push(
+                Extension.keyUsage({ digitalSignature: true }),
+            )
+            const leaf = createEndEntityCertificateFor(ca)
+            const options = {
+                validateChain: true,
+                trustAnchors: [{ certificate: root }],
+                otherCertificates: [ca],
+                checkSignature: false,
+            }
+
+            const result = await validator.validate(leaf, options)
+            expect(result.isValid).toBe(false)
+            expect(result.messages.join('; ')).toContain('keyCertSign')
+            const unchecked = await validator.validate(leaf, {
+                ...options,
+                enforceCAConstraints: false,
+            })
+            expect(unchecked.isValid, unchecked.messages.join('; ')).toBe(true)
+        })
     })
 
     test('a signature that cannot be verified fails validation', async () => {

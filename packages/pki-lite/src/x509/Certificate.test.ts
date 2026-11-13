@@ -7,6 +7,7 @@ import { Name } from './Name.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
 import { asn1js } from '../core/PkiBase.js'
+import { pkitsFiles } from '../../test-fixtures/pkits/pkits.js'
 
 /**
  * Creates a sample certificate for testing.
@@ -200,5 +201,34 @@ YCq9EV5g9cM3mH/4raahln+1O63McYb36rlLFrJaQz+aX7A/9Wir1Jk=
         expect(sans[0][0].toString()).toEqual('example.com')
 
         expect(cert.getCommonName()).toEqual('example.com')
+    })
+})
+
+const pkitsDer = (name: string) =>
+    Uint8Array.from(atob(pkitsFiles[name]), (c) => c.charCodeAt(0))
+
+describe('Certificate extension helpers', () => {
+    const cert = (name: string) => Certificate.fromDer(pkitsDer(name))
+
+    test('isCA', () => {
+        expect(cert('GoodCACert').isCA()).toBe(true)
+        expect(cert('ValidCertificatePathTest1EE').isCA()).toBe(false)
+    })
+
+    test('allowsKeyUsage', () => {
+        const ca = cert('keyUsageCriticalcRLSignFalseCACert')
+        expect(ca.allowsKeyUsage('keyCertSign')).toBe(true)
+        expect(ca.allowsKeyUsage('cRLSign')).toBe(false)
+    })
+
+    test('getCrlDistributionPoints', () => {
+        const points = cert(
+            'InvalidcRLIssuerTest31EE',
+        ).getCrlDistributionPoints()
+        expect(points).toHaveLength(1)
+        expect(points[0].cRLIssuer).toBeDefined()
+        expect(
+            cert('ValidCertificatePathTest1EE').getCrlDistributionPoints(),
+        ).toEqual([])
     })
 })

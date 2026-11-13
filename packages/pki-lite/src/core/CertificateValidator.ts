@@ -7,7 +7,7 @@ import { checkNameConstraints } from './NameConstraintsChecker.js'
 import { SubjectKeyIdentifier } from '../keys/SubjectKeyIdentifier.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { AuthorityKeyIdentifier } from '../x509/extensions/AuthorityKeyIdentifier.js'
-import { CRLReason } from '../x509/CRLReason.js'
+import { CrlChecker } from './CrlChecker.js'
 import { OIDs } from './OIDs.js'
 import { ANY_POLICY, processPolicies } from './PolicyProcessor.js'
 import { KeyUsage } from '../x509/extensions/KeyUsage.js'
@@ -15,6 +15,30 @@ import { KeyUsage } from '../x509/extensions/KeyUsage.js'
 /**
  * Enumeration of certificate validation status codes.
  */
+/**
+ * Certificate extensions that path validation processes, or that the library understands
+ * and that place no constraint on the path (key identifiers, alternative names, CRL and
+ * access locations, extended key usage, which applications check). A critical extension
+ * not in this list makes the path invalid (RFC 5280 4.2).
+ */
+const PROCESSED_EXTENSIONS = new Set<string>([
+    OIDs.EXTENSION.KEY_USAGE,
+    OIDs.EXTENSION.BASIC_CONSTRAINTS,
+    OIDs.EXTENSION.NAME_CONSTRAINTS,
+    OIDs.EXTENSION.CERTIFICATE_POLICIES,
+    OIDs.EXTENSION.POLICY_MAPPINGS,
+    OIDs.EXTENSION.POLICY_CONSTRAINTS,
+    OIDs.EXTENSION.INHIBIT_ANY_POLICY,
+    OIDs.EXTENSION.SUBJECT_ALT_NAME,
+    OIDs.EXTENSION.ISSUER_ALT_NAME,
+    OIDs.EXTENSION.SUBJECT_KEY_IDENTIFIER,
+    OIDs.EXTENSION.AUTHORITY_KEY_IDENTIFIER,
+    OIDs.EXTENSION.EXTENDED_KEY_USAGE,
+    OIDs.EXTENSION.CRL_DISTRIBUTION_POINTS,
+    OIDs.EXTENSION.FRESHEST_CRL,
+    OIDs.EXTENSION.AUTHORITY_INFO_ACCESS,
+])
+
 export const CertificateValidationStatus = {
     VALID: 'VALID',
     EXPIRED: 'EXPIRED',
@@ -89,7 +113,16 @@ export interface PolicyValidationResult {
  * Options for certificate validation.
  */
 export interface CertificateValidationOptions {
-    /** Check certificate revocation using CRLs */
+    /**
+     * Check certificate revocation using CRLs, as RFC 5280 6.3 describes: a CRL counts only
+     * if it is issued for the certificate (directly, or as an indirect CRL by a cRLIssuer
+     * the certificate names), its issuingDistributionPoint scope covers the certificate, it
+     * is current (thisUpdate <= time <= nextUpdate), it has no critical extension that is
+     * not understood, and it is signed by a certificate with cRLSign whose path validates
+     * (delta CRLs are applied on top). Every certificate below the trust anchor needs CRLs
+     * covering all revocation reasons (or an OCSP answer, with `checkOCSP`); otherwise the
+     * result is `CRL_UNAVAILABLE`. Applies when revocation data is passed to `validate`.
+     */
     checkCRL?: boolean
     /** Check certificate revocation using OCSP */
     checkOCSP?: boolean
@@ -97,7 +130,11 @@ export interface CertificateValidationOptions {
     timeTolerance?: number
     /** Custom validation date (defaults to current time) */
     validationTime?: Date
-    /** Whether to perform signature validation */
+    /**
+     * Whether to verify each certificate's signature with its issuer's public key
+     * (RFC 5280 6.1.3 (a)(1)). On by default; set to `false` only for certificates
+     * whose signatures were checked some other way.
+     */
     checkSignature?: boolean
     /** Trust anchors to use for chain validation */
     trustAnchors?: TrustAnchor[]
@@ -105,7 +142,10 @@ export interface CertificateValidationOptions {
     otherCertificates?: Certificate[]
     /** Whether to build and validate the full certificate chain */
     validateChain?: boolean
-    /** Whether to enforce CA constraints and key usage */
+    /**
+     * Whether to enforce CA constraints on the issuing certificates (RFC 5280 6.1.4):
+     * basicConstraints cA, keyUsage keyCertSign and pathLenConstraint. On by default.
+     */
     enforceCAConstraints?: boolean
     /**
      * Whether to enforce name constraints (RFC 5280 4.2.1.10): the `NameConstraints`
@@ -342,11 +382,20 @@ export class CertificateValidator {
                 certificate,
                 revocationData,
                 options,
+                // without chain validation, the issuer given is taken on trust
+                revocationData.issuerCertificate
+                    ? [revocationData.issuerCertificate]
+                    : [],
             )
 
             revocationStatus = revocationResult
 
-            if (revocationResult.isRevoked) {
+            if (revocationResult.undetermined) {
+                finalStatus = CertificateValidationStatus.CRL_UNAVAILABLE
+                messages.push(
+                    `Revocation status could not be determined: ${revocationResult.details}`,
+                )
+            } else if (revocationResult.isRevoked) {
                 finalStatus = CertificateValidationStatus.REVOKED
                 messages.push(
                     `Certificate is revoked (${revocationResult.source})${
@@ -529,6 +578,30 @@ export class CertificateValidator {
                 }
             }
 
+            // RFC 5280 6.1.4 (o), 6.1.5 (f): a critical extension that is not processed
+            // makes the path invalid (the trust anchor's extensions are not processed)
+            if (!isRoot) {
+                const unknown = cert.tbsCertificate.extensions?.find(
+                    (extension) =>
+                        extension.critical &&
+                        !PROCESSED_EXTENSIONS.has(extension.extnID.value),
+                )
+                if (unknown) {
+                    return {
+                        status: CertificateValidationStatus.CHAIN_INVALID,
+                        isValid: false,
+                        messages: [
+                            `Certificate ${i + 1} has an unrecognised critical extension ${unknown.extnID.value}`,
+                        ],
+                        revocationStatus: { isRevoked: false, source: 'NONE' },
+                        certificate: chain.certificates[0],
+                        validatedAt: new Date(),
+                        chain,
+                        diagnostics,
+                    }
+                }
+            }
+
             // For non-root certificates, verify issuer relationship and signature
             if (!isRoot) {
                 const issuer = chain.certificates[i + 1]
@@ -550,7 +623,7 @@ export class CertificateValidator {
                 }
 
                 // Verify signature (if requested)
-                if (options.checkSignature) {
+                if (options.checkSignature !== false) {
                     try {
                         const signatureValid = await cert.isIssuedBy(issuer)
                         if (!signatureValid) {
@@ -593,7 +666,7 @@ export class CertificateValidator {
             }
 
             // Check CA constraints for non-end-entity certificates
-            if (!isEndEntity && options.enforceCAConstraints) {
+            if (!isEndEntity && options.enforceCAConstraints !== false) {
                 const caValidationResult =
                     this.validateCertificateAuthority(cert)
                 if (!caValidationResult.isValid) {
@@ -745,7 +818,24 @@ export class CertificateValidator {
                     cert,
                     revocationData,
                     options,
+                    chain.certificates.slice(i + 1),
                 )
+
+                if (certRevocationStatus.undetermined) {
+                    return {
+                        status: CertificateValidationStatus.CRL_UNAVAILABLE,
+                        isValid: false,
+                        messages: [
+                            `Revocation status of certificate ${i + 1} in chain could not be determined: ${certRevocationStatus.details}`,
+                        ],
+                        revocationStatus: certRevocationStatus,
+                        certificate: chain.certificates[0],
+                        validatedAt: new Date(),
+                        chain,
+                        policyResult,
+                        diagnostics,
+                    }
+                }
 
                 if (certRevocationStatus.isRevoked) {
                     return {
@@ -825,6 +915,10 @@ export class CertificateValidator {
 
     /**
      * Checks the revocation status of a certificate using available CRLs and OCSP responses.
+     *
+     * @param trustedSigners certificates trusted to sign CRLs without validating them
+     *   again: the trust anchors, and the certificates above this one in the path being
+     *   validated (which that validation covers)
      */
     private async checkRevocationStatus(
         certificate: Certificate,
@@ -834,7 +928,8 @@ export class CertificateValidator {
             issuerCertificate?: Certificate
         },
         options: CertificateValidationOptions,
-    ): Promise<RevocationStatus> {
+        trustedSigners: Certificate[],
+    ): Promise<RevocationStatus & { undetermined?: boolean }> {
         // Check OCSP responses first (more current)
         if (options.checkOCSP && revocationData.ocspResponses) {
             const ocspResult = this.checkOCSPRevocation(
@@ -846,14 +941,52 @@ export class CertificateValidator {
             }
         }
 
-        // Check CRLs
-        if (options.checkCRL && revocationData.crls) {
-            const crlResult = this.checkCRLRevocation(
-                certificate,
-                revocationData.crls,
+        // Check CRLs (RFC 5280 6.3)
+        if (options.checkCRL) {
+            const anchors = (options.trustAnchors ?? []).map(
+                (anchor) => anchor.certificate,
             )
-            if (crlResult.source !== 'NONE') {
-                return crlResult
+            const checker = new CrlChecker({
+                crls: revocationData.crls ?? [],
+                certificates: [
+                    ...trustedSigners,
+                    ...(revocationData.issuerCertificate
+                        ? [revocationData.issuerCertificate]
+                        : []),
+                    ...(options.otherCertificates ?? []),
+                    ...anchors,
+                ],
+                trustAnchors: [...anchors, ...trustedSigners],
+                time: options.validationTime ?? new Date(),
+                validateSigner: (signer) =>
+                    this.validateCrlSigner(signer, options, revocationData),
+            })
+            const result = await checker.check(certificate)
+            if (result.status === 'revoked') {
+                return {
+                    isRevoked: true,
+                    source: 'CRL',
+                    reason: result.reason,
+                    revocationTime: result.revocationTime,
+                    details: `${result.details}${
+                        result.reason !== undefined
+                            ? ` with reason: ${this.getRevocationReasonText(result.reason)}`
+                            : ''
+                    }`,
+                }
+            }
+            if (result.status === 'good') {
+                return {
+                    isRevoked: false,
+                    source: 'CRL',
+                    details: result.details,
+                }
+            }
+            return {
+                isRevoked: false,
+                source: 'NONE',
+                details: result.details,
+                undetermined: true,
             }
         }
 
@@ -864,54 +997,41 @@ export class CertificateValidator {
         }
     }
 
+    /** CRL signers whose path is being validated (the recursion guard of validateCrlSigner). */
+    private readonly crlSignersInProgress = new Set<Certificate>()
+
     /**
-     * Checks certificate revocation using CRLs.
+     * Validates the certification path of a CRL signer outside the path being validated
+     * (RFC 5280 6.3.3 (f)): to the same trust anchors, with its own revocation status.
      */
-    private checkCRLRevocation(
-        certificate: Certificate,
-        crls: CertificateList[],
-    ): RevocationStatus {
-        const serialNumber = certificate.tbsCertificate.serialNumber
-
-        for (const crl of crls) {
-            if (!crl.tbsCertList.revokedCertificates) {
-                continue
-            }
-
-            for (const revokedCert of crl.tbsCertList.revokedCertificates) {
-                // Compare numerically: hex strings differ in case and leading zeros
-                if (revokedCert.serialAsBigInt() === serialNumber.toBigInt()) {
-                    // Extract revocation reason if available from extensions
-                    let reason: number | undefined
-                    let details = 'Certificate found in CRL'
-
-                    if (revokedCert.crlEntryExtensions) {
-                        for (const ext of revokedCert.crlEntryExtensions) {
-                            // CRL Reason Code OID: 2.5.29.21
-                            if (
-                                ext.extnID.value ===
-                                OIDs.EXTENSION.CRL_REASON_CODE
-                            ) {
-                                reason = ext.extnValue.parseAs(CRLReason).value
-                                break
-                            }
-                        }
-                    }
-
-                    return {
-                        isRevoked: true,
-                        source: 'CRL',
-                        reason,
-                        revocationTime: revokedCert.revocationDate,
-                        details,
-                    }
-                }
-            }
+    private async validateCrlSigner(
+        signer: Certificate,
+        options: CertificateValidationOptions,
+        revocationData: { crls?: CertificateList[] },
+    ): Promise<boolean> {
+        if (!options.trustAnchors?.length) return false
+        // A CRL issuer's own certificate can be covered by the CRL it signs (an indirect
+        // CRL, PKITS 4.14.30): its path, still being validated further up, decides
+        for (const inProgress of this.crlSignersInProgress) {
+            if (inProgress.equals(signer)) return true
         }
-
-        return {
-            isRevoked: false,
-            source: 'NONE',
+        this.crlSignersInProgress.add(signer)
+        try {
+            const result = await this.validate(
+                signer,
+                {
+                    ...options,
+                    validateChain: true,
+                    // the user's policy requirements are for the certificate's path
+                    requiredPolicies: undefined,
+                    initialPolicySet: undefined,
+                    initialExplicitPolicy: false,
+                },
+                { crls: revocationData.crls },
+            )
+            return result.isValid
+        } finally {
+            this.crlSignersInProgress.delete(signer)
         }
     }
 
@@ -999,9 +1119,9 @@ export class CertificateValidator {
         const subject = certificate.tbsCertificate.subject
         const issuer = certificate.tbsCertificate.issuer
 
-        // Basic check: subject equals issuer
+        // Basic check: subject matches issuer
         return (
-            subject.equals(issuer) &&
+            subject.matches(issuer) &&
             (await certificate.isIssuedBy(certificate))
         )
     }
@@ -1018,8 +1138,8 @@ export class CertificateValidator {
         for (const candidate of candidates) {
             const candidateSubject = candidate.tbsCertificate.subject
 
-            // Check if subject name matches issuer name
-            if (candidateSubject.toString() === issuerName.toString()) {
+            // Check if subject name matches issuer name (RFC 5280 7.1)
+            if (candidateSubject.matches(issuerName)) {
                 // Additional check: verify key identifiers if present
                 if (this.verifyKeyIdentifiers(certificate, candidate)) {
                     return candidate
@@ -1115,10 +1235,9 @@ export class CertificateValidator {
         certificate: Certificate,
         issuer: Certificate,
     ): boolean {
-        const certIssuer = certificate.tbsCertificate.issuer.toString()
-        const issuerSubject = issuer.tbsCertificate.subject.toString()
-
-        return certIssuer === issuerSubject
+        return certificate.tbsCertificate.issuer.matches(
+            issuer.tbsCertificate.subject,
+        )
     }
 
     /**
@@ -1270,7 +1389,7 @@ export class CertificateValidator {
 
     /** Whether a certificate's issuer and subject are the same name. */
     private isSelfIssued(certificate: Certificate): boolean {
-        return certificate.tbsCertificate.issuer.equals(
+        return certificate.tbsCertificate.issuer.matches(
             certificate.tbsCertificate.subject,
         )
     }

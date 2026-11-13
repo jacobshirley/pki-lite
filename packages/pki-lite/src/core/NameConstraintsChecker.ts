@@ -12,7 +12,10 @@ import {
     x400Address,
 } from '../x509/GeneralName.js'
 import { RDNSequence } from '../x509/RDNSequence.js'
-import { GeneralSubtree, NameConstraints } from '../x509/extensions/NameConstraints.js'
+import {
+    GeneralSubtree,
+    NameConstraints,
+} from '../x509/extensions/NameConstraints.js'
 
 /** `emailAddress` (PKCS #9), which may appear in a subject DN. */
 const EMAIL_ADDRESS_OID = '1.2.840.113549.1.9.1'
@@ -179,28 +182,12 @@ export function ipWithin(ip: Uint8Array, constraint: Uint8Array): boolean {
     return true
 }
 
-/** A comparable form of an RDN: its attributes as "oid=value", sorted. */
-function canonicalRdn(rdn: RDNSequence[number]): string {
-    return [...rdn]
-        .map(
-            (attribute) =>
-                `${attribute.type.value}=${attribute.value
-                    .toHumanString()
-                    .trim()
-                    .replace(/\s+/g, ' ')
-                    .toLowerCase()}`,
-        )
-        .sort()
-        .join('+')
-}
-
-/** directoryName constraint: the constraint's RDNs must be a prefix of the name's. */
+/**
+ * directoryName constraint: the constraint's RDNs must match the first RDNs of the name
+ * (RFC 5280 7.1 matching). The same as `name.isWithin(constraint)`.
+ */
 export function dnWithin(name: RDNSequence, constraint: RDNSequence): boolean {
-    if (constraint.length > name.length) return false
-    for (let i = 0; i < constraint.length; i++) {
-        if (canonicalRdn(name[i]) !== canonicalRdn(constraint[i])) return false
-    }
-    return true
+    return name.isWithin(constraint)
 }
 
 // --- names of a certificate ----------------------------------------------------------
