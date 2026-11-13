@@ -1,3 +1,4 @@
+import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { Extension } from '../x509/Extension.js'
 import { ResponderID } from './ResponderID.js'
@@ -55,7 +56,7 @@ export class ResponseData extends PkiBase<ResponseData> {
 
         values.push(
             responderIdAsn1,
-            new asn1js.GeneralizedTime({ valueDate: this.producedAt }),
+            new GeneralizedTime({ time: this.producedAt }).toAsn1(),
             new asn1js.Sequence({
                 value: this.responses.map((resp) => resp.toAsn1()),
             }),

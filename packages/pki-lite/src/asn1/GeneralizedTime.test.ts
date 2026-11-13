@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { GeneralizedTime } from './UTCTime.js'
 import * as asn1js from 'asn1js'
+import { GeneralizedTime as GeneralizedTimeValue } from './GeneralizedTime.js'
 
 describe('GeneralizedDate', () => {
     test('should create GeneralizedDate from Date object', () => {
@@ -104,5 +105,16 @@ describe('GeneralizedDate', () => {
         const asn1 = generalizedDate.toAsn1()
         const decoded = GeneralizedTime.fromAsn1(asn1)
         expect(decoded.date.getTime()).toEqual(testDate.getTime())
+    })
+
+    test('encodes whole seconds, dropping milliseconds (RFC 5280 4.1.2.5.2)', () => {
+        // the GeneralizedTime class (not the deprecated one in UTCTime.ts)
+        const time = new GeneralizedTimeValue({
+            time: new Date('2026-11-13T08:03:23.166Z'),
+        })
+        const text = new TextDecoder().decode(
+            (time.toAsn1() as asn1js.GeneralizedTime).valueBlock.valueHexView,
+        )
+        expect(text).toBe('20261113080323Z')
     })
 })

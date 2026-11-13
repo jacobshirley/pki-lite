@@ -35,8 +35,6 @@ const opensslCertId = async (name: OcspPkiName) =>
  * pki-lite tests that do not pass yet, each with the reason. They run as `test.fails`,
  * so fixing one makes its test fail with "expected to fail": delete the entry then.
  */
-const FRACTIONAL_SECONDS =
-    'OCSP times are written with fractional seconds (e.g. 08:03:23.166Z), which RFC 6960 / RFC 5280 GeneralizedTime forbids; OpenSSL rejects the thisUpdate and nextUpdate.'
 const NOT_VERIFIED =
     "CertificateValidator matches OCSP responses by serial number alone: it does not check the response's signature, that the signer is the CA or a responder it authorised (OCSPSigning), or that the CertID's issuer hashes are this certificate's issuer."
 const NOT_CURRENT =
@@ -45,8 +43,6 @@ const UNSUCCESSFUL =
     'CertificateValidator throws on an unsuccessful OCSP response (no responseBytes) instead of ignoring it.'
 
 const KNOWN_ISSUES: Record<string, string> = {
-    'signed by the CA': FRACTIONAL_SECONDS,
-    'signed by a delegated responder': FRACTIONAL_SECONDS,
     'pki-lite: signed by a certificate of the CA without OCSPSigning':
         NOT_VERIFIED,
     'pki-lite: signed by an unrelated CA': NOT_VERIFIED,
