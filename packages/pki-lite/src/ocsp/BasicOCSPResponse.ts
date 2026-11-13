@@ -1,5 +1,12 @@
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
-import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
+import {
+    AlgorithmIdentifier,
+    DigestAlgorithmIdentifier,
+    SignatureAlgorithmIdentifier,
+} from '../algorithms/AlgorithmIdentifier.js'
+import { OIDs } from '../core/OIDs.js'
+import { ExtKeyUsage } from '../x509/extensions/ExtKeyUsage.js'
+import { ResponderID } from './ResponderID.js'
 import { Certificate } from '../x509/Certificate.js'
 import { ResponseData } from './ResponseData.js'
 import { BitString } from '../asn1/BitString.js'
@@ -30,6 +37,75 @@ export class BasicOCSPResponse extends PkiBase<BasicOCSPResponse> {
         this.signatureAlgorithm = options.signatureAlgorithm
         this.signature = new BitString({ value: options.signature })
         this.certs = options.certs
+    }
+
+    /**
+     * Verifies that the response comes from `issuer`, the CA whose certificates it gives
+     * the status of (RFC 6960 4.2.2.2): it is signed either by the CA itself or by a
+     * delegated responder, a certificate in the response that the CA issued with
+     * extendedKeyUsage OCSPSigning (valid at `time`). The responderID must name the
+     * signer, and the signature must verify.
+     *
+     * This checks the response, not the CA: whether `issuer` is trusted is up to
+     * certification path validation (CertificateValidator).
+     *
+     * @param issuer The certificate of the CA that issued the certificates in question
+     * @param options.time When a delegated responder's certificate must be valid (default now)
+     * @returns Whether the response is signed by the CA or a responder it authorised
+     */
+    async verify(
+        issuer: Certificate,
+        options: { time?: Date } = {},
+    ): Promise<boolean> {
+        const time = options.time ?? new Date()
+        const algorithm = SignatureAlgorithmIdentifier.fromDer(
+            this.signatureAlgorithm.toDer(),
+        )
+        // the bytes that were signed, even if re-encoding them would differ
+        const signed = this.tbsResponseData.toOriginalDer()
+        for (const signer of [issuer, ...(this.certs ?? [])]) {
+            if (!(await this.namesResponder(signer))) continue
+            if (
+                !signer.equals(issuer) &&
+                !(await isDelegatedResponder(signer, issuer, time))
+            ) {
+                continue
+            }
+            try {
+                if (
+                    await algorithm.verify(
+                        signed,
+                        this.signature.bytes,
+                        signer.getSubjectPublicKeyInfo(),
+                    )
+                ) {
+                    return true
+                }
+            } catch {
+                // an unsupported algorithm or a malformed key: not a usable signature
+            }
+        }
+        return false
+    }
+
+    /** Whether the responderID names `certificate`: by subject, or by key hash (SHA-1). */
+    private async namesResponder(certificate: Certificate): Promise<boolean> {
+        const responderID = this.tbsResponseData.responderID
+        if (responderID instanceof ResponderID.byKey) {
+            // KeyHash: SHA-1 of the key bits (RFC 6960 4.2.1)
+            const keyHash = await AlgorithmIdentifier.digestAlgorithm(
+                'SHA-1',
+            ).digest(
+                certificate.tbsCertificate.subjectPublicKeyInfo.subjectPublicKey
+                    .bytes,
+            )
+            return (
+                responderID.bytes.length === keyHash.length &&
+                responderID.bytes.every((byte, i) => byte === keyHash[i])
+            )
+        }
+        // names compare as RFC 5280 7.1 describes (case, spacing, string type)
+        return responderID.matches(certificate.tbsCertificate.subject)
     }
 
     toAsn1(): Asn1BaseBlock {
@@ -113,5 +189,33 @@ export class BasicOCSPResponse extends PkiBase<BasicOCSPResponse> {
             signature,
             certs,
         })
+    }
+}
+
+/**
+ * Whether `certificate` is a responder `issuer` authorised to sign OCSP responses for it
+ * (RFC 6960 4.2.2.2): issued by `issuer`, with extendedKeyUsage id-kp-OCSPSigning, and
+ * valid at `time`.
+ */
+async function isDelegatedResponder(
+    certificate: Certificate,
+    issuer: Certificate,
+    time: Date,
+): Promise<boolean> {
+    const { notBefore, notAfter } = certificate.tbsCertificate.validity
+    if (time < notBefore || time > notAfter) return false
+    const eku = certificate.getExtensionByName('EXTENDED_KEY_USAGE')
+    if (
+        !eku ||
+        !eku.extnValue
+            .parseAs(ExtKeyUsage)
+            .some((purpose) => purpose.value === OIDs.EKU.OCSP_SIGNING)
+    ) {
+        return false
+    }
+    try {
+        return await certificate.isIssuedBy(issuer)
+    } catch {
+        return false
     }
 }

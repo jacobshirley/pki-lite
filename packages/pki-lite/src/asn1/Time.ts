@@ -1,3 +1,4 @@
+import { GeneralizedTime } from './GeneralizedTime.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -28,7 +29,7 @@ export class Time extends PkiBase<Time> {
         const utcTimeCutoff = new Date('2050-01-01T00:00:00.000Z')
         return this.time < utcTimeCutoff
             ? new asn1js.UTCTime({ valueDate: this.time })
-            : new asn1js.GeneralizedTime({ valueDate: this.time })
+            : new GeneralizedTime({ time: this.time }).toAsn1()
     }
 
     /**

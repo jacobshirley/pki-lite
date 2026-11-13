@@ -4,6 +4,8 @@ import { Request } from './Request.js'
 import { CertID } from './CertID.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
+import { Certificate } from '../x509/Certificate.js'
+import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 import { Extension } from '../x509/Extension.js'
 import { Name } from '../x509/Name.js'
 import { RDNSequence } from '../x509/RDNSequence.js'
@@ -235,5 +237,21 @@ describe('TBSRequest', () => {
         const versionContainer = sequence.valueBlock
             .value[0] as asn1js.Constructed
         expect(versionContainer.idBlock.tagNumber).toEqual(0) // [0] tag
+    })
+
+    it('forCertificate identifies the issuer by its subject and key (RFC 6960 4.1.1)', async () => {
+        // an issuer that is not self-signed, so its subject and issuer differ
+        const issuer = Certificate.fromPem(rsaSigningKeys.certPem)
+        const subject = Certificate.fromPem(rsaSigningKeys.caCertPem)
+        const tbs = await TBSRequest.forCertificate({
+            certificate: subject,
+            issuerCertificate: issuer,
+        })
+        const expected = await CertID.forCertificate(
+            issuer,
+            subject,
+            AlgorithmIdentifier.digestAlgorithm('SHA-256'),
+        )
+        expect(tbs.requestList[0].reqCert.toDer()).toEqual(expected.toDer())
     })
 })

@@ -8,8 +8,6 @@ import {
 import { Certificate } from '../x509/Certificate.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { OCSPResponse } from '../ocsp/OCSPResponse.js'
-import { OCSPResponseStatus } from '../ocsp/OCSPResponseStatus.js'
-import { CertID } from '../ocsp/CertID.js'
 import { RevokedCertificate } from '../x509/RevokedCertificate.js'
 import { TBSCertList } from '../x509/TBSCertList.js'
 import {
@@ -22,14 +20,8 @@ import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
 import { Validity } from '../x509/Validity.js'
 import { SubjectPublicKeyInfo } from '../keys/SubjectPublicKeyInfo.js'
 import { RSAPublicKey } from '../keys/RSAPublicKey.js'
-import { OctetString } from '../asn1/OctetString.js'
 import { Integer } from '../asn1/Integer.js'
 import { Extension } from '../x509/Extension.js'
-import { CertStatus } from '../ocsp/CertStatus.js'
-import { ResponseData } from '../ocsp/ResponseData.js'
-import { BasicOCSPResponse } from '../ocsp/BasicOCSPResponse.js'
-import { ResponseBytes } from '../ocsp/ResponseBytes.js'
-import { SingleResponse } from '../ocsp/SingleResponse.js'
 import {
     GeneralSubtree,
     NameConstraints,
@@ -248,7 +240,7 @@ describe('CertificateValidator', () => {
 
     describe('OCSP Revocation Checking', () => {
         test('should detect revoked certificate via OCSP', async () => {
-            const ocspResponse = createSampleOCSPResponse(
+            const ocspResponse = await createSampleOCSPResponse(
                 sampleCertificate,
                 'revoked',
                 new Date('2023-01-15T00:00:00.000Z'),
@@ -262,6 +254,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     ocspResponses: [ocspResponse],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -276,7 +269,7 @@ describe('CertificateValidator', () => {
         })
 
         test('should confirm valid certificate via OCSP', async () => {
-            const ocspResponse = createSampleOCSPResponse(
+            const ocspResponse = await createSampleOCSPResponse(
                 sampleCertificate,
                 'good',
             )
@@ -288,6 +281,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     ocspResponses: [ocspResponse],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -301,7 +295,7 @@ describe('CertificateValidator', () => {
         })
 
         test('should handle unknown status via OCSP', async () => {
-            const ocspResponse = createSampleOCSPResponse(
+            const ocspResponse = await createSampleOCSPResponse(
                 sampleCertificate,
                 'unknown',
             )
@@ -313,6 +307,7 @@ describe('CertificateValidator', () => {
                 },
                 {
                     ocspResponses: [ocspResponse],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -338,7 +333,7 @@ describe('CertificateValidator', () => {
             ])
 
             // OCSP says good
-            const ocspResponse = createSampleOCSPResponse(
+            const ocspResponse = await createSampleOCSPResponse(
                 sampleCertificate,
                 'good',
             )
@@ -351,8 +346,8 @@ describe('CertificateValidator', () => {
                 },
                 {
                     crls: [crl],
-                    issuerCertificate: await testCa(),
                     ocspResponses: [ocspResponse],
+                    issuerCertificate: await testCa(),
                 },
             )
 
@@ -468,7 +463,7 @@ describe('CertificateValidator', () => {
             ]
 
             for (const testCase of testCases) {
-                const ocspResponse = createSampleOCSPResponse(
+                const ocspResponse = await createSampleOCSPResponse(
                     sampleCertificate,
                     'revoked',
                     new Date(),
@@ -482,6 +477,7 @@ describe('CertificateValidator', () => {
                     },
                     {
                         ocspResponses: [ocspResponse],
+                        issuerCertificate: await testCa(),
                     },
                 )
 
@@ -1095,7 +1091,7 @@ async function createSampleCRL(
 
 let testCaCertificate: Promise<Certificate> | undefined
 
-/** A real CA certificate named "CN=Test CA", with the key the sample CRLs are signed with. */
+/** A real CA certificate named "CN=Test CA", whose key signs the sample CRLs and OCSP responses. */
 function testCa(): Promise<Certificate> {
     testCaCertificate ??= Certificate.builder()
         .setSubject('CN=Test CA')
@@ -1120,68 +1116,25 @@ function createReasonExtension(reason: CRLReason) {
     })
 }
 
-function createSampleOCSPResponse(
+/**
+ * An OCSP response for `certificate`, signed by the "CN=Test CA" CA (the issuer of the
+ * sample certificates).
+ */
+async function createSampleOCSPResponse(
     certificate: Certificate,
     status: 'good' | 'revoked' | 'unknown',
     revocationTime?: Date,
     revocationReason?: number,
-): OCSPResponse {
-    // Create a basic OCSP response structure
-    const certSerial = certificate.tbsCertificate.serialNumber.bytes
-
-    // Mock CertID with the certificate's serial number
-    const certID = new CertID({
-        hashAlgorithm: new AlgorithmIdentifier({ algorithm: '1.3.14.3.2.26' }), // SHA-1
-        issuerKeyHash: new OctetString({ bytes: new Uint8Array(20) }), // Mock issuer name hash
-        issuerNameHash: new OctetString({ bytes: new Uint8Array(20) }), // Mock issuer key hash
-        serialNumber: certSerial,
-    })
-
-    let certStatus: CertStatus
-    if (status === 'good') {
-        certStatus = CertStatus.createGood()
-    } else if (status === 'revoked') {
-        certStatus = CertStatus.createRevoked(
-            revocationTime || new Date(),
+): Promise<OCSPResponse> {
+    const ca = await testCa()
+    return OCSPResponse.builder()
+        .setPrivateKey(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+        .setResponderFromCertificate(ca)
+        .addResponse(ca, certificate, status, {
+            revocationTime: revocationTime ?? new Date(),
             revocationReason,
-        )
-    } else {
-        certStatus = CertStatus.createUnknown()
-    }
-
-    const singleResponse = new SingleResponse({
-        certID,
-        certStatus,
-        thisUpdate: new Date(),
-    })
-
-    // Create a mock ResponderID using key hash
-    const responderID = new OctetString({ bytes: new Uint8Array(20) }) // Mock key hash
-
-    const responseData = new ResponseData({
-        responses: [singleResponse],
-        responderID,
-        producedAt: new Date(),
-    })
-
-    const basicOCSPResponse = new BasicOCSPResponse({
-        tbsResponseData: responseData,
-        signatureAlgorithm: new AlgorithmIdentifier({
-            algorithm: '1.2.840.113549.1.1.11',
-        }), // SHA256withRSA
-        signature: new Uint8Array(256), // Mock signature
-    })
-
-    // Create ResponseBytes
-    const responseBytes = new ResponseBytes({
-        responseType: '1.3.6.1.5.5.7.48.1.1', // id-pkix-ocsp-basic
-        response: basicOCSPResponse.toDer(),
-    })
-
-    return new OCSPResponse({
-        responseStatus: OCSPResponseStatus.successful,
-        responseBytes,
-    })
+        })
+        .build()
 }
 
 // Enhanced test helper functions
