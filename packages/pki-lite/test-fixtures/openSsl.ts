@@ -548,6 +548,8 @@ export async function opensslOcspPki() {
             request: Uint8Array
             ca?: 'ca' | 'otherCa'
             signer?: OcspPkiName
+            /** identify the responder by key hash rather than by name */
+            byKey?: boolean
         }): Promise<Uint8Array> {
             const ca = options.ca ?? 'ca'
             const signer = options.signer ?? ca
@@ -570,6 +572,7 @@ export async function opensslOcspPki() {
                 out,
                 '-ndays',
                 '7',
+                ...(options.byKey ? ['-resp_key_id'] : []),
             ])
             return new Uint8Array(fs.readFileSync(out))
         },

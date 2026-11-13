@@ -342,6 +342,7 @@ export class CertificateValidator {
                 certificate,
                 revocationData,
                 options,
+                revocationData.issuerCertificate,
             )
 
             revocationStatus = revocationResult
@@ -727,6 +728,7 @@ export class CertificateValidator {
                     cert,
                     revocationData,
                     options,
+                    chain.certificates[i + 1],
                 )
 
                 if (certRevocationStatus.isRevoked) {
@@ -816,12 +818,15 @@ export class CertificateValidator {
             issuerCertificate?: Certificate
         },
         options: CertificateValidationOptions,
+        issuer: Certificate | undefined,
     ): Promise<RevocationStatus> {
         // Check OCSP responses first (more current)
         if (options.checkOCSP && revocationData.ocspResponses) {
-            const ocspResult = this.checkOCSPRevocation(
+            const ocspResult = await this.checkOCSPRevocation(
                 certificate,
                 revocationData.ocspResponses,
+                issuer,
+                options.validationTime ?? new Date(),
             )
             if (ocspResult.source !== 'NONE') {
                 return ocspResult
@@ -903,59 +908,74 @@ export class CertificateValidator {
     }
 
     /**
-     * Checks certificate revocation using OCSP responses.
+     * Checks certificate revocation using OCSP responses (RFC 6960 3.2). A response is
+     * used only if it is successful, gives a status for this certificate from this
+     * issuer (its CertID), is current, and is signed by the issuer or by a responder it
+     * authorised (OCSPSigning). Without the issuer's certificate no response can be
+     * checked, so none is used.
      */
-    private checkOCSPRevocation(
+    private async checkOCSPRevocation(
         certificate: Certificate,
         ocspResponses: OCSPResponse[],
-    ): RevocationStatus {
-        for (const ocspResponse of ocspResponses) {
-            const basicResponse = ocspResponse.getBasicOCSPResponse()
-            if (!basicResponse) {
+        issuer: Certificate | undefined,
+        time: Date,
+    ): Promise<RevocationStatus> {
+        const ignored = new Set<string>()
+        for (const response of ocspResponses) {
+            if (!response.isSuccessful) {
+                ignored.add('an unsuccessful response')
+                continue
+            }
+            if (!issuer) {
+                ignored.add(
+                    "no issuer certificate to check a response's issuer",
+                )
+                continue
+            }
+            const single = await response.getResponse(certificate, issuer)
+            if (!single) continue
+            if (!single.isCurrent(time)) {
+                ignored.add('a response that is not current')
+                continue
+            }
+            if (!(await response.verify(issuer, { time }))) {
+                ignored.add(
+                    'a response not signed by the issuer or a responder it authorised',
+                )
                 continue
             }
 
-            for (const singleResponse of basicResponse.tbsResponseData
-                .responses) {
-                // Compare certificate serial numbers
-                const responseCertSerial = singleResponse.certID.serialNumber
-                const certSerial = certificate.tbsCertificate.serialNumber
-
-                if (responseCertSerial.equals(certSerial)) {
-                    const certStatus = singleResponse.certStatus
-
-                    if (certStatus.status === 'revoked') {
-                        return {
-                            isRevoked: true,
-                            source: 'OCSP',
-                            reason: certStatus.revocationReason,
-                            revocationTime: certStatus.revocationTime,
-                            details: `Certificate revoked via OCSP${
-                                certStatus.revocationReason !== undefined
-                                    ? ` with reason: ${this.getRevocationReasonText(certStatus.revocationReason)}`
-                                    : ''
-                            }`,
-                        }
-                    } else if (certStatus.status === 'good') {
-                        return {
-                            isRevoked: false,
-                            source: 'OCSP',
-                            details: 'Certificate confirmed as valid via OCSP',
-                        }
-                    } else {
-                        return {
-                            isRevoked: false,
-                            source: 'OCSP',
-                            details: 'Certificate status unknown via OCSP',
-                        }
-                    }
+            const certStatus = single.certStatus
+            if (certStatus.status === 'revoked') {
+                return {
+                    isRevoked: true,
+                    source: 'OCSP',
+                    reason: certStatus.revocationReason,
+                    revocationTime: certStatus.revocationTime,
+                    details: `Certificate revoked via OCSP${
+                        certStatus.revocationReason !== undefined
+                            ? ` with reason: ${this.getRevocationReasonText(certStatus.revocationReason)}`
+                            : ''
+                    }`,
                 }
+            }
+            return {
+                isRevoked: false,
+                source: 'OCSP',
+                details:
+                    certStatus.status === 'good'
+                        ? 'Certificate confirmed as valid via OCSP'
+                        : 'Certificate status unknown via OCSP',
             }
         }
 
         return {
             isRevoked: false,
             source: 'NONE',
+            details:
+                ignored.size > 0
+                    ? `OCSP responses ignored: ${[...ignored].join('; ')}`
+                    : undefined,
         }
     }
 

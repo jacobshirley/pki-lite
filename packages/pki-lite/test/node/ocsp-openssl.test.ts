@@ -5,6 +5,7 @@ import { PrivateKeyInfo } from '../../src/keys/PrivateKeyInfo.js'
 import { OCSPRequest } from '../../src/ocsp/OCSPRequest.js'
 import { OCSPResponse } from '../../src/ocsp/OCSPResponse.js'
 import { CertID } from '../../src/ocsp/CertID.js'
+import { ResponderID } from '../../src/ocsp/ResponderID.js'
 import { AlgorithmIdentifier } from '../../src/algorithms/AlgorithmIdentifier.js'
 import { CertificateValidator } from '../../src/core/CertificateValidator.js'
 
@@ -35,21 +36,8 @@ const opensslCertId = async (name: OcspPkiName) =>
  * pki-lite tests that do not pass yet, each with the reason. They run as `test.fails`,
  * so fixing one makes its test fail with "expected to fail": delete the entry then.
  */
-const NOT_VERIFIED =
-    "CertificateValidator matches OCSP responses by serial number alone: it does not check the response's signature, that the signer is the CA or a responder it authorised (OCSPSigning), or that the CertID's issuer hashes are this certificate's issuer."
-const NOT_CURRENT =
-    "CertificateValidator does not check a response's thisUpdate/nextUpdate, so an expired status is used."
-const UNSUCCESSFUL =
-    'CertificateValidator throws on an unsuccessful OCSP response (no responseBytes) instead of ignoring it.'
 
-const KNOWN_ISSUES: Record<string, string> = {
-    'pki-lite: signed by a certificate of the CA without OCSPSigning':
-        NOT_VERIFIED,
-    'pki-lite: signed by an unrelated CA': NOT_VERIFIED,
-    "pki-lite: another CA's good status for the same serial": NOT_VERIFIED,
-    'pki-lite: a status past its nextUpdate': NOT_CURRENT,
-    'pki-lite: an unsuccessful response (tryLater)': UNSUCCESSFUL,
-}
+const KNOWN_ISSUES: Record<string, string> = {}
 
 const check = (name: string, fn: () => Promise<void>) =>
     (KNOWN_ISSUES[name] ? test.fails : test)(name, fn, 60_000)
@@ -150,6 +138,21 @@ describe('OCSP against OpenSSL', () => {
                 true,
             )
             expect(hex(response.toDer())).toBe(hex(bytes))
+        })
+
+        test('a responder identified by key hash', async () => {
+            const bytes = await pki.respond({
+                request: await pki.request({ cert: 'good' }),
+                signer: 'responder',
+                byKey: true,
+            })
+            const basic = OCSPResponse.fromDer(
+                new Uint8Array(bytes),
+            ).getBasicOCSPResponse()
+            expect(basic.tbsResponseData.responderID).toBeInstanceOf(
+                ResponderID.byKey,
+            )
+            expect(await basic.verify(cert('ca'))).toBe(true)
         })
     })
 
@@ -268,6 +271,21 @@ describe('OCSP against OpenSSL', () => {
                 openssl: (r) => {
                     expect(r.verified, r.output).toBe(true)
                     expect(r.status).toBe('revoked')
+                },
+            },
+            {
+                name: 'good, from a responder identified by key hash',
+                cert: 'good',
+                response: async () =>
+                    pki.respond({
+                        request: await pki.request({ cert: 'good' }),
+                        signer: 'responder',
+                        byKey: true,
+                    }),
+                usable: 'good',
+                openssl: (r) => {
+                    expect(r.verified, r.output).toBe(true)
+                    expect(r.status).toBe('good')
                 },
             },
             {

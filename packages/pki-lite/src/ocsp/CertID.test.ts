@@ -180,3 +180,23 @@ describe('CertID', () => {
         ).toBe(true)
     })
 })
+
+describe('CertID.matches', () => {
+    it('matches the certificate from its issuer only', async () => {
+        const issuer = Certificate.fromPem(rsaSigningKeys.caCertPem)
+        const subject = Certificate.fromPem(rsaSigningKeys.certPem)
+        for (const hash of ['SHA-1', 'SHA-256'] as const) {
+            const certID = await CertID.forCertificate(
+                issuer,
+                subject,
+                AlgorithmIdentifier.digestAlgorithm(hash),
+            )
+            expect(await certID.matches(subject, issuer)).toBe(true)
+            // another issuer: different name and key hashes
+            expect(await certID.matches(subject, subject)).toBe(false)
+        }
+        const certID = await CertID.forCertificate(issuer, subject)
+        // another certificate: different serial number
+        expect(await certID.matches(issuer, issuer)).toBe(false)
+    })
+})
