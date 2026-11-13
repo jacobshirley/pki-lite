@@ -1,5 +1,10 @@
 import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1BaseBlock,
+    asn1js,
+    keepOriginalDer,
+    PkiBase,
+} from '../core/PkiBase.js'
 import { Extension } from '../x509/Extension.js'
 import { ResponderID } from './ResponderID.js'
 import { SingleResponse } from './SingleResponse.js'
@@ -161,12 +166,15 @@ export class ResponseData extends PkiBase<ResponseData> {
             )
         }
 
-        return new ResponseData({
+        const responseData = new ResponseData({
             responses,
             responderID,
             producedAt,
             version,
             responseExtensions,
         })
+        // the signature covers these exact bytes (see BasicOCSPResponse.verify)
+        keepOriginalDer(responseData, asn1)
+        return responseData
     }
 }

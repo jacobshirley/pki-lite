@@ -77,7 +77,8 @@ export class CertID extends PkiBase<CertID> {
         const issuerKeyHash = OctetString.fromAsn1(sequence.valueBlock.value[2])
 
         const serialNumberBlock = sequence.valueBlock.value[3] as asn1js.Integer
-        const serialNumber = serialNumberBlock.valueBlock.valueHexView
+        // two's complement, so a negative serial stays negative
+        const serialNumber = Integer.fromAsn1(serialNumberBlock)
 
         return new CertID({
             hashAlgorithm,

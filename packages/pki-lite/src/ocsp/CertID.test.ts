@@ -130,6 +130,21 @@ describe('CertID', () => {
         expect(parsed.serialNumber.bytes).toEqual(serialNumber)
     })
 
+    it('keeps a negative serial number negative when parsed', () => {
+        const original = new CertID({
+            hashAlgorithm: new AlgorithmIdentifier({
+                algorithm: '2.16.840.1.101.3.4.2.1',
+            }),
+            issuerNameHash: new OctetString({ bytes: new Uint8Array([1]) }),
+            issuerKeyHash: new OctetString({ bytes: new Uint8Array([2]) }),
+            serialNumber: -1n,
+        })
+
+        const parsed = CertID.fromDer(original.toDer())
+        expect(parsed.serialNumber.toBigInt()).toBe(-1n)
+        expect(parsed.toDer()).toEqual(original.toDer())
+    })
+
     it('should throw error on invalid ASN.1 structure', () => {
         const invalidAsn1 = {} as any
 

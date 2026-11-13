@@ -93,4 +93,40 @@ describe('OriginatorInfo', () => {
         expect(decodedInfo.certs).toBeUndefined()
         expect(decodedInfo.crls).toBeUndefined()
     })
+
+    describe('RFC 5652 encoding: certs [0] IMPLICIT CertificateSet', () => {
+        const tlv = (tag: number, content: Uint8Array) => {
+            const n = content.length
+            const len =
+                n < 0x80
+                    ? [n]
+                    : n < 0x100
+                      ? [0x81, n]
+                      : [0x82, n >> 8, n & 0xff]
+            return new Uint8Array([tag, ...len, ...content])
+        }
+        const certDer = () =>
+            Certificate.fromPem(rsaSigningKeys.certPem).toDer()
+
+        it('writes the certificates directly inside [0], with no SET', () => {
+            const info = new OriginatorInfo({
+                certs: new CertificateSet(Certificate.fromDer(certDer())),
+            })
+            expect(info.toDer()).toEqual(tlv(0x30, tlv(0xa0, certDer())))
+        })
+
+        it('parses the IMPLICIT form', () => {
+            const der = tlv(0x30, tlv(0xa0, certDer()))
+            const info = OriginatorInfo.fromAsn1(asn1js.fromBER(der).result)
+            expect(info.certs?.length).toEqual(1)
+            expect(info.certs?.[0].toDer()).toEqual(certDer())
+        })
+
+        it('still parses the explicitly tagged form written by earlier versions', () => {
+            const der = tlv(0x30, tlv(0xa0, tlv(0x31, certDer())))
+            const info = OriginatorInfo.fromAsn1(asn1js.fromBER(der).result)
+            expect(info.certs?.length).toEqual(1)
+            expect(info.certs?.[0].toDer()).toEqual(certDer())
+        })
+    })
 })

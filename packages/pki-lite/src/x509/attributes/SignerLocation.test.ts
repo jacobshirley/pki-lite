@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { asn1js } from '../../core/PkiBase.js'
+import { asn1js, derToAsn1 } from '../../core/PkiBase.js'
 import { SignerLocation, PostalAddress } from './SignerLocation.js'
 import { DirectoryString } from '../DirectoryString.js'
 import { UTF8String } from '../../asn1/UTF8String.js'
@@ -69,31 +69,30 @@ describe('SignerLocation', () => {
     })
 
     it('fromAsn1 decodes fields and preserves order', () => {
-        // Build context-specific tagged elements with inner universal string values,
-        // using asn1js directly so valueBlock.value is populated as DirectoryString expects.
-        const countryInner = new asn1js.Utf8String({ value: 'US' })
-        countryInner.idBlock.tagClass = 3
-        countryInner.idBlock.tagNumber = 0
-        countryInner.idBlock.isConstructed = true
-
-        const localityInner = new asn1js.Utf8String({ value: 'Seattle' })
-        localityInner.idBlock.tagClass = 3
-        localityInner.idBlock.tagNumber = 1
-        localityInner.idBlock.isConstructed = true
-
-        const postalSeqInner = new asn1js.Sequence({
-            value: [
-                new asn1js.Utf8String({ value: '123 Main St' }),
-                new asn1js.Utf8String({ value: 'Suite 100' }),
-            ],
-        })
-        postalSeqInner.idBlock.tagClass = 3
-        postalSeqInner.idBlock.tagNumber = 2
-        postalSeqInner.idBlock.isConstructed = true
-
-        const outer = new asn1js.Sequence({
-            value: [countryInner, localityInner, postalSeqInner],
-        })
+        // [n] EXPLICIT: a constructed context-tagged element wrapping each value
+        const explicit = (tagNumber: number, inner: asn1js.BaseBlock) =>
+            new asn1js.Constructed({
+                idBlock: { tagClass: 3, tagNumber },
+                value: [inner],
+            })
+        // Parse the DER so the elements are what a real decoder sees
+        const outer = asn1js.fromBER(
+            new asn1js.Sequence({
+                value: [
+                    explicit(0, new asn1js.Utf8String({ value: 'US' })),
+                    explicit(1, new asn1js.Utf8String({ value: 'Seattle' })),
+                    explicit(
+                        2,
+                        new asn1js.Sequence({
+                            value: [
+                                new asn1js.Utf8String({ value: '123 Main St' }),
+                                new asn1js.Utf8String({ value: 'Suite 100' }),
+                            ],
+                        }),
+                    ),
+                ],
+            }).toBER(false),
+        ).result
 
         const parsed = SignerLocation.fromAsn1(outer)
         expect(parsed.countryName?.toHumanString()).toContain('US')
@@ -110,5 +109,22 @@ describe('SignerLocation', () => {
         expect(() => SignerLocation.fromAsn1(new asn1js.Null())).toThrow(
             'Expected ASN.1 Sequence for SignerLocation',
         )
+    })
+
+    it('round-trips through DER', () => {
+        const sl = new SignerLocation({
+            countryName: new UTF8String({ value: 'GB' }) as DirectoryString,
+            localityName: new UTF8String({
+                value: 'London',
+            }) as DirectoryString,
+            postalAddress: [
+                new UTF8String({ value: '1 High St' }) as DirectoryString,
+            ],
+        })
+        const parsed = SignerLocation.fromAsn1(derToAsn1(sl.toDer()))
+        expect(parsed.countryName?.toString()).toBe('GB')
+        expect(parsed.localityName?.toString()).toBe('London')
+        expect(parsed.postalAddress?.[0].toString()).toBe('1 High St')
+        expect(parsed.toDer()).toEqual(sl.toDer())
     })
 })

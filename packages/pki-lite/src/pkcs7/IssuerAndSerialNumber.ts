@@ -82,7 +82,7 @@ export class IssuerAndSerialNumber extends PkiBase<IssuerAndSerialNumber> {
     matchesCertificate(cert: CertificateChoices): boolean {
         if (cert instanceof Certificate) {
             return (
-                cert.tbsCertificate.issuer.equals(this.issuer) &&
+                cert.tbsCertificate.issuer.matches(this.issuer) &&
                 cert.tbsCertificate.serialNumber.equals(this.serialNumber)
             )
         } else {

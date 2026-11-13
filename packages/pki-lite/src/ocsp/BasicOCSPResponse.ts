@@ -61,7 +61,8 @@ export class BasicOCSPResponse extends PkiBase<BasicOCSPResponse> {
         const algorithm = SignatureAlgorithmIdentifier.fromDer(
             this.signatureAlgorithm.toDer(),
         )
-        const signed = this.tbsResponseData.toDer()
+        // the bytes that were signed, even if re-encoding them would differ
+        const signed = this.tbsResponseData.toOriginalDer()
         for (const signer of [issuer, ...(this.certs ?? [])]) {
             if (!(await this.namesResponder(signer))) continue
             if (
@@ -103,7 +104,8 @@ export class BasicOCSPResponse extends PkiBase<BasicOCSPResponse> {
                 responderID.bytes.every((byte, i) => byte === keyHash[i])
             )
         }
-        return responderID.equals(certificate.tbsCertificate.subject)
+        // names compare as RFC 5280 7.1 describes (case, spacing, string type)
+        return responderID.matches(certificate.tbsCertificate.subject)
     }
 
     toAsn1(): Asn1BaseBlock {

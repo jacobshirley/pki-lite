@@ -1,4 +1,9 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1BaseBlock,
+    asn1js,
+    PkiBase,
+    keepOriginalDer,
+} from '../core/PkiBase.js'
 import { Attribute } from './Attribute.js'
 import { RDNSequence } from './RDNSequence.js'
 import { SubjectPublicKeyInfo } from '../keys/SubjectPublicKeyInfo.js'
@@ -149,11 +154,14 @@ export class CertificateRequestInfo extends PkiBase<CertificateRequestInfo> {
             attributes = parsed.length > 0 ? [...parsed] : undefined
         }
 
-        return new CertificateRequestInfo({
+        const requestInfo = new CertificateRequestInfo({
             version,
             subject,
             publicKey,
             attributes,
         })
+        // keep the signed bytes: re-encoding may not reproduce them
+        keepOriginalDer(requestInfo, asn1)
+        return requestInfo
     }
 }

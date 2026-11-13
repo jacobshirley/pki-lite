@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { derToAsn1 } from '../core/PkiBase.js'
+import { OtherCertificateFormat } from './legacy/OtherCertificateFormat.js'
 import { CertificateSet } from './CertificateSet.js'
 import { Certificate } from './Certificate.js'
 import { asn1js } from '../core/PkiBase.js'
@@ -76,5 +78,19 @@ describe('CertificateSet', () => {
         expect(() => CertificateSet.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected Set for CertificateSet',
         )
+    })
+
+    it('tags non-certificate alternatives with their IMPLICIT CertificateChoices tag', () => {
+        const other = new OtherCertificateFormat({
+            otherCertFormat: '1.2.3.4',
+            otherCert: 'x',
+        })
+        const der = new CertificateSet(other).toDer()
+        // SET { [3] IMPLICIT OtherCertificateFormat }: a3, not a bare 30
+        expect(der[0]).toBe(0x31)
+        expect(der[2]).toBe(0xa3)
+        const parsed = CertificateSet.fromAsn1(derToAsn1(der))
+        expect(parsed[0]).toBeInstanceOf(OtherCertificateFormat)
+        expect(parsed.toDer()).toEqual(der)
     })
 })
