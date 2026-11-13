@@ -53,8 +53,6 @@ function skipReason(c: LimboCase): string | undefined {
  * Cases pki-lite does not pass yet, each with the reason. They run with `test.fails`, so
  * fixing one makes its test fail with "expected to fail": delete the entry then.
  */
-const PATH_BUILDING =
-    'Path building takes the first chain it finds and does not backtrack to another when that one fails.'
 const DOS =
     'No limit on name constraint checking work: a technically valid but pathological chain (thousands of names against thousands of constraints) is accepted, where implementations reject it to avoid quadratic blowup.'
 const CRL_PROFILE =
@@ -66,8 +64,6 @@ const KNOWN_ISSUES: Record<string, string> = {
     'crl::structure::crl-duplicate-revoked-serial': CRL_PROFILE,
     'crl::crlnumber-missing': CRL_PROFILE,
     'crl::crlnumber-critical': CRL_PROFILE,
-    'cve::cve-2024-0567': PATH_BUILDING,
-    'pathological::multiple-chains-expired-intermediate': PATH_BUILDING,
     'pathological::nc-dos-1': DOS,
     'pathological::nc-dos-2': DOS,
     'rfc5280::aki::critical-aki': PROFILE,
@@ -83,13 +79,12 @@ const KNOWN_ISSUES: Record<string, string> = {
     'rfc5280::nc::not-allowed-in-ee-critical': PROFILE,
     'rfc5280::nc::nc-permits-invalid-dns-san': PROFILE,
     'rfc5280::nc::nc-permits-invalid-email-san': PROFILE,
-    'rfc5280::nc::nc-forbids-alternate-chain-ica': PATH_BUILDING,
-    'rfc5280::nc::nc-forbids-same-chain-ica': PATH_BUILDING,
     'rfc5280::pc::ica-noncritical-pc': PROFILE,
     'rfc5280::san::noncritical-with-empty-subject': PROFILE,
     'rfc5280::san::underscore-dns': PROFILE,
     'rfc5280::serial::too-long': PROFILE,
     'rfc5280::serial::zero': PROFILE,
+    'rfc5280::serial::negative': PROFILE,
     'rfc5280::ski::root-missing-ski': PROFILE,
     'rfc5280::ski::intermediate-missing-ski': PROFILE,
     'rfc5280::ca-empty-subject': PROFILE,

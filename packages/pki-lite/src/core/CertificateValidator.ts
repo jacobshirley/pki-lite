@@ -326,14 +326,40 @@ export class CertificateValidator {
         if (options.validateChain && options.trustAnchors) {
             diagnostics.stepsPerformed.push('Building certificate chain')
             try {
-                chain = await this.buildCertificateChain(certificate, options)
-                diagnostics.context.chainLength = chain.certificates.length
-
-                const chainValidationResult = await this.validateChain(
-                    chain,
+                // try each candidate path in turn: the first valid one is used, and if
+                // none is, the first failure is reported
+                const search = this.newPathSearch()
+                let chainValidationResult:
+                    | CertificateValidationResult
+                    | undefined
+                for await (const candidate of this.candidatePaths(
+                    certificate,
                     options,
-                    revocationData,
-                )
+                    search,
+                )) {
+                    const result = await this.validateChain(
+                        candidate,
+                        options,
+                        revocationData,
+                    )
+                    if (!chainValidationResult || result.isValid) {
+                        chain = candidate
+                        chainValidationResult = result
+                    }
+                    if (result.isValid) break
+                }
+                if (!chainValidationResult) {
+                    chain = {
+                        certificates: search.firstDeadEnd ?? [certificate],
+                        isComplete: false,
+                    }
+                    chainValidationResult = await this.validateChain(
+                        chain,
+                        options,
+                        revocationData,
+                    )
+                }
+                diagnostics.context.chainLength = chain!.certificates.length
 
                 // Update overall result based on chain validation
                 if (!chainValidationResult.isValid) {
@@ -487,81 +513,125 @@ export class CertificateValidator {
         certificate: Certificate,
         options: CertificateValidationOptions,
     ): Promise<CertificateChain> {
-        const chain: Certificate[] = [certificate]
-        const availableCerts = options.otherCertificates || []
-        const trustAnchors = options.trustAnchors || []
-        const seenCerts = new Set<string>() // Track certificates to prevent loops
-
-        let current = certificate
-        let trustAnchor: TrustAnchor | undefined
-
-        // Add current certificate to seen set
-        const currentKey = this.getCertificateKey(current)
-        seenCerts.add(currentKey)
-
-        // Build chain by following issuer relationships
-        while (true) {
-            // Check if current certificate is self-signed (root)
-            if (await this.isSelfSigned(current)) {
-                // Check if this root is a trust anchor
-                trustAnchor = trustAnchors.find((ta) =>
-                    this.certificatesEqual(ta.certificate, current),
-                )
-                break
-            }
-
-            // Find issuer certificate
-            const issuer: Certificate | undefined =
-                this.findIssuer(current, [
-                    ...availableCerts,
-                    ...trustAnchors.map((ta) => ta.certificate),
-                ]) ?? (await current.requestIssuerCertificate())
-
-            if (!issuer) {
-                // Chain is incomplete
-                break
-            }
-
-            // Check for loops before adding issuer
-            const issuerKey = this.getCertificateKey(issuer)
-            if (seenCerts.has(issuerKey)) {
-                throw new Error(
-                    'Certificate chain contains a loop - circular chain detected',
-                )
-            }
-
-            // Check if issuer is a trust anchor
-            const issuerTrustAnchor = trustAnchors.find((ta) =>
-                this.certificatesEqual(ta.certificate, issuer),
-            )
-
-            if (issuerTrustAnchor) {
-                // Found trust anchor, add to chain and stop
-                chain.push(issuer)
-                trustAnchor = issuerTrustAnchor
-                break
-            }
-
-            // Add intermediate certificate to chain and track it
-            chain.push(issuer)
-            seenCerts.add(issuerKey)
-            current = issuer
-
-            // Prevent extremely long chains
-            if (chain.length > 10) {
-                throw new Error(
-                    'Certificate chain too long (maximum 10 certificates allowed)',
-                )
-            }
+        const search = this.newPathSearch()
+        for await (const chain of this.candidatePaths(
+            certificate,
+            options,
+            search,
+        )) {
+            return chain
         }
-
-        const isComplete = trustAnchor !== undefined
-
         return {
-            certificates: chain,
-            isComplete,
-            trustAnchor,
+            certificates: search.firstDeadEnd ?? [certificate],
+            isComplete: false,
         }
+    }
+
+    private newPathSearch(): {
+        firstDeadEnd?: Certificate[]
+        lookups: number
+    } {
+        return { lookups: 0 }
+    }
+
+    /**
+     * The certification paths from `certificate` to a trust anchor, most preferred
+     * first: a depth-first search over every issuer candidate (subject matching the
+     * issuer name, and key identifiers if present), trying trust anchors before other
+     * certificates, never using a certificate twice in a path. Path validation tries
+     * them in turn, so a path that fails (an expired cross-certificate, a name
+     * constraint) does not hide a valid alternative. Bounded: at most 10 certificates in
+     * a path, 1,000 issuer lookups and 32 complete paths.
+     */
+    private async *candidatePaths(
+        certificate: Certificate,
+        options: CertificateValidationOptions,
+        search: { firstDeadEnd?: Certificate[]; lookups: number },
+    ): AsyncGenerator<CertificateChain> {
+        const trustAnchors = options.trustAnchors || []
+
+        // keys computed once per certificate: a path search can compare certificates
+        // many times (x509-limbo's pathological chains have 100 candidate parents)
+        const memo = (compute: (cert: Certificate) => string) => {
+            const keys = new Map<Certificate, string>()
+            return (cert: Certificate) => {
+                let key = keys.get(cert)
+                if (key === undefined) {
+                    key = compute(cert)
+                    keys.set(cert, key)
+                }
+                return key
+            }
+        }
+        const derKey = memo((cert) => cert.toDer().join(','))
+        // the same logical CA: the same subject and public key
+        const caKey = memo(
+            (cert) =>
+                `${cert.tbsCertificate.subject.toDer().join(',')}|${cert.tbsCertificate.subjectPublicKeyInfo.toDer().join(',')}`,
+        )
+
+        const anchors = new Map(
+            trustAnchors.map((ta) => [derKey(ta.certificate), ta]),
+        )
+        // the certificates to build from, each once, trust anchors first
+        const pool: Certificate[] = []
+        const pooled = new Set<string>()
+        for (const cert of [
+            ...trustAnchors.map((ta) => ta.certificate),
+            ...(options.otherCertificates || []),
+        ]) {
+            if (!pooled.has(derKey(cert))) {
+                pooled.add(derKey(cert))
+                pool.push(cert)
+            }
+        }
+        const issuersOf = new Map<Certificate, Certificate[]>()
+        let found = 0
+
+        const visit = async function* (
+            this: CertificateValidator,
+            path: Certificate[],
+        ): AsyncGenerator<CertificateChain> {
+            const current = path[path.length - 1]
+            const anchor = anchors.get(derKey(current))
+            if (anchor) {
+                found++
+                yield {
+                    certificates: path,
+                    isComplete: true,
+                    trustAnchor: anchor,
+                }
+                return
+            }
+            if (path.length >= 10) return
+            search.lookups++
+
+            let issuers = issuersOf.get(current)
+            if (!issuers) {
+                issuers = this.findIssuers(current, pool)
+                if (issuers.length === 0) {
+                    const fetched = await current.requestIssuerCertificate()
+                    issuers = fetched ? [fetched] : []
+                }
+                issuersOf.set(current, issuers)
+            }
+            // never the same certificate, or the same logical CA, twice in a path
+            const inPath = new Set(path.slice(1).map(caKey))
+            const next = issuers.filter(
+                (issuer) =>
+                    !path.includes(issuer) && !inPath.has(caKey(issuer)),
+            )
+            if (next.length === 0) {
+                search.firstDeadEnd ??= path
+                return
+            }
+            for (const issuer of next) {
+                if (found >= 32 || search.lookups >= 1000) return
+                yield* visit.call(this, [...path, issuer])
+            }
+        }
+
+        yield* visit.call(this, [certificate])
     }
 
     /**
@@ -1230,25 +1300,17 @@ export class CertificateValidator {
     /**
      * Finds the issuer certificate for a given certificate.
      */
-    private findIssuer(
+    private findIssuers(
         certificate: Certificate,
         candidates: Certificate[],
-    ): Certificate | undefined {
+    ): Certificate[] {
         const issuerName = certificate.tbsCertificate.issuer
-
-        for (const candidate of candidates) {
-            const candidateSubject = candidate.tbsCertificate.subject
-
-            // Check if subject name matches issuer name (RFC 5280 7.1)
-            if (candidateSubject.matches(issuerName)) {
-                // Additional check: verify key identifiers if present
-                if (this.verifyKeyIdentifiers(certificate, candidate)) {
-                    return candidate
-                }
-            }
-        }
-
-        return undefined
+        // subject matching the issuer name (RFC 5280 7.1), and key identifiers if present
+        return candidates.filter(
+            (candidate) =>
+                candidate.tbsCertificate.subject.matches(issuerName) &&
+                this.verifyKeyIdentifiers(certificate, candidate),
+        )
     }
 
     /**

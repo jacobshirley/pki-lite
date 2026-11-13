@@ -645,8 +645,11 @@ describe('CertificateValidator', () => {
                 const result = await validator.validate(circularCert1, options)
 
                 expect(result.isValid).toEqual(false)
+                // the loop is not followed: no path reaches a trust anchor
                 expect(result.messages).toEqual(
-                    expect.arrayContaining([expect.stringContaining('loop')]),
+                    expect.arrayContaining([
+                        expect.stringContaining('no trust anchor found'),
+                    ]),
                 )
             })
         })
@@ -1693,6 +1696,84 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
             eku.critical = true
             const result = await validateWith(eku, 'leaf')
             expect(result.isValid, result.messages.join('; ')).toBe(true)
+        })
+    })
+
+    describe('path building', () => {
+        const key = PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem)
+        const publicKey = Certificate.fromPem(rsaSigningKeys.certPem)
+            .tbsCertificate.subjectPublicKeyInfo
+        const ca = (subject: string, issuer?: Certificate, notAfter?: Date) => {
+            const builder = Certificate.builder()
+                .setSubject(subject)
+                .setPublicKey(publicKey)
+                .setValidityPeriod(
+                    new Date('2020-01-01'),
+                    notAfter ?? new Date('2040-01-01'),
+                )
+                .addBasicConstraints(true)
+                .addKeyUsage({ keyCertSign: true, cRLSign: true })
+            return issuer
+                ? builder.setIssuer(issuer).setIssuerPrivateKey(key).sign()
+                : builder.setPrivateKey(key).selfSign()
+        }
+
+        test('a path that fails does not hide a valid alternative', async () => {
+            // the leaf's intermediate is certified twice: by the root (valid) and by an
+            // older root (expired, and offered first)
+            const root = await ca('CN=Root')
+            const oldRoot = await ca('CN=Old Root')
+            const viaRoot = await ca('CN=Intermediate', root)
+            const viaOldRoot = await ca(
+                'CN=Intermediate',
+                oldRoot,
+                new Date('2021-01-01'),
+            )
+            const leaf = await Certificate.builder()
+                .setSubject('CN=Leaf')
+                .setPublicKey(publicKey)
+                .setIssuer(viaRoot)
+                .setIssuerPrivateKey(key)
+                .setValidityPeriod(
+                    new Date('2020-01-01'),
+                    new Date('2040-01-01'),
+                )
+                .sign()
+
+            const result = await validator.validate(leaf, {
+                validateChain: true,
+                trustAnchors: [{ certificate: oldRoot }, { certificate: root }],
+                otherCertificates: [viaOldRoot, viaRoot],
+                validationTime: new Date('2026-01-01'),
+            })
+            expect(result.isValid, result.messages.join('; ')).toBe(true)
+            expect(result.chain?.certificates).toEqual([leaf, viaRoot, root])
+        })
+
+        test('without a valid path, the first failure is reported', async () => {
+            const oldRoot = await ca('CN=Old Root')
+            const expired = await ca(
+                'CN=Intermediate',
+                oldRoot,
+                new Date('2021-01-01'),
+            )
+            const leaf = await Certificate.builder()
+                .setSubject('CN=Leaf')
+                .setPublicKey(publicKey)
+                .setIssuer(expired)
+                .setIssuerPrivateKey(key)
+                .setValidityPeriod(
+                    new Date('2020-01-01'),
+                    new Date('2040-01-01'),
+                )
+                .sign()
+            const result = await validator.validate(leaf, {
+                validateChain: true,
+                trustAnchors: [{ certificate: oldRoot }],
+                otherCertificates: [expired],
+                validationTime: new Date('2026-01-01'),
+            })
+            expect(result.status).toBe(CertificateValidationStatus.EXPIRED)
         })
     })
 
