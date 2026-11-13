@@ -12,7 +12,10 @@ import { OCSPResponseStatus } from '../ocsp/OCSPResponseStatus.js'
 import { CertID } from '../ocsp/CertID.js'
 import { RevokedCertificate } from '../x509/RevokedCertificate.js'
 import { TBSCertList } from '../x509/TBSCertList.js'
-import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
+import {
+    AlgorithmIdentifier,
+    SignatureAlgorithmIdentifier,
+} from '../algorithms/AlgorithmIdentifier.js'
 import { Name } from '../x509/Name.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
@@ -1489,3 +1492,73 @@ function createCircularCertificate2(cert1: Certificate): Certificate {
         signatureValue: new Uint8Array(256).fill(12),
     })
 }
+
+describe('CertificateValidator CA checks (RFC 5280)', () => {
+    const validator = new CertificateValidator()
+
+    test('a CA with keyCertSign but not digitalSignature is a valid issuer', async () => {
+        const root = createRootCertificate()
+        const ca = createIntermediateCertificate(root)
+        ca.tbsCertificate.extensions!.push(
+            Extension.keyUsage({ keyCertSign: true, cRLSign: true }),
+        )
+        const leaf = createEndEntityCertificateFor(ca)
+
+        const result = await validator.validate(leaf, {
+            validateChain: true,
+            trustAnchors: [{ certificate: root }],
+            otherCertificates: [ca],
+            enforceCAConstraints: true,
+        })
+        expect(result.isValid, result.messages.join('; ')).toBe(true)
+    })
+
+    test('a CA whose keyUsage lacks keyCertSign is rejected', async () => {
+        const root = createRootCertificate()
+        const ca = createIntermediateCertificate(root)
+        ca.tbsCertificate.extensions!.push(
+            Extension.keyUsage({ digitalSignature: true, cRLSign: true }),
+        )
+        const leaf = createEndEntityCertificateFor(ca)
+
+        const result = await validator.validate(leaf, {
+            validateChain: true,
+            trustAnchors: [{ certificate: root }],
+            otherCertificates: [ca],
+            enforceCAConstraints: true,
+        })
+        expect(result.isValid).toBe(false)
+        expect(result.messages.join('; ')).toContain('keyCertSign')
+    })
+
+    test('pathLenConstraint does not count the end certificate, even when it is a CA', async () => {
+        // pathLenConstraint 0: no intermediate CAs may follow, but the end certificate
+        // itself may be a CA certificate
+        const root = createRootCertificate({ pathLenConstraint: 0 })
+        const caAsEndCertificate = createIntermediateCertificate(root)
+
+        const result = await validator.validate(caAsEndCertificate, {
+            validateChain: true,
+            trustAnchors: [{ certificate: root }],
+            enforceCAConstraints: true,
+        })
+        expect(result.isValid, result.messages.join('; ')).toBe(true)
+    })
+
+    test('a signature that cannot be verified fails validation', async () => {
+        const root = createRootCertificate()
+        const leaf = createEndEntityCertificateFor(root)
+        // DSA with SHA-1: WebCrypto cannot verify it, so verification throws
+        leaf.signatureAlgorithm = new SignatureAlgorithmIdentifier({
+            algorithm: '1.2.840.10040.4.3',
+        })
+
+        const result = await validator.validate(leaf, {
+            validateChain: true,
+            trustAnchors: [{ certificate: root }],
+            checkSignature: true,
+        })
+        expect(result.isValid).toBe(false)
+        expect(result.messages.join('; ')).toContain('could not be verified')
+    })
+})
