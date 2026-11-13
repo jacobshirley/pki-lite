@@ -4,6 +4,8 @@ import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { Attribute } from '../Attribute.js'
 import { describe, test, expect, beforeEach } from 'vitest'
 
+const latin1 = (bytes: Uint8Array) => String.fromCharCode(...bytes)
+
 describe('AttributeCertificateInfoV1', () => {
     // Mock dependencies
     let mockSignature: AlgorithmIdentifier
@@ -23,6 +25,24 @@ describe('AttributeCertificateInfoV1', () => {
                 toAsn1: () => new asn1js.Sequence({ value: [] }),
             } as unknown as Attribute,
         ]
+    })
+
+    test('encodes the validity period in whole seconds', () => {
+        const info = new AttributeCertificateInfoV1({
+            version: 0,
+            subject: new Uint8Array([1, 2, 3]),
+            issuer: new Uint8Array([4, 5, 6]),
+            signature: mockSignature,
+            serialNumber: new Uint8Array([7]),
+            validityPeriod: {
+                notBefore: new Date('2026-11-13T08:03:23.166Z'),
+                notAfter: new Date('2027-11-13T08:03:23.999Z'),
+            },
+            attributes: mockAttributes,
+        })
+        const text = latin1(new Uint8Array(info.toAsn1().toBER(false)))
+        expect(text).toContain('20261113080323Z')
+        expect(text).toContain('20271113080323Z')
     })
 
     test('constructor should initialize properties correctly', () => {

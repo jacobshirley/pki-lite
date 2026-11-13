@@ -11,6 +11,7 @@ import { TimeStampResp } from './TimeStampResp.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { TimeStampReqBuilder } from '../core/builders/TimeStampReqBuilder.js'
+import { implicitSequenceOf, implicitTag } from '../core/tagging.js'
 
 /**
  * Time-Stamp Request structure for RFC 3161 Time-Stamp Protocol.
@@ -161,18 +162,7 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
             const extensionsArray = this.extensions.map((ext) => ext.toAsn1())
             // Extensions are [0] IMPLICIT
             values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                        isConstructed: true, // For EXPLICIT Extensions
-                    },
-                    value: [
-                        new asn1js.Sequence({
-                            value: extensionsArray,
-                        }),
-                    ],
-                }),
+                implicitTag(new asn1js.Sequence({ value: extensionsArray }), 0),
             )
         }
 
@@ -253,15 +243,10 @@ export class TimeStampReq extends PkiBase<TimeStampReq> {
                 value.idBlock.tagClass === 3 && // CONTEXT-SPECIFIC
                 value.idBlock.tagNumber === 0 // [0]
             ) {
-                // Parse extensions from [0] EXPLICIT Extensions
-                if (value.valueBlock.value.length > 0) {
-                    const extensionsSeq = value.valueBlock.value[0]
-                    if (extensionsSeq instanceof asn1js.Sequence) {
-                        extensions = extensionsSeq.valueBlock.value.map((ext) =>
-                            Extension.fromAsn1(ext),
-                        )
-                    }
-                }
+                // extensions [0] IMPLICIT Extensions
+                extensions = implicitSequenceOf(value).valueBlock.value.map(
+                    (ext) => Extension.fromAsn1(ext),
+                )
             }
         }
 

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { Integer } from './Integer.js'
+import { derToAsn1 } from '../core/PkiBase.js'
 import * as asn1js from 'asn1js'
 
 describe('Integer', () => {
@@ -170,6 +171,37 @@ describe('Integer', () => {
         for (const { input, expected } of testCases) {
             const integer = new Integer({ value: input })
             expect(integer.toHexString()).toEqual(expected)
+        }
+    })
+
+    test("encodes negative numbers as two's complement", () => {
+        // These used to gain a 00 prefix, turning -1 into +255
+        expect(new Integer({ value: -1 }).toDer()).toEqual(
+            new Uint8Array([0x02, 0x01, 0xff]),
+        )
+        expect(new Integer({ value: -129 }).toDer()).toEqual(
+            new Uint8Array([0x02, 0x02, 0xff, 0x7f]),
+        )
+        expect(new Integer({ value: -1n }).toDer()).toEqual(
+            new Uint8Array([0x02, 0x01, 0xff]),
+        )
+    })
+
+    test('reads byte arrays as unsigned magnitudes', () => {
+        const integer = new Integer({ value: new Uint8Array([0xff]) })
+        expect(integer.toInteger()).toBe(255)
+        expect(integer.toDer()).toEqual(
+            new Uint8Array([0x02, 0x02, 0x00, 0xff]),
+        )
+        expect(integer.toUnsigned()).toEqual(new Uint8Array([0xff]))
+    })
+
+    test('round-trips negative values through DER', () => {
+        for (const value of [-1, -128, -129, -65536]) {
+            const der = new Integer({ value }).toDer()
+            const parsed = Integer.fromAsn1(derToAsn1(der))
+            expect(parsed.toInteger()).toBe(value)
+            expect(parsed.toDer()).toEqual(der)
         }
     })
 })

@@ -120,3 +120,34 @@ describe('SingleResponse', () => {
         expect(parsed.singleExtensions).toBeUndefined()
     })
 })
+
+describe('SingleResponse.isCurrent', () => {
+    const at = (iso: string) => new Date(iso)
+    const single = (thisUpdate: string, nextUpdate?: string) =>
+        new SingleResponse({
+            certID: new CertID({
+                hashAlgorithm: new AlgorithmIdentifier({
+                    algorithm: '1.3.14.3.2.26',
+                }),
+                issuerNameHash: new Uint8Array(20),
+                issuerKeyHash: new Uint8Array(20),
+                serialNumber: 1,
+            }),
+            certStatus: CertStatus.createGood(),
+            thisUpdate: at(thisUpdate),
+            nextUpdate: nextUpdate ? at(nextUpdate) : undefined,
+        })
+
+    it('is current between thisUpdate and nextUpdate', () => {
+        const response = single('2026-01-01T00:00:00Z', '2026-01-08T00:00:00Z')
+        expect(response.isCurrent(at('2026-01-05T00:00:00Z'))).toBe(true)
+        expect(response.isCurrent(at('2025-12-31T00:00:00Z'))).toBe(false)
+        expect(response.isCurrent(at('2026-01-09T00:00:00Z'))).toBe(false)
+    })
+
+    it('without nextUpdate, only thisUpdate limits it (RFC 6960 4.2.2.1)', () => {
+        const response = single('2026-01-01T00:00:00Z')
+        expect(response.isCurrent(at('2030-01-01T00:00:00Z'))).toBe(true)
+        expect(response.isCurrent(at('2025-12-31T00:00:00Z'))).toBe(false)
+    })
+})

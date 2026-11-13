@@ -77,7 +77,8 @@ export class CertID extends PkiBase<CertID> {
         const issuerKeyHash = OctetString.fromAsn1(sequence.valueBlock.value[2])
 
         const serialNumberBlock = sequence.valueBlock.value[3] as asn1js.Integer
-        const serialNumber = serialNumberBlock.valueBlock.valueHexView
+        // two's complement, so a negative serial stays negative
+        const serialNumber = Integer.fromAsn1(serialNumberBlock)
 
         return new CertID({
             hashAlgorithm,
@@ -99,6 +100,37 @@ export class CertID extends PkiBase<CertID> {
      * @param hashAlgorithm Optional hash algorithm (defaults to SHA-256)
      * @returns Promise resolving to the CertID
      */
+    /**
+     * Whether this CertID identifies `certificate`, issued by `issuer`: the same serial
+     * number, and the issuer name and key hashes that `issuer` gives with this CertID's
+     * hash algorithm (RFC 6960 4.1.1).
+     *
+     * @example
+     * ```typescript
+     * const single = basic.tbsResponseData.responses.find(...)
+     * await single.certID.matches(certificate, caCertificate)
+     * ```
+     */
+    async matches(
+        certificate: Certificate,
+        issuer: Certificate,
+    ): Promise<boolean> {
+        if (
+            !this.serialNumber.equals(certificate.tbsCertificate.serialNumber)
+        ) {
+            return false
+        }
+        const expected = await CertID.forCertificate(
+            issuer,
+            certificate,
+            DigestAlgorithmIdentifier.fromDer(this.hashAlgorithm.toDer()),
+        )
+        return (
+            this.issuerNameHash.equals(expected.issuerNameHash) &&
+            this.issuerKeyHash.equals(expected.issuerKeyHash)
+        )
+    }
+
     static async forCertificate(
         issuerCertificate: Certificate,
         subjectCertificate: Certificate,
@@ -112,8 +144,11 @@ export class CertID extends PkiBase<CertID> {
             issuerNameHash: await hash.digest(
                 issuerCertificate.tbsCertificate.subject.toDer(),
             ),
+            // RFC 6960 4.1.1: the hash of the subjectPublicKey BIT STRING's value, not
+            // its encoding (no tag, length or unused-bits octet)
             issuerKeyHash: await hash.digest(
-                issuerCertificate.tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.toDer(),
+                issuerCertificate.tbsCertificate.subjectPublicKeyInfo
+                    .subjectPublicKey.bytes,
             ),
             serialNumber: subjectCertificate.tbsCertificate.serialNumber,
         })

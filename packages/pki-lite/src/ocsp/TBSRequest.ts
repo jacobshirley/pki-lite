@@ -42,17 +42,11 @@ export class TBSRequest extends PkiBase<TBSRequest> {
         const hashAlgorithm = AlgorithmIdentifier.digestAlgorithm('SHA-256')
 
         const request = new Request({
-            reqCert: new CertID({
-                hashAlgorithm: hashAlgorithm,
-                issuerKeyHash: await hashAlgorithm.digest(
-                    issuerCertificate.getSubjectPublicKeyInfo()
-                        .subjectPublicKey,
-                ),
-                issuerNameHash: await hashAlgorithm.digest(
-                    issuerCertificate.tbsCertificate.issuer.toDer(),
-                ),
-                serialNumber: certificate.tbsCertificate.serialNumber,
-            }),
+            reqCert: await CertID.forCertificate(
+                issuerCertificate,
+                certificate,
+                hashAlgorithm,
+            ),
         })
 
         return new TBSRequest({

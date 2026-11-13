@@ -17,11 +17,16 @@ const hasCommand = (command: string) =>
 // machine without it) fall back to an `openssl` on PATH.
 const useDocker = hasCommand('docker')
 
-export async function runOpenSSL(
+/**
+ * Runs OpenSSL in `debugFolder` and returns its exit code and output, whether or not it
+ * succeeded (for tests of what OpenSSL rejects). File arguments must be inside
+ * `debugFolder`.
+ */
+export async function runOpenSSLResult(
     args: string[],
     debugFolder: string,
-): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
+): Promise<{ code: number; stdout: Buffer; stderr: string }> {
+    return new Promise((resolve) => {
         const relativeArgs = args.map((x) => x.replace(debugFolder + '/', ''))
         const openssl = useDocker
             ? `docker run --rm -v ${debugFolder}:/data -w /data alpine/openssl:latest`
@@ -42,18 +47,27 @@ export async function runOpenSSL(
         child.stdout.on('data', (chunk) => output.push(chunk))
         child.stderr.on('data', (chunk) => error.push(chunk))
 
-        child.on('close', (code) => {
-            if (code === 0) {
-                resolve(Buffer.concat(output))
-            } else {
-                reject(
-                    new Error(
-                        `OpenSSL exited with code ${code}: [args: ${args.join(' ')}] ${Buffer.concat(error).toString()}`,
-                    ),
-                )
-            }
-        })
+        child.on('close', (code) =>
+            resolve({
+                code: code ?? -1,
+                stdout: Buffer.concat(output),
+                stderr: Buffer.concat(error).toString(),
+            }),
+        )
     })
+}
+
+export async function runOpenSSL(
+    args: string[],
+    debugFolder: string,
+): Promise<Buffer> {
+    const { code, stdout, stderr } = await runOpenSSLResult(args, debugFolder)
+    if (code !== 0) {
+        throw new Error(
+            `OpenSSL exited with code ${code}: [args: ${args.join(' ')}] ${stderr}`,
+        )
+    }
+    return stdout
 }
 
 export async function opensslValidate(options: {
@@ -325,4 +339,479 @@ export async function opensslVerifyCsr(options: { csr: string }): Promise<{
             error: error instanceof Error ? error.message : String(error),
         }
     }
+}
+
+/** The certificates of {@link opensslOcspPki} */
+export type OcspPkiName =
+    | 'ca'
+    | 'good'
+    | 'revoked'
+    | 'responder'
+    | 'notResponder'
+    | 'otherCa'
+    | 'otherCaSameSerial'
+
+/**
+ * A small PKI made with OpenSSL for OCSP tests, plus OpenSSL as an OCSP client and
+ * responder over it:
+ *
+ * - `ca` issues `good` (serial 1001), `revoked` (1002, revoked for keyCompromise on
+ *   2025-01-01), `responder` (a delegated responder: extendedKeyUsage OCSPSigning) and
+ *   `notResponder` (no OCSPSigning)
+ * - `otherCa` issues `otherCaSameSerial`, with the same serial as `revoked` (1002), which
+ *   `otherCa`'s responder reports as good
+ */
+export async function opensslOcspPki() {
+    const dir = getTempFolder()
+    const p = (name: string) => `${dir}/${name}`
+    const run = (args: string[]) => runOpenSSL(args, dir)
+
+    const selfSigned = async (name: string, cn: string) =>
+        run([
+            'req',
+            '-x509',
+            '-newkey',
+            'rsa:2048',
+            '-nodes',
+            '-sha256',
+            '-keyout',
+            p(`${name}.key`),
+            '-out',
+            p(`${name}.pem`),
+            '-days',
+            '3650',
+            '-subj',
+            `/CN=${cn}`,
+            '-addext',
+            'basicConstraints=critical,CA:TRUE',
+            '-addext',
+            'keyUsage=critical,keyCertSign,cRLSign',
+        ])
+    const issue = async (
+        name: string,
+        issuer: string,
+        serial: string,
+        extensions: string[],
+    ) => {
+        await run([
+            'req',
+            '-newkey',
+            'rsa:2048',
+            '-nodes',
+            '-sha256',
+            '-keyout',
+            p(`${name}.key`),
+            '-out',
+            p(`${name}.csr`),
+            '-subj',
+            `/CN=${name}`,
+        ])
+        fs.writeFileSync(p(`${name}.ext`), extensions.join('\n') + '\n')
+        await run([
+            'x509',
+            '-req',
+            '-sha256',
+            '-in',
+            p(`${name}.csr`),
+            '-CA',
+            p(`${issuer}.pem`),
+            '-CAkey',
+            p(`${issuer}.key`),
+            '-set_serial',
+            `0x${serial}`,
+            '-days',
+            '365',
+            '-extfile',
+            p(`${name}.ext`),
+            '-out',
+            p(`${name}.pem`),
+        ])
+    }
+
+    await selfSigned('ca', 'OcspTestCA')
+    await selfSigned('otherCa', 'OcspOtherCA')
+    const leaf = [
+        'basicConstraints=CA:FALSE',
+        'keyUsage=critical,digitalSignature',
+    ]
+    await issue('good', 'ca', '1001', leaf)
+    await issue('revoked', 'ca', '1002', leaf)
+    await issue('responder', 'ca', '1003', [
+        ...leaf,
+        'extendedKeyUsage=OCSPSigning',
+    ])
+    await issue('notResponder', 'ca', '1004', leaf)
+    await issue('otherCaSameSerial', 'otherCa', '1002', leaf)
+
+    // openssl ca database: status, expiry, revocation date[,reason], serial, file, DN
+    const row = (fields: string[]) => fields.join('\t') + '\n'
+    fs.writeFileSync(
+        p('ca.index'),
+        row(['V', '351231235959Z', '', '1001', 'unknown', '/CN=good']) +
+            row([
+                'R',
+                '351231235959Z',
+                '250101000000Z,keyCompromise',
+                '1002',
+                'unknown',
+                '/CN=revoked',
+            ]) +
+            row([
+                'V',
+                '351231235959Z',
+                '',
+                '1003',
+                'unknown',
+                '/CN=responder',
+            ]) +
+            row([
+                'V',
+                '351231235959Z',
+                '',
+                '1004',
+                'unknown',
+                '/CN=notResponder',
+            ]),
+    )
+    fs.writeFileSync(
+        p('otherCa.index'),
+        row([
+            'V',
+            '351231235959Z',
+            '',
+            '1002',
+            'unknown',
+            '/CN=otherCaSameSerial',
+        ]),
+    )
+
+    // Read the keys through OpenSSL: with docker they belong to root and are mode 0600
+    const names: OcspPkiName[] = [
+        'ca',
+        'good',
+        'revoked',
+        'responder',
+        'notResponder',
+        'otherCa',
+        'otherCaSameSerial',
+    ]
+    const keys = new Map<OcspPkiName, string>()
+    for (const name of names) {
+        keys.set(
+            name,
+            (await run(['pkey', '-in', p(`${name}.key`)])).toString(),
+        )
+    }
+
+    let counter = 0
+    const tmp = (ext: string) => p(`tmp-${++counter}.${ext}`)
+
+    return {
+        pem: (name: OcspPkiName) => fs.readFileSync(p(`${name}.pem`), 'utf8'),
+        key: (name: OcspPkiName) => keys.get(name)!,
+
+        /** An OCSP request made by OpenSSL (no nonce) for `cert`, issued by `issuer` */
+        async request(options: {
+            cert: OcspPkiName
+            issuer?: OcspPkiName
+            hash?: 'sha1' | 'sha256'
+        }): Promise<Uint8Array> {
+            const out = tmp('req')
+            await run([
+                'ocsp',
+                '-no_nonce',
+                `-${options.hash ?? 'sha1'}`,
+                '-issuer',
+                p(`${options.issuer ?? 'ca'}.pem`),
+                '-cert',
+                p(`${options.cert}.pem`),
+                '-reqout',
+                out,
+            ])
+            return new Uint8Array(fs.readFileSync(out))
+        },
+
+        /** The text OpenSSL prints for a request (`ocsp -req_text`) */
+        async requestText(request: Uint8Array): Promise<string> {
+            const file = tmp('req')
+            fs.writeFileSync(file, request)
+            return (
+                await run(['ocsp', '-reqin', file, '-req_text', '-noverify'])
+            ).toString()
+        },
+
+        /**
+         * OpenSSL's answer to `request` as the responder for `ca` (or `otherCa`), signed
+         * by `signer` (the CA itself by default)
+         */
+        async respond(options: {
+            request: Uint8Array
+            ca?: 'ca' | 'otherCa'
+            signer?: OcspPkiName
+            /** identify the responder by key hash rather than by name */
+            byKey?: boolean
+        }): Promise<Uint8Array> {
+            const ca = options.ca ?? 'ca'
+            const signer = options.signer ?? ca
+            const reqFile = tmp('req')
+            const out = tmp('resp')
+            fs.writeFileSync(reqFile, options.request)
+            await run([
+                'ocsp',
+                '-index',
+                p(`${ca}.index`),
+                '-CA',
+                p(`${ca}.pem`),
+                '-rsigner',
+                p(`${signer}.pem`),
+                '-rkey',
+                p(`${signer}.key`),
+                '-reqin',
+                reqFile,
+                '-respout',
+                out,
+                '-ndays',
+                '7',
+                ...(options.byKey ? ['-resp_key_id'] : []),
+            ])
+            return new Uint8Array(fs.readFileSync(out))
+        },
+
+        /**
+         * Checks `response` as an OCSP client for `cert` (issued by `issuer`), trusting
+         * `ca`: whether OpenSSL verifies the response, and the status it reports.
+         */
+        async verify(options: {
+            response: Uint8Array
+            cert: OcspPkiName
+            issuer?: OcspPkiName
+        }): Promise<{ verified: boolean; status?: string; output: string }> {
+            const respFile = tmp('resp')
+            fs.writeFileSync(respFile, options.response)
+            const issuer = options.issuer ?? 'ca'
+            const result = await runOpenSSLResult(
+                [
+                    'ocsp',
+                    '-respin',
+                    respFile,
+                    '-issuer',
+                    p(`${issuer}.pem`),
+                    '-cert',
+                    p(`${options.cert}.pem`),
+                    '-CAfile',
+                    p(`${issuer}.pem`),
+                ],
+                dir,
+            )
+            const output = result.stdout.toString() + result.stderr
+            const status = output.match(
+                new RegExp(`${options.cert}\\.pem: (good|revoked|unknown)`),
+            )?.[1]
+            return {
+                verified: output.includes('Response verify OK'),
+                status,
+                output,
+            }
+        },
+    }
+}
+
+/**
+ * Encodes a value with OpenSSL's own ASN.1 generator (`asn1parse -genstr` for a
+ * single value such as `INTEGER:-1`, or `-genconf` for a config describing a
+ * structure), giving an encoding independent of pki-lite.
+ */
+export async function opensslAsn1Generate(
+    spec: { genstr: string } | { genconf: string },
+): Promise<Uint8Array<ArrayBuffer>> {
+    const tmpFolder = getTempFolder()
+    const out = `${tmpFolder}/generated.der`
+    const args = ['asn1parse', '-noout', '-out', out]
+    if ('genstr' in spec) {
+        args.push('-genstr', `'${spec.genstr}'`)
+    } else {
+        fs.writeFileSync(`${tmpFolder}/gen.cnf`, spec.genconf)
+        args.push('-genconf', `${tmpFolder}/gen.cnf`)
+    }
+    await runOpenSSL(args, tmpFolder)
+    return new Uint8Array(fs.readFileSync(out))
+}
+
+/**
+ * Has OpenSSL parse a CMS structure and write it out again, returning its text
+ * dump and its own DER re-encoding.
+ */
+export async function opensslCmsReencode(
+    der: Uint8Array,
+): Promise<{ text: string; der: Uint8Array<ArrayBuffer> }> {
+    const tmpFolder = getTempFolder()
+    fs.writeFileSync(`${tmpFolder}/in.der`, der)
+    const input = ['-inform', 'DER', '-in', `${tmpFolder}/in.der`]
+    const text = await runOpenSSL(
+        ['cms', '-cmsout', '-print', ...input],
+        tmpFolder,
+    )
+    await runOpenSSL(
+        [
+            'cms',
+            '-cmsout',
+            ...input,
+            '-outform',
+            'DER',
+            '-out',
+            `${tmpFolder}/out.der`,
+        ],
+        tmpFolder,
+    )
+    return {
+        text: text.toString(),
+        der: new Uint8Array(fs.readFileSync(`${tmpFolder}/out.der`)),
+    }
+}
+
+/**
+ * Has OpenSSL read a time-stamp request (`openssl ts -query`) or token
+ * (`openssl ts -reply -token_in`), returning its text dump and its own DER
+ * re-encoding.
+ */
+export async function opensslTsReencode(
+    der: Uint8Array,
+    kind: 'query' | 'token',
+): Promise<{ text: string; der: Uint8Array<ArrayBuffer> }> {
+    const tmpFolder = getTempFolder()
+    fs.writeFileSync(`${tmpFolder}/in.der`, der)
+    const base =
+        kind === 'query'
+            ? ['ts', '-query', '-in', `${tmpFolder}/in.der`]
+            : [
+                  'ts',
+                  '-reply',
+                  '-in',
+                  `${tmpFolder}/in.der`,
+                  '-token_in',
+                  '-token_out',
+              ]
+    const text = await runOpenSSL([...base, '-text'], tmpFolder)
+    await runOpenSSL([...base, '-out', `${tmpFolder}/out.der`], tmpFolder)
+    return {
+        text: text.toString(),
+        der: new Uint8Array(fs.readFileSync(`${tmpFolder}/out.der`)),
+    }
+}
+
+/**
+ * Uses `openssl ca` to create a CA, issue a leaf certificate (with OpenSSL's
+ * default random 20-octet serial), revoke it and publish a CRL.
+ */
+export async function opensslIssueAndRevoke(): Promise<{
+    caCertPem: string
+    leafCertPem: string
+    crlPem: string
+}> {
+    const tmpFolder = getTempFolder()
+    const p = (name: string) => `${tmpFolder}/${name}`
+    fs.writeFileSync(p('index.txt'), '')
+    fs.writeFileSync(
+        p('ca.cnf'),
+        [
+            '[ca]',
+            'default_ca = ca_default',
+            '[ca_default]',
+            'database = index.txt',
+            'new_certs_dir = .',
+            'certificate = ca.pem',
+            'private_key = ca.key',
+            'default_md = sha256',
+            'default_crl_days = 7',
+            'policy = policy_any',
+            'rand_serial = yes',
+            '[policy_any]',
+            'commonName = supplied',
+            '',
+        ].join('\n'),
+    )
+    const run = (args: string[]) => runOpenSSL(args, tmpFolder)
+    await run([
+        'req',
+        '-x509',
+        '-newkey',
+        'rsa:2048',
+        '-nodes',
+        '-keyout',
+        p('ca.key'),
+        '-out',
+        p('ca.pem'),
+        '-subj',
+        "'/CN=OpenSSL Test CA'",
+        '-days',
+        '30',
+    ])
+    await run([
+        'req',
+        '-newkey',
+        'rsa:2048',
+        '-nodes',
+        '-keyout',
+        p('leaf.key'),
+        '-out',
+        p('leaf.csr'),
+        '-subj',
+        "'/CN=OpenSSL Test Leaf'",
+    ])
+    await run([
+        'ca',
+        '-batch',
+        '-config',
+        p('ca.cnf'),
+        '-in',
+        p('leaf.csr'),
+        '-out',
+        p('leaf.pem'),
+        '-days',
+        '7',
+        '-notext',
+    ])
+    await run([
+        'ca',
+        '-config',
+        p('ca.cnf'),
+        '-revoke',
+        p('leaf.pem'),
+        '-crl_reason',
+        'keyCompromise',
+    ])
+    await run(['ca', '-config', p('ca.cnf'), '-gencrl', '-out', p('crl.pem')])
+    return {
+        caCertPem: fs.readFileSync(p('ca.pem'), 'utf8'),
+        leafCertPem: fs.readFileSync(p('leaf.pem'), 'utf8'),
+        crlPem: fs.readFileSync(p('crl.pem'), 'utf8'),
+    }
+}
+
+/** Creates a self-signed certificate with OpenSSL carrying one `-addext` extension. */
+export async function opensslSelfSignedWithExtension(
+    addext: string,
+): Promise<string> {
+    const tmpFolder = getTempFolder()
+    await runOpenSSL(
+        [
+            'req',
+            '-x509',
+            '-newkey',
+            'rsa:2048',
+            '-nodes',
+            '-keyout',
+            `${tmpFolder}/key.pem`,
+            '-out',
+            `${tmpFolder}/cert.pem`,
+            '-subj',
+            "'/CN=Extension Test'",
+            '-days',
+            '30',
+            '-addext',
+            `'${addext}'`,
+        ],
+        tmpFolder,
+    )
+    return fs.readFileSync(`${tmpFolder}/cert.pem`, 'utf8')
 }

@@ -1,4 +1,9 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1BaseBlock,
+    asn1js,
+    PkiBase,
+    keepOriginalDer,
+} from '../core/PkiBase.js'
 import {
     AlgorithmIdentifier,
     SignatureAlgorithmIdentifier,
@@ -47,7 +52,7 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
 
     constructor(options: {
         version?: number
-        serialNumber: Uint8Array | number | string
+        serialNumber: Uint8Array | number | bigint | string | Integer
         signature: AlgorithmIdentifier
         issuer: Name
         validity: Validity
@@ -197,7 +202,8 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
                 'Invalid TBSCertificate: serialNumber must be an INTEGER',
             )
         }
-        const serialNumber = serialAsn1.valueBlock.valueHexView
+        // two's complement, so a negative serial stays negative
+        const serialNumber = Integer.fromAsn1(serialAsn1)
         currentIndex++
 
         // Signature Algorithm (required)
@@ -307,7 +313,7 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
             }
         }
 
-        return new TBSCertificate({
+        const tbsCertificate = new TBSCertificate({
             version,
             serialNumber,
             signature,
@@ -319,6 +325,9 @@ export class TBSCertificate extends PkiBase<TBSCertificate> {
             subjectUniqueID,
             extensions,
         })
+        // keep the signed bytes: re-encoding may not reproduce them
+        keepOriginalDer(tbsCertificate, asn1)
+        return tbsCertificate
     }
 
     getExtensionByOid(oid: string): Extension | undefined {

@@ -21,6 +21,17 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * }
  * ```
  */
+/** The ASN.1 string types a DirectoryString (or an emailAddress, ...) can use. */
+const STRING_TYPES = [
+    asn1js.Utf8String,
+    asn1js.PrintableString,
+    asn1js.TeletexString,
+    asn1js.BmpString,
+    asn1js.UniversalString,
+    asn1js.IA5String,
+    asn1js.VisibleString,
+]
+
 export class AttributeTypeAndValue extends PkiBase<AttributeTypeAndValue> {
     type: ObjectIdentifier
     value: Any
@@ -49,6 +60,34 @@ export class AttributeTypeAndValue extends PkiBase<AttributeTypeAndValue> {
 
     toHumanString(): string {
         return `${this.shortName}=${this.value.toHumanString()}`
+    }
+
+    /**
+     * Whether this attribute matches another as RFC 5280 7.1 compares names: the same
+     * type, and values equal after RFC 4518 string preparation. A character string, in
+     * whatever ASN.1 string type, is Unicode-normalised (NFKC), case-folded and has
+     * leading, trailing and repeated whitespace removed, so PrintableString "Test  CA"
+     * matches UTF8String "test ca". Other values must have the same DER encoding.
+     *
+     * @example
+     * ```typescript
+     * AttributeTypeAndValue.parse('CN=Test  CA').matches(AttributeTypeAndValue.parse('cn=test ca')) // true
+     * ```
+     */
+    matches(other: AttributeTypeAndValue): boolean {
+        return (
+            this.type.value === other.type.value &&
+            this.comparableValue() === other.comparableValue()
+        )
+    }
+
+    private comparableValue(): string {
+        const asn1 = this.value.toAsn1()
+        if (STRING_TYPES.some((type) => asn1 instanceof type)) {
+            const text = this.value.toHumanString()
+            return `s:${text.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ')}`
+        }
+        return `d:${this.value.toDer().join(',')}`
     }
 
     static fromAsn1(asn1: Asn1BaseBlock): AttributeTypeAndValue {

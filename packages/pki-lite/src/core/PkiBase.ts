@@ -37,6 +37,48 @@ export type ParseableAsn1<T> = {
  *
  * @template T The specific PKI type that extends this base class
  */
+/**
+ * The bytes objects were parsed from, and their encoding then (see toOriginalDer). Kept
+ * outside the objects, so they take no part in JSON, equality or structural typing.
+ */
+const ORIGINAL_DER = new WeakMap<
+    object,
+    { der: Uint8Array<ArrayBuffer>; reencoded: Uint8Array<ArrayBuffer> }
+>()
+
+/**
+ * Keeps the bytes `target` was parsed from, for {@link PkiBase.toOriginalDer}. Called at
+ * the end of `fromAsn1` by types whose encoding a signature covers.
+ *
+ * @internal
+ */
+export function keepOriginalDer(
+    target: object & { toDer(): Uint8Array<ArrayBuffer> },
+    parsed: Asn1BaseBlock,
+): void {
+    const view = parsed.valueBeforeDecodeView
+    if (!view || view.byteLength === 0) return
+    ORIGINAL_DER.set(target, {
+        der: new Uint8Array(view),
+        reencoded: target.toDer(),
+    })
+}
+
+function originalDer(
+    target: object & { toDer(): Uint8Array<ArrayBuffer> },
+): Uint8Array<ArrayBuffer> {
+    const current = target.toDer()
+    const original = ORIGINAL_DER.get(target)
+    if (
+        original &&
+        current.length === original.reencoded.length &&
+        current.every((byte, i) => byte === original.reencoded[i])
+    ) {
+        return original.der
+    }
+    return current
+}
+
 export abstract class PkiBase<T extends object = any> {
     /**
      * Converts this PKI object to its ASN.1 representation.
@@ -67,7 +109,8 @@ export abstract class PkiBase<T extends object = any> {
      * @returns A JSON-serializable representation of this object
      */
     toJSON(): ToJson<T> {
-        return JSON.parse(JSON.stringify(this)) as T
+        // Stringify a plain copy: stringifying `this` would call toJSON() again
+        return JSON.parse(JSON.stringify({ ...this })) as T
     }
 
     /**
@@ -99,6 +142,20 @@ export abstract class PkiBase<T extends object = any> {
      */
     toDer(): Uint8Array<ArrayBuffer> {
         return asn1ToDer(this.toAsn1())
+    }
+
+    /**
+     * The DER this object was parsed from, if it has not been changed since; otherwise
+     * {@link toDer}. Use it for the bytes a signature covers (a certificate's or CRL's
+     * TBS part): re-encoding a parsed value does not always give back the same bytes (a
+     * GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+     * difference breaks the signature. Only types that keep their encoding when parsed
+     * (TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+     *
+     * @returns The original encoding, or the current one
+     */
+    toOriginalDer(): Uint8Array<ArrayBuffer> {
+        return originalDer(this)
     }
 
     /**
@@ -195,7 +252,8 @@ export abstract class PkiArray<T extends PkiBase<any>> extends Array<T> {
      * @returns A JSON-serializable representation of this array
      */
     toJSON(): ToJson<T> {
-        return JSON.parse(JSON.stringify(this)) as T
+        // Stringify a plain array: stringifying `this` would call toJSON() again
+        return JSON.parse(JSON.stringify([...this])) as T
     }
 
     /**
@@ -214,6 +272,11 @@ export abstract class PkiArray<T extends PkiBase<any>> extends Array<T> {
      */
     toDer(): Uint8Array<ArrayBuffer> {
         return asn1ToDer(this.toAsn1())
+    }
+
+    /** The DER this was parsed from, if unchanged since; see {@link PkiBase.toOriginalDer}. */
+    toOriginalDer(): Uint8Array<ArrayBuffer> {
+        return originalDer(this)
     }
 
     /**

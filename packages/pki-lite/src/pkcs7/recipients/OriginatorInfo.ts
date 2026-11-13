@@ -4,6 +4,7 @@ import { RevocationInfoChoices } from '../../revocation/RevocationInfoChoices.js
 import { RevocationInfoChoice } from '../../revocation/RevocationInfoChoice.js'
 import { CertificateChoices } from '../../x509/CertificateChoices.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
+import { implicitTag } from '../../core/tagging.js'
 
 /**
  * Represents an OriginatorInfo structure as defined in RFC 5652.
@@ -43,28 +44,14 @@ export class OriginatorInfo extends PkiBase<OriginatorInfo> {
     toAsn1(): Asn1BaseBlock {
         const sequence = new asn1js.Sequence()
 
-        // Add certs if present
+        // certs [0] IMPLICIT CertificateSet
         if (this.certs && this.certs.length > 0) {
-            const certsElement = new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // CONTEXT_SPECIFIC
-                    tagNumber: 0, // [0]
-                },
-                value: [this.certs.toAsn1()],
-            })
-            sequence.valueBlock.value.push(certsElement)
+            sequence.valueBlock.value.push(implicitTag(this.certs.toAsn1(), 0))
         }
 
-        // Add crls if present
+        // crls [1] IMPLICIT RevocationInfoChoices
         if (this.crls && this.crls.length > 0) {
-            const crlsElement = new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // CONTEXT_SPECIFIC
-                    tagNumber: 1, // [1]
-                },
-                value: [this.crls.toAsn1()],
-            })
-            sequence.valueBlock.value.push(crlsElement)
+            sequence.valueBlock.value.push(implicitTag(this.crls.toAsn1(), 1))
         }
 
         return sequence
@@ -94,19 +81,11 @@ export class OriginatorInfo extends PkiBase<OriginatorInfo> {
             if (tagClass === 3) {
                 // CONTEXT_SPECIFIC
                 if (tagNumber === 0) {
-                    // [0] certs
-                    if (element.valueBlock.value.length > 0) {
-                        certs = CertificateSet.fromAsn1(
-                            element.valueBlock.value[0],
-                        )
-                    }
+                    // certs [0] IMPLICIT CertificateSet
+                    certs = CertificateSet.fromAsn1(implicitSet(element))
                 } else if (tagNumber === 1) {
-                    // [1] crls
-                    if (element.valueBlock.value.length > 0) {
-                        crls = RevocationInfoChoices.fromAsn1(
-                            element.valueBlock.value[0],
-                        )
-                    }
+                    // crls [1] IMPLICIT RevocationInfoChoices
+                    crls = RevocationInfoChoices.fromAsn1(implicitSet(element))
                 }
             }
         }
@@ -117,3 +96,16 @@ export class OriginatorInfo extends PkiBase<OriginatorInfo> {
 
 // Export these classes for use in other modules
 export { CertificateSet, RevocationInfoChoices }
+
+/**
+ * Reads a `[n] IMPLICIT SET OF` field back as the SET. Earlier versions of this
+ * library wrote the SET wrapped inside the [n] (explicit tagging); that form is
+ * recognised by its single universal SET child and still accepted.
+ */
+function implicitSet(element: asn1js.Constructed): asn1js.Set {
+    const children = element.valueBlock.value
+    if (children.length === 1 && children[0] instanceof asn1js.Set) {
+        return children[0]
+    }
+    return new asn1js.Set({ value: children })
+}

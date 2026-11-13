@@ -1,3 +1,4 @@
+import { GeneralizedTime } from '../../asn1/GeneralizedTime.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { Attribute } from '../Attribute.js'
@@ -98,12 +99,12 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
             new asn1js.Integer({ valueHex: this.serialNumber }),
             new asn1js.Sequence({
                 value: [
-                    new asn1js.GeneralizedTime({
-                        valueDate: this.validityPeriod.notBefore,
-                    }),
-                    new asn1js.GeneralizedTime({
-                        valueDate: this.validityPeriod.notAfter,
-                    }),
+                    new GeneralizedTime({
+                        time: this.validityPeriod.notBefore,
+                    }).toAsn1(),
+                    new GeneralizedTime({
+                        time: this.validityPeriod.notAfter,
+                    }).toAsn1(),
                 ],
             }),
             new asn1js.Sequence({

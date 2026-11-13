@@ -5,6 +5,7 @@ import { AttributeCertificateV1 } from './attribute-certs/AttributeCertificateV1
 import { AttributeCertificate } from './attribute-certs/AttributeCertificate.js'
 import { OtherCertificateFormat } from './legacy/OtherCertificateFormat.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { implicitSequence } from '../core/tagging.js'
 
 /**
  * Represents a certificate choice structure used in PKCS#7/CMS.
@@ -55,20 +56,22 @@ export const CertificateChoices = Choice('CertificateChoices', {
                 `Unknown CertificateChoices tag class: ${tagClass}`,
             )
         }
-        // Context-specific tag class indicates an alternative choice
+        // Context-specific tag class indicates an alternative choice; each is an
+        // IMPLICIT tag over a SEQUENCE type, so read it back as that SEQUENCE
+        const sequence = implicitSequence(value)
         switch (tagNumber) {
             case 0:
                 // [0] IMPLICIT ExtendedCertificate (obsolete)
-                return ExtendedCertificate.fromAsn1(value)
+                return ExtendedCertificate.fromAsn1(sequence)
             case 1:
                 // [1] IMPLICIT AttributeCertificateV1 (obsolete)
-                return AttributeCertificateV1.fromAsn1(value)
+                return AttributeCertificateV1.fromAsn1(sequence)
             case 2:
                 // [2] IMPLICIT AttributeCertificate (AttributeCertificateV2)
-                return AttributeCertificate.fromAsn1(value)
+                return AttributeCertificate.fromAsn1(sequence)
             case 3:
                 // [3] IMPLICIT OtherCertificateFormat
-                return OtherCertificateFormat.fromAsn1(value)
+                return OtherCertificateFormat.fromAsn1(sequence)
             default:
                 throw new Asn1ParseError(
                     `Unknown CertificateChoices tag number: ${tagNumber}`,

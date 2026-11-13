@@ -7,6 +7,8 @@ import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { BasicOCSPResponse } from './BasicOCSPResponse.js'
 import { ResponseData } from './ResponseData.js'
 import { Name } from '../x509/Name.js'
+import { beforeAll } from 'vitest'
+import { ocspTestPki } from '../../test-fixtures/ocsp.js'
 
 describe('OCSPResponse', () => {
     it('should create an OCSPResponse with successful status', () => {
@@ -106,5 +108,43 @@ describe('OCSPResponse', () => {
         expect(basic).toBeDefined()
         expect(basic?.tbsResponseData.producedAt).toBeInstanceOf(Date)
         expect(basic?.signature.bytes).toEqual(new Uint8Array([1, 2, 3]))
+    })
+})
+
+describe('OCSPResponse checks', () => {
+    let pki: Awaited<ReturnType<typeof ocspTestPki>>
+    beforeAll(async () => {
+        pki = await ocspTestPki()
+    })
+
+    it('isSuccessful, and an unsuccessful response gives no status', async () => {
+        const tryLater = await OCSPResponse.builder()
+            .setResponseStatus(3)
+            .build()
+        expect(tryLater.isSuccessful).toBe(false)
+        expect(await tryLater.verify(pki.ca)).toBe(false)
+        expect(await tryLater.getResponse(pki.leaf, pki.ca)).toBeUndefined()
+
+        const response = await pki.respond({ signer: pki.ca, key: pki.caKey })
+        expect(response.isSuccessful).toBe(true)
+        expect(await response.verify(pki.ca)).toBe(true)
+    })
+
+    it('getResponse finds the status for the certificate from its issuer', async () => {
+        const response = await pki.respond({
+            signer: pki.ca,
+            key: pki.caKey,
+            status: 'revoked',
+        })
+        const single = await response.getResponse(pki.leaf, pki.ca)
+        expect(single?.certStatus.status).toBe('revoked')
+        expect(single?.certStatus.revocationReason).toBe(1)
+        // another issuer (same name, another key), or another certificate
+        expect(
+            await response.getResponse(pki.leaf, pki.impostorCa),
+        ).toBeUndefined()
+        expect(
+            await response.getResponse(pki.responder, pki.ca),
+        ).toBeUndefined()
     })
 })

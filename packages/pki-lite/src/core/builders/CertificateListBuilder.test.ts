@@ -82,10 +82,37 @@ describe('CertificateListBuilder', () => {
         expect(crl.tbsCertList.revokedCertificates).toBeDefined()
         expect(crl.tbsCertList.revokedCertificates!.length).toBe(1)
 
-        const revokedSerial =
-            crl.tbsCertList.revokedCertificates![0].userCertificate.toString()
-        const userSerial = userCert.tbsCertificate.serialNumber.toString()
-        expect(revokedSerial).toBe(userSerial)
+        // the serial as encoded in the CRL, not just the value stored on the entry
+        const parsed = CertificateList.fromDer(crl.toDer())
+        expect(
+            parsed.tbsCertList.revokedCertificates![0].serialAsBigInt(),
+        ).toBe(userCert.tbsCertificate.serialNumber.toBigInt())
+    })
+
+    it('revokeCertificate encodes a serial whose decimal and hex forms differ', async () => {
+        const caCert = Certificate.fromPem(rsaSigningKeys.certPem)
+        const caPrivateKey = PrivateKeyInfo.fromPem(
+            rsaSigningKeys.privateKeyPem,
+        )
+        const userCert = await Certificate.builder()
+            .setSubject('CN=user@example.com')
+            .setIssuer(caCert.tbsCertificate.subject)
+            .setPublicKey(caCert.tbsCertificate.subjectPublicKeyInfo)
+            .setPrivateKey(caPrivateKey)
+            .setValidityDays(365)
+            .setSerialNumber(1002)
+            .build()
+
+        const crl = await CertificateList.builder()
+            .setIssuerFromCertificate(caCert)
+            .setPrivateKey(caPrivateKey)
+            .revokeCertificate(userCert)
+            .build()
+
+        const parsed = CertificateList.fromDer(crl.toDer())
+        expect(
+            parsed.tbsCertList.revokedCertificates![0].serialAsBigInt(),
+        ).toBe(1002n)
     })
 
     it('builds a CRL with custom issuer name', async () => {

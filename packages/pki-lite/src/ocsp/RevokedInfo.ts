@@ -1,3 +1,4 @@
+import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
 import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
 import { CRLReason } from '../x509/CRLReason.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -34,9 +35,7 @@ export class RevokedInfo extends PkiBase<RevokedInfo> {
 
     toAsn1(): Asn1BaseBlock {
         const values: asn1js.AsnType[] = [
-            new asn1js.GeneralizedTime({
-                valueDate: this.revocationTime,
-            }),
+            new GeneralizedTime({ time: this.revocationTime }).toAsn1(),
         ]
 
         if (this.revocationReason !== undefined) {

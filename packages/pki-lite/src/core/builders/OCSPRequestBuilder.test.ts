@@ -206,4 +206,20 @@ describe('OCSPRequestBuilder', () => {
         expect(request).toBeInstanceOf(OCSPRequest)
         expect(request.tbsRequest.requestExtensions).toBeDefined()
     })
+
+    it('computes the same CertID as CertID.forCertificate', async () => {
+        const issuer = Certificate.fromPem(rsaSigningKeys.certPem)
+        const subject = Certificate.fromPem(rsaSigningKeys.caCertPem)
+        const request = await OCSPRequest.builder()
+            .addCertificate({ certificate: subject, issuerCertificate: issuer })
+            .build()
+        const expected = await CertID.forCertificate(
+            issuer,
+            subject,
+            AlgorithmIdentifier.digestAlgorithm('SHA-256'),
+        )
+        expect(request.tbsRequest.requestList[0].reqCert.toDer()).toEqual(
+            expected.toDer(),
+        )
+    })
 })
