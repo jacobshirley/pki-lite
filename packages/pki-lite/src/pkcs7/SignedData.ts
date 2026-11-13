@@ -409,7 +409,11 @@ export class SignedData extends PkiBase<SignedData> {
      *
      * @param options Verification options
      * @param options.data Optional original data for detached signatures
-     * @param options.certificateValidation Certificate validation options or true for default validation
+     * @param options.certificateValidation Certificate validation options, or true for
+     *   the default: the signer's certificate is validated with the certificates and CRLs
+     *   the message carries (its revocation status is checked against those CRLs when
+     *   there are any). The default trusts no root, so it does not establish trust in the
+     *   signer: pass options with `trustAnchors` for that.
      * @returns
      */
     async verify(options: {
@@ -471,15 +475,22 @@ export class SignedData extends PkiBase<SignedData> {
 
         if (options.certificateValidation) {
             const certificateValidator = new CertificateValidator()
+            const signerCertificate =
+                this.findCertificateForSignerInfo(validSignerInfo)!
+            const certificates =
+                this.certificates?.filter(
+                    (c): c is Certificate => c instanceof Certificate,
+                ) ?? []
+            const crls = [...(this.crls ?? [])].filter(
+                (c): c is CertificateList => c instanceof CertificateList,
+            )
             const validationOptions: CertificateValidationOptions =
                 options.certificateValidation === true
                     ? {
                           validateChain: true,
-                          checkCRL: true,
-                          checkOCSP: true,
-                          otherCertificates: this.certificates?.filter(
-                              (c): c is Certificate => c instanceof Certificate,
-                          ),
+                          // checked with the CRLs the message carries, if any
+                          checkCRL: crls.length > 0,
+                          otherCertificates: certificates,
                           checkSignature: true,
                           enforceCAConstraints: true,
                           validateNameConstraints: true,
@@ -487,8 +498,17 @@ export class SignedData extends PkiBase<SignedData> {
                     : options.certificateValidation
 
             const validationResult = await certificateValidator.validate(
-                this.findCertificateForSignerInfo(validSignerInfo)!,
+                signerCertificate,
                 validationOptions,
+                {
+                    crls,
+                    // the signer's issuer, to check the CRLs' signatures with
+                    issuerCertificate: certificates.find((c) =>
+                        c.tbsCertificate.subject.matches(
+                            signerCertificate.tbsCertificate.issuer,
+                        ),
+                    ),
+                },
             )
 
             if (validationResult.status !== 'VALID') {
