@@ -1,3 +1,4 @@
+import { GeneralizedTime as GeneralizedTimeValue } from './GeneralizedTime.js'
 import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -40,7 +41,7 @@ export class GeneralizedTime extends PkiBase<Date> {
     }
 
     toAsn1() {
-        return new asn1js.GeneralizedTime({ valueDate: this.date })
+        return new GeneralizedTimeValue({ time: this.date }).toAsn1()
     }
 
     static fromAsn1(asn1: Asn1BaseBlock): GeneralizedTime {

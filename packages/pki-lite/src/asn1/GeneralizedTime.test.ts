@@ -94,17 +94,15 @@ describe('GeneralizedDate', () => {
         }
     })
 
-    test('should handle microsecond precision', () => {
-        // GeneralizedTime can handle more precise timestamps
+    test('keeps milliseconds in memory but encodes whole seconds', () => {
         const testDate = new Date('2023-01-15T10:30:00.123Z')
         const generalizedDate = new GeneralizedTime({ date: testDate })
 
         expect(generalizedDate.date.getTime()).toEqual(testDate.getTime())
 
-        // Test round-trip
-        const asn1 = generalizedDate.toAsn1()
-        const decoded = GeneralizedTime.fromAsn1(asn1)
-        expect(decoded.date.getTime()).toEqual(testDate.getTime())
+        // RFC 5280 4.1.2.5.2: no fractional seconds in the encoding
+        const decoded = GeneralizedTime.fromAsn1(generalizedDate.toAsn1())
+        expect(decoded.date.toISOString()).toEqual('2023-01-15T10:30:00.000Z')
     })
 
     test('encodes whole seconds, dropping milliseconds (RFC 5280 4.1.2.5.2)', () => {
