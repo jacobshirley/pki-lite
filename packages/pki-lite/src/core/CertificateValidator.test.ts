@@ -1797,6 +1797,25 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
             expect(tooLong.messages.join('; ')).toContain('maxPathLength')
         })
 
+        test('strictProfile enforces the RFC 5280 profile, off by default', async () => {
+            // the test root has no subjectKeyIdentifier, which a conforming CA must have
+            const root = createRootCertificate()
+            const leaf = createEndEntityCertificateFor(root)
+            const options = {
+                validateChain: true,
+                trustAnchors: [{ certificate: root }],
+                // the test certificates are not signed
+                checkSignature: false,
+            }
+            expect((await validator.validate(leaf, options)).isValid).toBe(true)
+            const strict = await validator.validate(leaf, {
+                ...options,
+                strictProfile: true,
+            })
+            expect(strict.isValid).toBe(false)
+            expect(strict.messages.join('; ')).toContain('RFC 5280 profile')
+        })
+
         test('requiredExtendedKeyUsages: the leaf must allow each', async () => {
             const leaf = await Certificate.builder()
                 .setSubject('CN=Client')

@@ -4,6 +4,7 @@ import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { BasicConstraints } from '../x509/extensions/BasicConstraints.js'
 import { NameConstraints } from '../x509/extensions/NameConstraints.js'
 import { checkNameConstraints } from './NameConstraintsChecker.js'
+import { checkCertificateProfile } from './CertificateProfile.js'
 import { SubjectKeyIdentifier } from '../keys/SubjectKeyIdentifier.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { AuthorityKeyIdentifier } from '../x509/extensions/AuthorityKeyIdentifier.js'
@@ -147,6 +148,20 @@ export interface CertificateValidationOptions {
      * 6.1.1 (k)). Part of chain validation.
      */
     maxPathLength?: number
+    /**
+     * Whether to enforce the RFC 5280 certificate and CRL profiles: the rules for what
+     * conforming CAs issue (sections 4 and 5), beyond the path validation algorithm. For
+     * every certificate in the path, the trust anchor included: extension criticality
+     * (AKI, SKI, AIA non-critical; basicConstraints in a CA, nameConstraints,
+     * policyConstraints critical), required extensions (authorityKeyIdentifier,
+     * subjectKeyIdentifier in CAs), no duplicate extensions, positive serial numbers of at
+     * most 20 octets, well-formed subjectAltName names and name constraints, and no
+     * unrecognised critical extension in the trust anchor. For CRLs: cRLNumber present
+     * and non-critical, and no serial number listed twice. Off by default (many real PKIs
+     * break some of these rules), as OpenSSL checks them only with X509_STRICT.
+     * Part of chain validation.
+     */
+    strictProfile?: boolean
     /** Tolerance for time-based validations (in milliseconds) */
     timeTolerance?: number
     /** Custom validation date (defaults to current time) */
@@ -725,9 +740,33 @@ export class CertificateValidator {
                 }
             }
 
+            // RFC 5280 certificate profile (section 4), with strictProfile: for every
+            // certificate in the path, the trust anchor included
+            if (options.strictProfile) {
+                // a leaf trusted directly is still checked as a leaf
+                const problems = checkCertificateProfile(cert, {
+                    trustAnchor: isRoot && !isEndEntity,
+                })
+                if (problems.length > 0) {
+                    return {
+                        status: CertificateValidationStatus.CHAIN_INVALID,
+                        isValid: false,
+                        messages: [
+                            `Certificate ${i + 1} breaks the RFC 5280 profile: ${problems.join('; ')}`,
+                        ],
+                        revocationStatus: { isRevoked: false, source: 'NONE' },
+                        certificate: chain.certificates[0],
+                        validatedAt: new Date(),
+                        chain,
+                        diagnostics,
+                    }
+                }
+            }
+
             // RFC 5280 6.1.4 (o), 6.1.5 (f): a critical extension that is not processed
-            // makes the path invalid (the trust anchor's extensions are not processed)
-            if (!isRoot) {
+            // makes the path invalid. The trust anchor's extensions are not processed,
+            // except with strictProfile, which does not use a trust anchor with one.
+            if (!isRoot || options.strictProfile) {
                 const unknown = cert.tbsCertificate.extensions?.find(
                     (extension) =>
                         extension.critical &&
@@ -1114,6 +1153,7 @@ export class CertificateValidator {
                 ],
                 trustAnchors: [...anchors, ...trustedSigners],
                 time: options.validationTime ?? new Date(),
+                strictProfile: options.strictProfile,
                 validateSigner: (signer) =>
                     this.validateCrlSigner(signer, options, revocationData),
             })

@@ -46,6 +46,10 @@ function skipReason(c: LimboCase): string | undefined {
     ) {
         return 'a CA/Browser Forum (Web PKI) profile rule, not RFC 5280'
     }
+    if (c.id === 'rfc5280::aki::cross-signed-root-missing-aki') {
+        // a "pedantic-rfc5280" case; limbo's cve::cve-2024-0567 expects the opposite
+        return 'pki-lite does not require an authorityKeyIdentifier in a trust anchor (RFC 5280 does not validate trust anchor information)'
+    }
     return undefined
 }
 
@@ -55,44 +59,10 @@ function skipReason(c: LimboCase): string | undefined {
  */
 const DOS =
     'No limit on name constraint checking work: a technically valid but pathological chain (thousands of names against thousands of constraints) is accepted, where implementations reject it to avoid quadratic blowup.'
-const CRL_PROFILE =
-    'The RFC 5280 CRL profile is not enforced (cRLNumber present and non-critical, no duplicate entries).'
-const PROFILE =
-    'The RFC 5280 certificate profile is not enforced (extension criticality and presence, serial numbers, name forms, ...).'
 
 const KNOWN_ISSUES: Record<string, string> = {
-    'crl::structure::crl-duplicate-revoked-serial': CRL_PROFILE,
-    'crl::crlnumber-missing': CRL_PROFILE,
-    'crl::crlnumber-critical': CRL_PROFILE,
     'pathological::nc-dos-1': DOS,
     'pathological::nc-dos-2': DOS,
-    'rfc5280::aki::critical-aki': PROFILE,
-    'rfc5280::aki::leaf-missing-aki': PROFILE,
-    'rfc5280::aki::intermediate-missing-aki': PROFILE,
-    'rfc5280::aki::cross-signed-root-missing-aki': PROFILE,
-    'rfc5280::eku::ee-eku-empty': PROFILE,
-    'rfc5280::nc::permitted-dns-match-noncritical': PROFILE,
-    'rfc5280::nc::permitted-empty-sequence-excluded-nonempty': PROFILE,
-    'rfc5280::nc::permitted-nonempty-excluded-empty-sequence': PROFILE,
-    'rfc5280::nc::invalid-dnsname-leading-period': PROFILE,
-    'rfc5280::nc::not-allowed-in-ee-noncritical': PROFILE,
-    'rfc5280::nc::not-allowed-in-ee-critical': PROFILE,
-    'rfc5280::nc::nc-permits-invalid-dns-san': PROFILE,
-    'rfc5280::nc::nc-permits-invalid-email-san': PROFILE,
-    'rfc5280::pc::ica-noncritical-pc': PROFILE,
-    'rfc5280::san::noncritical-with-empty-subject': PROFILE,
-    'rfc5280::san::underscore-dns': PROFILE,
-    'rfc5280::serial::too-long': PROFILE,
-    'rfc5280::serial::zero': PROFILE,
-    'rfc5280::serial::negative': PROFILE,
-    'rfc5280::ski::root-missing-ski': PROFILE,
-    'rfc5280::ski::intermediate-missing-ski': PROFILE,
-    'rfc5280::ca-empty-subject': PROFILE,
-    'rfc5280::unknown-critical-extension-root': PROFILE,
-    'rfc5280::root-non-critical-basic-constraints': PROFILE,
-    'rfc5280::leaf-ku-keycertsign': PROFILE,
-    'rfc5280::ee-critical-aia-invalid': PROFILE,
-    'rfc5280::duplicate-extensions': PROFILE,
 }
 
 async function validate(c: LimboCase) {
@@ -114,6 +84,8 @@ async function validate(c: LimboCase) {
             hostname: c.peerName?.value,
             requiredExtendedKeyUsages: c.extendedKeyUsage,
             maxPathLength: c.maxChainDepth,
+            // x509-limbo expects the RFC 5280 profile to be enforced
+            strictProfile: true,
         },
         crls.length > 0 ? { crls } : undefined,
     )
