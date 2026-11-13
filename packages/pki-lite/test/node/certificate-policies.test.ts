@@ -111,7 +111,8 @@ const scenarios: Scenario[] = [
         leafPolicies: [B],
         initialExplicitPolicy: true,
         valid: true,
-        validPolicies: [B],
+        // in the trust anchor's domain (RFC 5280 6.1.5 (g), PKITS 4.10.1)
+        validPolicies: [A],
     },
     {
         name: 'policy mapping: the issuer-domain policy is not valid below',
@@ -127,7 +128,8 @@ const scenarios: Scenario[] = [
         initialPolicySet: [A],
         initialExplicitPolicy: true,
         valid: true,
-        validPolicies: [B],
+        // in the trust anchor's domain (RFC 5280 6.1.5 (g), PKITS 4.10.1)
+        validPolicies: [A],
     },
     {
         name: 'policy mapping: initial set in the subject domain',
@@ -204,7 +206,8 @@ const scenarios: Scenario[] = [
         leafPolicies: [B],
         initialExplicitPolicy: true,
         valid: true,
-        validPolicies: [B],
+        // in the trust anchor's domain (RFC 5280 6.1.5 (g), PKITS 4.10.1)
+        validPolicies: [A],
     },
 ]
 
@@ -240,141 +243,196 @@ function leafConfig(policies?: string[]): string {
     return `[ext]\n${lines.join('\n')}\n`
 }
 
-describe('certificate policies on OpenSSL-issued chains', { timeout: 120_000 }, () => {
-    /** keys and requests shared by every scenario: root, CA 1, CA 2, leaf */
-    let base: string
-    const names = ['root', 'ca1', 'ca2', 'leaf']
+describe(
+    'certificate policies on OpenSSL-issued chains',
+    { timeout: 120_000 },
+    () => {
+        /** keys and requests shared by every scenario: root, CA 1, CA 2, leaf */
+        let base: string
+        const names = ['root', 'ca1', 'ca2', 'leaf']
 
-    beforeAll(async () => {
-        // runOpenSSL joins its arguments into a shell line: no spaces in paths or names
-        base = path.resolve(
-            `${import.meta.dirname}/../../test-fixtures/tmp/policies-${randomUUID()}`,
-        )
-        fs.mkdirSync(base, { recursive: true })
-        for (const name of names) {
-            await runOpenSSL(
-                [
-                    'genpkey',
-                    '-algorithm',
-                    'EC',
-                    '-pkeyopt',
-                    'ec_paramgen_curve:P-256',
-                    '-out',
-                    `${base}/${name}.key`,
-                ],
-                base,
+        beforeAll(async () => {
+            // runOpenSSL joins its arguments into a shell line: no spaces in paths or names
+            base = path.resolve(
+                `${import.meta.dirname}/../../test-fixtures/tmp/policies-${randomUUID()}`,
             )
-        }
-        await runOpenSSL(
-            [
-                'req', '-x509', '-new', '-key', `${base}/root.key`,
-                '-subj', '/CN=PolicyRoot', '-days', '30',
-                '-addext', 'basicConstraints=critical,CA:TRUE',
-                '-addext', 'keyUsage=critical,keyCertSign,cRLSign',
-                '-out', `${base}/root.pem`,
-            ],
-            base,
-        )
-        for (const [name, cn] of [
-            ['ca1', 'PolicyCA1'],
-            ['ca2', 'PolicyCA2'],
-            ['leaf', 'leaf.example.com'],
-        ]) {
-            await runOpenSSL(
-                [
-                    'req', '-new', '-key', `${base}/${name}.key`,
-                    '-subj', `/CN=${cn}`, '-out', `${base}/${name}.csr`,
-                ],
-                base,
-            )
-        }
-    }, 120_000) // a dozen OpenSSL runs, each a docker container in CI
-
-    /**
-     * Issues the scenario's chain with OpenSSL. Everything stays in the shared folder
-     * (files prefixed per scenario): with docker, OpenSSL writes the keys as root and
-     * only it can read them.
-     */
-    async function issue(scenario: Scenario) {
-        const id = randomUUID().slice(0, 8)
-        const file = (name: string) =>
-            name === 'root' ? `${base}/root.pem` : `${base}/${id}-${name}.pem`
-        const sign = async (subject: string, issuer: string, config: string) => {
-            fs.writeFileSync(`${base}/${id}-${subject}.cnf`, config)
-            await runOpenSSL(
-                [
-                    'x509', '-req', '-in', `${base}/${subject}.csr`,
-                    '-CA', file(issuer), '-CAkey', `${base}/${issuer}.key`,
-                    '-days', '30', '-extfile', `${base}/${id}-${subject}.cnf`,
-                    '-extensions', 'ext', '-out', file(subject),
-                ],
-                base,
-            )
-        }
-        let issuer = 'root'
-        for (const [index, ca] of scenario.cas.entries()) {
-            const name = `ca${index + 1}`
-            await sign(name, issuer, caConfig(ca))
-            issuer = name
-        }
-        await sign('leaf', issuer, leafConfig(scenario.leafPolicies))
-
-        const intermediates = scenario.cas.map((_, i) => `ca${i + 1}`)
-        const untrusted = `${base}/${id}-untrusted.pem`
-        fs.writeFileSync(
-            untrusted,
-            intermediates.map((n) => fs.readFileSync(file(n), 'utf8')).join(''),
-        )
-        const pem = (name: string) =>
-            Certificate.fromPem(fs.readFileSync(file(name), 'utf8'))
-        return {
-            files: { root: file('root'), untrusted, leaf: file('leaf') },
-            root: pem('root'),
-            intermediates: intermediates.map(pem),
-            leaf: pem('leaf'),
-        }
-    }
-
-    async function opensslAccepts(
-        files: { root: string; untrusted: string; leaf: string },
-        scenario: Scenario,
-    ) {
-        const args = ['verify', '-policy_check']
-        for (const policy of scenario.initialPolicySet ?? [ANY]) {
-            args.push('-policy', policy)
-        }
-        if (scenario.initialExplicitPolicy) args.push('-explicit_policy')
-        if (scenario.initialPolicyMappingInhibit) args.push('-inhibit_map')
-        if (scenario.initialAnyPolicyInhibit) args.push('-inhibit_any')
-        args.push('-CAfile', files.root, '-untrusted', files.untrusted, files.leaf)
-        try {
-            await runOpenSSL(args, base)
-            return true
-        } catch {
-            return false
-        }
-    }
-
-    for (const scenario of scenarios) {
-        test(scenario.name, async () => {
-            const chain = await issue(scenario)
-            const result = await new CertificateValidator().validate(chain.leaf, {
-                validateChain: true,
-                trustAnchors: [{ certificate: chain.root }],
-                otherCertificates: chain.intermediates,
-                initialPolicySet: scenario.initialPolicySet,
-                initialExplicitPolicy: scenario.initialExplicitPolicy,
-                initialPolicyMappingInhibit: scenario.initialPolicyMappingInhibit,
-                initialAnyPolicyInhibit: scenario.initialAnyPolicyInhibit,
-            })
-
-            expect(result.isValid, result.messages.join('; ')).toBe(scenario.valid)
-            expect(await opensslAccepts(chain.files, scenario)).toBe(scenario.valid)
-            if (scenario.valid && scenario.validPolicies) {
-                expect([...(result.policyResult?.validPolicies ?? [])].sort()).toEqual(
-                    [...scenario.validPolicies].sort(),
+            fs.mkdirSync(base, { recursive: true })
+            for (const name of names) {
+                await runOpenSSL(
+                    [
+                        'genpkey',
+                        '-algorithm',
+                        'EC',
+                        '-pkeyopt',
+                        'ec_paramgen_curve:P-256',
+                        '-out',
+                        `${base}/${name}.key`,
+                    ],
+                    base,
                 )
             }
-        })
-    }
-})
+            await runOpenSSL(
+                [
+                    'req',
+                    '-x509',
+                    '-new',
+                    '-key',
+                    `${base}/root.key`,
+                    '-subj',
+                    '/CN=PolicyRoot',
+                    '-days',
+                    '30',
+                    '-addext',
+                    'basicConstraints=critical,CA:TRUE',
+                    '-addext',
+                    'keyUsage=critical,keyCertSign,cRLSign',
+                    '-out',
+                    `${base}/root.pem`,
+                ],
+                base,
+            )
+            for (const [name, cn] of [
+                ['ca1', 'PolicyCA1'],
+                ['ca2', 'PolicyCA2'],
+                ['leaf', 'leaf.example.com'],
+            ]) {
+                await runOpenSSL(
+                    [
+                        'req',
+                        '-new',
+                        '-key',
+                        `${base}/${name}.key`,
+                        '-subj',
+                        `/CN=${cn}`,
+                        '-out',
+                        `${base}/${name}.csr`,
+                    ],
+                    base,
+                )
+            }
+        }, 120_000) // a dozen OpenSSL runs, each a docker container in CI
+
+        /**
+         * Issues the scenario's chain with OpenSSL. Everything stays in the shared folder
+         * (files prefixed per scenario): with docker, OpenSSL writes the keys as root and
+         * only it can read them.
+         */
+        async function issue(scenario: Scenario) {
+            const id = randomUUID().slice(0, 8)
+            const file = (name: string) =>
+                name === 'root'
+                    ? `${base}/root.pem`
+                    : `${base}/${id}-${name}.pem`
+            const sign = async (
+                subject: string,
+                issuer: string,
+                config: string,
+            ) => {
+                fs.writeFileSync(`${base}/${id}-${subject}.cnf`, config)
+                await runOpenSSL(
+                    [
+                        'x509',
+                        '-req',
+                        '-in',
+                        `${base}/${subject}.csr`,
+                        '-CA',
+                        file(issuer),
+                        '-CAkey',
+                        `${base}/${issuer}.key`,
+                        '-days',
+                        '30',
+                        '-extfile',
+                        `${base}/${id}-${subject}.cnf`,
+                        '-extensions',
+                        'ext',
+                        '-out',
+                        file(subject),
+                    ],
+                    base,
+                )
+            }
+            let issuer = 'root'
+            for (const [index, ca] of scenario.cas.entries()) {
+                const name = `ca${index + 1}`
+                await sign(name, issuer, caConfig(ca))
+                issuer = name
+            }
+            await sign('leaf', issuer, leafConfig(scenario.leafPolicies))
+
+            const intermediates = scenario.cas.map((_, i) => `ca${i + 1}`)
+            const untrusted = `${base}/${id}-untrusted.pem`
+            fs.writeFileSync(
+                untrusted,
+                intermediates
+                    .map((n) => fs.readFileSync(file(n), 'utf8'))
+                    .join(''),
+            )
+            const pem = (name: string) =>
+                Certificate.fromPem(fs.readFileSync(file(name), 'utf8'))
+            return {
+                files: { root: file('root'), untrusted, leaf: file('leaf') },
+                root: pem('root'),
+                intermediates: intermediates.map(pem),
+                leaf: pem('leaf'),
+            }
+        }
+
+        async function opensslAccepts(
+            files: { root: string; untrusted: string; leaf: string },
+            scenario: Scenario,
+        ) {
+            const args = ['verify', '-policy_check']
+            for (const policy of scenario.initialPolicySet ?? [ANY]) {
+                args.push('-policy', policy)
+            }
+            if (scenario.initialExplicitPolicy) args.push('-explicit_policy')
+            if (scenario.initialPolicyMappingInhibit) args.push('-inhibit_map')
+            if (scenario.initialAnyPolicyInhibit) args.push('-inhibit_any')
+            args.push(
+                '-CAfile',
+                files.root,
+                '-untrusted',
+                files.untrusted,
+                files.leaf,
+            )
+            try {
+                await runOpenSSL(args, base)
+                return true
+            } catch {
+                return false
+            }
+        }
+
+        for (const scenario of scenarios) {
+            test(scenario.name, async () => {
+                const chain = await issue(scenario)
+                const result = await new CertificateValidator().validate(
+                    chain.leaf,
+                    {
+                        validateChain: true,
+                        trustAnchors: [{ certificate: chain.root }],
+                        otherCertificates: chain.intermediates,
+                        initialPolicySet: scenario.initialPolicySet,
+                        initialExplicitPolicy: scenario.initialExplicitPolicy,
+                        initialPolicyMappingInhibit:
+                            scenario.initialPolicyMappingInhibit,
+                        initialAnyPolicyInhibit:
+                            scenario.initialAnyPolicyInhibit,
+                    },
+                )
+
+                expect(result.isValid, result.messages.join('; ')).toBe(
+                    scenario.valid,
+                )
+                expect(await opensslAccepts(chain.files, scenario)).toBe(
+                    scenario.valid,
+                )
+                if (scenario.valid && scenario.validPolicies) {
+                    expect(
+                        [...(result.policyResult?.validPolicies ?? [])].sort(),
+                    ).toEqual([...scenario.validPolicies].sort())
+                }
+            })
+        }
+    },
+)
