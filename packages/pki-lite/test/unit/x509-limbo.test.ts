@@ -60,14 +60,12 @@ const PATH_BUILDING =
     'Path building takes the first chain it finds and does not backtrack to another when that one fails.'
 const DOS =
     'No limit on name constraint checking work: a technically valid but pathological chain (thousands of names against thousands of constraints) is accepted, where implementations reject it to avoid quadratic blowup.'
-const CRL_PARSE = 'A very large CRL fails to parse.'
 const CRL_PROFILE =
     'The RFC 5280 CRL profile is not enforced (cRLNumber present and non-critical, no duplicate entries).'
 const PROFILE =
     'The RFC 5280 certificate profile is not enforced (extension criticality and presence, serial numbers, name forms, ...).'
 
 const KNOWN_ISSUES: Record<string, string> = {
-    'crl::structure::crl-very-large': CRL_PARSE,
     'crl::structure::crl-duplicate-revoked-serial': CRL_PROFILE,
     'crl::crlnumber-missing': CRL_PROFILE,
     'crl::crlnumber-critical': CRL_PROFILE,
@@ -75,6 +73,7 @@ const KNOWN_ISSUES: Record<string, string> = {
     'pathlen::max-chain-depth-0-exhausted': MAX_DEPTH,
     'pathlen::max-chain-depth-1-exhausted': MAX_DEPTH,
     'pathological::multiple-chains-expired-intermediate': PATH_BUILDING,
+    'pathological::nc-dos-1': DOS,
     'pathological::nc-dos-2': DOS,
     'pathological::nc-dos-3': DOS,
     'rfc5280::aki::critical-aki': PROFILE,

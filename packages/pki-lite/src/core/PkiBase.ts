@@ -461,7 +461,17 @@ export function asn1ToDer(value: Asn1BaseBlock): Uint8Array<ArrayBuffer> {
  * @returns The parsed ASN.1 structure
  */
 export function derToAsn1(der: Uint8Array | ArrayBuffer): Asn1BaseBlock {
-    return asn1js.fromBER(der).result
+    // asn1js caps the number of nodes at 10,000 by default, which a CRL with a few
+    // thousand entries exceeds. A node takes at least two bytes, so allow as many as the
+    // input could hold: the parsing work stays linear in the input size.
+    const maxNodes = Math.max(10_000, Math.ceil(der.byteLength / 2))
+    const parsed = asn1js.fromBER(der, { maxNodes })
+    // a limit reached gives an empty result rather than an error the callers would see
+    const error = parsed.result.error
+    if (parsed.offset === -1 && /^Maximum ASN\.1 /.test(error)) {
+        throw new Asn1ParseError(`Invalid BER/DER encoding: ${error}`)
+    }
+    return parsed.result
 }
 
 /**
