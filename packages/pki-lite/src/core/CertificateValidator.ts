@@ -571,9 +571,23 @@ export class CertificateValidator {
                             }
                         }
                     } catch (error) {
-                        diagnostics.warnings.push(
-                            `Signature verification failed for certificate ${i + 1}: ${error}`,
-                        )
+                        // fail closed: a signature that cannot be verified (unsupported
+                        // algorithm, malformed key or signature) is not a valid one
+                        return {
+                            status: CertificateValidationStatus.SIGNATURE_INVALID,
+                            isValid: false,
+                            messages: [
+                                `Certificate ${i + 1} signature could not be verified: ${error}`,
+                            ],
+                            revocationStatus: {
+                                isRevoked: false,
+                                source: 'NONE',
+                            },
+                            certificate: chain.certificates[0],
+                            validatedAt: new Date(),
+                            chain,
+                            diagnostics,
+                        }
                     }
                 }
             }
@@ -616,8 +630,10 @@ export class CertificateValidator {
                                 'number'
                             ) {
                                 // Count the number of non-self-issued CA certs between this CA and the leaf
+                                // RFC 5280 4.2.1.9: only intermediate certificates count,
+                                // never the end certificate (index 0), even if it is a CA
                                 let nonSelfIssuedCAs = 0
-                                for (let j = i - 1; j >= 0; j--) {
+                                for (let j = i - 1; j >= 1; j--) {
                                     const belowCert = chain.certificates[j]
                                     // Only count CA certs
                                     const belowExts =
@@ -639,10 +655,12 @@ export class CertificateValidator {
                                             }
                                         }
                                     }
-                                    // Only count if not self-issued and is CA
+                                    // Only count CAs that are not self-issued (subject and
+                                    // issuer names equal, e.g. a key rollover); being
+                                    // self-signed is not the test
                                     if (
                                         isBelowCA &&
-                                        !(await this.isSelfSigned(belowCert))
+                                        !this.isSelfIssued(belowCert)
                                     ) {
                                         nonSelfIssuedCAs++
                                     }
@@ -1183,12 +1201,13 @@ export class CertificateValidator {
             // Key Usage OID: 2.5.29.15
             if (ext.extnID.value === OIDs.EXTENSION.KEY_USAGE) {
                 const keyUsage = ext.extnValue.parseAs(KeyUsage)
-                if (!keyUsage.digitalSignature) {
-                    // Digital Signature is required for CA certificates
+                // RFC 5280 4.2.1.3 and 6.1.4 (n): a CA that signs certificates must
+                // assert keyCertSign (digitalSignature is not required)
+                if (!keyUsage.keyCertSign) {
                     return {
                         isValid: false,
                         message:
-                            'CA certificate must have Digital Signature key usage',
+                            'CA certificate must have keyCertSign key usage',
                     }
                 }
             }
