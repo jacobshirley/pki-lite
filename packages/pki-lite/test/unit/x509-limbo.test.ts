@@ -60,8 +60,6 @@ const PATH_BUILDING =
     'Path building takes the first chain it finds and does not backtrack to another when that one fails.'
 const DOS =
     'No limit on name constraint checking work: a technically valid but pathological chain (thousands of names against thousands of constraints) is accepted, where implementations reject it to avoid quadratic blowup.'
-const FRACTIONAL =
-    'Validity is compared to the millisecond, but RFC 5280 validity has whole-second granularity: a time 5 ms after notAfter is still within it.'
 const CRL_PARSE = 'A very large CRL fails to parse.'
 const CRL_PROFILE =
     'The RFC 5280 CRL profile is not enforced (cRLNumber present and non-critical, no duplicate entries).'
@@ -104,7 +102,6 @@ const KNOWN_ISSUES: Record<string, string> = {
     'rfc5280::serial::zero': PROFILE,
     'rfc5280::ski::root-missing-ski': PROFILE,
     'rfc5280::ski::intermediate-missing-ski': PROFILE,
-    'rfc5280::validity::notafter-fractional': FRACTIONAL,
     'rfc5280::ca-empty-subject': PROFILE,
     'rfc5280::unknown-critical-extension-root': PROFILE,
     'rfc5280::root-non-critical-basic-constraints': PROFILE,

@@ -88,6 +88,23 @@ describe('CertificateValidator', () => {
             expect(result.status).toEqual(CertificateValidationStatus.EXPIRED)
         })
 
+        test('compares validity at whole-second granularity (RFC 5280 4.1.2.5)', async () => {
+            // the sample certificate is valid until 2026-12-31T23:59:59Z
+            const at = (time: string) =>
+                validator.validate(sampleCertificate, {
+                    validationTime: new Date(time),
+                })
+            expect((await at('2026-12-31T23:59:59.999Z')).status).toEqual(
+                CertificateValidationStatus.VALID,
+            )
+            expect((await at('2027-01-01T00:00:00.000Z')).status).toEqual(
+                CertificateValidationStatus.EXPIRED,
+            )
+            expect((await at('2022-12-31T23:59:59.999Z')).status).toEqual(
+                CertificateValidationStatus.NOT_YET_VALID,
+            )
+        })
+
         test('should use custom validation time', async () => {
             const customTime = new Date('2023-06-01T00:00:00.000Z')
             const result = await validator.validate(sampleCertificate, {

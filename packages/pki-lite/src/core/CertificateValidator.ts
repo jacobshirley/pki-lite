@@ -886,21 +886,24 @@ export class CertificateValidator {
         const notBefore = validity.notBefore
         const notAfter = validity.notAfter
 
-        const adjustedValidationTime = new Date(
-            validationTime.getTime() + timeTolerance,
-        )
-        const adjustedValidationTimeBefore = new Date(
-            validationTime.getTime() - timeTolerance,
-        )
+        // Validity times have whole-second granularity (RFC 5280 4.1.2.5), so compare
+        // whole seconds: a time within the second of notAfter is still valid, and a
+        // certificate built in memory (whose times may carry milliseconds the encoding
+        // drops) is valid from the second of its notBefore
+        const seconds = (time: number) => Math.floor(time / 1000)
+        const validFrom = seconds(notBefore.getTime())
+        const validUntil = seconds(notAfter.getTime())
+        const latest = seconds(validationTime.getTime() + timeTolerance)
+        const earliest = seconds(validationTime.getTime() - timeTolerance)
 
-        if (adjustedValidationTime < notBefore) {
+        if (latest < validFrom) {
             return {
                 status: CertificateValidationStatus.NOT_YET_VALID,
                 message: `Certificate is not yet valid. Valid from: ${notBefore.toISOString()}`,
             }
         }
 
-        if (adjustedValidationTimeBefore > notAfter) {
+        if (earliest > validUntil) {
             return {
                 status: CertificateValidationStatus.EXPIRED,
                 message: `Certificate has expired. Valid until: ${notAfter.toISOString()}`,
