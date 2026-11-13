@@ -8,6 +8,7 @@ import { Name } from '../x509/Name.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
 import { describe, test, expect } from 'vitest'
+import { derToAsn1 } from '../core/PkiBase.js'
 
 describe('RevocationInfoChoice', () => {
     // Helper function to create a simple CRL for testing
@@ -72,6 +73,7 @@ describe('RevocationInfoChoice', () => {
         const asn1 = otherRevInfo.toAsn1()
 
         // Set tag number to 1 for OtherRevocationInfoFormat
+        asn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC: [1], not UNIVERSAL 1
         asn1.idBlock.tagNumber = 1
 
         const result = RevocationInfoChoice.fromAsn1(asn1)
@@ -153,6 +155,7 @@ describe('RevocationInfoChoice', () => {
         })
 
         // Set tag number to 1 for OtherRevocationInfoFormat
+        asn1.idBlock.tagClass = 3 // CONTEXT-SPECIFIC: [1], not UNIVERSAL 1
         asn1.idBlock.tagNumber = 1
 
         const result = RevocationInfoChoice.fromAsn1(asn1)
@@ -161,5 +164,17 @@ describe('RevocationInfoChoice', () => {
         expect(
             (result as OtherRevocationInfoFormat).otherRevInfoFormat.toString(),
         ).toEqual('1.3.6.1.5.5.7.48.1')
+    })
+
+    test('fromAsn1 parses a DER-encoded [1] IMPLICIT OtherRevocationInfoFormat', () => {
+        const other = new OtherRevocationInfoFormat({
+            otherRevInfoFormat: '1.2.3.4',
+            otherRevInfo: 'x',
+        })
+        const der = other.toDer()
+        der[0] = 0xa1 // SEQUENCE -> [1] IMPLICIT
+        const result = RevocationInfoChoice.fromAsn1(derToAsn1(der))
+        expect(result).toBeInstanceOf(OtherRevocationInfoFormat)
+        expect(result.toDer()).toEqual(other.toDer())
     })
 })

@@ -147,19 +147,27 @@ export class SignerLocation extends PkiBase<SignerLocation> {
         }
         const value: SignerLocation = new SignerLocation()
 
+        // The fields are EXPLICIT [n] (RFC 5126 uses an EXPLICIT TAGS module), so
+        // each context-tagged element wraps the value it tags
         for (const element of asn1.valueBlock.value) {
-            if (element.idBlock.tagClass === 3) {
-                switch (element.idBlock.tagNumber) {
-                    case 0:
-                        value.countryName = DirectoryString.fromAsn1(element)
-                        break
-                    case 1:
-                        value.localityName = DirectoryString.fromAsn1(element)
-                        break
-                    case 2:
-                        value.postalAddress = PostalAddress.fromAsn1(element)
-                        break
-                }
+            if (
+                element.idBlock.tagClass !== 3 ||
+                !(element instanceof asn1js.Constructed) ||
+                element.valueBlock.value.length !== 1
+            ) {
+                continue
+            }
+            const inner = element.valueBlock.value[0]
+            switch (element.idBlock.tagNumber) {
+                case 0:
+                    value.countryName = DirectoryString.fromAsn1(inner)
+                    break
+                case 1:
+                    value.localityName = DirectoryString.fromAsn1(inner)
+                    break
+                case 2:
+                    value.postalAddress = PostalAddress.fromAsn1(inner)
+                    break
             }
         }
 

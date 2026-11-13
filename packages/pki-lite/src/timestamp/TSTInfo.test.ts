@@ -430,3 +430,70 @@ describe('TSTInfo', () => {
         expect(hasBoolean).toEqual(true)
     })
 })
+
+describe('TSTInfo extensions: [1] IMPLICIT Extensions (RFC 3161)', () => {
+    const createTestMessageImprint = () => {
+        const hashAlgorithm = new AlgorithmIdentifier({
+            algorithm: '2.16.840.1.101.3.4.2.1', // SHA-256
+        })
+        const hashedMessage = new Uint8Array([1, 2, 3, 4, 5])
+        return new MessageImprint({ hashAlgorithm, hashedMessage })
+    }
+    const extensions = [
+        new Extension({ extnID: '1.2.3.4', extnValue: 123 }),
+        new Extension({ extnID: '1.2.3.5', critical: true, extnValue: 456 }),
+    ]
+    const make = () =>
+        new TSTInfo({
+            policy: '1.2.3.4.5',
+            messageImprint: createTestMessageImprint(),
+            serialNumber: new Uint8Array([1, 2, 3, 4]),
+            genTime: new Date('2024-12-14T10:00:00Z'),
+            extensions,
+        })
+    const tagged = (value: asn1js.BaseBlock[]) =>
+        new asn1js.Constructed({
+            idBlock: { tagClass: 3, tagNumber: 1 },
+            value,
+        })
+    // The encoding of `make()` with its extensions field replaced, parsed from DER
+    const withExtensionsField = (field: asn1js.BaseBlock) => {
+        const asn1 = make().toAsn1() as asn1js.Sequence
+        const values = asn1.valueBlock.value
+        values[values.length - 1] = field
+        return asn1js.fromBER(asn1.toBER(false)).result
+    }
+
+    test('writes the Extension elements directly inside [1]', () => {
+        const values = (make().toAsn1() as asn1js.Sequence).valueBlock.value
+        const field = values[values.length - 1]
+        const expected = tagged(extensions.map((ext) => ext.toAsn1()))
+        expect(hex(new Uint8Array(field.toBER(false)))).toBe(
+            hex(new Uint8Array(expected.toBER(false))),
+        )
+    })
+
+    test('parses the IMPLICIT form', () => {
+        const parsed = TSTInfo.fromAsn1(
+            withExtensionsField(tagged(extensions.map((ext) => ext.toAsn1()))),
+        )
+        expect(parsed.extensions?.map((ext) => ext.extnID.value)).toEqual([
+            '1.2.3.4',
+            '1.2.3.5',
+        ])
+        expect(parsed.extensions?.[1].critical).toBe(true)
+    })
+
+    test('still parses the explicitly tagged form written by earlier versions', () => {
+        const legacy = tagged([
+            new asn1js.Sequence({
+                value: extensions.map((ext) => ext.toAsn1()),
+            }),
+        ])
+        const parsed = TSTInfo.fromAsn1(withExtensionsField(legacy))
+        expect(parsed.extensions?.map((ext) => ext.extnID.value)).toEqual([
+            '1.2.3.4',
+            '1.2.3.5',
+        ])
+    })
+})

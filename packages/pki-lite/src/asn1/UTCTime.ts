@@ -31,6 +31,10 @@ export class UTCTime extends PkiBase<Date> {
     }
 }
 
+/**
+ * @deprecated A duplicate kept for compatibility with imports from `UTCTime.js`;
+ * use `GeneralizedTime` from `./GeneralizedTime.js` (whose field is `time`).
+ */
 export class GeneralizedTime extends PkiBase<Date> {
     date: Date
 

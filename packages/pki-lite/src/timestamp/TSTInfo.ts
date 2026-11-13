@@ -10,7 +10,11 @@ import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { Extension } from '../x509/Extension.js'
 import { GeneralName } from '../x509/GeneralName.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
-import { implicitTag, isContextTag } from '../core/tagging.js'
+import {
+    implicitSequenceOf,
+    implicitTag,
+    isContextTag,
+} from '../core/tagging.js'
 
 /**
  * Accuracy structure for RFC 3161 Time-Stamp Protocol.
@@ -352,18 +356,7 @@ export class TSTInfo extends PkiBase<TSTInfo> {
             const extensionsArray = this.extensions.map((ext) => ext.toAsn1())
             // Extensions are [1] IMPLICIT
             values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 1, // [1]
-                        isConstructed: true,
-                    },
-                    value: [
-                        new asn1js.Sequence({
-                            value: extensionsArray,
-                        }),
-                    ],
-                }),
+                implicitTag(new asn1js.Sequence({ value: extensionsArray }), 1),
             )
         }
 
@@ -469,14 +462,9 @@ export class TSTInfo extends PkiBase<TSTInfo> {
                     }
                 } else if (tagNumber === 1) {
                     // [1] IMPLICIT Extensions
-                    if (value.valueBlock.value.length > 0) {
-                        const extensionsSeq = value.valueBlock.value[0]
-                        if (extensionsSeq instanceof asn1js.Sequence) {
-                            extensions = extensionsSeq.valueBlock.value.map(
-                                (ext) => Extension.fromAsn1(ext),
-                            )
-                        }
-                    }
+                    extensions = implicitSequenceOf(value).valueBlock.value.map(
+                        (ext) => Extension.fromAsn1(ext),
+                    )
                 }
             }
         }
