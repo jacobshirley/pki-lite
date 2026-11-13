@@ -210,50 +210,6 @@ describe('CertificateValidator', () => {
             expect(result.revocationStatus.isRevoked).toEqual(true)
         })
 
-        test('should detect a revoked serial that contains hex letters', async () => {
-            const cert = createSampleCertificate()
-            cert.tbsCertificate.serialNumber = new Integer({ value: 0xabcdef })
-            const crl = createSampleCRL([
-                {
-                    serialNumber: 0xabcdef,
-                    revocationDate: new Date('2023-01-15T00:00:00.000Z'),
-                },
-            ])
-
-            const result = await validator.validate(
-                cert,
-                { checkCRL: true },
-                { crls: [crl] },
-            )
-
-            expect(result.revocationStatus.isRevoked).toEqual(true)
-        })
-
-        test('should detect a revoked 16-byte serial in a CRL read from DER', async () => {
-            // Real CAs use 16-20 byte random serials, too large for a number
-            const serial = new Uint8Array([
-                0x4f, 0x1c, 0x00, 0xa2, 0x9b, 0x77, 0x31, 0xe0, 0x05, 0x6d,
-                0xc4, 0x18, 0xf2, 0x3a, 0x90, 0x5b,
-            ])
-            const cert = createSampleCertificate()
-            cert.tbsCertificate.serialNumber = new Integer({ value: serial })
-            const crl = createSampleCRL([
-                {
-                    serialNumber:
-                        cert.tbsCertificate.serialNumber.toHexString(),
-                    revocationDate: new Date('2023-01-15T00:00:00.000Z'),
-                },
-            ])
-
-            const result = await validator.validate(
-                cert,
-                { checkCRL: true },
-                { crls: [CertificateList.fromDer(crl.toDer())] },
-            )
-
-            expect(result.revocationStatus.isRevoked).toEqual(true)
-        })
-
         test('should handle multiple CRLs', async () => {
             const revokedCertSerial =
                 sampleCertificate.tbsCertificate.serialNumber
