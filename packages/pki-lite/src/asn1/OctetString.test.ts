@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, derToAsn1, UniversalTag } from '../core/PkiBase.js'
 import { OctetString } from './OctetString.js'
-import * as asn1js from 'asn1js'
 
 describe('OctetString', () => {
     // Sample test data
@@ -45,16 +45,16 @@ describe('OctetString', () => {
         const octetString = new OctetString({ bytes: binaryData })
         const asn1 = octetString.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.OctetString)
+        expect(asn1.is(UniversalTag.OctetString)).toBe(true)
 
         // Check the value is preserved
-        const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
+        const valueHex = asn1.content
         expect(valueHex).toEqual(binaryData)
     })
 
     test('fromAsn1 parses ASN.1 structure correctly', () => {
         // Create an ASN.1 structure
-        const asn1 = new asn1js.OctetString({ valueHex: binaryData })
+        const asn1 = der.octetString(binaryData)
 
         const octetString = OctetString.fromAsn1(asn1)
 
@@ -64,7 +64,7 @@ describe('OctetString', () => {
 
     test('fromAsn1 throws on invalid ASN.1 structure', () => {
         // Not an OctetString
-        const invalidAsn1 = new asn1js.Integer({ value: 123 })
+        const invalidAsn1 = der.integer(123)
 
         expect(() => OctetString.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected OCTET STRING',
@@ -73,16 +73,11 @@ describe('OctetString', () => {
 
     test('toDer/fromDer roundtrip works correctly', () => {
         const originalOctetString = new OctetString({ bytes: binaryData })
-        const der = originalOctetString.toDer()
+        const encoded = originalOctetString.toDer()
 
         // Manually parse DER back to ASN.1
-        // Create a new ArrayBuffer from the Uint8Array<ArrayBuffer> to ensure we have a proper BufferSource
-        const arrayBuffer = der.buffer.slice(
-            der.byteOffset,
-            der.byteOffset + der.byteLength,
-        )
-        const asn1 = asn1js.fromBER(arrayBuffer as ArrayBuffer)
-        const parsedOctetString = OctetString.fromAsn1(asn1.result)
+        const asn1 = derToAsn1(encoded)
+        const parsedOctetString = OctetString.fromAsn1(asn1)
 
         expect(parsedOctetString.bytes).toEqual(originalOctetString.bytes)
     })
@@ -96,7 +91,7 @@ describe('OctetString', () => {
 
         // Test ASN.1 conversion
         const asn1 = octetString.toAsn1()
-        const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
+        const valueHex = asn1.content
         expect(valueHex.length).toEqual(0)
     })
 
@@ -113,7 +108,7 @@ describe('OctetString', () => {
 
         // Test ASN.1 conversion
         const asn1 = octetString.toAsn1()
-        const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
+        const valueHex = asn1.content
         expect(valueHex.length).toEqual(10240)
         expect(valueHex).toEqual(largeBytes)
     })

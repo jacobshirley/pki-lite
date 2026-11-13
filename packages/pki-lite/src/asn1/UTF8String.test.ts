@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { UTF8String } from './UTF8String.js'
-import * as asn1js from 'asn1js'
 
 describe('UTF8String', () => {
     test('should create UTF8String from string value', () => {
@@ -54,17 +54,17 @@ describe('UTF8String', () => {
         const utf8String = new UTF8String({ value: testString })
         const asn1 = utf8String.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Utf8String)
+        expect(asn1.is(UniversalTag.UTF8String)).toBe(true)
 
         // Verify the bytes are preserved in ASN.1
-        const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
+        const valueHex = asn1.content
         const expectedBytes = new TextEncoder().encode(testString)
         expect(valueHex).toEqual(expectedBytes)
     })
 
     test('should parse from ASN.1 structure correctly', () => {
         const testString = 'ASN.1 Test String'
-        const asn1 = new asn1js.Utf8String({ value: testString })
+        const asn1 = der.utf8String(testString)
 
         const utf8String = UTF8String.fromAsn1(asn1)
 
@@ -73,9 +73,7 @@ describe('UTF8String', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => UTF8String.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected UTF8String',

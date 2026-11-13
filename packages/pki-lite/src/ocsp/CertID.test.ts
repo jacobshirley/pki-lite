@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CertID } from './CertID.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der } from '../core/PkiBase.js'
 import { Certificate } from '../x509/Certificate.js'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 
@@ -146,7 +146,7 @@ describe('CertID', () => {
     })
 
     it('should throw error on invalid ASN.1 structure', () => {
-        const invalidAsn1 = {} as any
+        const invalidAsn1 = der.integer(1) // not a SEQUENCE
 
         expect(() => CertID.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -154,14 +154,7 @@ describe('CertID', () => {
     })
 
     it('should throw error on wrong number of elements', () => {
-        const invalidAsn1 = {
-            constructor: asn1js.Sequence,
-            valueBlock: {
-                value: [1, 2], // only 2 elements instead of 4
-            },
-        } as any
-        // Make it instanceof asn1js.Sequence by setting prototype
-        Object.setPrototypeOf(invalidAsn1, asn1js.Sequence.prototype)
+        const invalidAsn1 = der.sequence([der.integer(1), der.integer(2)]) // only 2 elements instead of 4
 
         expect(() => CertID.fromAsn1(invalidAsn1)).toThrow(
             'Invalid CertID: expected 4 elements',

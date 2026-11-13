@@ -1,8 +1,10 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     PkiBase,
     PkiSequence,
+    TagClass,
+    UniversalTag,
 } from '../../core/PkiBase.js'
 import { DirectoryString } from '../DirectoryString.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
@@ -18,15 +20,15 @@ import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 export class PostalAddress extends PkiSequence<DirectoryString> {
     protected maxSize?: number = 6
 
-    static fromAsn1(asn1: Asn1BaseBlock): PostalAddress {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): PostalAddress {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 "Object's schema was not verified against input data for PostalAddress",
             )
         }
         const value: DirectoryString[] = []
 
-        for (const element of asn1.valueBlock.value) {
+        for (const element of asn1.children) {
             value.push(DirectoryString.fromAsn1(element))
         }
 
@@ -92,55 +94,29 @@ export class SignerLocation extends PkiBase<SignerLocation> {
         })
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         if (this.countryName) {
             const asn1 = this.countryName.toAsn1()
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3,
-                        tagNumber: 0,
-                    },
-                    value: [asn1],
-                }),
-            )
+            values.push(der.constructed(0, [asn1]))
         }
 
         if (this.localityName) {
             const asn1 = this.localityName.toAsn1()
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3,
-                        tagNumber: 1,
-                    },
-                    value: [asn1],
-                }),
-            )
+            values.push(der.constructed(1, [asn1]))
         }
 
         if (this.postalAddress) {
             const asn1 = this.postalAddress.toAsn1()
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3,
-                        tagNumber: 2,
-                    },
-                    value: [asn1],
-                }),
-            )
+            values.push(der.constructed(2, [asn1]))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): SignerLocation {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): SignerLocation {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Expected ASN.1 Sequence for SignerLocation',
             )
@@ -149,16 +125,16 @@ export class SignerLocation extends PkiBase<SignerLocation> {
 
         // The fields are EXPLICIT [n] (RFC 5126 uses an EXPLICIT TAGS module), so
         // each context-tagged element wraps the value it tags
-        for (const element of asn1.valueBlock.value) {
+        for (const element of asn1.children) {
             if (
-                element.idBlock.tagClass !== 3 ||
-                !(element instanceof asn1js.Constructed) ||
-                element.valueBlock.value.length !== 1
+                element.tagClass !== TagClass.Context ||
+                !element.constructed ||
+                element.children.length !== 1
             ) {
                 continue
             }
-            const inner = element.valueBlock.value[0]
-            switch (element.idBlock.tagNumber) {
+            const inner = element.children[0]
+            switch (element.tag) {
                 case 0:
                     value.countryName = DirectoryString.fromAsn1(inner)
                     break

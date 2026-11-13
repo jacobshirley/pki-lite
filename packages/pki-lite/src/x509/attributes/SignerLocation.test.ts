@@ -1,14 +1,20 @@
 import { describe, it, expect } from 'vitest'
-import { asn1js, derToAsn1 } from '../../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    TagClass,
+    UniversalTag,
+} from '../../core/PkiBase.js'
 import { SignerLocation, PostalAddress } from './SignerLocation.js'
 import { DirectoryString } from '../DirectoryString.js'
 import { UTF8String } from '../../asn1/UTF8String.js'
 
-function tagOf(block: asn1js.BaseBlock) {
+function tagOf(block: Asn1Node) {
     return {
-        tagClass: block.idBlock.tagClass,
-        tagNumber: block.idBlock.tagNumber,
-        isConstructed: block.idBlock.isConstructed,
+        tagClass: block.tagClass,
+        tagNumber: block.tag,
+        isConstructed: block.constructed,
     }
 }
 
@@ -16,8 +22,8 @@ describe('SignerLocation', () => {
     it('constructs empty and encodes to empty SEQUENCE', () => {
         const sl = new SignerLocation()
         const asn1 = sl.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect((asn1 as asn1js.Sequence).valueBlock.value.length).toEqual(0)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toEqual(0)
     })
 
     it('encodes tagged fields correctly', () => {
@@ -32,22 +38,22 @@ describe('SignerLocation', () => {
             localityName: locality,
             postalAddress: addr,
         })
-        const seq = sl.toAsn1() as asn1js.Sequence
-        expect(seq.valueBlock.value.length).toEqual(3)
+        const seq = sl.toAsn1()
+        expect(seq.children.length).toEqual(3)
 
-        const [c, l, p] = seq.valueBlock.value
+        const [c, l, p] = seq.children
         expect(tagOf(c)).toEqual({
-            tagClass: 3,
+            tagClass: TagClass.Context,
             tagNumber: 0,
             isConstructed: true,
         })
         expect(tagOf(l)).toEqual({
-            tagClass: 3,
+            tagClass: TagClass.Context,
             tagNumber: 1,
             isConstructed: true,
         })
         expect(tagOf(p)).toEqual({
-            tagClass: 3,
+            tagClass: TagClass.Context,
             tagNumber: 2,
             isConstructed: true,
         })
@@ -69,30 +75,22 @@ describe('SignerLocation', () => {
     })
 
     it('fromAsn1 decodes fields and preserves order', () => {
-        // [n] EXPLICIT: a constructed context-tagged element wrapping each value
-        const explicit = (tagNumber: number, inner: asn1js.BaseBlock) =>
-            new asn1js.Constructed({
-                idBlock: { tagClass: 3, tagNumber },
-                value: [inner],
-            })
-        // Parse the DER so the elements are what a real decoder sees
-        const outer = asn1js.fromBER(
-            new asn1js.Sequence({
-                value: [
-                    explicit(0, new asn1js.Utf8String({ value: 'US' })),
-                    explicit(1, new asn1js.Utf8String({ value: 'Seattle' })),
-                    explicit(
-                        2,
-                        new asn1js.Sequence({
-                            value: [
-                                new asn1js.Utf8String({ value: '123 Main St' }),
-                                new asn1js.Utf8String({ value: 'Suite 100' }),
-                            ],
-                        }),
-                    ),
-                ],
-            }).toBER(false),
-        ).result
+        // Context-specific tagged elements holding universal string values
+        const countryInner = der.utf8String('US').explicit(0)
+        const localityInner = der.utf8String('Seattle').explicit(1)
+
+        const postalSeqInner = der
+            .sequence([
+                der.utf8String('123 Main St'),
+                der.utf8String('Suite 100'),
+            ])
+            .explicit(2)
+
+        const outer = der.sequence([
+            countryInner,
+            localityInner,
+            postalSeqInner,
+        ])
 
         const parsed = SignerLocation.fromAsn1(outer)
         expect(parsed.countryName?.toHumanString()).toContain('US')
@@ -106,7 +104,7 @@ describe('SignerLocation', () => {
     })
 
     it('fromAsn1 throws for non-sequence', () => {
-        expect(() => SignerLocation.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => SignerLocation.fromAsn1(der.nullValue())).toThrow(
             'Expected ASN.1 Sequence for SignerLocation',
         )
     })
@@ -124,7 +122,9 @@ describe('SignerLocation', () => {
         const parsed = SignerLocation.fromAsn1(derToAsn1(sl.toDer()))
         expect(parsed.countryName?.toString()).toBe('GB')
         expect(parsed.localityName?.toString()).toBe('London')
-        expect(parsed.postalAddress?.[0].toString()).toBe('1 High St')
+        expect([...(parsed.postalAddress ?? [])].map(String)).toEqual([
+            '1 High St',
+        ])
         expect(parsed.toDer()).toEqual(sl.toDer())
     })
 })

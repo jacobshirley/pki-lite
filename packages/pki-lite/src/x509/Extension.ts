@@ -4,13 +4,14 @@ import { OctetString } from '../asn1/OctetString.js'
 import { OIDs } from '../core/OIDs.js'
 import {
     Asn1Any,
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     derToAsn1,
     ObjectIdentifierString,
     PkiBase,
     PkiSequence,
     PkiSet,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import {
     AccessDescription,
@@ -73,18 +74,18 @@ export class Extension extends PkiBase<Extension> {
     /**
      * Converts the extension to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         values.push(this.extnID.toAsn1())
 
         if (this.critical) {
-            values.push(new asn1js.Boolean({ value: true }))
+            values.push(der.boolean(true))
         }
 
         values.push(this.extnValue.toAsn1())
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
     /**
@@ -93,49 +94,44 @@ export class Extension extends PkiBase<Extension> {
      * @param asn1 The ASN.1 structure
      * @returns An Extension
      */
-    static fromAsn1(asn1: asn1js.BaseBlock): Extension {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): Extension {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('Expected Sequence')
         }
 
-        if (
-            asn1.valueBlock.value.length < 2 ||
-            asn1.valueBlock.value.length > 3
-        ) {
+        if (asn1.children.length < 2 || asn1.children.length > 3) {
             throw new Asn1ParseError(
                 'Expected 2 or 3 elements in Extension sequence',
             )
         }
 
-        const extnIDBlock = asn1.valueBlock.value[0]
+        const extnIDBlock = asn1.children[0]
 
-        if (!(extnIDBlock instanceof asn1js.ObjectIdentifier)) {
+        if (!extnIDBlock.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError('Expected ObjectIdentifier for extnID')
         }
 
-        const extnID = extnIDBlock.valueBlock
-            .toString()
-            .replace('OBJECT IDENTIFIER : ', '')
+        const extnID = der.readOid(extnIDBlock)
 
         let critical = false
         let valueIndex = 1
 
         // If there are 3 elements, the second one is the critical flag
-        if (asn1.valueBlock.value.length === 3) {
-            const criticalBlock = asn1.valueBlock.value[1]
-            if (!(criticalBlock instanceof asn1js.Boolean)) {
+        if (asn1.children.length === 3) {
+            const criticalBlock = asn1.children[1]
+            if (!criticalBlock.is(UniversalTag.Boolean)) {
                 throw new Asn1ParseError('Expected Boolean for critical')
             }
-            critical = criticalBlock.valueBlock.value
+            critical = der.readBoolean(criticalBlock)
             valueIndex = 2
         }
 
-        const extnValueBlock = asn1.valueBlock.value[valueIndex]
-        if (!(extnValueBlock instanceof asn1js.OctetString)) {
+        const extnValueBlock = asn1.children[valueIndex]
+        if (!extnValueBlock?.is(UniversalTag.OctetString)) {
             throw new Asn1ParseError('Expected OctetString for extnValue')
         }
 
-        const extnValue = new Uint8Array(extnValueBlock.valueBlock.valueHexView)
+        const extnValue = extnValueBlock.bytes()
 
         return new Extension({
             extnID,

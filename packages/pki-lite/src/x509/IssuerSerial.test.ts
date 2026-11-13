@@ -3,7 +3,7 @@ import { IssuerSerial } from './IssuerSerial.js'
 import { Name } from './Name.js'
 import { GeneralNames, GeneralName } from './GeneralName.js'
 import { Integer } from '../asn1/Integer.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der } from '../core/PkiBase.js'
 
 describe('IssuerSerial', () => {
     test('constructs from GeneralNames', () => {
@@ -37,15 +37,13 @@ describe('IssuerSerial', () => {
     })
 
     test('throws on invalid ASN.1 (not sequence)', () => {
-        expect(() =>
-            IssuerSerial.fromAsn1(new asn1js.Integer({ value: 1 })),
-        ).toThrow('expected SEQUENCE')
+        expect(() => IssuerSerial.fromAsn1(der.integer(1))).toThrow(
+            'expected SEQUENCE',
+        )
     })
 
     test('throws on invalid ASN.1 (wrong element count)', () => {
-        const seq = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 1 })],
-        })
+        const seq = der.sequence([der.integer(1)])
         expect(() => IssuerSerial.fromAsn1(seq)).toThrow('expected 2 elements')
     })
 })

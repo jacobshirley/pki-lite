@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from 'vitest'
 import { KEKIdentifier } from './KEKIdentifier.js'
-import { asn1js } from '../../core/PkiBase.js'
+import { der, UniversalTag } from '../../core/PkiBase.js'
 import { OtherKeyAttribute } from './OtherKeyAttribute.js'
 
 describe('KEKIdentifier', () => {
@@ -53,14 +53,12 @@ describe('KEKIdentifier', () => {
         const kekId = new KEKIdentifier({ keyIdentifier })
         const asn1 = kekId.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(1)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(1)
 
-        const keyIdBlock = asn1.valueBlock.value[0]
-        assert(keyIdBlock instanceof asn1js.OctetString)
-        expect(new Uint8Array(keyIdBlock.valueBlock.valueHexView)).toEqual(
-            keyIdentifier,
-        )
+        const keyIdBlock = asn1.children[0]
+        assert(keyIdBlock.is(UniversalTag.OctetString))
+        expect(keyIdBlock.bytes()).toEqual(keyIdentifier)
     })
 
     test('can be converted to ASN.1 with date', () => {
@@ -69,17 +67,15 @@ describe('KEKIdentifier', () => {
         const kekId = new KEKIdentifier({ keyIdentifier, date })
         const asn1 = kekId.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
-        const keyIdBlock = asn1.valueBlock.value[0]
-        assert(keyIdBlock instanceof asn1js.OctetString)
-        expect(new Uint8Array(keyIdBlock.valueBlock.valueHexView)).toEqual(
-            keyIdentifier,
-        )
+        const keyIdBlock = asn1.children[0]
+        assert(keyIdBlock.is(UniversalTag.OctetString))
+        expect(keyIdBlock.bytes()).toEqual(keyIdentifier)
 
-        const dateBlock = asn1.valueBlock.value[1]
-        assert(dateBlock instanceof asn1js.GeneralizedTime)
+        const dateBlock = asn1.children[1]
+        assert(dateBlock.is(UniversalTag.GeneralizedTime))
     })
 
     test('can be converted to ASN.1 with other', () => {
@@ -93,17 +89,15 @@ describe('KEKIdentifier', () => {
         })
         const asn1 = kekId.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
-        const keyIdBlock = asn1.valueBlock.value[0]
-        assert(keyIdBlock instanceof asn1js.OctetString)
-        expect(new Uint8Array(keyIdBlock.valueBlock.valueHexView)).toEqual(
-            keyIdentifier,
-        )
+        const keyIdBlock = asn1.children[0]
+        assert(keyIdBlock.is(UniversalTag.OctetString))
+        expect(keyIdBlock.bytes()).toEqual(keyIdentifier)
 
-        const otherBlock = asn1.valueBlock.value[1]
-        assert(otherBlock instanceof asn1js.Sequence)
+        const otherBlock = asn1.children[1]
+        assert(otherBlock.is(UniversalTag.Sequence))
     })
 
     test('can be converted to ASN.1 with all parameters', () => {
@@ -119,20 +113,18 @@ describe('KEKIdentifier', () => {
         })
         const asn1 = kekId.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3)
 
-        const keyIdBlock = asn1.valueBlock.value[0]
-        assert(keyIdBlock instanceof asn1js.OctetString)
-        expect(new Uint8Array(keyIdBlock.valueBlock.valueHexView)).toEqual(
-            keyIdentifier,
-        )
+        const keyIdBlock = asn1.children[0]
+        assert(keyIdBlock.is(UniversalTag.OctetString))
+        expect(keyIdBlock.bytes()).toEqual(keyIdentifier)
 
-        const dateBlock = asn1.valueBlock.value[1]
-        assert(dateBlock instanceof asn1js.GeneralizedTime)
+        const dateBlock = asn1.children[1]
+        assert(dateBlock.is(UniversalTag.GeneralizedTime))
 
-        const otherBlock = asn1.valueBlock.value[2]
-        assert(otherBlock instanceof asn1js.Sequence)
+        const otherBlock = asn1.children[2]
+        assert(otherBlock.is(UniversalTag.Sequence))
     })
 
     test('can be parsed from ASN.1 with only keyIdentifier', () => {
@@ -182,23 +174,21 @@ describe('KEKIdentifier', () => {
     })
 
     test('throws error on invalid ASN.1 structure type', () => {
-        const asn1 = new asn1js.Integer({ value: 1 })
+        const asn1 = der.integer(1)
         expect(() => KEKIdentifier.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected Sequence for KEKIdentifier',
         )
     })
 
     test('throws error on invalid ASN.1 structure element count', () => {
-        const asn1 = new asn1js.Sequence({ value: [] })
+        const asn1 = der.sequence([])
         expect(() => KEKIdentifier.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected 1-3 elements, got 0',
         )
     })
 
     test('throws error on invalid keyIdentifier type', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 1 })],
-        })
+        const asn1 = der.sequence([der.integer(1)])
         expect(() => KEKIdentifier.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected OctetString for keyIdentifier',
         )

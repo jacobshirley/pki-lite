@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { BMPString } from './BMPString.js'
-import * as asn1js from 'asn1js'
 
 describe('BMPString', () => {
     test('should create BMPString from string value', () => {
@@ -58,12 +58,12 @@ describe('BMPString', () => {
         const bmpString = new BMPString({ value: testString })
         const asn1 = bmpString.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.BmpString)
+        expect(asn1.is(UniversalTag.BMPString)).toBe(true)
     })
 
     test('should parse from ASN.1 structure correctly', () => {
         const testString = 'ASN.1 BMP Test'
-        const asn1 = new asn1js.BmpString({ value: testString })
+        const asn1 = der.bmpString(testString)
 
         const bmpString = BMPString.fromAsn1(asn1)
 
@@ -72,9 +72,7 @@ describe('BMPString', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => BMPString.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected BMPString',
@@ -91,7 +89,7 @@ describe('BMPString', () => {
 
             // Test ASN.1 structure creation
             const asn1 = original.toAsn1()
-            expect(asn1).toBeInstanceOf(asn1js.BmpString)
+            expect(asn1.is(UniversalTag.BMPString)).toBe(true)
         }
     })
 
@@ -103,7 +101,7 @@ describe('BMPString', () => {
 
         // Test ASN.1 structure creation
         const asn1 = bmpString.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.BmpString)
+        expect(asn1.is(UniversalTag.BMPString)).toBe(true)
     })
 
     test('should handle Latin characters', () => {
@@ -114,6 +112,6 @@ describe('BMPString', () => {
 
         // Test ASN.1 structure creation
         const asn1 = bmpString.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.BmpString)
+        expect(asn1.is(UniversalTag.BMPString)).toBe(true)
     })
 })

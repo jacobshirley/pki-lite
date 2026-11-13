@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { EnvelopedData } from './EnvelopedData.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, derToAsn1, UniversalTag } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 import { EncryptedContentInfo } from './EncryptedContentInfo.js'
 import { Attribute } from '../x509/Attribute.js'
-import { derToAsn1 } from '../core/PkiBase.js'
 
 describe('EnvelopedData', () => {
     it('should create EnvelopedData', () => {
@@ -47,10 +46,10 @@ describe('EnvelopedData', () => {
         })
         const asn1 = envelopedData.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        const valueBlock = asn1.valueBlock as any
-        expect(valueBlock.value).toHaveLength(3)
-        expect(valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        const items = asn1.children
+        expect(items).toHaveLength(3)
+        expect(items[0].is(UniversalTag.Integer)).toBe(true)
     })
 
     it('should convert to string', () => {
@@ -131,7 +130,7 @@ describe('EnvelopedData', () => {
               OBJECT IDENTIFIER : 1.2.840.113549.1.7.1
               SEQUENCE :
                 OBJECT IDENTIFIER : 1.2.840.113549.1.1.1
-              OCTET STRING : 0102030405"
+              [0] : 0102030405"
         `)
     })
 
@@ -160,7 +159,7 @@ describe('EnvelopedData', () => {
         const attr = (oid: string, value: number) =>
             new Attribute({
                 type: oid,
-                values: [new asn1js.Integer({ value })],
+                values: [der.integer(value)],
             })
         const original = new EnvelopedData({
             version: 0,
@@ -175,11 +174,11 @@ describe('EnvelopedData', () => {
             unprotectedAttrs: [attr('1.2.3.4', 1), attr('1.2.3.5', 2)],
         })
 
-        const der = original.toDer()
-        const parsed = EnvelopedData.fromAsn1(derToAsn1(der))
+        const encoded = original.toDer()
+        const parsed = EnvelopedData.fromAsn1(derToAsn1(encoded))
 
         expect(parsed.unprotectedAttrs).toHaveLength(2)
-        expect(parsed.toDer()).toEqual(der)
+        expect(parsed.toDer()).toEqual(encoded)
     })
 
     it('rejects trailing elements instead of silently dropping them (e.g. AuthEnvelopedData)', () => {
@@ -193,12 +192,15 @@ describe('EnvelopedData', () => {
                 }),
                 encryptedContent: new Uint8Array([1, 2, 3]),
             }),
-        }).toAsn1() as asn1js.Sequence
+        }).toAsn1()
         // AuthEnvelopedData carries a `mac OCTET STRING` after the content info
-        valid.valueBlock.value.push(
-            new asn1js.OctetString({ valueHex: new Uint8Array([9, 9]) }),
-        )
+        const withMac = der.sequence([
+            ...valid.children,
+            der.octetString(new Uint8Array([9, 9])),
+        ])
 
-        expect(() => EnvelopedData.fromAsn1(valid)).toThrow(/AuthEnvelopedData/)
+        expect(() => EnvelopedData.fromAsn1(withMac)).toThrow(
+            /AuthEnvelopedData/,
+        )
     })
 })

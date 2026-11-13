@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { InhibitAnyPolicy } from './InhibitAnyPolicy.js'
-import { asn1js, derToAsn1 } from '../../core/PkiBase.js'
+import { der, derToAsn1 } from '../../core/PkiBase.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 
 const hex = (b: Uint8Array) =>
@@ -17,15 +17,15 @@ describe('InhibitAnyPolicy', () => {
     })
 
     test('round-trips through DER', () => {
-        const der = new InhibitAnyPolicy({ skipCerts: 1000 }).toDer()
-        const parsed = InhibitAnyPolicy.fromAsn1(derToAsn1(der))
+        const encoded = new InhibitAnyPolicy({ skipCerts: 1000 }).toDer()
+        const parsed = InhibitAnyPolicy.fromAsn1(derToAsn1(encoded))
         expect(parsed.skipCerts).toBe(1000)
-        expect(hex(parsed.toDer())).toBe(hex(der))
+        expect(hex(parsed.toDer())).toBe(hex(encoded))
     })
 
     test('rejects anything but an INTEGER', () => {
-        expect(() =>
-            InhibitAnyPolicy.fromAsn1(new asn1js.Sequence({ value: [] })),
-        ).toThrow(Asn1ParseError)
+        expect(() => InhibitAnyPolicy.fromAsn1(der.sequence([]))).toThrow(
+            Asn1ParseError,
+        )
     })
 })

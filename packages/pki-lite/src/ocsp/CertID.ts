@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import {
     AlgorithmIdentifier,
     DigestAlgorithmIdentifier,
@@ -45,38 +51,32 @@ export class CertID extends PkiBase<CertID> {
         this.serialNumber = new Integer({ value: serialNumber })
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                this.hashAlgorithm.toAsn1(),
-                this.issuerNameHash.toAsn1(),
-                this.issuerKeyHash.toAsn1(),
-                this.serialNumber.toAsn1(),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            this.hashAlgorithm.toAsn1(),
+            this.issuerNameHash.toAsn1(),
+            this.issuerKeyHash.toAsn1(),
+            this.serialNumber.toAsn1(),
+        ])
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): CertID {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): CertID {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const sequence = asn1 as asn1js.Sequence
-        if (sequence.valueBlock.value.length !== 4) {
+        const sequence = asn1
+        if (sequence.children.length !== 4) {
             throw new Asn1ParseError('Invalid CertID: expected 4 elements')
         }
 
-        const hashAlgorithm = AlgorithmIdentifier.fromAsn1(
-            sequence.valueBlock.value[0],
-        )
-        const issuerNameHash = OctetString.fromAsn1(
-            sequence.valueBlock.value[1],
-        )
-        const issuerKeyHash = OctetString.fromAsn1(sequence.valueBlock.value[2])
+        const hashAlgorithm = AlgorithmIdentifier.fromAsn1(sequence.children[0])
+        const issuerNameHash = OctetString.fromAsn1(sequence.children[1])
+        const issuerKeyHash = OctetString.fromAsn1(sequence.children[2])
 
-        const serialNumberBlock = sequence.valueBlock.value[3] as asn1js.Integer
+        const serialNumberBlock = sequence.children[3]
         // two's complement, so a negative serial stays negative
         const serialNumber = Integer.fromAsn1(serialNumberBlock)
 

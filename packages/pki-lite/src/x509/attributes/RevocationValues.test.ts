@@ -2,7 +2,6 @@ import { describe, test, expect } from 'vitest'
 import { RevocationValues, OtherRevVals } from './RevocationValues.js'
 import { CertificateList } from '../CertificateList.js'
 import { BasicOCSPResponse } from '../../ocsp/BasicOCSPResponse.js'
-import { asn1js } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { AttributeTypeAndValue } from '../AttributeTypeAndValue.js'
 import { RelativeDistinguishedName } from '../RelativeDistinguishedName.js'
@@ -97,7 +96,7 @@ describe('RevocationValues', () => {
     test('encodes and decodes with OtherRevVals', () => {
         const other = new OtherRevVals({
             OtherRevValType: '1.2.3.4',
-            OtherRevVals: new Uint8Array([1, 2, 3]),
+            OtherRevVals: new Uint8Array([0x02, 0x01, 0x03]), // INTEGER 3
         })
         const rev = new RevocationValues({ otherRevVals: [other] })
         const asn1 = rev.toAsn1()

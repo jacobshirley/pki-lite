@@ -157,10 +157,6 @@ importers:
         version: 5.0.0(@types/node@24.5.2)(@vitest/browser-playwright@5.0.0)(@vitest/ui@5.0.0)(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.4))
 
   packages/pki-lite:
-    dependencies:
-      asn1js:
-        specifier: 3.0.10
-        version: 3.0.10
     devDependencies:
       '@types/node':
         specifier: ^24.3.3
@@ -168,6 +164,9 @@ importers:
       '@vitest/browser-playwright':
         specifier: ^5.0.0
         version: 5.0.0(playwright@1.60.0)(vite@7.1.6(@types/node@24.5.2)(jiti@2.6.0)(yaml@2.8.4))(vitest@5.0.0)
+      asn1js:
+        specifier: 3.0.10
+        version: 3.0.10
       playwright:
         specifier: ^1.60.0
         version: 1.60.0

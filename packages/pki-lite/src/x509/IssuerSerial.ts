@@ -1,5 +1,5 @@
 import { Integer } from '../asn1/Integer.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 import { GeneralName, GeneralNames } from './GeneralName.js'
 import { Name } from './Name.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -35,28 +35,26 @@ export class IssuerSerial extends PkiBase<IssuerSerial> {
         this.serialNumber = options.serialNumber
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [this.issuer.toAsn1(), this.serialNumber.toAsn1()],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([this.issuer.toAsn1(), this.serialNumber.toAsn1()])
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): IssuerSerial {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): IssuerSerial {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const sequence = asn1 as asn1js.Sequence
-        if (sequence.valueBlock.value.length !== 2) {
+        const sequence = asn1
+        if (sequence.children.length !== 2) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 2 elements in SEQUENCE',
             )
         }
 
-        const issuer = GeneralNames.fromAsn1(sequence.valueBlock.value[0])
-        const serialNumber = Integer.fromAsn1(sequence.valueBlock.value[1])
+        const issuer = GeneralNames.fromAsn1(sequence.children[0])
+        const serialNumber = Integer.fromAsn1(sequence.children[1])
 
         return new IssuerSerial({ issuer, serialNumber })
     }

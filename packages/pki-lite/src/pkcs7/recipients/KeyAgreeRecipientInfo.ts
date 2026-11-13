@@ -1,4 +1,11 @@
-import { Asn1BaseBlock, asn1js, PkiBase, PkiSet } from '../../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    PkiBase,
+    PkiSet,
+    TagClass,
+    UniversalTag,
+} from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { OriginatorIdentifierOrKey } from './OriginatorIdentifierOrKey.js'
 import { RecipientEncryptedKey } from './RecipientEncryptedKey.js'
@@ -9,24 +16,22 @@ import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
  * Represents a collection of RecipientEncryptedKey structures.
  */
 export class RecipientEncryptedKeys extends PkiSet<RecipientEncryptedKey> {
-    static fromAsn1(asn1: Asn1BaseBlock): RecipientEncryptedKeys {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RecipientEncryptedKeys {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for RecipientEncryptedKeys',
             )
         }
 
-        const recipientEncryptedKeys = asn1.valueBlock.value.map((keyAsn1) =>
+        const recipientEncryptedKeys = asn1.children.map((keyAsn1) =>
             RecipientEncryptedKey.fromAsn1(keyAsn1),
         )
 
         return new RecipientEncryptedKeys(...recipientEncryptedKeys)
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: this.map((key) => key.toAsn1()),
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence(this.map((key) => key.toAsn1()))
     }
 }
 
@@ -80,29 +85,17 @@ export class KeyAgreeRecipientInfo extends PkiBase<KeyAgreeRecipientInfo> {
     /**
      * Converts the KeyAgreeRecipientInfo to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
-            new asn1js.Integer({ value: this.version }),
-            new asn1js.Constructed({
-                idBlock: {
-                    tagClass: 3, // CONTEXT_SPECIFIC
-                    tagNumber: 0, // [0]
-                },
-                value: [OriginatorIdentifierOrKey.toAsn1(this.originator)],
-            }),
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [
+            der.integer(this.version),
+            der.constructed(0, [
+                OriginatorIdentifierOrKey.toAsn1(this.originator),
+            ]),
         ]
 
         // Add ukm if present
         if (this.ukm) {
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT_SPECIFIC
-                        tagNumber: 1, // [1]
-                    },
-                    value: [new asn1js.OctetString({ valueHex: this.ukm })],
-                }),
-            )
+            values.push(der.constructed(1, [der.octetString(this.ukm)]))
         }
 
         // Add keyEncryptionAlgorithm and recipientEncryptedKeys
@@ -111,20 +104,20 @@ export class KeyAgreeRecipientInfo extends PkiBase<KeyAgreeRecipientInfo> {
             this.recipientEncryptedKeys.toAsn1(),
         )
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
     /**
      * Creates a KeyAgreeRecipientInfo from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): KeyAgreeRecipientInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): KeyAgreeRecipientInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for KeyAgreeRecipientInfo',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 4 || values.length > 5) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 4-5 elements, got ${values.length}`,
@@ -132,12 +125,12 @@ export class KeyAgreeRecipientInfo extends PkiBase<KeyAgreeRecipientInfo> {
         }
 
         // Check version
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Integer for version',
             )
         }
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
         if (version !== 3) {
             throw new Asn1ParseError(
                 `Invalid version: expected 3, got ${version}`,
@@ -146,16 +139,16 @@ export class KeyAgreeRecipientInfo extends PkiBase<KeyAgreeRecipientInfo> {
 
         // Extract originator
         if (
-            !(values[1] instanceof asn1js.Constructed) ||
-            values[1].idBlock.tagClass !== 3 ||
-            values[1].idBlock.tagNumber !== 0
+            !values[1]?.constructed ||
+            values[1].tagClass !== TagClass.Context ||
+            values[1].tag !== 0
         ) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected [0] for originator',
             )
         }
 
-        const originatorAsn1 = values[1].valueBlock.value[0]
+        const originatorAsn1 = values[1].children[0]
         const originator = OriginatorIdentifierOrKey.fromAsn1(originatorAsn1)
 
         // Check for ukm (optional)
@@ -164,19 +157,18 @@ export class KeyAgreeRecipientInfo extends PkiBase<KeyAgreeRecipientInfo> {
 
         if (
             values.length > 4 &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 &&
-            values[currentIndex].idBlock.tagNumber === 1
+            values[currentIndex]?.constructed &&
+            values[currentIndex].tagClass === TagClass.Context &&
+            values[currentIndex].tag === 1
         ) {
-            const ukmAsn1 = (values[currentIndex] as asn1js.Constructed)
-                .valueBlock.value[0]
-            if (!(ukmAsn1 instanceof asn1js.OctetString)) {
+            const ukmAsn1 = values[currentIndex].children[0]
+            if (!ukmAsn1.is(UniversalTag.OctetString)) {
                 throw new Asn1ParseError(
                     'Invalid ASN.1 structure: expected OctetString for ukm',
                 )
             }
 
-            ukm = new Uint8Array(ukmAsn1.valueBlock.valueHexView)
+            ukm = ukmAsn1.bytes()
             currentIndex++
         }
 

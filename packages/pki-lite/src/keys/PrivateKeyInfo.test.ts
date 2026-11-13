@@ -1,7 +1,7 @@
 import { assert, describe, expect, test } from 'vitest'
 import { PrivateKeyInfo } from './PrivateKeyInfo.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, TagClass, UniversalTag } from '../core/PkiBase.js'
 import { Attribute } from '../x509/Attribute.js'
 
 describe('PrivateKeyInfo', () => {
@@ -59,17 +59,17 @@ describe('PrivateKeyInfo', () => {
 
         const asn1 = privateKey.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3)
 
         // First element should be the version (an Integer)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
+        expect(asn1.children[0].is(UniversalTag.Integer)).toBe(true)
 
         // Second element should be the algorithm (a Sequence)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[1].is(UniversalTag.Sequence)).toBe(true)
 
         // Third element should be the private key (an OctetString)
-        expect(asn1.valueBlock.value[2]).toBeInstanceOf(asn1js.OctetString)
+        expect(asn1.children[2].is(UniversalTag.OctetString)).toBe(true)
     })
 
     test('can be converted into ASN.1 with attributes', () => {
@@ -92,22 +92,22 @@ describe('PrivateKeyInfo', () => {
 
         const asn1 = privateKey.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(4)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(4)
 
         // First element should be the version (an Integer)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
+        expect(asn1.children[0].is(UniversalTag.Integer)).toBe(true)
 
         // Second element should be the algorithm (a Sequence)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[1].is(UniversalTag.Sequence)).toBe(true)
 
         // Third element should be the private key (an OctetString)
-        expect(asn1.valueBlock.value[2]).toBeInstanceOf(asn1js.OctetString)
+        expect(asn1.children[2].is(UniversalTag.OctetString)).toBe(true)
 
-        // Fourth element should be the attributes (a Primitive with context-specific tag)
-        expect(asn1.valueBlock.value[3]).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.valueBlock.value[3].idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(asn1.valueBlock.value[3].idBlock.tagNumber).toEqual(0) // [0]
+        // Fourth element should be the attributes ([0] IMPLICIT SET OF Attribute)
+        expect(asn1.children[3].constructed).toBe(true)
+        expect(asn1.children[3].tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.children[3].tag).toEqual(0) // [0]
     })
 
     test('can be parsed from ASN.1 without attributes', () => {
@@ -115,19 +115,11 @@ describe('PrivateKeyInfo', () => {
         const version = 0
         const algorithmOid = '1.2.840.113549.1.1.1' // RSA
         const keyData = new Uint8Array([1, 2, 3, 4, 5])
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: version }),
-                new asn1js.Sequence({
-                    value: [
-                        new asn1js.ObjectIdentifier({ value: algorithmOid }),
-                    ],
-                }),
-                new asn1js.OctetString({
-                    valueHex: keyData,
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(version),
+            der.sequence([der.oid(algorithmOid)]),
+            der.octetString(keyData),
+        ])
 
         const privateKey = PrivateKeyInfo.fromAsn1(asn1)
         expect(privateKey).toBeInstanceOf(PrivateKeyInfo)
@@ -143,31 +135,17 @@ describe('PrivateKeyInfo', () => {
         const algorithmOid = '1.2.840.113549.1.1.1' // RSA
         const keyData = new Uint8Array([1, 2, 3, 4, 5])
         const attributesData = new Uint8Array([10, 20, 30])
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: version }),
-                new asn1js.Sequence({
-                    value: [
-                        new asn1js.ObjectIdentifier({ value: algorithmOid }),
-                    ],
-                }),
-                new asn1js.OctetString({
-                    valueHex: keyData,
-                }),
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [
-                        new Attribute({
-                            type: '1.2.840.113549.1.9.1',
-                            values: [10, 20, 30],
-                        }).toAsn1(),
-                    ],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(version),
+            der.sequence([der.oid(algorithmOid)]),
+            der.octetString(keyData),
+            der.constructed(0, [
+                new Attribute({
+                    type: '1.2.840.113549.1.9.1',
+                    values: [10, 20, 30],
+                }).toAsn1(),
+            ]),
+        ])
 
         const privateKey = PrivateKeyInfo.fromAsn1(asn1)
         expect(privateKey).toBeInstanceOf(PrivateKeyInfo)
@@ -180,9 +158,7 @@ describe('PrivateKeyInfo', () => {
 
     test('throws an error when parsing invalid ASN.1', () => {
         // Create an ASN.1 structure that's not a SEQUENCE
-        const asn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const asn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => PrivateKeyInfo.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -191,18 +167,10 @@ describe('PrivateKeyInfo', () => {
 
     test('throws an error when ASN.1 has too few elements', () => {
         // Create an ASN.1 SEQUENCE with only two elements
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 0 }),
-                new asn1js.Sequence({
-                    value: [
-                        new asn1js.ObjectIdentifier({
-                            value: '1.2.840.113549.1.1.1',
-                        }),
-                    ],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(0),
+            der.sequence([der.oid('1.2.840.113549.1.1.1')]),
+        ])
 
         expect(() => PrivateKeyInfo.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected at least 3 elements',

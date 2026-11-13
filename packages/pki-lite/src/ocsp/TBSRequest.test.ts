@@ -9,7 +9,7 @@ import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.
 import { Extension } from '../x509/Extension.js'
 import { Name } from '../x509/Name.js'
 import { RDNSequence } from '../x509/RDNSequence.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('TBSRequest', () => {
     const createTestRequest = () => {
@@ -164,7 +164,7 @@ describe('TBSRequest', () => {
     })
 
     it('should throw error on invalid ASN.1 structure', () => {
-        const invalidAsn1 = {} as any
+        const invalidAsn1 = der.integer(1) // not a SEQUENCE
 
         expect(() => TBSRequest.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -173,17 +173,9 @@ describe('TBSRequest', () => {
 
     it('should throw error when missing requestList', () => {
         // Create an ASN.1 sequence with only version, no requestList
-        const versionContainer = new asn1js.Constructed({
-            idBlock: {
-                tagClass: 3, // CONTEXT-SPECIFIC
-                tagNumber: 0, // [0]
-            },
-            value: [new asn1js.Integer({ value: 1 })],
-        })
+        const versionContainer = der.constructed(0, [der.integer(1)])
 
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [versionContainer], // Missing requestList
-        })
+        const invalidAsn1 = der.sequence([versionContainer]) // Missing requestList
 
         expect(() => TBSRequest.fromAsn1(invalidAsn1)).toThrow(
             'Invalid TBSRequest: missing requestList',
@@ -202,8 +194,8 @@ describe('TBSRequest', () => {
 
         // When converting to ASN.1, empty extensions should not be included
         const asn1 = tbsRequest.toAsn1()
-        const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value).toHaveLength(1) // Only requestList
+        const sequence = asn1
+        expect(sequence.children).toHaveLength(1) // Only requestList
     })
 
     it('should not include default version in ASN.1', () => {
@@ -214,11 +206,11 @@ describe('TBSRequest', () => {
         }) // default version
 
         const asn1 = tbsRequest.toAsn1()
-        const sequence = asn1 as asn1js.Sequence
+        const sequence = asn1
 
         // Should only contain the requestList, no version tag
-        expect(sequence.valueBlock.value).toHaveLength(1)
-        expect(sequence.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
+        expect(sequence.children).toHaveLength(1)
+        expect(sequence.children[0].is(UniversalTag.Sequence)).toBe(true)
     })
 
     it('should include non-default version in ASN.1', () => {
@@ -229,14 +221,13 @@ describe('TBSRequest', () => {
         }) // non-default version
 
         const asn1 = tbsRequest.toAsn1()
-        const sequence = asn1 as asn1js.Sequence
+        const sequence = asn1
 
         // Should contain version tag and requestList
-        expect(sequence.valueBlock.value).toHaveLength(2)
+        expect(sequence.children).toHaveLength(2)
 
-        const versionContainer = sequence.valueBlock
-            .value[0] as asn1js.Constructed
-        expect(versionContainer.idBlock.tagNumber).toEqual(0) // [0] tag
+        const versionContainer = sequence.children[0]
+        expect(versionContainer.tag).toEqual(0) // [0] tag
     })
 
     it('forCertificate identifies the issuer by its subject and key (RFC 6960 4.1.1)', async () => {

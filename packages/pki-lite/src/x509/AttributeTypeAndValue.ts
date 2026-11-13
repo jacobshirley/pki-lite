@@ -2,13 +2,25 @@ import { Any } from '../asn1/Any.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { getOidShortName, getShortNameOid } from '../core/OIDs.js'
 import {
-    Asn1BaseBlock,
-    asn1js,
-    PkiBase,
     Asn1Any,
+    Asn1Node,
+    der,
     ObjectIdentifierString,
+    PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+
+/** The ASN.1 string types a DirectoryString (or an emailAddress, ...) can use. */
+const STRING_TYPES = [
+    UniversalTag.UTF8String,
+    UniversalTag.PrintableString,
+    UniversalTag.TeletexString,
+    UniversalTag.BMPString,
+    UniversalTag.UniversalString,
+    UniversalTag.IA5String,
+    UniversalTag.VisibleString,
+]
 
 /**
  * Represents an attribute type and value pair.
@@ -21,17 +33,6 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * }
  * ```
  */
-/** The ASN.1 string types a DirectoryString (or an emailAddress, ...) can use. */
-const STRING_TYPES = [
-    asn1js.Utf8String,
-    asn1js.PrintableString,
-    asn1js.TeletexString,
-    asn1js.BmpString,
-    asn1js.UniversalString,
-    asn1js.IA5String,
-    asn1js.VisibleString,
-]
-
 export class AttributeTypeAndValue extends PkiBase<AttributeTypeAndValue> {
     type: ObjectIdentifier
     value: Any
@@ -52,10 +53,8 @@ export class AttributeTypeAndValue extends PkiBase<AttributeTypeAndValue> {
         return getOidShortName(this.type.value)
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [this.type.toAsn1(), this.value.toAsn1()],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([this.type.toAsn1(), this.value.toAsn1()])
     }
 
     toHumanString(): string {
@@ -83,26 +82,26 @@ export class AttributeTypeAndValue extends PkiBase<AttributeTypeAndValue> {
 
     private comparableValue(): string {
         const asn1 = this.value.toAsn1()
-        if (STRING_TYPES.some((type) => asn1 instanceof type)) {
+        if (STRING_TYPES.some((tag) => asn1.is(tag))) {
             const text = this.value.toHumanString()
             return `s:${text.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ')}`
         }
         return `d:${this.value.toDer().join(',')}`
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): AttributeTypeAndValue {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): AttributeTypeAndValue {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('Invalid ASN.1 structure')
         }
 
-        const [type, value] = asn1.valueBlock.value
+        const [type, value] = asn1.children
 
-        if (!(type instanceof asn1js.ObjectIdentifier)) {
+        if (!type.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError('Invalid ASN.1 structure')
         }
 
         return new AttributeTypeAndValue({
-            type: type.getValue(),
+            type: der.readOid(type),
             value,
         })
     }

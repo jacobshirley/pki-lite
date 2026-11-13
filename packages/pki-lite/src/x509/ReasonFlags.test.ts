@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ReasonFlags } from './ReasonFlags.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('ReasonFlags', () => {
     it('should encode and decode all flags set', () => {
@@ -69,19 +69,19 @@ describe('ReasonFlags', () => {
 
         const asn1 = flags.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.BitString)
-        const bitString = asn1 as asn1js.BitString
-        expect(bitString.valueBlock.unusedBits).toEqual(7)
-        expect(Array.from(bitString.valueBlock.valueHexView)).toEqual([
+        expect(asn1.is(UniversalTag.BitString)).toBe(true)
+        const bitString = asn1
+        expect(der.readBitString(bitString).unusedBits).toEqual(7)
+        expect(Array.from(der.readBitString(bitString).bytes)).toEqual([
             0b0000_0010, 0b1000_0000,
         ])
     })
 
     it('should decode unusedBits correctly', () => {
-        const asn1 = new asn1js.BitString({
-            valueHex: new Uint8Array([0b0000_0010, 0b1000_0000]).buffer,
-            unusedBits: 7,
-        })
+        const asn1 = der.bitString(
+            new Uint8Array([0b0000_0010, 0b1000_0000]),
+            7,
+        )
 
         const decoded = ReasonFlags.fromAsn1(asn1)
 
@@ -92,15 +92,13 @@ describe('ReasonFlags', () => {
     })
 
     it('should throw if ASN.1 is not a BitString', () => {
-        expect(() => ReasonFlags.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => ReasonFlags.fromAsn1(der.nullValue())).toThrow(
             'ReasonFlags: Expected BitString for ReasonFlags',
         )
     })
 
     it('reads an empty BitString as no flags set', () => {
-        const emptyBitString = new asn1js.BitString({
-            valueHex: new ArrayBuffer(0),
-        })
+        const emptyBitString = der.bitString(new Uint8Array(0))
         const flags = ReasonFlags.fromAsn1(emptyBitString)
         expect(flags.keyCompromise).toBe(false)
         expect(flags.aACompromise).toBe(false)

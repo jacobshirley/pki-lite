@@ -2,10 +2,11 @@ import { Any } from '../../asn1/Any.js'
 import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
 import {
     Asn1Any,
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     ObjectIdentifierString,
     PkiBase,
+    UniversalTag,
 } from '../../core/PkiBase.js'
 import { BasicOCSPResponse } from '../../ocsp/BasicOCSPResponse.js'
 import { CertificateList } from '../CertificateList.js'
@@ -38,22 +39,23 @@ export class OtherRevVals extends PkiBase<OtherRevVals> {
     }
 
     toAsn1() {
-        return new asn1js.Sequence({
-            value: [this.OtherRevValType.toAsn1(), this.OtherRevVals.toAsn1()],
-        })
+        return der.sequence([
+            this.OtherRevValType.toAsn1(),
+            this.OtherRevVals.toAsn1(),
+        ])
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): OtherRevVals {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): OtherRevVals {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
-        const type = asn1.valueBlock.value[0] as asn1js.ObjectIdentifier
-        const value = asn1.valueBlock.value[1]
+        const type = asn1.children[0]
+        const value = asn1.children[1]
 
         return new OtherRevVals({
-            OtherRevValType: type.valueBlock.toString(),
+            OtherRevValType: der.readOid(type),
             OtherRevVals: new Any({ derBytes: value }),
         })
     }
@@ -87,50 +89,33 @@ export class RevocationValues extends PkiBase<RevocationValues> {
         this.otherRevVals = options.otherRevVals
     }
 
-    toAsn1(): asn1js.Sequence {
-        const values: asn1js.Constructed[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         if (this.crlVals && this.crlVals.length > 0) {
-            const crlSeq = new asn1js.Sequence({
-                value: this.crlVals.map((crl) => crl.toAsn1()),
-            })
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 0 },
-                    value: [crlSeq],
-                }),
-            )
+            const crlSeq = der.sequence(this.crlVals.map((crl) => crl.toAsn1()))
+            values.push(der.constructed(0, [crlSeq]))
         }
 
         if (this.ocspVals && this.ocspVals.length > 0) {
-            const ocspSeq = new asn1js.Sequence({
-                value: this.ocspVals.map((ocsp) => ocsp.toAsn1()),
-            })
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 1 },
-                    value: [ocspSeq],
-                }),
+            const ocspSeq = der.sequence(
+                this.ocspVals.map((ocsp) => ocsp.toAsn1()),
             )
+            values.push(der.constructed(1, [ocspSeq]))
         }
 
         if (this.otherRevVals && this.otherRevVals.length > 0) {
-            const otherRevValsSeq = new asn1js.Sequence({
-                value: this.otherRevVals.map((ori) => ori.toAsn1()),
-            })
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 2 },
-                    value: [otherRevValsSeq],
-                }),
+            const otherRevValsSeq = der.sequence(
+                this.otherRevVals.map((ori) => ori.toAsn1()),
             )
+            values.push(der.constructed(2, [otherRevValsSeq]))
         }
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): RevocationValues {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RevocationValues {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
@@ -140,33 +125,27 @@ export class RevocationValues extends PkiBase<RevocationValues> {
         const ocsps: BasicOCSPResponse[] = []
         const otherRevVals: OtherRevVals[] = []
 
-        for (const element of asn1.valueBlock.value) {
-            if (!(element instanceof asn1js.Constructed)) {
+        for (const element of asn1.children) {
+            if (!element?.constructed) {
                 continue
             }
 
-            const tagNumber = element.idBlock.tagNumber
+            const tagNumber = element.tag
 
             if (tagNumber === 0) {
-                const crlSeq = element.valueBlock.value[0] as asn1js.Sequence
-                for (const crlAsn1 of crlSeq.valueBlock.value) {
-                    crls.push(
-                        CertificateList.fromAsn1(crlAsn1 as asn1js.Sequence),
-                    )
+                const crlSeq = element.children[0]
+                for (const crlAsn1 of crlSeq.children) {
+                    crls.push(CertificateList.fromAsn1(crlAsn1))
                 }
             } else if (tagNumber === 1) {
-                const ocspSeq = element.valueBlock.value[0] as asn1js.Sequence
-                for (const ocspAsn1 of ocspSeq.valueBlock.value) {
-                    ocsps.push(
-                        BasicOCSPResponse.fromAsn1(ocspAsn1 as asn1js.Sequence),
-                    )
+                const ocspSeq = element.children[0]
+                for (const ocspAsn1 of ocspSeq.children) {
+                    ocsps.push(BasicOCSPResponse.fromAsn1(ocspAsn1))
                 }
             } else if (tagNumber === 2) {
-                const oriSeq = element.valueBlock.value[0] as asn1js.Sequence
-                for (const oriAsn1 of oriSeq.valueBlock.value) {
-                    otherRevVals.push(
-                        OtherRevVals.fromAsn1(oriAsn1 as asn1js.Sequence),
-                    )
+                const oriSeq = element.children[0]
+                for (const oriAsn1 of oriSeq.children) {
+                    otherRevVals.push(OtherRevVals.fromAsn1(oriAsn1))
                 }
             }
         }

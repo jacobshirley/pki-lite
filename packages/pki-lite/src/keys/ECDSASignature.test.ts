@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { ECDSASignature } from './ECDSASignature.js'
-import * as asn1js from 'asn1js'
 
 describe('ECDSASignature', () => {
     // Sample r and s values for testing
@@ -44,50 +44,34 @@ describe('ECDSASignature', () => {
         const signature = new ECDSASignature({ r, s: sNoPad })
         const asn1 = signature.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-
-        // Need to cast to 'any' due to type limitations in asn1js
-        const values = (asn1 as any).valueBlock.value
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        const values = asn1.children
         expect(values.length).toEqual(2)
 
         // Check r
-        expect(values[0]).toBeInstanceOf(asn1js.Integer)
-        const rBlock = (values[0] as any).valueBlock
-        expect(
-            new Uint8Array(rBlock.valueHexView || rBlock.valueBeforeDecodeView),
-        ).toEqual(r)
+        expect(values[0].is(UniversalTag.Integer)).toBe(true)
+        expect(der.readIntegerBytes(values[0])).toEqual(r)
 
         // Check s - should not be padded since high bit is clear
-        expect(values[1]).toBeInstanceOf(asn1js.Integer)
-        const sBlock = (values[1] as any).valueBlock
-        expect(
-            new Uint8Array(sBlock.valueHexView || sBlock.valueBeforeDecodeView),
-        ).toEqual(sNoPad)
+        expect(values[1].is(UniversalTag.Integer)).toBe(true)
+        expect(der.readIntegerBytes(values[1])).toEqual(sNoPad)
     })
 
     test('toAsn1 properly handles high bit padding', () => {
         const signature = new ECDSASignature({ r: rHighBit, s })
         const asn1 = signature.toAsn1()
-
-        // Need to cast to 'any' due to type limitations in asn1js
-        const values = (asn1 as any).valueBlock.value
+        const values = asn1.children
 
         // The Integer class should have already applied padding to its bytes
         // The ASN.1 representation should include the padding
-        const rBlock = (values[0] as any).valueBlock
-        const rValue = new Uint8Array(
-            rBlock.valueHexView || rBlock.valueBeforeDecodeView,
-        )
+        const rValue = der.readIntegerBytes(values[0])
 
         // First byte should be 0x00 (padding) since rHighBit has high bit set
         expect(rValue[0]).toEqual(0x00) // Padding byte
         expect(rValue[1]).toEqual(0x81) // Original first byte
 
         // The s value should also be padded since its high bit is set
-        const sBlock = (values[1] as any).valueBlock
-        const sValue = new Uint8Array(
-            sBlock.valueHexView || sBlock.valueBeforeDecodeView,
-        )
+        const sValue = der.readIntegerBytes(values[1])
 
         expect(sValue[0]).toEqual(0x00) // Padding byte
         expect(sValue[1]).toEqual(0xfe) // Original first byte
@@ -99,12 +83,10 @@ describe('ECDSASignature', () => {
         paddedS[0] = 0x00
         paddedS.set(s, 1)
 
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ valueHex: r }),
-                new asn1js.Integer({ valueHex: paddedS }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.primitive(UniversalTag.Integer, r),
+            der.primitive(UniversalTag.Integer, paddedS),
+        ])
 
         const signature = ECDSASignature.fromAsn1(asn1)
 
@@ -121,8 +103,8 @@ describe('ECDSASignature', () => {
     test('toDer/fromDer roundtrip works correctly', () => {
         // Use values that don't need padding to simplify the test
         const originalSignature = new ECDSASignature({ r, s: sNoPad })
-        const der = originalSignature.toDer()
-        const parsedSignature = ECDSASignature.fromDer(der)
+        const encoded = originalSignature.toDer()
+        const parsedSignature = ECDSASignature.fromDer(encoded)
 
         expect(parsedSignature.r.bytes).toEqual(originalSignature.r.bytes)
         expect(parsedSignature.s.bytes).toEqual(originalSignature.s.bytes)
@@ -172,40 +154,34 @@ describe('ECDSASignature', () => {
 
     test('fromAsn1 throws on invalid ASN.1 structure', () => {
         // Not a sequence
-        const invalidAsn1 = new asn1js.Integer({ value: 123 })
+        const invalidAsn1 = der.integer(123)
 
         expect(() => ECDSASignature.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
 
         // Wrong number of elements
-        const invalidSequence = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 123 })],
-        })
+        const invalidSequence = der.sequence([der.integer(123)])
 
         expect(() => ECDSASignature.fromAsn1(invalidSequence)).toThrow(
             'Invalid ASN.1 structure: expected 2 elements',
         )
 
         // First element not an integer
-        const invalidR = new asn1js.Sequence({
-            value: [
-                new asn1js.OctetString({ valueHex: r }),
-                new asn1js.Integer({ valueHex: s }),
-            ],
-        })
+        const invalidR = der.sequence([
+            der.octetString(r),
+            der.primitive(UniversalTag.Integer, s),
+        ])
 
         expect(() => ECDSASignature.fromAsn1(invalidR)).toThrow(
             'Invalid ASN.1 structure: r must be INTEGER',
         )
 
         // Second element not an integer
-        const invalidS = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ valueHex: r }),
-                new asn1js.OctetString({ valueHex: s }),
-            ],
-        })
+        const invalidS = der.sequence([
+            der.primitive(UniversalTag.Integer, r),
+            der.octetString(s),
+        ])
 
         expect(() => ECDSASignature.fromAsn1(invalidS)).toThrow(
             'Invalid ASN.1 structure: s must be INTEGER',

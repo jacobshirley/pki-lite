@@ -1,5 +1,5 @@
 import { Time } from '../asn1/Time.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 import { Extension } from './Extension.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { Integer } from '../asn1/Integer.js'
@@ -84,8 +84,8 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
     /**
      * Converts the revoked certificate to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         // Serial number, exact for serials of any size
         values.push(new Integer({ value: this.serialAsBigInt() }).toAsn1())
@@ -97,14 +97,10 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
         if (this.crlEntryExtensions && this.crlEntryExtensions.length > 0) {
             const extArray = this.crlEntryExtensions.map((ext) => ext.toAsn1())
 
-            values.push(
-                new asn1js.Sequence({
-                    value: extArray,
-                }),
-            )
+            values.push(der.sequence(extArray))
         }
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
     /**
@@ -113,30 +109,25 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
      * @param asn1 The ASN.1 structure
      * @returns A RevokedCertificate
      */
-    static fromAsn1(asn1: Asn1BaseBlock): RevokedCertificate {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RevokedCertificate {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        if (
-            asn1.valueBlock.value.length < 2 ||
-            asn1.valueBlock.value.length > 3
-        ) {
+        if (asn1.children.length < 2 || asn1.children.length > 3) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 2 or 3 elements',
             )
         }
 
-        const userCertificateAsn1 = asn1.valueBlock.value[0]
-        const revocationDateAsn1 = asn1.valueBlock.value[1]
+        const userCertificateAsn1 = asn1.children[0]
+        const revocationDateAsn1 = asn1.children[1]
         const crlEntryExtensionsAsn1 =
-            asn1.valueBlock.value.length > 2
-                ? asn1.valueBlock.value[2]
-                : undefined
+            asn1.children.length > 2 ? asn1.children[2] : undefined
 
-        if (!(userCertificateAsn1 instanceof asn1js.Integer)) {
+        if (!userCertificateAsn1.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: userCertificate must be an INTEGER',
             )
@@ -160,15 +151,15 @@ export class RevokedCertificate extends PkiBase<RevokedCertificate> {
         let crlEntryExtensions: Extension[] | undefined
 
         if (crlEntryExtensionsAsn1) {
-            if (!(crlEntryExtensionsAsn1 instanceof asn1js.Sequence)) {
+            if (!crlEntryExtensionsAsn1.is(UniversalTag.Sequence)) {
                 throw new Asn1ParseError(
                     'Invalid ASN.1 structure: crlEntryExtensions must be a SEQUENCE',
                 )
             }
 
-            crlEntryExtensions = crlEntryExtensionsAsn1.valueBlock.value.map(
-                (extensionAsn1: Asn1BaseBlock) => {
-                    if (!(extensionAsn1 instanceof asn1js.Sequence)) {
+            crlEntryExtensions = crlEntryExtensionsAsn1.children.map(
+                (extensionAsn1: Asn1Node) => {
+                    if (!extensionAsn1.is(UniversalTag.Sequence)) {
                         throw new Asn1ParseError(
                             'Invalid ASN. ASN.1 structure: extension must be a SEQUENCE',
                         )

@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, Choice } from '../core/PkiBase.js'
+import { Asn1Node, Choice } from '../core/PkiBase.js'
 import { RDNSequence } from './RDNSequence.js'
 
 /**
@@ -15,7 +15,7 @@ import { RDNSequence } from './RDNSequence.js'
 export type Name = RDNSequence
 export const Name = Choice('Name', {
     RDNSequence,
-    fromAsn1(asn1: Asn1BaseBlock): Name {
+    fromAsn1(asn1: Asn1Node): Name {
         return RDNSequence.fromAsn1(asn1)
     },
     parse(humanString: string): Name {

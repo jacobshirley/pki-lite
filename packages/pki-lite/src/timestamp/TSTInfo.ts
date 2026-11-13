@@ -1,9 +1,10 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
-    PkiBase,
-    ObjectIdentifierString,
+    Asn1Node,
+    der,
     derToAsn1,
+    ObjectIdentifierString,
+    PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { MessageImprint } from './MessageImprint.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
@@ -89,32 +90,26 @@ export class Accuracy extends PkiBase<Accuracy> {
      * @example
      * ```typescript
      * const asn1 = accuracy.toAsn1()
-     * const der = asn1.toBER(false)
+     * const der = asn1.encode()
      * ```
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         if (this.seconds !== undefined) {
-            values.push(new asn1js.Integer({ value: this.seconds }))
+            values.push(der.integer(this.seconds))
         }
 
         // the RFC 3161 module has IMPLICIT TAGS: millis/micros are [0]/[1] IMPLICIT INTEGER
         if (this.millis !== undefined) {
-            values.push(
-                implicitTag(new asn1js.Integer({ value: this.millis }), 0),
-            )
+            values.push(implicitTag(der.integer(this.millis), 0))
         }
 
         if (this.micros !== undefined) {
-            values.push(
-                implicitTag(new asn1js.Integer({ value: this.micros }), 1),
-            )
+            values.push(implicitTag(der.integer(this.micros), 1))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
     /**
@@ -131,8 +126,8 @@ export class Accuracy extends PkiBase<Accuracy> {
      * console.log(accuracy.seconds, accuracy.millis, accuracy.micros)
      * ```
      */
-    static fromAsn1(asn1: Asn1BaseBlock): Accuracy {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): Accuracy {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
@@ -142,14 +137,14 @@ export class Accuracy extends PkiBase<Accuracy> {
         let millis: number | undefined
         let micros: number | undefined
 
-        for (const value of asn1.valueBlock.value) {
+        for (const value of asn1.children) {
             // check the tag first: an in-memory [n] IMPLICIT INTEGER is still an Integer
             if (isContextTag(value, 0)) {
                 millis = Accuracy.taggedInteger(value)
             } else if (isContextTag(value, 1)) {
                 micros = Accuracy.taggedInteger(value)
-            } else if (value instanceof asn1js.Integer) {
-                seconds = value.valueBlock.valueDec
+            } else if (value.is(UniversalTag.Integer)) {
+                seconds = der.readNumber(value)
             }
         }
 
@@ -157,20 +152,19 @@ export class Accuracy extends PkiBase<Accuracy> {
     }
 
     /** The value of an [n] IMPLICIT INTEGER (or, as older pki-lite wrote it, EXPLICIT) */
-    private static taggedInteger(value: Asn1BaseBlock): number {
-        if (value instanceof asn1js.Integer) return value.valueBlock.valueDec
-        if (value instanceof asn1js.Constructed) {
-            const inner = value.valueBlock.value[0]
-            if (!(inner instanceof asn1js.Integer)) {
+    private static taggedInteger(value: Asn1Node): number {
+        if (value.is(UniversalTag.Integer)) return der.readNumber(value)
+        if (value?.constructed) {
+            const inner = value.children[0]
+            if (!inner.is(UniversalTag.Integer)) {
                 throw new Asn1ParseError(
                     'Invalid ASN.1 structure: expected INTEGER in context-specific tag',
                 )
             }
-            return inner.valueBlock.valueDec
+            return der.readNumber(inner)
         }
-        return new asn1js.Integer({
-            valueHex: (value as asn1js.Primitive).valueBlock.valueHexView,
-        }).valueBlock.valueDec
+        // [n] IMPLICIT INTEGER
+        return der.readNumber(value.retag(UniversalTag.Integer))
     }
 }
 
@@ -314,16 +308,16 @@ export class TSTInfo extends PkiBase<TSTInfo> {
      * @example
      * ```typescript
      * const asn1 = tstInfo.toAsn1()
-     * const der = asn1.toBER(false)
+     * const der = asn1.encode()
      * ```
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
-            new asn1js.Integer({ value: this.version }),
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [
+            der.integer(this.version),
             this.policy.toAsn1(),
             this.messageImprint.toAsn1(),
-            new asn1js.Integer({ valueHex: this.serialNumber }),
-            new asn1js.GeneralizedTime({ valueDate: this.genTime }),
+            der.primitive(UniversalTag.Integer, this.serialNumber),
+            der.generalizedTime(this.genTime),
         ]
 
         if (this.accuracy) {
@@ -331,38 +325,25 @@ export class TSTInfo extends PkiBase<TSTInfo> {
         }
 
         if (this.ordering !== false) {
-            values.push(new asn1js.Boolean({ value: this.ordering }))
+            values.push(der.boolean(this.ordering))
         }
 
         if (this.nonce) {
-            values.push(new asn1js.Integer({ valueHex: this.nonce }))
+            values.push(der.primitive(UniversalTag.Integer, this.nonce))
         }
 
         if (this.tsa) {
             // TSA is [0] EXPLICIT GeneralName
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                        isConstructed: true,
-                    },
-                    value: [this.tsa.toAsn1()],
-                }),
-            )
+            values.push(this.tsa.toAsn1().explicit(0))
         }
 
         if (this.extensions && this.extensions.length > 0) {
             const extensionsArray = this.extensions.map((ext) => ext.toAsn1())
             // Extensions are [1] IMPLICIT
-            values.push(
-                implicitTag(new asn1js.Sequence({ value: extensionsArray }), 1),
-            )
+            values.push(implicitTag(der.sequence(extensionsArray), 1))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
     /**
@@ -383,14 +364,14 @@ export class TSTInfo extends PkiBase<TSTInfo> {
      * console.log(tstInfo.messageImprint.hashAlgorithm)
      * ```
      */
-    static fromAsn1(asn1: Asn1BaseBlock): TSTInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): TSTInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 5) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected at least 5 elements',
@@ -398,42 +379,42 @@ export class TSTInfo extends PkiBase<TSTInfo> {
         }
 
         // Version
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected INTEGER for version',
             )
         }
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
         if (version !== 1) {
             throw new Asn1ParseError(`Unsupported TSTInfo version: ${version}`)
         }
 
         // Policy
-        if (!(values[1] instanceof asn1js.ObjectIdentifier)) {
+        if (!values[1]?.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OBJECT IDENTIFIER for policy',
             )
         }
-        const policy = values[1].valueBlock.toString()
+        const policy = der.readOid(values[1])
 
         // MessageImprint
         const messageImprint = MessageImprint.fromAsn1(values[2])
 
         // Serial Number
-        if (!(values[3] instanceof asn1js.Integer)) {
+        if (!values[3]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected INTEGER for serialNumber',
             )
         }
-        const serialNumber = new Uint8Array(values[3].valueBlock.valueHexView)
+        const serialNumber = values[3].bytes()
 
         // GenTime
-        if (!(values[4] instanceof asn1js.GeneralizedTime)) {
+        if (!values[4]?.is(UniversalTag.GeneralizedTime)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected GeneralizedTime for genTime',
             )
         }
-        const genTime = values[4].toDate()
+        const genTime = der.readTime(values[4])
 
         // Parse optional fields
         let accuracy: Accuracy | undefined
@@ -445,25 +426,25 @@ export class TSTInfo extends PkiBase<TSTInfo> {
         for (let i = 5; i < values.length; i++) {
             const value = values[i]
 
-            if (value instanceof asn1js.Sequence) {
+            if (value.is(UniversalTag.Sequence)) {
                 // Could be Accuracy
                 accuracy = Accuracy.fromAsn1(value)
-            } else if (value instanceof asn1js.Boolean) {
-                ordering = value.valueBlock.value
-            } else if (value instanceof asn1js.Integer) {
-                nonce = new Uint8Array(value.valueBlock.valueHexView)
-            } else if (value instanceof asn1js.Constructed) {
-                const tagNumber = value.idBlock.tagNumber
+            } else if (value.is(UniversalTag.Boolean)) {
+                ordering = der.readBoolean(value)
+            } else if (value.is(UniversalTag.Integer)) {
+                nonce = value.bytes()
+            } else if (value?.constructed) {
+                const tagNumber = value.tag
 
                 if (tagNumber === 0) {
                     // [0] GeneralName (TSA)
-                    if (value.valueBlock.value.length > 0) {
-                        tsa = GeneralName.fromAsn1(value.valueBlock.value[0])
+                    if (value.children.length > 0) {
+                        tsa = GeneralName.fromAsn1(value.children[0])
                     }
                 } else if (tagNumber === 1) {
                     // [1] IMPLICIT Extensions
-                    extensions = implicitSequenceOf(value).valueBlock.value.map(
-                        (ext) => Extension.fromAsn1(ext),
+                    extensions = implicitSequenceOf(value).children.map((ext) =>
+                        Extension.fromAsn1(ext),
                     )
                 }
             }

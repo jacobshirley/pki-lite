@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { MessageAuthenticationCode } from './MessageAuthenticationCode.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -40,16 +40,16 @@ describe('MessageAuthenticationCode', () => {
         const mac = new MessageAuthenticationCode({ bytes: macBytes })
         const asn1 = mac.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.OctetString)
+        expect(asn1.is(UniversalTag.OctetString)).toBe(true)
 
         // Check the value is preserved
-        const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
+        const valueHex = asn1.bytes()
         expect(valueHex).toEqual(macBytes)
     })
 
     it('should parse from valid ASN.1 OctetString', () => {
         // Create an ASN.1 OctetString
-        const asn1 = new asn1js.OctetString({ valueHex: macBytes })
+        const asn1 = der.octetString(macBytes)
 
         const mac = MessageAuthenticationCode.fromAsn1(asn1)
 
@@ -59,7 +59,7 @@ describe('MessageAuthenticationCode', () => {
 
     it('should throw error when parsing invalid ASN.1 structure', () => {
         // Create an ASN.1 Integer instead of OctetString
-        const invalidAsn1 = new asn1js.Integer({ value: 123 })
+        const invalidAsn1 = der.integer(123)
 
         expect(() => {
             MessageAuthenticationCode.fromAsn1(invalidAsn1)
@@ -80,7 +80,7 @@ describe('MessageAuthenticationCode', () => {
         expect(mac.bytes.length).toEqual(0)
 
         const asn1 = mac.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.OctetString)
+        expect(asn1.is(UniversalTag.OctetString)).toBe(true)
     })
 
     it('should handle round-trip conversion (to ASN.1 and back)', () => {
@@ -140,7 +140,7 @@ describe('MessageAuthenticationCode', () => {
 
             // Verify ASN.1 conversion works
             const asn1 = mac.toAsn1()
-            expect(asn1).toBeInstanceOf(asn1js.OctetString)
+            expect(asn1.is(UniversalTag.OctetString)).toBe(true)
 
             // Verify round-trip
             const reconstructed = MessageAuthenticationCode.fromAsn1(asn1)

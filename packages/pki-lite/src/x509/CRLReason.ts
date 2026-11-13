@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
 /**
@@ -39,17 +39,17 @@ export class CRLReason extends PkiBase<CRLReason> {
         this.value = value
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Enumerated({ value: this.value })
+    toAsn1(): Asn1Node {
+        return der.enumerated(this.value)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): CRLReason {
-        if (!(asn1 instanceof asn1js.Enumerated)) {
+    static fromAsn1(asn1: Asn1Node): CRLReason {
+        if (!asn1.is(UniversalTag.Enumerated)) {
             throw new Asn1ParseError(
                 'Invalid CRLReason ASN.1 structure. Expected ENUMERATED but got ' +
-                    asn1.constructor.name,
+                    asn1.describe(),
             )
         }
-        return new CRLReason(asn1.valueBlock.valueDec)
+        return new CRLReason(der.readEnumerated(asn1))
     }
 }

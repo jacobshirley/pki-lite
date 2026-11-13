@@ -1,9 +1,10 @@
 import {
     Asn1Any,
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     PkiBase,
     PkiSequence,
+    UniversalTag,
 } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../../asn1/OctetString.js'
@@ -42,27 +43,25 @@ export class ESSCertID extends PkiBase<ESSCertID> {
         this.issuerSerial = options.issuerSerial
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
         values.push(this.certHash.toAsn1())
 
         if (this.issuerSerial) {
             values.push(this.issuerSerial.toAsn1())
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): ESSCertID {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): ESSCertID {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 1 || values.length > 2) {
             throw new Asn1ParseError(
                 'Invalid ESSCertID: expected 1 to 2 elements',
@@ -74,7 +73,7 @@ export class ESSCertID extends PkiBase<ESSCertID> {
 
         let index = 0
         // The first element must be the certHash
-        if (!(values[index] instanceof asn1js.OctetString)) {
+        if (!values[index]?.is(UniversalTag.OctetString)) {
             throw new Asn1ParseError(
                 'Invalid ESSCertID: expected OCTET STRING for certHash',
             )
@@ -117,34 +116,28 @@ export class SigningCertificate extends PkiBase<SigningCertificate> {
         this.policies = options.policies
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
-            new asn1js.Sequence({
-                value: this.certs.map((cert) => cert.toAsn1()),
-            }),
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [
+            der.sequence(this.certs.map((cert) => cert.toAsn1())),
         ]
 
         if (this.policies) {
             values.push(
-                new asn1js.Sequence({
-                    value: this.policies.map((policy) => policy.toAsn1()),
-                }),
+                der.sequence(this.policies.map((policy) => policy.toAsn1())),
             )
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): SigningCertificate {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): SigningCertificate {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 1 || values.length > 2) {
             throw new Asn1ParseError(
                 'Invalid SigningCertificate: expected 1 to 2 elements',
@@ -152,26 +145,24 @@ export class SigningCertificate extends PkiBase<SigningCertificate> {
         }
 
         const certsAsn1 = values[0]
-        if (!(certsAsn1 instanceof asn1js.Sequence)) {
+        if (!certsAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid SigningCertificate: expected SEQUENCE for certs',
             )
         }
 
-        const certs = certsAsn1.valueBlock.value.map((c) =>
-            ESSCertID.fromAsn1(c),
-        )
+        const certs = certsAsn1.children.map((c) => ESSCertID.fromAsn1(c))
 
         let policies: PolicyInformation[] | undefined
         if (values.length > 1) {
             const policiesAsn1 = values[1]
-            if (!(policiesAsn1 instanceof asn1js.Sequence)) {
+            if (!policiesAsn1.is(UniversalTag.Sequence)) {
                 throw new Asn1ParseError(
                     'Invalid SigningCertificate: expected SEQUENCE for policies',
                 )
             }
 
-            policies = policiesAsn1.valueBlock.value.map((p) =>
+            policies = policiesAsn1.children.map((p) =>
                 PolicyInformation.fromAsn1(p),
             )
         }

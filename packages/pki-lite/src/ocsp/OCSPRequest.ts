@@ -1,4 +1,11 @@
-import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { TBSRequest } from './TBSRequest.js'
 import { OCSPSignature } from './OCSPSignature.js'
 import { OCSPResponse } from './OCSPResponse.js'
@@ -99,52 +106,38 @@ export class OCSPRequest extends PkiBase<OCSPRequest> {
         return new OCSPRequest({ tbsRequest })
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: asn1js.AsnType[] = [this.tbsRequest.toAsn1()]
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [this.tbsRequest.toAsn1()]
 
         if (this.optionalSignature) {
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [this.optionalSignature.toAsn1()],
-                }),
-            )
+            values.push(der.constructed(0, [this.optionalSignature.toAsn1()]))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): OCSPRequest {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): OCSPRequest {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const sequence = asn1 as asn1js.Sequence
-        if (
-            sequence.valueBlock.value.length < 1 ||
-            sequence.valueBlock.value.length > 2
-        ) {
+        const sequence = asn1
+        if (sequence.children.length < 1 || sequence.children.length > 2) {
             throw new Asn1ParseError(
                 'Invalid OCSPRequest: expected 1 or 2 elements',
             )
         }
 
-        const tbsRequest = TBSRequest.fromAsn1(sequence.valueBlock.value[0])
+        const tbsRequest = TBSRequest.fromAsn1(sequence.children[0])
         let optionalSignature: OCSPSignature | undefined = undefined
 
-        if (sequence.valueBlock.value.length === 2) {
-            const signatureContainer = sequence.valueBlock
-                .value[1] as asn1js.Constructed
+        if (sequence.children.length === 2) {
+            const signatureContainer = sequence.children[1]
             if (
-                signatureContainer.idBlock.tagClass !== 3 ||
-                signatureContainer.idBlock.tagNumber !== 0
+                signatureContainer.tagClass !== TagClass.Context ||
+                signatureContainer.tag !== 0
             ) {
                 throw new Asn1ParseError(
                     'Invalid OCSPRequest: expected [0] tag for optionalSignature',
@@ -152,7 +145,7 @@ export class OCSPRequest extends PkiBase<OCSPRequest> {
             }
 
             optionalSignature = OCSPSignature.fromAsn1(
-                signatureContainer.valueBlock.value[0],
+                signatureContainer.children[0],
             )
         }
 

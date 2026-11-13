@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from 'vitest'
 import { KeyIdentifier } from './KeyIdentifier.js'
-import { asn1js } from '../../core/PkiBase.js'
+import { der, UniversalTag } from '../../core/PkiBase.js'
 
 describe('KeyIdentifier', () => {
     test('can be created from Uint8Array<ArrayBuffer>', () => {
@@ -33,13 +33,13 @@ describe('KeyIdentifier', () => {
         const keyIdentifier = new KeyIdentifier({ bytes: keyId })
         const asn1 = keyIdentifier.toAsn1()
 
-        assert(asn1 instanceof asn1js.OctetString)
-        expect(new Uint8Array(asn1.valueBlock.valueHexView)).toEqual(keyId)
+        assert(asn1.is(UniversalTag.OctetString))
+        expect(asn1.bytes()).toEqual(keyId)
     })
 
     test('can be parsed from ASN.1', () => {
         const keyId = new Uint8Array([1, 2, 3, 4, 5])
-        const asn1 = new asn1js.OctetString({ valueHex: keyId })
+        const asn1 = der.octetString(keyId)
         const keyIdentifier = KeyIdentifier.fromAsn1(asn1)
 
         expect(keyIdentifier).toBeInstanceOf(KeyIdentifier)
@@ -47,7 +47,7 @@ describe('KeyIdentifier', () => {
     })
 
     test('throws error on invalid ASN.1 structure type', () => {
-        const asn1 = new asn1js.Integer({ value: 1 })
+        const asn1 = der.integer(1)
         expect(() => KeyIdentifier.fromAsn1(asn1)).toThrow(
             /Invalid ASN.1 structure/,
         )

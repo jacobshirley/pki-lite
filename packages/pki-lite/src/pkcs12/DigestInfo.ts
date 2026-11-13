@@ -3,7 +3,13 @@ import {
     AlgorithmIdentifier,
     DigestAlgorithmIdentifier,
 } from '../algorithms/AlgorithmIdentifier.js'
-import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
 /**
@@ -35,17 +41,18 @@ export class DigestInfo extends PkiBase<DigestInfo> {
                 : new OctetString({ bytes: options.digest })
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [this.digestAlgorithm.toAsn1(), this.digest.toAsn1()],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            this.digestAlgorithm.toAsn1(),
+            this.digest.toAsn1(),
+        ])
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): DigestInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): DigestInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('DigestInfo: expected SEQUENCE')
         }
-        const [alg, dig] = asn1.valueBlock.value
+        const [alg, dig] = asn1.children
         return new DigestInfo({
             digestAlgorithm: AlgorithmIdentifier.fromAsn1(alg),
             digest: OctetString.fromAsn1(dig),

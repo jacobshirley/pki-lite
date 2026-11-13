@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { Name } from '../x509/Name.js'
 import { Extension } from '../x509/Extension.js'
 import { Request } from './Request.js'
@@ -54,79 +60,49 @@ export class TBSRequest extends PkiBase<TBSRequest> {
         })
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: asn1js.AsnType[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         // Only include version if it's not the default (v1=0)
         if (this.version !== 0) {
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [new asn1js.Integer({ value: this.version })],
-                }),
-            )
+            values.push(der.constructed(0, [der.integer(this.version)]))
         }
 
         // Include requestorName if provided
         if (this.requestorName) {
             values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 1, // [1]
-                    },
-                    value: [
-                        new asn1js.Constructed({
-                            idBlock: {
-                                tagClass: 3, // CONTEXT-SPECIFIC
-                                tagNumber: 4, // [4] - DirectoryName
-                            },
-                            value: [this.requestorName.toAsn1()],
-                        }),
-                    ],
-                }),
+                der.constructed(1, [
+                    der.constructed(4, [this.requestorName.toAsn1()]),
+                ]),
             )
         }
 
         // Add requestList (required)
-        const requestListSequence = new asn1js.Sequence({
-            value: this.requestList.map((req) => req.toAsn1()),
-        })
+        const requestListSequence = der.sequence(
+            this.requestList.map((req) => req.toAsn1()),
+        )
         values.push(requestListSequence)
 
         // Include requestExtensions if provided
         if (this.requestExtensions && this.requestExtensions.length > 0) {
-            const extensions = new asn1js.Sequence({
-                value: this.requestExtensions.map((ext) => ext.toAsn1()),
-            })
-
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 2, // [2]
-                    },
-                    value: [extensions],
-                }),
+            const extensions = der.sequence(
+                this.requestExtensions.map((ext) => ext.toAsn1()),
             )
+
+            values.push(der.constructed(2, [extensions]))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): TBSRequest {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): TBSRequest {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const sequence = asn1 as asn1js.Sequence
+        const sequence = asn1
         let currentIndex = 0
         let version = 0 // Default is v1 (0)
         let requestorName: Name | undefined = undefined
@@ -135,49 +111,37 @@ export class TBSRequest extends PkiBase<TBSRequest> {
 
         // Check for version [0]
         if (
-            currentIndex < sequence.valueBlock.value.length &&
-            sequence.valueBlock.value[currentIndex] instanceof
-                asn1js.Constructed &&
-            (sequence.valueBlock.value[currentIndex] as asn1js.Constructed)
-                .idBlock.tagNumber === 0
+            currentIndex < sequence.children.length &&
+            sequence.children[currentIndex]?.constructed &&
+            sequence.children[currentIndex].tag === 0
         ) {
-            const versionContainer = sequence.valueBlock.value[
-                currentIndex
-            ] as asn1js.Constructed
-            const versionInt = versionContainer.valueBlock
-                .value[0] as asn1js.Integer
-            version = versionInt.valueBlock.valueDec as number
+            const versionContainer = sequence.children[currentIndex]
+            const versionInt = versionContainer.children[0]
+            version = der.readNumber(versionInt) as number
             currentIndex++
         }
 
         // Check for requestorName [1]
         if (
-            currentIndex < sequence.valueBlock.value.length &&
-            sequence.valueBlock.value[currentIndex] instanceof
-                asn1js.Constructed &&
-            (sequence.valueBlock.value[currentIndex] as asn1js.Constructed)
-                .idBlock.tagNumber === 1
+            currentIndex < sequence.children.length &&
+            sequence.children[currentIndex]?.constructed &&
+            sequence.children[currentIndex].tag === 1
         ) {
-            const requestorNameContainer = sequence.valueBlock.value[
-                currentIndex
-            ] as asn1js.Constructed
-            const generalName = requestorNameContainer.valueBlock
-                .value[0] as asn1js.Constructed
+            const requestorNameContainer = sequence.children[currentIndex]
+            const generalName = requestorNameContainer.children[0]
 
             // Only handle DirectoryName (tag 4) for now
-            if (generalName.idBlock.tagNumber === 4) {
-                requestorName = Name.fromAsn1(generalName.valueBlock.value[0])
+            if (generalName.tag === 4) {
+                requestorName = Name.fromAsn1(generalName.children[0])
             }
 
             currentIndex++
         }
 
         // Get requestList (required)
-        if (currentIndex < sequence.valueBlock.value.length) {
-            const requestListSequence = sequence.valueBlock.value[
-                currentIndex
-            ] as asn1js.Sequence
-            requestList = requestListSequence.valueBlock.value.map((req) =>
+        if (currentIndex < sequence.children.length) {
+            const requestListSequence = sequence.children[currentIndex]
+            requestList = requestListSequence.children.map((req) =>
                 Request.fromAsn1(req),
             )
             currentIndex++
@@ -187,18 +151,13 @@ export class TBSRequest extends PkiBase<TBSRequest> {
 
         // Check for requestExtensions [2]
         if (
-            currentIndex < sequence.valueBlock.value.length &&
-            sequence.valueBlock.value[currentIndex] instanceof
-                asn1js.Constructed &&
-            (sequence.valueBlock.value[currentIndex] as asn1js.Constructed)
-                .idBlock.tagNumber === 2
+            currentIndex < sequence.children.length &&
+            sequence.children[currentIndex]?.constructed &&
+            sequence.children[currentIndex].tag === 2
         ) {
-            const extensionsContainer = sequence.valueBlock.value[
-                currentIndex
-            ] as asn1js.Constructed
-            const extensionsSequence = extensionsContainer.valueBlock
-                .value[0] as asn1js.Sequence
-            requestExtensions = extensionsSequence.valueBlock.value.map((ext) =>
+            const extensionsContainer = sequence.children[currentIndex]
+            const extensionsSequence = extensionsContainer.children[0]
+            requestExtensions = extensionsSequence.children.map((ext) =>
                 Extension.fromAsn1(ext),
             )
         }

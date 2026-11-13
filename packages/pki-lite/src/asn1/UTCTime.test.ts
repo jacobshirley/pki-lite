@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { GeneralizedTime as LegacyGeneralizedTime, UTCTime } from './UTCTime.js'
-import * as asn1js from 'asn1js'
 
 describe('UTCTime', () => {
     test('should create UTCTime from Date object', () => {
@@ -30,16 +30,15 @@ describe('UTCTime', () => {
         const utcDate = new UTCTime({ time: testDate })
         const asn1 = utcDate.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.UTCTime)
+        expect(asn1.is(UniversalTag.UTCTime)).toBe(true)
 
         // Verify the date is preserved
-        const asn1UtcTime = asn1 as asn1js.UTCTime
-        expect(asn1UtcTime.toDate().getTime()).toEqual(testDate.getTime())
+        expect(der.readTime(asn1).getTime()).toEqual(testDate.getTime())
     })
 
     test('should parse from ASN.1 UTCTime correctly', () => {
         const testDate = new Date('2023-01-15T10:30:00.000Z')
-        const asn1 = new asn1js.UTCTime({ valueDate: testDate })
+        const asn1 = der.utcTime(testDate)
 
         const utcDate = UTCTime.fromAsn1(asn1)
 
@@ -48,9 +47,7 @@ describe('UTCTime', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => UTCTime.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected UTCTime',

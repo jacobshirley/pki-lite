@@ -8,7 +8,7 @@ import {
 import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
 import { OctetString } from '../../asn1/OctetString.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
-import { asn1js } from '../../core/PkiBase.js'
+import { der } from '../../core/PkiBase.js'
 
 function makeAlgorithmIdentifier() {
     return new AlgorithmIdentifier({
@@ -21,7 +21,7 @@ describe('SigPolicyQualifierInfo', () => {
         const oid = new ObjectIdentifier({ value: '1.3.6.1.5.5.7.2.1' })
         const qualifier = new Uint8Array([
             0x13,
-            0x0b,
+            0x0a, // 'http://cps' is 10 bytes
             ...new TextEncoder().encode('http://cps'),
         ])
         const info = new SigPolicyQualifierInfo({
@@ -35,9 +35,9 @@ describe('SigPolicyQualifierInfo', () => {
     })
 
     it('should throw if ASN.1 is not a sequence', () => {
-        expect(() =>
-            SigPolicyQualifierInfo.fromAsn1(new asn1js.Null()),
-        ).toThrow('Expected Sequence with at least 2 elements')
+        expect(() => SigPolicyQualifierInfo.fromAsn1(der.nullValue())).toThrow(
+            'Expected Sequence with at least 2 elements',
+        )
     })
 })
 
@@ -58,7 +58,7 @@ describe('OtherHashAlgAndValue', () => {
     })
 
     it('should throw if ASN.1 is not a sequence', () => {
-        expect(() => OtherHashAlgAndValue.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => OtherHashAlgAndValue.fromAsn1(der.nullValue())).toThrow(
             'Expected Sequence with at least 2 elements',
         )
     })
@@ -86,7 +86,7 @@ describe('SignaturePolicyId', () => {
     })
 
     it('should throw if ASN.1 is not a sequence', () => {
-        expect(() => SignaturePolicyId.fromAsn1(new asn1js.Null())).toThrow(
+        expect(() => SignaturePolicyId.fromAsn1(der.nullValue())).toThrow(
             'Expected Sequence with at least 2 elements',
         )
     })

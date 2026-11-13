@@ -1,9 +1,11 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     derToAsn1,
     PkiBase,
     PkiSet,
+    TagClass,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { RecipientInfo } from './recipients/RecipientInfo.js'
 import { EnvelopedDataBuilder } from '../core/builders/EnvelopedDataBuilder.js'
@@ -49,20 +51,18 @@ class RecipientInfos extends PkiSet<RecipientInfo> {
      * pwri [3] and ori [4] get their context tag (a bare SEQUENCE would be read as
      * a KeyTransRecipientInfo).
      */
-    toAsn1(): asn1js.Set {
-        return new asn1js.Set({
-            value: this.map((recipient) => RecipientInfo.toAsn1(recipient)),
-        })
+    toAsn1(): Asn1Node {
+        return der.set(this.map((recipient) => RecipientInfo.toAsn1(recipient)))
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): RecipientInfos {
-        if (!(asn1 instanceof asn1js.Set)) {
+    static fromAsn1(asn1: Asn1Node): RecipientInfos {
+        if (!asn1.is(UniversalTag.Set)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Set for RecipientInfos',
             )
         }
 
-        const recipients = asn1.valueBlock.value.map((recAsn1) =>
+        const recipients = asn1.children.map((recAsn1) =>
             RecipientInfo.fromAsn1(recAsn1),
         )
 
@@ -154,17 +154,15 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
     /**
      * Converts the EnvelopedData to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         const values = []
 
         // Version is always present
-        values.push(new asn1js.Integer({ value: this.version }))
+        values.push(der.integer(this.version))
 
         // Add originatorInfo if present
         if (this.originatorInfo) {
-            const asn1 = this.originatorInfo.toAsn1()
-            asn1.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            asn1.idBlock.tagNumber = 0 // [0]
+            const asn1 = this.originatorInfo.toAsn1().implicit(0) // [0] IMPLICIT
             values.push(asn1)
         }
 
@@ -176,28 +174,24 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
 
         // Add unprotectedAttrs if present
         if (this.unprotectedAttrs && this.unprotectedAttrs.length > 0) {
-            const asn1 = this.unprotectedAttrs.toAsn1()
-            asn1.idBlock.tagClass = 3 // CONTEXT_SPECIFIC
-            asn1.idBlock.tagNumber = 1 // [1]
+            const asn1 = this.unprotectedAttrs.toAsn1().implicit(1) // [1] IMPLICIT
             values.push(asn1)
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
     /**
      * Creates an EnvelopedData from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): EnvelopedData {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): EnvelopedData {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 3) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected at least 3 elements, got ${values.length}`,
@@ -207,30 +201,26 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
         let currentIndex = 0
 
         // Version - always first
-        if (!(values[currentIndex] instanceof asn1js.Integer)) {
+        if (!values[currentIndex]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Integer for version',
             )
         }
 
-        const version = (values[currentIndex] as asn1js.Integer).valueBlock
-            .valueDec
+        const version = der.readNumber(values[currentIndex])
 
         currentIndex++
         // OriginatorInfo - optional [0]
         let originatorInfo: OriginatorInfo | undefined
         if (
             currentIndex < values.length &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
-            values[currentIndex].idBlock.tagNumber === 0 // [0]
+            values[currentIndex]?.constructed &&
+            values[currentIndex].tagClass === TagClass.Context && // CONTEXT_SPECIFIC
+            values[currentIndex].tag === 0 // [0]
         ) {
             // originatorInfo [0] IMPLICIT OriginatorInfo (a SEQUENCE)
             originatorInfo = OriginatorInfo.fromAsn1(
-                new asn1js.Sequence({
-                    value: (values[currentIndex] as asn1js.Constructed)
-                        .valueBlock.value,
-                }),
+                der.sequence(values[currentIndex].children),
             )
             currentIndex++
         }
@@ -254,9 +244,9 @@ export class EnvelopedData extends PkiBase<EnvelopedData> {
         let unprotectedAttrs: UnprotectedAttributes | undefined
         if (
             currentIndex < values.length &&
-            values[currentIndex] instanceof asn1js.Constructed &&
-            values[currentIndex].idBlock.tagClass === 3 && // CONTEXT_SPECIFIC
-            values[currentIndex].idBlock.tagNumber === 1 // [1]
+            values[currentIndex]?.constructed &&
+            values[currentIndex].tagClass === TagClass.Context && // CONTEXT_SPECIFIC
+            values[currentIndex].tag === 1 // [1]
         ) {
             // unprotectedAttrs [1] IMPLICIT SET OF Attribute: the attributes sit
             // directly inside the [1]

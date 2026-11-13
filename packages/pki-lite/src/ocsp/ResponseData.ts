@@ -1,9 +1,10 @@
 import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     keepOriginalDer,
     PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { Extension } from '../x509/Extension.js'
 import { ResponderID } from './ResponderID.js'
@@ -41,20 +42,12 @@ export class ResponseData extends PkiBase<ResponseData> {
         this.responseExtensions = options.responseExtensions
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: asn1js.AsnType[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         // Only include version if it's not the default (v1=0)
         if (this.version !== 0) {
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [new asn1js.Integer({ value: this.version })],
-                }),
-            )
+            values.push(der.constructed(0, [der.integer(this.version)]))
         }
 
         const responderIdAsn1 = ResponderID.toAsn1(this.responderID)
@@ -62,86 +55,65 @@ export class ResponseData extends PkiBase<ResponseData> {
         values.push(
             responderIdAsn1,
             new GeneralizedTime({ time: this.producedAt }).toAsn1(),
-            new asn1js.Sequence({
-                value: this.responses.map((resp) => resp.toAsn1()),
-            }),
+            der.sequence(this.responses.map((resp) => resp.toAsn1())),
         )
 
         if (this.responseExtensions && this.responseExtensions.length > 0) {
-            const extensions = new asn1js.Sequence({
-                value: this.responseExtensions.map((ext) => ext.toAsn1()),
-            })
-
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 1, // [1]
-                    },
-                    value: [extensions],
-                }),
+            const extensions = der.sequence(
+                this.responseExtensions.map((ext) => ext.toAsn1()),
             )
+
+            values.push(der.constructed(1, [extensions]))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): ResponseData {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): ResponseData {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const sequence = asn1 as asn1js.Sequence
+        const sequence = asn1
         let currentIndex = 0
         let version = 0 // Default is v1 (0)
 
         // Check for version [0]
         if (
-            currentIndex < sequence.valueBlock.value.length &&
-            sequence.valueBlock.value[currentIndex] instanceof
-                asn1js.Constructed &&
-            (sequence.valueBlock.value[currentIndex] as asn1js.Constructed)
-                .idBlock.tagNumber === 0
+            currentIndex < sequence.children.length &&
+            sequence.children[currentIndex]?.constructed &&
+            sequence.children[currentIndex].tag === 0
         ) {
-            const versionContainer = sequence.valueBlock.value[
-                currentIndex
-            ] as asn1js.Constructed
-            const versionInt = versionContainer.valueBlock
-                .value[0] as asn1js.Integer
-            version = versionInt.valueBlock.valueDec as number
+            const versionContainer = sequence.children[currentIndex]
+            const versionInt = versionContainer.children[0]
+            version = der.readNumber(versionInt) as number
             currentIndex++
         }
 
-        if (currentIndex >= sequence.valueBlock.value.length) {
+        if (currentIndex >= sequence.children.length) {
             throw new Asn1ParseError(
                 'Invalid ResponseData: missing responderID',
             )
         }
         const responderID = ResponderID.fromAsn1(
-            sequence.valueBlock.value[currentIndex],
+            sequence.children[currentIndex],
         )
         currentIndex++
 
-        if (currentIndex >= sequence.valueBlock.value.length) {
+        if (currentIndex >= sequence.children.length) {
             throw new Asn1ParseError('Invalid ResponseData: missing producedAt')
         }
-        const producedAtBlock = sequence.valueBlock.value[
-            currentIndex
-        ] as asn1js.GeneralizedTime
-        const producedAt = producedAtBlock.toDate()
+        const producedAtBlock = sequence.children[currentIndex]
+        const producedAt = der.readTime(producedAtBlock)
         currentIndex++
 
-        if (currentIndex >= sequence.valueBlock.value.length) {
+        if (currentIndex >= sequence.children.length) {
             throw new Asn1ParseError('Invalid ResponseData: missing responses')
         }
-        const responsesSequence = sequence.valueBlock.value[
-            currentIndex
-        ] as asn1js.Sequence
-        const responses = responsesSequence.valueBlock.value.map((resp) =>
+        const responsesSequence = sequence.children[currentIndex]
+        const responses = responsesSequence.children.map((resp) =>
             SingleResponse.fromAsn1(resp),
         )
         currentIndex++
@@ -150,19 +122,14 @@ export class ResponseData extends PkiBase<ResponseData> {
 
         // Check for responseExtensions [1]
         if (
-            currentIndex < sequence.valueBlock.value.length &&
-            sequence.valueBlock.value[currentIndex] instanceof
-                asn1js.Constructed &&
-            (sequence.valueBlock.value[currentIndex] as asn1js.Constructed)
-                .idBlock.tagNumber === 1
+            currentIndex < sequence.children.length &&
+            sequence.children[currentIndex]?.constructed &&
+            sequence.children[currentIndex].tag === 1
         ) {
-            const extensionsContainer = sequence.valueBlock.value[
-                currentIndex
-            ] as asn1js.Constructed
-            const extensionsSequence = extensionsContainer.valueBlock
-                .value[0] as asn1js.Sequence
-            responseExtensions = extensionsSequence.valueBlock.value.map(
-                (ext) => Extension.fromAsn1(ext),
+            const extensionsContainer = sequence.children[currentIndex]
+            const extensionsSequence = extensionsContainer.children[0]
+            responseExtensions = extensionsSequence.children.map((ext) =>
+                Extension.fromAsn1(ext),
             )
         }
 
