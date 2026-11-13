@@ -1,6 +1,7 @@
 import { Asn1BaseBlock, Choice } from '../core/PkiBase.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { OtherRevocationInfoFormat } from './OtherRevocationInfoFormat.js'
+import { implicitSequence, isContextTag } from '../core/tagging.js'
 
 /**
  * Represents a single revocation information choice.
@@ -24,9 +25,10 @@ export const RevocationInfoChoice = Choice('RevocationInfoChoice', {
     CertificateList,
     OtherRevocationInfoFormat,
     fromAsn1: (value: Asn1BaseBlock): RevocationInfoChoice => {
-        const tagNumber = value.idBlock.tagNumber
-        if (tagNumber === 1) {
-            return OtherRevocationInfoFormat.fromAsn1(value)
+        // other [1] IMPLICIT OtherRevocationInfoFormat (a context tag: universal
+        // tag number 1 is BOOLEAN)
+        if (isContextTag(value, 1)) {
+            return OtherRevocationInfoFormat.fromAsn1(implicitSequence(value))
         } else {
             return CertificateList.fromAsn1(value)
         }

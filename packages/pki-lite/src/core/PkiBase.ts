@@ -67,7 +67,8 @@ export abstract class PkiBase<T extends object = any> {
      * @returns A JSON-serializable representation of this object
      */
     toJSON(): ToJson<T> {
-        return JSON.parse(JSON.stringify(this)) as T
+        // Stringify a plain copy: stringifying `this` would call toJSON() again
+        return JSON.parse(JSON.stringify({ ...this })) as T
     }
 
     /**
@@ -195,7 +196,8 @@ export abstract class PkiArray<T extends PkiBase<any>> extends Array<T> {
      * @returns A JSON-serializable representation of this array
      */
     toJSON(): ToJson<T> {
-        return JSON.parse(JSON.stringify(this)) as T
+        // Stringify a plain array: stringifying `this` would call toJSON() again
+        return JSON.parse(JSON.stringify([...this])) as T
     }
 
     /**
