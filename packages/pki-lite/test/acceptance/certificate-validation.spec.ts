@@ -120,15 +120,29 @@ describe('Certificate Validation', () => {
         }
 
         const fetch = globalThis.fetch
+        const fetched: string[] = []
         globalThis.fetch = (url, init) => {
+            fetched.push(String(url))
             if (url === 'http://localhost:8080/ca.crt') {
                 return Promise.resolve(new Response(intermediateCa.toDer()))
             }
             return Promise.reject(new Error('Not Found: ' + url))
         }
 
-        const result = await endEntityCert.validate(validationOptions)
-        expect(result.isValid, result.messages.join(', ')).toBe(true)
-        globalThis.fetch = fetch
+        try {
+            // without fetchIssuerCertificates, the intermediate is not downloaded
+            const offline = await endEntityCert.validate(validationOptions)
+            expect(offline.isValid).toBe(false)
+            expect(fetched).toEqual([])
+
+            const result = await endEntityCert.validate({
+                ...validationOptions,
+                fetchIssuerCertificates: true,
+            })
+            expect(result.isValid, result.messages.join(', ')).toBe(true)
+            expect(fetched).toEqual(['http://localhost:8080/ca.crt'])
+        } finally {
+            globalThis.fetch = fetch
+        }
     })
 })
