@@ -627,8 +627,20 @@ export class Certificate extends PkiBase<Certificate> {
         return undefined
     }
 
+    /**
+     * Downloads the certificate's issuer from the caIssuers URLs of its
+     * authorityInfoAccess extension (and any given), trying each in turn. Only http: and
+     * https: URLs are followed; the URLs come from the certificate, so this is a request
+     * to wherever its issuer says.
+     *
+     * @param options.issuerCertificateUrls More URLs to try, before the certificate's own
+     * @param options.timeout How long to wait for each URL, in milliseconds (default
+     *   10,000)
+     * @returns The issuer certificate, or undefined if none could be fetched
+     */
     async requestIssuerCertificate(options?: {
         issuerCertificateUrls?: string[]
+        timeout?: number
     }): Promise<Certificate | undefined> {
         const aiaExt = this.getExtensionByName('AUTHORITY_INFO_ACCESS')
         if (!aiaExt) {
@@ -645,7 +657,8 @@ export class Certificate extends PkiBase<Certificate> {
             return undefined
         }
 
-        const urls = options?.issuerCertificateUrls ?? []
+        // a copy: the caller's array is not added to
+        const urls = [...(options?.issuerCertificateUrls ?? [])]
 
         for (const ad of caIssuers) {
             if (
@@ -666,8 +679,16 @@ export class Certificate extends PkiBase<Certificate> {
         }
 
         for (const uri of urls) {
+            if (!/^https?:\/\//i.test(uri)) {
+                console.warn(
+                    `Skipping issuer certificate URL that is not http(s): ${uri}`,
+                )
+                continue
+            }
             try {
-                const response = await fetch(uri)
+                const response = await fetch(uri, {
+                    signal: AbortSignal.timeout(options?.timeout ?? 10_000),
+                })
                 if (!response.ok) {
                     console.warn(
                         `Failed to fetch issuer certificate from ${uri}: ${response.status} ${response.statusText}`,

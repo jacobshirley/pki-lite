@@ -11,6 +11,8 @@ import { pkitsFiles } from '../../test-fixtures/pkits/pkits.js'
 import { GeneralName } from './GeneralName.js'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
+import { Extension } from './Extension.js'
+import { OIDs } from '../core/OIDs.js'
 
 /**
  * Creates a sample certificate for testing.
@@ -336,5 +338,58 @@ describe('Certificate.allowsExtendedKeyUsage (RFC 5280 4.2.1.12)', () => {
     test('anyExtendedKeyUsage allows every purpose', async () => {
         const cert = await withEku({ '2.5.29.37.0': true })
         expect(cert.allowsExtendedKeyUsage('codeSigning')).toBe(true)
+    })
+})
+
+describe('Certificate.requestIssuerCertificate', () => {
+    const withAia = (...urls: string[]) =>
+        Certificate.builder()
+            .setSubject('CN=AIA')
+            .setPublicKey(
+                Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                    .subjectPublicKeyInfo,
+            )
+            .setPrivateKey(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+            .setValidityDays(1)
+            .addExtension(
+                Extension.authorityInfoAccess(
+                    urls.map((value) => ({
+                        accessMethod: OIDs.AUTHORITY_INFO_ACCESS.CA_ISSUERS,
+                        accessLocation:
+                            new GeneralName.uniformResourceIdentifier({
+                                value,
+                            }),
+                    })),
+                ),
+            )
+            .selfSign()
+
+    test('follows http(s) URLs only, with a timeout, without changing the given list', async () => {
+        const issuer = Certificate.fromPem(rsaSigningKeys.caCertPem)
+        const cert = await withAia(
+            'file:///etc/passwd',
+            'ldap://ldap.example/cn=ca',
+            'https://ca.example/ca.crt',
+        )
+        const original = globalThis.fetch
+        const requests: { url: string; signal?: AbortSignal | null }[] = []
+        globalThis.fetch = async (url, init) => {
+            requests.push({ url: String(url), signal: init?.signal })
+            return new Response(issuer.toDer())
+        }
+        try {
+            const given = ['ftp://ca.example/ca.crt']
+            const fetched = await cert.requestIssuerCertificate({
+                issuerCertificateUrls: given,
+            })
+            expect(fetched?.equals(issuer)).toBe(true)
+            expect(requests.map((r) => r.url)).toEqual([
+                'https://ca.example/ca.crt',
+            ])
+            expect(requests[0].signal).toBeInstanceOf(AbortSignal)
+            expect(given).toEqual(['ftp://ca.example/ca.crt'])
+        } finally {
+            globalThis.fetch = original
+        }
     })
 })
