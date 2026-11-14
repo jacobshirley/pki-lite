@@ -529,7 +529,15 @@ describe('OpenSSL compatibility', { timeout: 60000 }, () => {
 
             const verified = await signedData.verify({
                 data,
-                certificateValidation: true,
+                certificateValidation: {
+                    trustAnchors: [
+                        {
+                            certificate: Certificate.fromPem(
+                                ecP256SigningKeys.caCertPem,
+                            ),
+                        },
+                    ],
+                },
             })
             expect(verified).toEqual({
                 valid: true,
