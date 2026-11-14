@@ -2677,6 +2677,10 @@ import { Certificate } from 'pki-lite/x509/Certificate.js'
 import { OCSPResponse } from 'pki-lite/ocsp/OCSPResponse.js'
 import { KeyGen } from 'pki-lite/core/KeyGen.js'
 import { CertificateValidator } from 'pki-lite/core/CertificateValidator.js'
+import { OCSPRequest } from 'pki-lite/ocsp/OCSPRequest.js'
+import { Extension } from 'pki-lite/x509/Extension.js'
+import { OctetString } from 'pki-lite/asn1/OctetString.js'
+import { OIDs } from 'pki-lite/core/OIDs.js'
 
 // A CA, a delegated OCSP responder it authorises, and a certificate it issued
 const caKeys = await KeyGen.generateRsaPair({ keySize: 2048 })
@@ -2697,6 +2701,14 @@ const responder = await Certificate.builder()
     .setIssuerPrivateKey(caKeys.privateKey)
     .setValidityDays(365)
     .addExtendedKeyUsage({ ocspSigning: true })
+    // id-pkix-ocsp-nocheck: clients need not check the responder's own revocation
+    // status (without it, they must, e.g. with a CRL)
+    .addExtension(
+        new Extension({
+            extnID: OIDs.PKIX.ID_PKIX_OCSP_NOCHECK,
+            extnValue: new Uint8Array([0x05, 0x00]), // NULL
+        }),
+    )
     .sign()
 
 const aliceKeys = await KeyGen.generateRsaPair({ keySize: 2048 })
@@ -2758,6 +2770,26 @@ console.log(
     'Forged response used:',
     withForged.revocationStatus.source === 'OCSP',
 )
+
+// 4. A nonce (RFC 8954) ties a response to its request, so it cannot be replayed
+const request = await OCSPRequest.builder()
+    .addCertificate({ certificate: alice, issuerCertificate: ca })
+    .addNonce()
+    .build()
+const echoing = await OCSPResponse.builder()
+    .setPrivateKey(responderKeys.privateKey)
+    .setResponderFromCertificate(responder)
+    .addCertificate(responder)
+    .addResponse(ca, alice, 'good')
+    .addResponseExtension(
+        new Extension({
+            extnID: OIDs.PKIX.ID_PKIX_OCSP_NONCE,
+            extnValue: new OctetString({ bytes: request.nonce! }),
+        }),
+    )
+    .build()
+console.log('Nonce echoed:', echoing.nonceMatches(request))
+console.log("Another request's response:", response.nonceMatches(request)) // no nonce: undefined
 ```
 
 ## Validating a TLS server certificate: host names, extended key usage, path length and the RFC 5280 profile

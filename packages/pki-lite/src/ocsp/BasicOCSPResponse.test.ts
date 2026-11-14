@@ -213,6 +213,24 @@ describe('BasicOCSPResponse.verify (RFC 6960 4.2.2.2)', () => {
         expect(await response.verify(pki.ca)).toBe(false)
     })
 
+    it('getSigner returns the certificate that signed the response', async () => {
+        const byCa = await basic({ signer: pki.ca, key: pki.caKey })
+        expect((await byCa.getSigner(pki.ca))?.equals(pki.ca)).toBe(true)
+        const byResponder = await basic({
+            signer: pki.responder,
+            key: pki.otherKey,
+            include: [pki.responder],
+        })
+        expect(
+            (await byResponder.getSigner(pki.ca))?.equals(pki.responder),
+        ).toBe(true)
+        const byImpostor = await basic({
+            signer: pki.impostorCa,
+            key: pki.otherKey,
+        })
+        expect(await byImpostor.getSigner(pki.ca)).toBeUndefined()
+    })
+
     it('rejects a response whose data was changed after signing', async () => {
         const response = await basic({ signer: pki.ca, key: pki.caKey })
         response.tbsResponseData.producedAt = new Date('2020-01-01T00:00:00Z')

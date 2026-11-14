@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, beforeAll } from 'vitest'
 import {
     CertificateValidator,
     CertificateValidationStatus,
@@ -32,6 +32,7 @@ import { CRLReason } from '../x509/CRLReason.js'
 import { OIDs } from './OIDs.js'
 import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
+import { ocspTestPki } from '../../test-fixtures/ocsp.js'
 
 describe('CertificateValidator', () => {
     let validator: CertificateValidator
@@ -1932,5 +1933,65 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
         })
         expect(result.isValid).toBe(false)
         expect(result.messages.join('; ')).toContain('could not be verified')
+    })
+})
+
+describe('CertificateValidator OCSP delegated responders (RFC 6960 4.2.2.2.1)', () => {
+    let pki: Awaited<ReturnType<typeof ocspTestPki>>
+    beforeAll(async () => {
+        pki = await ocspTestPki()
+    })
+    const validator = new CertificateValidator()
+    const crl = (revokeResponder: boolean) => {
+        const builder = CertificateList.builder()
+            .setIssuerFromCertificate(pki.ca)
+            .setPrivateKey(pki.caKey)
+        if (revokeResponder) builder.revokeCertificate(pki.responder)
+        return builder.build()
+    }
+    const validate = async (responder: Certificate, crls: CertificateList[]) =>
+        validator.validate(
+            pki.leaf,
+            { checkOCSP: true },
+            {
+                issuerCertificate: pki.ca,
+                crls,
+                ocspResponses: [
+                    await pki.respond({
+                        signer: responder,
+                        key: pki.otherKey,
+                        include: [responder],
+                    }),
+                ],
+            },
+        )
+
+    test('a responder without id-pkix-ocsp-nocheck needs its own status shown', async () => {
+        const unknown = await validate(pki.responder, [])
+        expect(unknown.status).toBe(
+            CertificateValidationStatus.OCSP_UNAVAILABLE,
+        )
+        expect(unknown.revocationStatus.details).toContain(
+            'id-pkix-ocsp-nocheck',
+        )
+
+        const good = await validate(pki.responder, [await crl(false)])
+        expect(good.status, good.messages.join('; ')).toBe(
+            CertificateValidationStatus.VALID,
+        )
+        expect(good.revocationStatus.source).toBe('OCSP')
+
+        const revoked = await validate(pki.responder, [await crl(true)])
+        expect(revoked.status).toBe(
+            CertificateValidationStatus.OCSP_UNAVAILABLE,
+        )
+        expect(revoked.revocationStatus.details).toContain('revoked')
+    })
+
+    test('a responder with id-pkix-ocsp-nocheck is not checked', async () => {
+        const result = await validate(pki.noCheckResponder, [])
+        expect(result.status, result.messages.join('; ')).toBe(
+            CertificateValidationStatus.VALID,
+        )
     })
 })
