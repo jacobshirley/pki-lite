@@ -184,9 +184,15 @@ describe('RFC 5280 6.1 policy processing', () => {
                 }),
             leaf: (b) => b.addCertificatePolicies(B),
         })
-        const result = await validate(c, { requiredPolicies: [B] })
+        // the valid policies, and so the required ones, are in the trust anchor's policy
+        // domain (RFC 5280 6.1.5 (g), NIST PKITS 4.10.1): A, which the leaf knows as B
+        const result = await validate(c, { requiredPolicies: [A] })
         expect(result.isValid, result.messages.join('; ')).toBe(true)
-        // the user-initial-policy-set speaks the trust anchor's policy domain: A, not B
+        expect(result.policyResult?.validPolicies).toEqual([A])
+        expect((await validate(c, { requiredPolicies: [B] })).isValid).toBe(
+            false,
+        )
+        // so does the user-initial-policy-set: A, not B
         const strict = { initialExplicitPolicy: true }
         expect(
             (await validate(c, { ...strict, initialPolicySet: [A] })).isValid,
