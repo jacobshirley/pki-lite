@@ -11,8 +11,12 @@ import {
     GeneralName,
 } from '../x509/GeneralName.js'
 import { Name } from '../x509/Name.js'
-import { GeneralSubtree, NameConstraints } from '../x509/extensions/NameConstraints.js'
 import {
+    GeneralSubtree,
+    NameConstraints,
+} from '../x509/extensions/NameConstraints.js'
+import {
+    MAX_COMPARISONS,
     checkNameConstraints,
     dnsWithin,
     dnWithin,
@@ -23,6 +27,8 @@ import {
     uriWithin,
 } from './NameConstraintsChecker.js'
 import { asn1js } from './PkiBase.js'
+import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
+import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 
 describe('matching rules (RFC 5280 4.2.1.10)', () => {
     test('dNSName: the constraint itself or any name below it', () => {
@@ -447,5 +453,47 @@ describe('checkNameConstraints', () => {
                 ),
             ).toBeUndefined()
         })
+    })
+})
+
+describe('checkNameConstraints work limit', () => {
+    const certWithNames = (count: number) =>
+        Certificate.builder()
+            .setSubject('CN=many.example')
+            .setPublicKey(
+                Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                    .subjectPublicKeyInfo,
+            )
+            .setPrivateKey(PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem))
+            .setValidityDays(1)
+            .addSubjectAltName(
+                ...Array.from({ length: count }, (_, i) => `n${i}.example.com`),
+            )
+            .selfSign()
+    const constraints = (count: number) =>
+        new NameConstraints({
+            permittedSubtrees: Array.from(
+                { length: count },
+                (_, i) =>
+                    new GeneralSubtree({
+                        base: new dNSName({
+                            value: `c${i}.example.org`,
+                        }),
+                    }),
+            ).concat(
+                new GeneralSubtree({
+                    base: new dNSName({ value: 'example.com' }),
+                }),
+            ),
+        })
+
+    test(`more than ${MAX_COMPARISONS} comparisons are rejected, not checked`, async () => {
+        const cert = await certWithNames(500)
+        // 500 names x 601 subtrees = 300,500 comparisons
+        expect(checkNameConstraints(cert, constraints(600))?.message).toContain(
+            'over the limit',
+        )
+        // 500 x 401 = 200,500: checked, and every name is permitted
+        expect(checkNameConstraints(cert, constraints(400))).toBeUndefined()
     })
 })

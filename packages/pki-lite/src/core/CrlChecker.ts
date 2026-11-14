@@ -69,6 +69,11 @@ export type CrlCheckerOptions = {
      * including its own revocation status (RFC 5280 6.3.3 (f)).
      */
     validateSigner: (signer: Certificate) => Promise<boolean>
+    /**
+     * Also require the RFC 5280 CRL profile (section 5): a cRLNumber extension, not
+     * critical (5.2.3), and no certificate listed twice.
+     */
+    strictProfile?: boolean
 }
 
 const reasonsOf = (flags: ReasonFlags | undefined): Set<Reason> =>
@@ -257,6 +262,19 @@ export class CrlChecker {
             // freshness cannot be established
             if (!nextUpdate) return `${name} has no nextUpdate`
             return `${name} is out of date (nextUpdate ${nextUpdate.toISOString()})`
+        }
+        if (this.options.strictProfile) {
+            const crlNumber = crl.getExtensionByName('CRL_NUMBER')
+            if (!crlNumber) return `${name} has no cRLNumber`
+            if (crlNumber.critical) return `${name} has a critical cRLNumber`
+            const serials = new Set<bigint>()
+            for (const entry of revokedCertificates ?? []) {
+                const serial = entry.serialAsBigInt()
+                if (serials.has(serial)) {
+                    return `${name} lists serial number ${serial.toString(16)} twice`
+                }
+                serials.add(serial)
+            }
         }
         for (const extension of extensions ?? []) {
             if (

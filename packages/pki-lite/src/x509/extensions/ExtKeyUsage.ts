@@ -25,7 +25,25 @@ export type ExtKeyCommonNames =
  * KeyPurposeId ::= OBJECT IDENTIFIER
  * ```
  */
+const COMMON_NAMES: { [key in ExtKeyCommonNames]: keyof typeof OIDs.EKU } = {
+    serverAuth: 'SERVER_AUTH',
+    clientAuth: 'CLIENT_AUTH',
+    codeSigning: 'CODE_SIGNING',
+    emailProtection: 'EMAIL_PROTECTION',
+    timeStamping: 'TIME_STAMPING',
+    ocspSigning: 'OCSP_SIGNING',
+}
+
 export class ExtKeyUsage extends PkiSequence<ObjectIdentifier> {
+    /**
+     * The OID of a purpose given by its common name (`serverAuth`, `clientAuth`, ...) or
+     * as an OID.
+     */
+    static oidOf(purpose: ExtKeyCommonNames | string): string {
+        const name = COMMON_NAMES[purpose as ExtKeyCommonNames]
+        return name ? OIDs.EKU[name] : purpose
+    }
+
     static create(
         options: {
             [key in ExtKeyCommonNames]?: boolean
@@ -33,27 +51,13 @@ export class ExtKeyUsage extends PkiSequence<ObjectIdentifier> {
             [oid: string]: boolean
         },
     ): ExtKeyUsage {
-        const mapping: { [key in ExtKeyCommonNames]?: keyof typeof OIDs.EKU } =
-            {
-                serverAuth: 'SERVER_AUTH',
-                clientAuth: 'CLIENT_AUTH',
-                codeSigning: 'CODE_SIGNING',
-                emailProtection: 'EMAIL_PROTECTION',
-                timeStamping: 'TIME_STAMPING',
-                ocspSigning: 'OCSP_SIGNING',
-            }
-
         const extKeyUsage = new ExtKeyUsage()
 
         for (const [key, value] of Object.entries(options)) {
             if (value) {
-                let oid =
-                    OIDs.EKU[
-                        mapping[
-                            key as ExtKeyCommonNames
-                        ] as keyof typeof OIDs.EKU
-                    ] ?? key
-                extKeyUsage.push(new ObjectIdentifier({ value: oid }))
+                extKeyUsage.push(
+                    new ObjectIdentifier({ value: ExtKeyUsage.oidOf(key) }),
+                )
             }
         }
 
