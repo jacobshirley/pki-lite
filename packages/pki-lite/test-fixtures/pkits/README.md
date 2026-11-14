@@ -32,6 +32,12 @@ and CRLs the tests use (`file name -> base64 DER`) and, for each test, the objec
 specification lists for its certification path (trust anchor first, end entity last), so
 the test runs in both the node and the browser vitest projects.
 
+`pkits-smime.ts` (also generated) holds the S/MIME message PKITS provides for each test
+("Signed Test Message 6.2.2.x"): its signed content and its detached CMS signature, which
+carries the signer's certificates and the CRLs of its path. The test verifies each message
+with SignedData.verify and the trust anchor, and expects the same result as the test's
+certification path.
+
 The expected results are not in the data: they are transcribed by hand from `PKITS.pdf`
 into `test/unit/pkits.test.ts`, including the extra input settings (initial-policy-set,
 initial-explicit-policy, ...) the specification asks for. Tests pki-lite does not pass
