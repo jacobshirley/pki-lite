@@ -307,6 +307,19 @@ export class uniformResourceIdentifier extends IA5String {
 }
 
 export class iPAddress extends OctetString {
+    /**
+     * An iPAddress from its text form: dotted-quad IPv4 (`192.0.2.1`, 4 bytes) or IPv6
+     * (`2001:db8::1`, optionally in brackets or ending in dotted-quad IPv4; 16 bytes).
+     * IPv4 octets with leading zeros are rejected, since some parsers read them as octal.
+     *
+     * @throws Error if `text` is not an IP address
+     */
+    static fromString(text: string): iPAddress {
+        const bytes = parseIpAddress(text)
+        if (!bytes) throw new Error(`Not an IP address: ${text}`)
+        return new iPAddress({ bytes })
+    }
+
     toAsn1() {
         return implicitTag(super.toAsn1(), 7)
     }
@@ -476,4 +489,59 @@ export class GeneralNames extends PkiSequence<GeneralName> {
             ...asn1.valueBlock.value.map((v) => GeneralName.fromAsn1(v)),
         )
     }
+}
+
+/** IPv4 or IPv6 text as 4 or 16 bytes, or undefined if it is not an IP address. */
+function parseIpAddress(text: string): Uint8Array<ArrayBuffer> | undefined {
+    const value = text.replace(/^\[(.*)\]$/, '$1')
+    const ipv4 = (part: string) => {
+        const octets = part.split('.')
+        if (
+            octets.length !== 4 ||
+            !octets.every(
+                (o) => /^(0|[1-9][0-9]{0,2})$/.test(o) && Number(o) <= 255,
+            )
+        ) {
+            return undefined
+        }
+        return octets.map(Number)
+    }
+    if (!value.includes(':')) {
+        const bytes = ipv4(value)
+        return bytes ? new Uint8Array(bytes) : undefined
+    }
+
+    // IPv6: up to eight 16-bit groups, one "::" for a run of zeros, and an optional
+    // dotted-quad IPv4 address as the last 32 bits
+    const halves = value.split('::')
+    if (halves.length > 2) return undefined
+    const groups = (half: string): number[] | undefined => {
+        if (half === '') return []
+        const out: number[] = []
+        const parts = half.split(':')
+        for (const [i, part] of parts.entries()) {
+            if (i === parts.length - 1 && part.includes('.')) {
+                const v4 = ipv4(part)
+                if (!v4) return undefined
+                out.push((v4[0] << 8) | v4[1], (v4[2] << 8) | v4[3])
+            } else if (/^[0-9a-f]{1,4}$/i.test(part)) {
+                out.push(parseInt(part, 16))
+            } else {
+                return undefined
+            }
+        }
+        return out
+    }
+    const head = groups(halves[0])
+    const tail = halves.length === 2 ? groups(halves[1]) : []
+    if (!head || !tail) return undefined
+    const missing = 8 - head.length - tail.length
+    if (halves.length === 2 ? missing < 1 : missing !== 0) return undefined
+    const all = [...head, ...new Array(missing).fill(0), ...tail]
+    const bytes = new Uint8Array(16)
+    all.forEach((group, i) => {
+        bytes[i * 2] = group >> 8
+        bytes[i * 2 + 1] = group & 0xff
+    })
+    return bytes
 }

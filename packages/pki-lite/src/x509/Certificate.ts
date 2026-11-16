@@ -27,8 +27,10 @@ import {
     DistributionPoint,
 } from './extensions/CRLDistributionPoints.js'
 import { BasicConstraints } from './extensions/BasicConstraints.js'
+import { ExtKeyCommonNames, ExtKeyUsage } from './extensions/ExtKeyUsage.js'
 import { KeyUsage, KeyUsageOptions } from './extensions/KeyUsage.js'
 import { GeneralName } from './GeneralName.js'
+import { normalizeHost } from '../core/NameConstraintsChecker.js'
 import { SubjectAltName } from './extensions/SubjectAltName.js'
 import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { AuthorityInfoAccess } from './extensions/AuthorityInfoAccess.js'
@@ -338,6 +340,60 @@ export class Certificate extends PkiBase<Certificate> {
     }
 
     /**
+     * Whether the certificate is valid for `hostname`, a DNS name or an IP address, as
+     * RFC 9525 (TLS server identity) describes:
+     *
+     * - an IP address matches an iPAddress subjectAltName with the same bytes
+     * - a DNS name matches a dNSName subjectAltName ignoring case and a trailing dot, with
+     *   internationalised names compared as A-labels (punycode); a `*` wildcard matches
+     *   exactly one label, only as the whole leftmost label of a name with at least two
+     *   more labels (`*.example.com`, not `*.com` or `f*.example.com`)
+     *
+     * The subject's common name is not used, even without a subjectAltName.
+     *
+     * @example
+     * ```typescript
+     * cert.matchesHostname('www.example.com')
+     * cert.matchesHostname('192.0.2.1')
+     * ```
+     */
+    matchesHostname(hostname: string): boolean {
+        const names = this.getSubjectAltNames().flatMap((san) => [...san])
+        let ip: InstanceType<typeof GeneralName.iPAddress> | undefined
+        try {
+            ip = GeneralName.iPAddress.fromString(hostname)
+        } catch {
+            ip = undefined
+        }
+        if (ip) {
+            return names.some(
+                (name) =>
+                    name instanceof GeneralName.iPAddress &&
+                    name.bytes.length === ip.bytes.length &&
+                    name.bytes.every((byte, i) => byte === ip.bytes[i]),
+            )
+        }
+
+        const host = normalizeHost(hostname)
+        if (host === '' || host.startsWith('*') || host.startsWith('.'))
+            return false
+        return names.some((name) => {
+            if (!(name instanceof GeneralName.dNSName)) return false
+            // a dNSName must be ASCII (RFC 5280 7.2: internationalised names as
+            // A-labels); one that is not matches nothing
+            // eslint-disable-next-line no-control-regex
+            if (!/^[\x00-\x7f]*$/.test(name.toString())) return false
+            const pattern = normalizeHost(name.toString())
+            if (!pattern.startsWith('*.')) return pattern === host
+            // the wildcard is the whole leftmost label, with at least two labels after it
+            const base = pattern.slice(2)
+            if (!base.includes('.') || base.includes('*')) return false
+            const dot = host.indexOf('.')
+            return dot > 0 && host.slice(dot + 1) === base
+        })
+    }
+
+    /**
      * Returns all Subject Alternative Names as strings (e.g. DNS names, email addresses).
      * This is a convenience method that extracts the string representation of each SAN entry.
      * @returns An array of strings representing the Subject Alternative Names.
@@ -400,6 +456,27 @@ export class Certificate extends PkiBase<Certificate> {
     allowsKeyUsage(usage: keyof KeyUsageOptions): boolean {
         const extension = this.getExtensionByName('KEY_USAGE')
         return extension ? extension.extnValue.parseAs(KeyUsage)[usage] : true
+    }
+
+    /**
+     * Whether the certificate may be used for an extended key usage `purpose` (by common
+     * name, e.g. `serverAuth`, or OID): it has no extendedKeyUsage extension (no limit),
+     * or the extension lists the purpose or anyExtendedKeyUsage (RFC 5280 4.2.1.12).
+     *
+     * @example
+     * ```typescript
+     * serverCert.allowsExtendedKeyUsage('serverAuth')
+     * ```
+     */
+    allowsExtendedKeyUsage(purpose: ExtKeyCommonNames | string): boolean {
+        const extension = this.getExtensionByName('EXTENDED_KEY_USAGE')
+        if (!extension) return true
+        const oid = ExtKeyUsage.oidOf(purpose)
+        return extension.extnValue
+            .parseAs(ExtKeyUsage)
+            .some(
+                (usage) => usage.value === oid || usage.value === OIDs.EKU.ANY,
+            )
     }
 
     /** The certificate's CRL distribution points (none if it has no such extension). */

@@ -436,4 +436,34 @@ describe('CrlChecker (RFC 5280 6.3)', () => {
             )
         })
     })
+
+    describe('strictProfile (RFC 5280 section 5)', () => {
+        const strict = { strictProfile: true }
+
+        test('a CRL without a cRLNumber, or with a critical one, is not used', async () => {
+            const without = await crl({ extensions: [] })
+            expect((await check([without])).status).toBe('good')
+            expect((await check([without], ee, strict)).status).toBe(
+                'undetermined',
+            )
+            const critical = await crl({
+                extensions: [
+                    new Extension({
+                        extnID: OIDs.EXTENSION.CRL_NUMBER,
+                        critical: true,
+                        extnValue: new Integer({ value: 1 }),
+                    }),
+                ],
+            })
+            expect((await check([critical], ee, strict)).details).toMatch(
+                /critical cRLNumber/,
+            )
+        })
+
+        test('a CRL listing a serial number twice is not used', async () => {
+            const twice = await crl({ revoked: [{ serial: 7 }, { serial: 7 }] })
+            expect((await check([twice])).status).toBe('good')
+            expect((await check([twice], ee, strict)).details).toMatch(/twice/)
+        })
+    })
 })
