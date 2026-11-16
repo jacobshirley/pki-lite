@@ -42,7 +42,8 @@ const KNOWN_ISSUES: Record<string, string> = {}
 const check = (name: string, fn: () => Promise<void>) =>
     (KNOWN_ISSUES[name] ? test.fails : test)(name, fn, 60_000)
 
-describe('OCSP against OpenSSL', () => {
+// Every test runs OpenSSL (from docker in CI), which can take longer than vitest's 5s default
+describe('OCSP against OpenSSL', { timeout: 60_000 }, () => {
     beforeAll(async () => {
         pki = await opensslOcspPki()
     }, 120_000)
