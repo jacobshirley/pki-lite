@@ -5,6 +5,7 @@ import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Extension } from '../x509/Extension.js'
 import { GeneralName } from '../x509/GeneralName.js'
 import { asn1js } from '../core/PkiBase.js'
+import { generalizedTimes } from '../../test-fixtures/generalizedTimes.js'
 const hex = (b: Uint8Array) =>
     Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
 
@@ -495,5 +496,21 @@ describe('TSTInfo extensions: [1] IMPLICIT Extensions (RFC 3161)', () => {
             '1.2.3.4',
             '1.2.3.5',
         ])
+    })
+
+    test('genTime keeps fractional seconds, DER-encoded (rfc 3161 2.4.2)', () => {
+        const at = (genTime: string) =>
+            generalizedTimes(
+                new TSTInfo({
+                    policy: '1.2.3.4.5',
+                    messageImprint: createTestMessageImprint(),
+                    serialNumber: new Uint8Array([1]),
+                    genTime: new Date(genTime),
+                }).toDer(),
+            )
+        // no trailing zeros (asn1js wrote 20261116120000.500Z)
+        expect(at('2026-11-16T12:00:00.500Z')).toEqual(['20261116120000.5Z'])
+        expect(at('2026-11-16T12:00:00.123Z')).toEqual(['20261116120000.123Z'])
+        expect(at('2026-11-16T12:00:00Z')).toEqual(['20261116120000Z'])
     })
 })

@@ -5,6 +5,7 @@ import {
     ObjectIdentifierString,
     derToAsn1,
 } from '../core/PkiBase.js'
+import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
 import { MessageImprint } from './MessageImprint.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { Extension } from '../x509/Extension.js'
@@ -323,7 +324,8 @@ export class TSTInfo extends PkiBase<TSTInfo> {
             this.policy.toAsn1(),
             this.messageImprint.toAsn1(),
             new asn1js.Integer({ valueHex: this.serialNumber }),
-            new asn1js.GeneralizedTime({ valueDate: this.genTime }),
+            // RFC 3161 2.4.2 allows fractional seconds here (DER: no trailing zeros)
+            new GeneralizedTime({ time: this.genTime }).toAsn1(),
         ]
 
         if (this.accuracy) {

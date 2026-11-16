@@ -35,7 +35,9 @@ export class RevokedInfo extends PkiBase<RevokedInfo> {
 
     toAsn1(): Asn1BaseBlock {
         const values: asn1js.AsnType[] = [
-            new GeneralizedTime({ time: this.revocationTime }).toAsn1(),
+            new GeneralizedTime({ time: this.revocationTime })
+                .stripFractionalSeconds()
+                .toAsn1(),
         ]
 
         if (this.revocationReason !== undefined) {

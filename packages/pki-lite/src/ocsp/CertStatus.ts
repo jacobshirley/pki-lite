@@ -66,7 +66,9 @@ export class CertStatus extends PkiBase<CertStatus> {
             const values: asn1js.AsnType[] = [
                 new GeneralizedTime({
                     time: this.revocationTime || new Date(),
-                }).toAsn1(),
+                })
+                    .stripFractionalSeconds()
+                    .toAsn1(),
             ]
 
             if (this.revocationReason !== undefined) {

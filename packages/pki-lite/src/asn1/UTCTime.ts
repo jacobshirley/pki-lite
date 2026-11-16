@@ -45,7 +45,9 @@ export class GeneralizedTime extends PkiBase<Date> {
     }
 
     toAsn1() {
-        return new GeneralizedTimeValue({ time: this.date }).toAsn1()
+        return new GeneralizedTimeValue({ time: this.date })
+            .stripFractionalSeconds()
+            .toAsn1()
     }
 
     static fromAsn1(asn1: Asn1BaseBlock): GeneralizedTime {

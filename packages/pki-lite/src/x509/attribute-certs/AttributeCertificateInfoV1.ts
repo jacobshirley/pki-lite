@@ -101,10 +101,14 @@ export class AttributeCertificateInfoV1 extends PkiBase<AttributeCertificateInfo
                 value: [
                     new GeneralizedTime({
                         time: this.validityPeriod.notBefore,
-                    }).toAsn1(),
+                    })
+                        .stripFractionalSeconds()
+                        .toAsn1(),
                     new GeneralizedTime({
                         time: this.validityPeriod.notAfter,
-                    }).toAsn1(),
+                    })
+                        .stripFractionalSeconds()
+                        .toAsn1(),
                 ],
             }),
             new asn1js.Sequence({

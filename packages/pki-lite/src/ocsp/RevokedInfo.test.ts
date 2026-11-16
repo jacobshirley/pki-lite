@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { RevokedInfo } from './RevokedInfo.js'
 import { asn1js } from '../core/PkiBase.js'
 import { CRLReason } from '../x509/CRLReason.js'
+import { generalizedTimes } from '../../test-fixtures/generalizedTimes.js'
 
 describe('RevokedInfo', () => {
     it('should create a RevokedInfo with only revocation time', () => {
@@ -183,5 +184,14 @@ describe('RevokedInfo', () => {
                 parsed.revocationTime.toISOString().substring(0, 19),
             ).toEqual(date.toISOString().substring(0, 19))
         }
+    })
+
+    it('encodes revocationTime in whole seconds (rfc 6960)', () => {
+        const revokedInfo = new RevokedInfo({
+            revocationTime: new Date('2026-11-16T12:00:00.500Z'),
+        })
+        expect(generalizedTimes(revokedInfo.toDer())).toEqual([
+            '20261116120000Z',
+        ])
     })
 })

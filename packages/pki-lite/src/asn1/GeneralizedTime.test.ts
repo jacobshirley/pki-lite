@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { GeneralizedTime } from './GeneralizedTime.js'
 import * as asn1js from 'asn1js'
+import { derToAsn1 } from '../core/PkiBase.js'
 
 describe('GeneralizedDate', () => {
     test('should create GeneralizedDate from Date object', () => {
@@ -93,24 +94,71 @@ describe('GeneralizedDate', () => {
         }
     })
 
-    test('keeps milliseconds in memory but encodes whole seconds', () => {
+    test('keeps milliseconds in memory and in the encoding', () => {
         const testDate = new Date('2023-01-15T10:30:00.123Z')
         const generalizedDate = new GeneralizedTime({ time: testDate })
 
         expect(generalizedDate.time.getTime()).toEqual(testDate.getTime())
-
-        // RFC 5280 4.1.2.5.2: no fractional seconds in the encoding
         const decoded = GeneralizedTime.fromAsn1(generalizedDate.toAsn1())
-        expect(decoded.time.toISOString()).toEqual('2023-01-15T10:30:00.000Z')
+        expect(decoded.time.toISOString()).toEqual('2023-01-15T10:30:00.123Z')
+        // RFC 5280 4.1.2.5.2 profiles strip them first
+        const whole = GeneralizedTime.fromAsn1(
+            generalizedDate.stripFractionalSeconds().toAsn1(),
+        )
+        expect(whole.time.toISOString()).toEqual('2023-01-15T10:30:00.000Z')
+    })
+})
+
+/** The encoded value (`YYYYMMDDHHMMSS[.f]Z`) of a GeneralizedTime. */
+const encoded = (time: GeneralizedTime) =>
+    new TextDecoder().decode(
+        (time.toAsn1() as asn1js.GeneralizedTime).valueBlock.valueHexView,
+    )
+
+describe('GeneralizedTime DER encoding (X.690 11.7)', () => {
+    test('fractional seconds only when not zero, without trailing zeros', () => {
+        const at = (ms: number) =>
+            encoded(
+                new GeneralizedTime({
+                    time: Date.UTC(2026, 10, 16, 12, 0, 0, ms),
+                }),
+            )
+        expect(at(0)).toBe('20261116120000Z')
+        expect(at(500)).toBe('20261116120000.5Z')
+        expect(at(120)).toBe('20261116120000.12Z')
+        expect(at(7)).toBe('20261116120000.007Z')
+        expect(at(999)).toBe('20261116120000.999Z')
     })
 
-    test('encodes whole seconds, dropping milliseconds (RFC 5280 4.1.2.5.2)', () => {
+    test('the encoding parses back to the same time', () => {
+        for (const ms of [0, 500, 120, 7]) {
+            const time = new GeneralizedTime({
+                time: Date.UTC(2026, 10, 16, 12, 0, 0, ms),
+            })
+            const der = time.toDer()
+            const parsed = GeneralizedTime.fromAsn1(derToAsn1(der))
+            expect(parsed.time).toEqual(time.time)
+            expect(parsed.toDer()).toEqual(der)
+        }
+    })
+
+    test('stripFractionalSeconds rounds down to whole seconds, as a copy', () => {
         const time = new GeneralizedTime({
-            time: new Date('2026-11-13T08:03:23.166Z'),
+            time: Date.UTC(2026, 10, 16, 12, 0, 0, 999),
         })
-        const text = new TextDecoder().decode(
-            (time.toAsn1() as asn1js.GeneralizedTime).valueBlock.valueHexView,
+        const whole = time.stripFractionalSeconds()
+        expect(encoded(whole)).toBe('20261116120000Z')
+        expect(whole.time.toISOString()).toBe('2026-11-16T12:00:00.000Z')
+        expect(time.time.getUTCMilliseconds()).toBe(999)
+
+        // before 1970 too (negative epoch milliseconds)
+        const old = new GeneralizedTime({ time: '1960-06-01T00:00:00.250Z' })
+        expect(encoded(old.stripFractionalSeconds())).toBe('19600601000000Z')
+    })
+
+    test('the epoch (time 0) is kept, not replaced by now', () => {
+        expect(encoded(new GeneralizedTime({ time: 0 }))).toBe(
+            '19700101000000Z',
         )
-        expect(text).toBe('20261113080323Z')
     })
 })

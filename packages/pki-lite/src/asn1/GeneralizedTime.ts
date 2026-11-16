@@ -14,17 +14,38 @@ export class GeneralizedTime extends PkiBase<Date> {
 
     constructor(options: { time?: Date | string | number } = {}) {
         super()
-        this.time = options.time ? new Date(options.time) : new Date()
+        this.time =
+            options.time !== undefined ? new Date(options.time) : new Date()
     }
 
     /**
-     * Encodes the time as `YYYYMMDDHHMMSSZ`: in whole seconds, as RFC 5280 4.1.2.5.2
-     * requires of the GeneralizedTime values in certificates, CRLs and OCSP (RFC 6960),
-     * so any milliseconds are dropped.
+     * A copy at whole seconds, dropping any fraction (rounding down).
+     *
+     * GeneralizedTime may carry fractional seconds, but most profiles forbid them:
+     * certificates and CRLs (RFC 5280 4.1.2.5.2), OCSP (RFC 6960), attribute certificates
+     * (RFC 5755) and CMS signingTime (RFC 5652 11.3) require `YYYYMMDDHHMMSSZ`. Encode those
+     * fields through this. RFC 3161 timestamps (TSTInfo genTime) may keep the fraction.
+     *
+     * @returns A new GeneralizedTime at the start of the same second
+     */
+    stripFractionalSeconds(): GeneralizedTime {
+        const ms = this.time.getTime()
+        return new GeneralizedTime({ time: ms - (((ms % 1000) + 1000) % 1000) })
+    }
+
+    /**
+     * Encodes the time by the DER rules (X.690 11.7): UTC with a `Z`, seconds always
+     * present, and fractional seconds (to the millisecond a Date holds) only when not
+     * zero, without trailing zeros: `20261116120000Z`, `20261116120000.5Z`. Profiles that
+     * forbid fractions call {@link stripFractionalSeconds} first.
      */
     toAsn1() {
-        const seconds = Math.floor(this.time.getTime() / 1000) * 1000
-        return new asn1js.GeneralizedTime({ valueDate: new Date(seconds) })
+        const iso = this.time.toISOString() // YYYY-MM-DDTHH:MM:SS.mmmZ
+        const whole = iso.slice(0, 19).replace(/[-:T]/g, '')
+        const fraction = iso.slice(20, 23).replace(/0+$/, '')
+        return new asn1js.GeneralizedTime({
+            value: `${whole}${fraction ? `.${fraction}` : ''}Z`,
+        })
     }
 
     static fromAsn1(asn1: Asn1BaseBlock): GeneralizedTime {

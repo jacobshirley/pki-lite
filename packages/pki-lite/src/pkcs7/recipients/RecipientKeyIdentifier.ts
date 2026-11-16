@@ -50,7 +50,12 @@ export class RecipientKeyIdentifier extends PkiBase<RecipientKeyIdentifier> {
         const values = [this.subjectKeyIdentifier.toAsn1()]
 
         if (this.date) {
-            values.push(new GeneralizedTime({ time: this.date }).toAsn1())
+            // RFC 5652 does not restrict this date, but keep whole seconds as before
+            values.push(
+                new GeneralizedTime({ time: this.date })
+                    .stripFractionalSeconds()
+                    .toAsn1(),
+            )
         }
 
         if (this.other) {

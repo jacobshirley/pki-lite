@@ -7,6 +7,7 @@ import { ResponderID } from './ResponderID.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { Extension } from '../x509/Extension.js'
+import { generalizedTimes } from '../../test-fixtures/generalizedTimes.js'
 
 describe('ResponseData', () => {
     it('should create a ResponseData with minimum fields', () => {
@@ -152,5 +153,37 @@ describe('ResponseData', () => {
         expect(parsed.responses).toHaveLength(1)
         expect(parsed.responses[0].certStatus.status).toEqual('good')
         expect(parsed.responseExtensions).toBeUndefined()
+    })
+
+    it('encodes every time in whole seconds (rfc 6960, rfc 5280 4.1.2.5.2)', () => {
+        const ms = (s: string) => new Date(`2026-11-16T12:00:${s}Z`)
+        const certID = new CertID({
+            hashAlgorithm: new AlgorithmIdentifier({
+                algorithm: '2.16.840.1.101.3.4.2.1',
+            }),
+            issuerNameHash: new OctetString({ bytes: new Uint8Array([1]) }),
+            issuerKeyHash: new OctetString({ bytes: new Uint8Array([2]) }),
+            serialNumber: new Uint8Array([3]),
+        })
+        const responseData = new ResponseData({
+            responderID: new ResponderID.byKey(
+                new OctetString({ bytes: new Uint8Array([4]) }),
+            ),
+            producedAt: ms('01.500'),
+            responses: [
+                new SingleResponse({
+                    certID,
+                    certStatus: CertStatus.createRevoked(ms('02.120')),
+                    thisUpdate: ms('03.007'),
+                    nextUpdate: ms('04.999'),
+                }),
+            ],
+        })
+        expect(generalizedTimes(responseData.toDer()).sort()).toEqual([
+            '20261116120001Z',
+            '20261116120002Z',
+            '20261116120003Z',
+            '20261116120004Z',
+        ])
     })
 })
