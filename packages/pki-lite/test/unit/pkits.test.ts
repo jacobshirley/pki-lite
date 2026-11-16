@@ -14,6 +14,8 @@
  */
 import { describe, expect, test } from 'vitest'
 import { pkitsFiles, pkitsTests } from '../../test-fixtures/pkits/pkits.js'
+import { pkitsMessages } from '../../test-fixtures/pkits/pkits-smime.js'
+import { SignedData } from '../../src/pkcs7/SignedData.js'
 import { CertificateValidator } from '../../src/core/CertificateValidator.js'
 import { Certificate } from '../../src/x509/Certificate.js'
 import { CertificateList } from '../../src/x509/CertificateList.js'
@@ -133,9 +135,10 @@ function runsFor(id: string, title: string): Run[] {
     throw new Error(`PKITS ${id} "${title}": no expected result`)
 }
 
-const der = (name: string) =>
-    Uint8Array.from(atob(pkitsFiles[name]), (c) => c.charCodeAt(0))
+const der = (name: string) => base64(pkitsFiles[name])
 const isCrl = (name: string) => name.endsWith('CRL')
+const base64 = (text: string) =>
+    Uint8Array.from(atob(text), (c) => c.charCodeAt(0))
 
 const describeSettings = (settings: Settings) => {
     const parts = [
@@ -346,6 +349,50 @@ describe('NIST PKITS section 4', () => {
                 if (UNDETERMINED.has(id)) {
                     expect(result.status).toBe('CRL_UNAVAILABLE')
                 }
+            })
+        }
+    }
+})
+
+/**
+ * Section 6.2 (signed S/MIME messages): PKITS gives a message for every test in section 4,
+ * signed by the test's end entity, whose detached CMS signature carries the intermediate
+ * certificates and the CRLs. Verifying it with only the trust anchor must give the same
+ * result as the certification path.
+ */
+const messageFor = (title: string) =>
+    pkitsMessages[title.replace(/[^A-Za-z0-9]/g, '')]
+
+describe('NIST PKITS section 6 (signed messages)', () => {
+    test('has a message for every test', () => {
+        expect(
+            pkitsTests.filter((t) => !messageFor(t.title)).map((t) => t.id),
+        ).toEqual([])
+    })
+
+    for (const { id, title, path } of pkitsTests) {
+        for (const run of runsFor(id, title)) {
+            const { valid, ...settings } = run
+            const label = describeSettings(settings)
+            const name = `${id} ${title} (${label}): ${valid ? 'valid' : 'invalid'}`
+            const issue = KNOWN_ISSUES[id] ?? KNOWN_ISSUES[`${id} (${label})`]
+            ;(issue ? test.fails : test)(name, async () => {
+                const message = messageFor(title)
+                const signedData = SignedData.fromCms(base64(message.signature))
+                const result = await signedData.verify({
+                    data: base64(message.content),
+                    certificateValidation: {
+                        trustAnchors: [
+                            { certificate: Certificate.fromDer(der(path[0])) },
+                        ],
+                        checkCRL: true,
+                        ...settings,
+                    },
+                })
+                expect(
+                    result.valid,
+                    result.valid ? '' : result.reasons.join('; '),
+                ).toBe(valid)
             })
         }
     }
