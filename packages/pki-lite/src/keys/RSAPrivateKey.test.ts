@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { RSAPrivateKey } from './RSAPrivateKey.js'
-import * as asn1js from 'asn1js'
 
 describe('RSAPrivateKey', () => {
     // Sample test data
@@ -73,14 +73,14 @@ describe('RSAPrivateKey', () => {
 
         const asn1 = key.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
-        const values = (asn1 as any).valueBlock.value
+        const values = asn1.children
         expect(values.length).toEqual(9)
 
         // Check version
-        expect(values[0]).toBeInstanceOf(asn1js.Integer)
-        expect((values[0] as any).valueBlock.valueDec).toEqual(0)
+        expect(values[0].is(UniversalTag.Integer)).toBe(true)
+        expect(der.readNumber(values[0])).toEqual(0)
 
         // Check other components (using the same method as in the fromAsn1 method)
         const components = [
@@ -95,30 +95,25 @@ describe('RSAPrivateKey', () => {
         ]
 
         for (let i = 0; i < components.length; i++) {
-            expect(values[i + 1]).toBeInstanceOf(asn1js.Integer)
-            const valueBlock = (values[i + 1] as any).valueBlock
-            const actualValue = new Uint8Array(
-                valueBlock.valueHexView || valueBlock.valueBeforeDecodeView,
-            )
+            expect(values[i + 1].is(UniversalTag.Integer)).toBe(true)
+            const actualValue = der.readIntegerBytes(values[i + 1])
             expect(actualValue).toEqual(components[i])
         }
     })
 
     test('fromAsn1 parses ASN.1 structure correctly', () => {
         // Create an ASN.1 structure
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 0 }),
-                new asn1js.Integer({ valueHex: modulus }),
-                new asn1js.Integer({ valueHex: publicExponent }),
-                new asn1js.Integer({ valueHex: privateExponent }),
-                new asn1js.Integer({ valueHex: prime1 }),
-                new asn1js.Integer({ valueHex: prime2 }),
-                new asn1js.Integer({ valueHex: exponent1 }),
-                new asn1js.Integer({ valueHex: exponent2 }),
-                new asn1js.Integer({ valueHex: coefficient }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(0),
+            der.primitive(UniversalTag.Integer, modulus),
+            der.primitive(UniversalTag.Integer, publicExponent),
+            der.primitive(UniversalTag.Integer, privateExponent),
+            der.primitive(UniversalTag.Integer, prime1),
+            der.primitive(UniversalTag.Integer, prime2),
+            der.primitive(UniversalTag.Integer, exponent1),
+            der.primitive(UniversalTag.Integer, exponent2),
+            der.primitive(UniversalTag.Integer, coefficient),
+        ])
 
         const key = RSAPrivateKey.fromAsn1(asn1)
 
@@ -145,8 +140,8 @@ describe('RSAPrivateKey', () => {
             coefficient,
         })
 
-        const der = key.toDer()
-        const parsedKey = RSAPrivateKey.fromDer(der)
+        const encoded = key.toDer()
+        const parsedKey = RSAPrivateKey.fromDer(encoded)
 
         expect(parsedKey.version).toEqual(key.version)
         expect(parsedKey.modulus).toEqual(key.modulus)
@@ -179,57 +174,51 @@ describe('RSAPrivateKey', () => {
 
     test('fromAsn1 throws on invalid ASN.1 structure', () => {
         // Not a sequence
-        const invalidAsn1 = new asn1js.Integer({ value: 123 })
+        const invalidAsn1 = der.integer(123)
 
         expect(() => RSAPrivateKey.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
 
         // Not enough elements
-        const invalidSequence = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 0 }),
-                new asn1js.Integer({ valueHex: modulus }),
-            ],
-        })
+        const invalidSequence = der.sequence([
+            der.integer(0),
+            der.primitive(UniversalTag.Integer, modulus),
+        ])
 
         expect(() => RSAPrivateKey.fromAsn1(invalidSequence)).toThrow(
             'Invalid ASN.1 structure: expected at least 9 elements',
         )
 
         // Version not an integer
-        const invalidVersion = new asn1js.Sequence({
-            value: [
-                new asn1js.OctetString({ valueHex: new Uint8Array([0]) }),
-                new asn1js.Integer({ valueHex: modulus }),
-                new asn1js.Integer({ valueHex: publicExponent }),
-                new asn1js.Integer({ valueHex: privateExponent }),
-                new asn1js.Integer({ valueHex: prime1 }),
-                new asn1js.Integer({ valueHex: prime2 }),
-                new asn1js.Integer({ valueHex: exponent1 }),
-                new asn1js.Integer({ valueHex: exponent2 }),
-                new asn1js.Integer({ valueHex: coefficient }),
-            ],
-        })
+        const invalidVersion = der.sequence([
+            der.octetString(new Uint8Array([0])),
+            der.primitive(UniversalTag.Integer, modulus),
+            der.primitive(UniversalTag.Integer, publicExponent),
+            der.primitive(UniversalTag.Integer, privateExponent),
+            der.primitive(UniversalTag.Integer, prime1),
+            der.primitive(UniversalTag.Integer, prime2),
+            der.primitive(UniversalTag.Integer, exponent1),
+            der.primitive(UniversalTag.Integer, exponent2),
+            der.primitive(UniversalTag.Integer, coefficient),
+        ])
 
         expect(() => RSAPrivateKey.fromAsn1(invalidVersion)).toThrow(
             'Invalid ASN.1 structure: version must be INTEGER',
         )
 
         // One of the components not an integer
-        const invalidComponent = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 0 }),
-                new asn1js.Integer({ valueHex: modulus }),
-                new asn1js.Integer({ valueHex: publicExponent }),
-                new asn1js.OctetString({ valueHex: privateExponent }), // This should be an Integer
-                new asn1js.Integer({ valueHex: prime1 }),
-                new asn1js.Integer({ valueHex: prime2 }),
-                new asn1js.Integer({ valueHex: exponent1 }),
-                new asn1js.Integer({ valueHex: exponent2 }),
-                new asn1js.Integer({ valueHex: coefficient }),
-            ],
-        })
+        const invalidComponent = der.sequence([
+            der.integer(0),
+            der.primitive(UniversalTag.Integer, modulus),
+            der.primitive(UniversalTag.Integer, publicExponent),
+            der.octetString(privateExponent), // This should be an Integer
+            der.primitive(UniversalTag.Integer, prime1),
+            der.primitive(UniversalTag.Integer, prime2),
+            der.primitive(UniversalTag.Integer, exponent1),
+            der.primitive(UniversalTag.Integer, exponent2),
+            der.primitive(UniversalTag.Integer, coefficient),
+        ])
 
         expect(() => RSAPrivateKey.fromAsn1(invalidComponent)).toThrow(
             'Invalid ASN.1 structure: element at index 3 must be INTEGER',

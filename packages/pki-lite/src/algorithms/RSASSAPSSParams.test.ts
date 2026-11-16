@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RSASSAPSSParams } from './RSASSAPSSParams.js'
 import { AlgorithmIdentifier } from './AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, derToAsn1, TagClass, UniversalTag } from '../core/PkiBase.js'
 
 describe('RSASSAPSSParams', () => {
     it('should create with default constructor', () => {
@@ -54,51 +54,35 @@ describe('RSASSAPSSParams', () => {
         })
         const asn1 = params.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
         // Check that all four parameters are present
-        const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value.length).toEqual(4)
+        const sequence = asn1
+        expect(sequence.children.length).toEqual(4)
 
         // Each parameter should be a context-specific tagged value
-        expect((sequence.valueBlock.value[0] as any).idBlock.tagClass).toEqual(
-            3,
-        ) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[0] as any).idBlock.tagNumber).toEqual(
-            0,
-        ) // hashAlgorithm [0]
+        expect(sequence.children[0].tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(sequence.children[0].tag).toEqual(0) // hashAlgorithm [0]
 
-        expect((sequence.valueBlock.value[1] as any).idBlock.tagClass).toEqual(
-            3,
-        ) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[1] as any).idBlock.tagNumber).toEqual(
-            1,
-        ) // maskGenAlgorithm [1]
+        expect(sequence.children[1].tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(sequence.children[1].tag).toEqual(1) // maskGenAlgorithm [1]
 
-        expect((sequence.valueBlock.value[2] as any).idBlock.tagClass).toEqual(
-            3,
-        ) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[2] as any).idBlock.tagNumber).toEqual(
-            2,
-        ) // saltLength [2]
+        expect(sequence.children[2].tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(sequence.children[2].tag).toEqual(2) // saltLength [2]
 
-        expect((sequence.valueBlock.value[3] as any).idBlock.tagClass).toEqual(
-            3,
-        ) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[3] as any).idBlock.tagNumber).toEqual(
-            3,
-        ) // trailerField [3]
+        expect(sequence.children[3].tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(sequence.children[3].tag).toEqual(3) // trailerField [3]
     })
 
     it('should convert to ASN.1 with no parameters (empty sequence)', () => {
         const params = new RSASSAPSSParams({})
         const asn1 = params.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
         // No parameters should result in an empty sequence
-        const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value.length).toEqual(0)
+        const sequence = asn1
+        expect(sequence.children.length).toEqual(0)
     })
 
     it('should convert to ASN.1 with partial parameters', () => {
@@ -113,19 +97,15 @@ describe('RSASSAPSSParams', () => {
         })
         const asn1 = params.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
         // Only hashAlgorithm and saltLength should be present
-        const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value.length).toEqual(2)
+        const sequence = asn1
+        expect(sequence.children.length).toEqual(2)
 
         // Verify parameters are correctly tagged
-        expect((sequence.valueBlock.value[0] as any).idBlock.tagNumber).toEqual(
-            0,
-        ) // hashAlgorithm [0]
-        expect((sequence.valueBlock.value[1] as any).idBlock.tagNumber).toEqual(
-            2,
-        ) // saltLength [2]
+        expect(sequence.children[0].tag).toEqual(0) // hashAlgorithm [0]
+        expect(sequence.children[1].tag).toEqual(2) // saltLength [2]
     })
 
     it('should parse from ASN.1 with all parameters', () => {
@@ -209,7 +189,7 @@ describe('RSASSAPSSParams', () => {
             der.byteOffset,
             der.byteOffset + der.byteLength,
         )
-        const asn1 = asn1js.fromBER(arrayBuffer as ArrayBuffer).result
+        const asn1 = derToAsn1(arrayBuffer as ArrayBuffer)
         const parsed = RSASSAPSSParams.fromAsn1(asn1)
 
         expect(parsed.hashAlgorithm).toBeDefined()

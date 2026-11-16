@@ -3,9 +3,8 @@ import { AuthorityKeyIdentifier } from './AuthorityKeyIdentifier.js'
 import { KeyIdentifier } from '../../pkcs7/recipients/KeyIdentifier.js'
 import { GeneralNames, dNSName } from '../GeneralName.js'
 import { Integer } from '../../asn1/Integer.js'
-import * as asn1js from 'asn1js'
 import { Extension } from '../Extension.js'
-import { derToAsn1 } from '../../core/PkiBase.js'
+import { der, derToAsn1, TagClass, UniversalTag } from '../../core/PkiBase.js'
 
 describe('AuthorityKeyIdentifier', () => {
     test('should create AuthorityKeyIdentifier with only keyIdentifier', () => {
@@ -79,12 +78,12 @@ describe('AuthorityKeyIdentifier', () => {
         })
 
         const asn1 = aki.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(1)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(1)
 
-        const keyIdBlock = asn1.valueBlock.value[0] as asn1js.Constructed
-        expect(keyIdBlock.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(keyIdBlock.idBlock.tagNumber).toEqual(0) // [0]
+        const keyIdBlock = asn1.children[0]
+        expect(keyIdBlock.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(keyIdBlock.tag).toEqual(0) // [0]
     })
 
     test('should convert to ASN.1 with all fields', () => {
@@ -101,32 +100,25 @@ describe('AuthorityKeyIdentifier', () => {
         })
 
         const asn1 = aki.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3)
 
-        const keyIdBlock = asn1.valueBlock.value[0] as asn1js.Constructed
-        expect(keyIdBlock.idBlock.tagNumber).toEqual(0)
+        const keyIdBlock = asn1.children[0]
+        expect(keyIdBlock.tag).toEqual(0)
 
-        const issuerBlock = asn1.valueBlock.value[1] as asn1js.Constructed
-        expect(issuerBlock.idBlock.tagNumber).toEqual(1)
+        const issuerBlock = asn1.children[1]
+        expect(issuerBlock.tag).toEqual(1)
 
-        const serialBlock = asn1.valueBlock.value[2] as asn1js.Constructed
-        expect(serialBlock.idBlock.tagNumber).toEqual(2)
+        const serialBlock = asn1.children[2]
+        expect(serialBlock.tag).toEqual(2)
     })
 
     test('should parse from ASN.1 with keyIdentifier', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 0 }, // [0]
-                    value: [
-                        new asn1js.OctetString({
-                            valueHex: new Uint8Array([1, 2, 3, 4, 5]),
-                        }),
-                    ],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.constructed(0, [
+                der.octetString(new Uint8Array([1, 2, 3, 4, 5])),
+            ]),
+        ])
 
         const aki = AuthorityKeyIdentifier.fromAsn1(asn1)
         expect(aki.keyIdentifier).toBeInstanceOf(KeyIdentifier)
@@ -138,39 +130,19 @@ describe('AuthorityKeyIdentifier', () => {
     })
 
     test('should parse from ASN.1 with all fields', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 0 }, // [0] keyIdentifier
-                    value: [
-                        new KeyIdentifier({
-                            bytes: new Uint8Array([1, 2, 3, 4, 5]),
-                        }).toAsn1(),
-                    ],
-                }),
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 1 }, // [1] authorityCertIssuer
-                    value: [
-                        new asn1js.Sequence({
-                            value: [
-                                new asn1js.Constructed({
-                                    idBlock: { tagClass: 3, tagNumber: 2 }, // [2] dNSName
-                                    value: [
-                                        new asn1js.IA5String({
-                                            value: 'ca.example.com',
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 2 }, // [2] authorityCertSerialNumber
-                    value: [new asn1js.Integer({ value: 123 })],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.constructed(0, [
+                new KeyIdentifier({
+                    bytes: new Uint8Array([1, 2, 3, 4, 5]),
+                }).toAsn1(),
+            ]),
+            der.constructed(1, [
+                der.sequence([
+                    der.constructed(2, [der.ia5String('ca.example.com')]),
+                ]),
+            ]),
+            der.constructed(2, [der.integer(123)]),
+        ])
 
         const aki = AuthorityKeyIdentifier.fromAsn1(asn1)
         expect(aki.keyIdentifier).toBeInstanceOf(KeyIdentifier)
@@ -180,7 +152,7 @@ describe('AuthorityKeyIdentifier', () => {
     })
 
     test('fromAsn1 should accept an empty sequence (all fields optional)', () => {
-        const asn1 = new asn1js.Sequence({ value: [] })
+        const asn1 = der.sequence([])
 
         const aki = AuthorityKeyIdentifier.fromAsn1(asn1)
         expect(aki.keyIdentifier).toBeUndefined()

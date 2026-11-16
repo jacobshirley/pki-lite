@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 import { implicitTag, isContextTag } from '../../core/tagging.js'
 
@@ -32,49 +32,35 @@ export class PolicyConstraints extends PkiBase<PolicyConstraints> {
         this.inhibitPolicyMapping = options.inhibitPolicyMapping
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
         // both fields are IMPLICIT INTEGERs
         if (this.requireExplicitPolicy !== undefined) {
-            values.push(
-                implicitTag(
-                    new asn1js.Integer({ value: this.requireExplicitPolicy }),
-                    0,
-                ),
-            )
+            values.push(implicitTag(der.integer(this.requireExplicitPolicy), 0))
         }
         if (this.inhibitPolicyMapping !== undefined) {
-            values.push(
-                implicitTag(
-                    new asn1js.Integer({ value: this.inhibitPolicyMapping }),
-                    1,
-                ),
-            )
+            values.push(implicitTag(der.integer(this.inhibitPolicyMapping), 1))
         }
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): PolicyConstraints {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): PolicyConstraints {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure for PolicyConstraints',
             )
         }
 
-        const skipCerts = (element: Asn1BaseBlock): number => {
-            const integer =
-                element instanceof asn1js.Integer
-                    ? element
-                    : new asn1js.Integer({
-                          valueHex: (element as asn1js.Primitive).valueBlock
-                              .valueHexView,
-                      })
-            return integer.valueBlock.valueDec
+        const skipCerts = (element: Asn1Node): number => {
+            const integer = element.is(UniversalTag.Integer)
+                ? element
+                : element.retag(UniversalTag.Integer)
+            return der.readNumber(integer)
         }
 
         let requireExplicitPolicy: number | undefined
         let inhibitPolicyMapping: number | undefined
-        for (const element of asn1.valueBlock.value) {
+        for (const element of asn1.children) {
             if (isContextTag(element, 0)) {
                 requireExplicitPolicy = skipCerts(element)
             } else if (isContextTag(element, 1)) {

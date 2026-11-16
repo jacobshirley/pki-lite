@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { RevocationInfoChoices } from './RevocationInfoChoices.js'
 import { CertificateList } from '../x509/CertificateList.js'
 import { OtherRevocationInfoFormat } from './OtherRevocationInfoFormat.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, TagClass, UniversalTag } from '../core/PkiBase.js'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 
 describe('RevocationInfoChoices', () => {
@@ -12,8 +12,8 @@ describe('RevocationInfoChoices', () => {
 
         // Check that the ASN.1 encoding produces a SET
         const asn1 = revocationInfoChoices.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toEqual(true)
-        expect((asn1 as any).valueBlock.value.length).toEqual(0)
+        expect(asn1.is(UniversalTag.Set)).toEqual(true)
+        expect(asn1.children.length).toEqual(0)
     })
 
     it('should create RevocationInfoChoices with a CRL', () => {
@@ -26,8 +26,8 @@ describe('RevocationInfoChoices', () => {
 
         // Check that the ASN.1 encoding is correct
         const asn1 = revocationInfoChoices.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toEqual(true)
-        expect((asn1 as any).valueBlock.value.length).toEqual(1)
+        expect(asn1.is(UniversalTag.Set)).toEqual(true)
+        expect(asn1.children.length).toEqual(1)
 
         // Check that the item is a CRL
         expect(revocationInfoChoices[0] instanceof CertificateList).toEqual(
@@ -38,7 +38,7 @@ describe('RevocationInfoChoices', () => {
     it('should create RevocationInfoChoices with OtherRevocationInfoFormat', () => {
         // Create an OtherRevocationInfoFormat instance
         const otherRevInfoFormat = '1.3.6.1.5.5.7.16.2' // OCSP response OID
-        const otherRevInfo = new Uint8Array([1, 2, 3, 4, 5]) // Mock OCSP response data
+        const otherRevInfo = new Uint8Array([0x04, 0x03, 1, 2, 3]) // mock OCSP response data, as an OCTET STRING
         const otherFormat = new OtherRevocationInfoFormat({
             otherRevInfoFormat,
             otherRevInfo,
@@ -50,13 +50,13 @@ describe('RevocationInfoChoices', () => {
 
         // Check that the ASN.1 encoding is correct
         const asn1 = revocationInfoChoices.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toEqual(true)
-        expect((asn1 as any).valueBlock.value.length).toEqual(1)
+        expect(asn1.is(UniversalTag.Set)).toEqual(true)
+        expect(asn1.children.length).toEqual(1)
 
         // Check that the item is tagged as OtherRevocationInfoFormat [1]
-        const firstItem = (asn1 as any).valueBlock.value[0]
-        expect(firstItem.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
-        expect(firstItem.idBlock.tagNumber).toEqual(1) // [1]
+        const firstItem = asn1.children[0]
+        expect(firstItem.tagClass).toEqual(TagClass.Context) // CONTEXT_SPECIFIC
+        expect(firstItem.tag).toEqual(1) // [1]
     })
 
     it('should decode RevocationInfoChoices from ASN.1', () => {
@@ -85,7 +85,7 @@ describe('RevocationInfoChoices', () => {
 
         // Create an OtherRevocationInfoFormat instance
         const otherRevInfoFormat = '1.3.6.1.5.5.7.16.2' // OCSP response OID
-        const otherRevInfo = new Uint8Array([1, 2, 3, 4, 5]) // Mock OCSP response data
+        const otherRevInfo = new Uint8Array([0x04, 0x03, 1, 2, 3]) // mock OCSP response data, as an OCTET STRING
         const otherFormat = new OtherRevocationInfoFormat({
             otherRevInfoFormat,
             otherRevInfo,
@@ -100,13 +100,13 @@ describe('RevocationInfoChoices', () => {
 
         // Check that the ASN.1 encoding is correct
         const asn1 = revocationInfoChoices.toAsn1()
-        expect(asn1 instanceof asn1js.Set).toEqual(true)
-        expect((asn1 as any).valueBlock.value.length).toEqual(2)
+        expect(asn1.is(UniversalTag.Set)).toEqual(true)
+        expect(asn1.children.length).toEqual(2)
 
         // Check that the second item is tagged as OtherRevocationInfoFormat [1]
-        const secondItem = (asn1 as any).valueBlock.value[1]
-        expect(secondItem.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
-        expect(secondItem.idBlock.tagNumber).toEqual(1) // [1]
+        const secondItem = asn1.children[1]
+        expect(secondItem.tagClass).toEqual(TagClass.Context) // CONTEXT_SPECIFIC
+        expect(secondItem.tag).toEqual(1) // [1]
 
         // Decode back
         const decodedChoices = RevocationInfoChoices.fromAsn1(asn1)
@@ -119,7 +119,7 @@ describe('RevocationInfoChoices', () => {
 
     it('should throw when trying to decode from an invalid ASN.1 structure', () => {
         // Try to decode from a non-Set ASN.1 structure
-        const invalidAsn1 = new asn1js.Sequence()
+        const invalidAsn1 = der.sequence([])
         expect(() => RevocationInfoChoices.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected Set for RevocationInfoChoices',
         )

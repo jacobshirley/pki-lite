@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, derToAsn1, UniversalTag } from '../core/PkiBase.js'
 import { BitString } from './BitString.js'
-import * as asn1js from 'asn1js'
 
 describe('BitString', () => {
     // Basic constructor tests
@@ -47,7 +47,7 @@ describe('BitString', () => {
         const asn1 = original.toAsn1()
 
         // Verify it's the correct ASN.1 type
-        expect(asn1).toBeInstanceOf(asn1js.BitString)
+        expect(asn1.is(UniversalTag.BitString)).toBe(true)
 
         // Convert back using fromAsn1
         const decoded = BitString.fromAsn1(asn1)
@@ -59,9 +59,7 @@ describe('BitString', () => {
 
     // Test fromAsn1 with invalid input
     test('fromAsn1 should throw error for non-BIT STRING ASN.1 types', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([42]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([42]))
         expect(() => BitString.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected BIT STRING',
         )
@@ -83,8 +81,8 @@ describe('BitString', () => {
         expect(bitString.bytes).toEqual(binaryData)
 
         // toAsn1 should preserve the binary data
-        const asn1 = bitString.toAsn1() as asn1js.BitString
-        expect(new Uint8Array(asn1.valueBlock.valueHexView)).toEqual(binaryData)
+        const asn1 = bitString.toAsn1()
+        expect(der.readBitString(asn1).bytes).toEqual(binaryData)
 
         // Round-trip via fromAsn1
         const roundTrip = BitString.fromAsn1(asn1)
@@ -140,5 +138,13 @@ describe('BitString', () => {
             const bitString = new BitString({ value: input })
             expect(bitString.toHexString().toLowerCase()).toEqual(expected)
         }
+    })
+
+    test('preserves unused bits through a DER round-trip', () => {
+        const encoded = new Uint8Array([0x03, 0x02, 0x05, 0xa0])
+        const bitString = BitString.fromAsn1(derToAsn1(encoded))
+        expect(bitString.unusedBits).toBe(5)
+        expect(bitString.bytes).toEqual(new Uint8Array([0xa0]))
+        expect(bitString.toDer()).toEqual(encoded)
     })
 })

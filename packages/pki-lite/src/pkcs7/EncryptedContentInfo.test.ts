@@ -4,7 +4,7 @@ import {
     AlgorithmIdentifier,
     ContentEncryptionAlgorithmIdentifier,
 } from '../algorithms/AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { UniversalTag } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 import { EncryptedContentInfo } from './EncryptedContentInfo.js'
 import { OctetString } from '../asn1/OctetString.js'
@@ -60,8 +60,8 @@ describe('EncryptedContentInfo', () => {
 
         const asn1 = encryptedContentInfo.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value).toHaveLength(2) // contentType, contentEncryptionAlgorithm
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(2) // contentType, contentEncryptionAlgorithm
     })
 
     it('should convert to ASN.1 structure with encrypted content', () => {
@@ -79,8 +79,8 @@ describe('EncryptedContentInfo', () => {
 
         const asn1 = encryptedContentInfo.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value).toHaveLength(3) // includes encrypted content
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(3) // includes encrypted content
     })
 
     it('should convert to string', () => {

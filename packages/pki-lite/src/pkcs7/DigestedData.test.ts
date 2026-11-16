@@ -2,7 +2,7 @@ import { describe, it, expect, assert } from 'vitest'
 import { DigestedData } from './DigestedData.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { EncapsulatedContentInfo } from './EncapsulatedContentInfo.js'
-import { asn1js } from '../core/PkiBase.js'
+import { UniversalTag } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 
 describe('DigestedData', () => {
@@ -47,8 +47,8 @@ describe('DigestedData', () => {
         })
         const asn1 = digestedData.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value).toHaveLength(4) // version, digestAlgorithm, contentInfo, digest
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(4) // version, digestAlgorithm, contentInfo, digest
     })
 
     it('should convert to string', () => {

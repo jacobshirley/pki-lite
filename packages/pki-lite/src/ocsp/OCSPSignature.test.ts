@@ -7,7 +7,7 @@ import { Validity } from '../x509/Validity.js'
 import { Name } from '../x509/Name.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der } from '../core/PkiBase.js'
 
 describe('OCSPSignature', () => {
     const createTestAlgorithm = () => {
@@ -170,7 +170,7 @@ describe('OCSPSignature', () => {
     })
 
     it('should throw error on invalid ASN.1 structure', () => {
-        const invalidAsn1 = {} as any
+        const invalidAsn1 = der.integer(1) // not a SEQUENCE
 
         expect(() => OCSPSignature.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -178,13 +178,7 @@ describe('OCSPSignature', () => {
     })
 
     it('should throw error on wrong number of elements', () => {
-        const invalidAsn1 = {
-            constructor: asn1js.Sequence,
-            valueBlock: {
-                value: [1], // only 1 element instead of 2 or 3
-            },
-        } as any
-        Object.setPrototypeOf(invalidAsn1, asn1js.Sequence.prototype)
+        const invalidAsn1 = der.sequence([der.integer(1)]) // only 1 element instead of 2 or 3
 
         expect(() => OCSPSignature.fromAsn1(invalidAsn1)).toThrow(
             'Invalid Signature: expected 2 or 3 elements',
@@ -195,23 +189,15 @@ describe('OCSPSignature', () => {
         const signatureAlgorithm = createTestAlgorithm()
         const signature = createTestSignature()
         const validAlgorithmAsn1 = signatureAlgorithm.toAsn1()
-        const validSignatureAsn1 = new asn1js.BitString({ valueHex: signature })
+        const validSignatureAsn1 = der.bitString(signature)
 
-        const invalidCertsContainer = new asn1js.Constructed({
-            idBlock: {
-                tagClass: 3, // CONTEXT-SPECIFIC
-                tagNumber: 1, // [1] - wrong tag, should be [0]
-            },
-            value: [new asn1js.Sequence({ value: [] })],
-        })
+        const invalidCertsContainer = der.constructed(1, [der.sequence([])])
 
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [
-                validAlgorithmAsn1,
-                validSignatureAsn1,
-                invalidCertsContainer,
-            ],
-        })
+        const invalidAsn1 = der.sequence([
+            validAlgorithmAsn1,
+            validSignatureAsn1,
+            invalidCertsContainer,
+        ])
 
         expect(() => OCSPSignature.fromAsn1(invalidAsn1)).toThrow(
             'Invalid Signature: expected [0] tag for certs',
@@ -231,8 +217,8 @@ describe('OCSPSignature', () => {
 
         // When converting to ASN.1, empty certs should not be included
         const asn1 = ocspSignature.toAsn1()
-        const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value).toHaveLength(2) // Only algorithm and signature
+        const sequence = asn1
+        expect(sequence.children).toHaveLength(2) // Only algorithm and signature
     })
 
     it('should handle large signature values', () => {

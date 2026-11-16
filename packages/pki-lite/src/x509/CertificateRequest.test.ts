@@ -4,7 +4,7 @@ import { CertificateRequestInfo } from './CertificateRequestInfo.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { Attribute } from './Attribute.js'
 import { SubjectPublicKeyInfo } from '../keys/SubjectPublicKeyInfo.js'
 import { RDNSequence } from './RDNSequence.js'
@@ -24,17 +24,17 @@ describe('CertificateRequest', () => {
         const request = createSampleRequest()
         const asn1 = request.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3)
 
         // First element should be the requestInfo (a Sequence)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[0].is(UniversalTag.Sequence)).toBe(true)
 
         // Second element should be the signatureAlgorithm (a Sequence)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[1].is(UniversalTag.Sequence)).toBe(true)
 
         // Third element should be the signature (a BitString)
-        expect(asn1.valueBlock.value[2]).toBeInstanceOf(asn1js.BitString)
+        expect(asn1.children[2].is(UniversalTag.BitString)).toBe(true)
     })
 
     test('can be parsed from ASN.1', () => {
@@ -63,59 +63,51 @@ describe('CertificateRequest', () => {
     })
 
     test('fromAsn1 throws error for non-sequence', () => {
-        const asn1 = new asn1js.Integer({ value: 1 })
+        const asn1 = der.integer(1)
         expect(() => CertificateRequest.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
     })
 
     test('fromAsn1 throws error for wrong number of elements', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({}),
-                new asn1js.Sequence({}),
-                // Missing signature
-            ],
-        })
+        const asn1 = der.sequence([
+            der.sequence([]),
+            der.sequence([]),
+            // Missing signature
+        ])
         expect(() => CertificateRequest.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected 3 elements',
         )
     })
 
     test('fromAsn1 throws error for invalid requestInfo', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 1 }), // Not a sequence
-                new asn1js.Sequence({}),
-                new asn1js.BitString({ valueHex: new Uint8Array([1, 2, 3]) }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(1), // Not a sequence
+            der.sequence([]),
+            der.bitString(new Uint8Array([1, 2, 3])),
+        ])
         expect(() => CertificateRequest.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: requestInfo must be a SEQUENCE',
         )
     })
 
     test('fromAsn1 throws error for invalid signatureAlgorithm', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({}),
-                new asn1js.Integer({ value: 1 }), // Not a sequence
-                new asn1js.BitString({ valueHex: new Uint8Array([1, 2, 3]) }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.sequence([]),
+            der.integer(1), // Not a sequence
+            der.bitString(new Uint8Array([1, 2, 3])),
+        ])
         expect(() => CertificateRequest.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: signatureAlgorithm must be a SEQUENCE',
         )
     })
 
     test('fromAsn1 throws error for invalid signature', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({}),
-                new asn1js.Sequence({}),
-                new asn1js.Integer({ value: 1 }), // Not a BitString
-            ],
-        })
+        const asn1 = der.sequence([
+            der.sequence([]),
+            der.sequence([]),
+            der.integer(1), // Not a BitString
+        ])
         expect(() => CertificateRequest.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: signature must be a BIT STRING',
         )
@@ -148,7 +140,7 @@ describe('CertificateRequest', () => {
                 SEQUENCE :
                   OBJECT IDENTIFIER : 1.2.840.113549.1.9.14
                   SET :
-                    BOOLEAN: FALSE
+                    SEQUENCE :
             SEQUENCE :
               OBJECT IDENTIFIER : 1.2.840.113549.1.1.11
             BIT STRING : 0000101000010100000111100010100000110010"
@@ -159,7 +151,7 @@ describe('CertificateRequest', () => {
         const request = createSampleRequest()
         expect(request.toPem()).toMatchInlineSnapshot(`
           "-----BEGIN CERTIFICATE REQUEST-----
-          MIGHMHACAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaASMBAGCSqGSIb3DQEJDjEDAQEAMAsGCSqGSIb3DQEBCwMGAAoUHigy
+          MIGGMG8CAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaARMA8GCSqGSIb3DQEJDjECMAAwCwYJKoZIhvcNAQELAwYAChQeKDI=
           -----END CERTIFICATE REQUEST-----"
         `)
     })
@@ -210,7 +202,7 @@ function createSampleRequest(): CertificateRequest {
         new Attribute({
             type: '1.2.840.113549.1.9.14',
             // extensionRequest
-            values: [new Uint8Array([1, 2, 3])],
+            values: [new Uint8Array([0x30, 0x00])], // empty Extensions
         }),
     ]
 

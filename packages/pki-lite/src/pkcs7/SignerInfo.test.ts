@@ -6,7 +6,7 @@ import { Name } from '../x509/Name.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
 import { Attribute } from '../x509/Attribute.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 
 describe('SignerInfo', () => {
@@ -78,9 +78,7 @@ describe('SignerInfo', () => {
             }),
             new Attribute({
                 type: '1.2.840.113549.1.9.4', // messageDigest
-                values: [
-                    new asn1js.OctetString({ valueHex: new Uint8Array(32) }),
-                ],
+                values: [der.octetString(new Uint8Array(32))],
             }),
         ]
 
@@ -102,9 +100,7 @@ describe('SignerInfo', () => {
         const unsignedAttrs = [
             new Attribute({
                 type: '1.2.840.113549.1.9.6', // counterSignature
-                values: [
-                    new asn1js.OctetString({ valueHex: new Uint8Array(128) }),
-                ],
+                values: [der.octetString(new Uint8Array(128))],
             }),
         ]
 
@@ -135,9 +131,7 @@ describe('SignerInfo', () => {
         const unsignedAttrs = [
             new Attribute({
                 type: '1.2.840.113549.1.9.6',
-                values: [
-                    new asn1js.OctetString({ valueHex: new Uint8Array(128) }),
-                ],
+                values: [der.octetString(new Uint8Array(128))],
             }),
         ]
 
@@ -167,16 +161,16 @@ describe('SignerInfo', () => {
         })
 
         const asn1 = signerInfo.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
-        const sequence = asn1 as asn1js.Sequence
+        const sequence = asn1
         // Should have: version, sid, digestAlgorithm, signatureAlgorithm, signature (5 elements)
-        expect(sequence.valueBlock.value.length).toEqual(5)
+        expect(sequence.children.length).toEqual(5)
 
         // Check version
-        expect(sequence.valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
-        const version = sequence.valueBlock.value[0] as asn1js.Integer
-        expect(version.valueBlock.valueDec).toEqual(1)
+        expect(sequence.children[0].is(UniversalTag.Integer)).toBe(true)
+        const version = sequence.children[0]
+        expect(der.readNumber(version)).toEqual(1)
     })
 
     test('can be converted to ASN.1 with signed attributes', () => {
@@ -199,20 +193,18 @@ describe('SignerInfo', () => {
         })
 
         const asn1 = signerInfo.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
-        const sequence = asn1 as asn1js.Sequence
+        const sequence = asn1
         // Should have: version, sid, digestAlgorithm, signedAttrs[0], signatureAlgorithm, signature (6 elements)
-        expect(sequence.valueBlock.value.length).toEqual(6)
+        expect(sequence.children.length).toEqual(6)
     })
 
     test('can be converted to ASN.1 with unsigned attributes', () => {
         const unsignedAttrs = [
             new Attribute({
                 type: '1.2.840.113549.1.9.6',
-                values: [
-                    new asn1js.OctetString({ valueHex: new Uint8Array(128) }),
-                ],
+                values: [der.octetString(new Uint8Array(128))],
             }),
         ]
 
@@ -226,11 +218,11 @@ describe('SignerInfo', () => {
         })
 
         const asn1 = signerInfo.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
-        const sequence = asn1 as asn1js.Sequence
+        const sequence = asn1
         // Should have: version, sid, digestAlgorithm, signatureAlgorithm, signature, unsignedAttrs[1] (6 elements)
-        expect(sequence.valueBlock.value.length).toEqual(6)
+        expect(sequence.children.length).toEqual(6)
     })
 
     test('can be converted to ASN.1 with both signed and unsigned attributes', () => {
@@ -246,9 +238,7 @@ describe('SignerInfo', () => {
         const unsignedAttrs = [
             new Attribute({
                 type: '1.2.840.113549.1.9.6',
-                values: [
-                    new asn1js.OctetString({ valueHex: new Uint8Array(128) }),
-                ],
+                values: [der.octetString(new Uint8Array(128))],
             }),
         ]
 
@@ -263,11 +253,11 @@ describe('SignerInfo', () => {
         })
 
         const asn1 = signerInfo.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
-        const sequence = asn1 as asn1js.Sequence
+        const sequence = asn1
         // Should have: version, sid, digestAlgorithm, signedAttrs[0], signatureAlgorithm, signature, unsignedAttrs[1] (7 elements)
-        expect(sequence.valueBlock.value.length).toEqual(7)
+        expect(sequence.children.length).toEqual(7)
     })
 
     test('can be created from ASN.1', () => {
@@ -302,18 +292,14 @@ describe('SignerInfo', () => {
             }),
             new Attribute({
                 type: '1.2.840.113549.1.9.4',
-                values: [
-                    new asn1js.OctetString({ valueHex: new Uint8Array(32) }),
-                ],
+                values: [der.octetString(new Uint8Array(32))],
             }),
         ]
 
         const unsignedAttrs = [
             new Attribute({
                 type: '1.2.840.113549.1.9.6',
-                values: [
-                    new asn1js.OctetString({ valueHex: new Uint8Array(128) }),
-                ],
+                values: [der.octetString(new Uint8Array(128))],
             }),
         ]
 
@@ -351,21 +337,17 @@ describe('SignerInfo', () => {
     })
 
     test('fromAsn1 throws error for invalid structure', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array(10),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array(10))
         expect(() => SignerInfo.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected Sequence',
         )
     })
 
     test('fromAsn1 throws error for insufficient elements', () => {
-        const incompleteSequence = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 1 }),
-                // Missing required elements
-            ],
-        })
+        const incompleteSequence = der.sequence([
+            der.integer(1),
+            // Missing required elements
+        ])
         expect(() => SignerInfo.fromAsn1(incompleteSequence)).toThrow(
             'Invalid ASN.1 structure: expected at least 5 elements',
         )

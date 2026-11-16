@@ -5,7 +5,7 @@ import {
     DigestAlgorithmIdentifier,
 } from '../algorithms/AlgorithmIdentifier.js'
 import { OIDs } from '../core/OIDs.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { OctetString } from '../asn1/OctetString.js'
 
 describe('PBKDF2Params', () => {
@@ -82,11 +82,11 @@ describe('PBKDF2Params', () => {
 
         const asn1 = params.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3) // salt, iterationCount, keyLength
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.OctetString)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Integer)
-        expect(asn1.valueBlock.value[2]).toBeInstanceOf(asn1js.Integer)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toEqual(3) // salt, iterationCount, keyLength
+        expect(asn1.children[0].is(UniversalTag.OctetString)).toBe(true)
+        expect(asn1.children[1].is(UniversalTag.Integer)).toBe(true)
+        expect(asn1.children[2].is(UniversalTag.Integer)).toBe(true)
     })
 
     test('toAsn1 should return correct ASN.1 structure without keyLength', () => {
@@ -98,19 +98,22 @@ describe('PBKDF2Params', () => {
 
         const asn1 = params.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2) // salt, iterationCount
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toEqual(2) // salt, iterationCount
     })
 
     test('fromAsn1 should parse ASN.1 structure with OctetString salt', () => {
-        const saltAsn1 = new asn1js.OctetString({ valueHex: salt })
-        const iterationCountAsn1 = new asn1js.Integer({ value: iterationCount })
-        const keyLengthAsn1 = new asn1js.Integer({ value: keyLength })
+        const saltAsn1 = der.octetString(salt)
+        const iterationCountAsn1 = der.integer(iterationCount)
+        const keyLengthAsn1 = der.integer(keyLength)
         const prfAsn1 = prf.toAsn1()
 
-        const sequence = new asn1js.Sequence({
-            value: [saltAsn1, iterationCountAsn1, keyLengthAsn1, prfAsn1],
-        })
+        const sequence = der.sequence([
+            saltAsn1,
+            iterationCountAsn1,
+            keyLengthAsn1,
+            prfAsn1,
+        ])
 
         const parsed = PBKDF2Params.fromAsn1(sequence)
 
@@ -127,11 +130,9 @@ describe('PBKDF2Params', () => {
         })
 
         const saltAsn1 = algIdSalt.toAsn1()
-        const iterationCountAsn1 = new asn1js.Integer({ value: iterationCount })
+        const iterationCountAsn1 = der.integer(iterationCount)
 
-        const sequence = new asn1js.Sequence({
-            value: [saltAsn1, iterationCountAsn1],
-        })
+        const sequence = der.sequence([saltAsn1, iterationCountAsn1])
 
         const parsed = PBKDF2Params.fromAsn1(sequence)
 
@@ -141,7 +142,7 @@ describe('PBKDF2Params', () => {
     })
 
     test('fromAsn1 should throw if not a Sequence', () => {
-        const notSequence = new asn1js.Integer({ value: 42 })
+        const notSequence = der.integer(42)
 
         expect(() => PBKDF2Params.fromAsn1(notSequence)).toThrow(
             'PBKDF2: expected SEQUENCE',
@@ -149,9 +150,7 @@ describe('PBKDF2Params', () => {
     })
 
     test('fromAsn1 should throw if fewer than 2 elements', () => {
-        const wrongSequence = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 1 })],
-        })
+        const wrongSequence = der.sequence([der.integer(1)])
 
         expect(() => PBKDF2Params.fromAsn1(wrongSequence)).toThrow(
             'PBKDF2: expected at least 2 elements',
@@ -159,12 +158,10 @@ describe('PBKDF2Params', () => {
     })
 
     test('fromAsn1 should throw if salt has invalid type', () => {
-        const wrongSalt = new asn1js.Boolean({ value: true })
-        const iterationCountAsn1 = new asn1js.Integer({ value: iterationCount })
+        const wrongSalt = der.boolean(true)
+        const iterationCountAsn1 = der.integer(iterationCount)
 
-        const sequence = new asn1js.Sequence({
-            value: [wrongSalt, iterationCountAsn1],
-        })
+        const sequence = der.sequence([wrongSalt, iterationCountAsn1])
 
         expect(() => PBKDF2Params.fromAsn1(sequence)).toThrow(
             'PBKDF2: invalid salt type',
@@ -172,12 +169,10 @@ describe('PBKDF2Params', () => {
     })
 
     test('fromAsn1 should throw if iterationCount is not an Integer', () => {
-        const saltAsn1 = new asn1js.OctetString({ valueHex: salt })
-        const wrongIterationCount = new asn1js.Boolean({ value: true })
+        const saltAsn1 = der.octetString(salt)
+        const wrongIterationCount = der.boolean(true)
 
-        const sequence = new asn1js.Sequence({
-            value: [saltAsn1, wrongIterationCount],
-        })
+        const sequence = der.sequence([saltAsn1, wrongIterationCount])
 
         expect(() => PBKDF2Params.fromAsn1(sequence)).toThrow(
             'PBKDF2: iterationCount must be INTEGER',

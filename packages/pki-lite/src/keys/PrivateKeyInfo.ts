@@ -1,9 +1,10 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     derToAsn1,
     pemToDer,
     PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Attribute } from '../x509/Attribute.js'
@@ -101,28 +102,24 @@ export class PrivateKeyInfo extends PkiBase<PrivateKeyInfo> {
      *
      * @returns The ASN.1 SEQUENCE structure
      */
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         const values = [
-            new asn1js.Integer({ value: this.version }),
+            der.integer(this.version),
             this.algorithm.toAsn1(),
             this.privateKey.toAsn1(),
         ]
 
         if (this.attributes) {
+            // [0] IMPLICIT SET OF Attribute
             values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: this.attributes.map((attr) => attr.toAsn1()),
-                }),
+                der.constructed(
+                    0,
+                    this.attributes.map((attr) => attr.toAsn1()),
+                ),
             )
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
     /**
@@ -131,58 +128,52 @@ export class PrivateKeyInfo extends PkiBase<PrivateKeyInfo> {
      * @param asn1 The ASN.1 structure
      * @returns A PrivateKeyInfo
      */
-    static fromAsn1(asn1: Asn1BaseBlock): PrivateKeyInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): PrivateKeyInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        if (asn1.valueBlock.value.length < 3) {
+        if (asn1.children.length < 3) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected at least 3 elements',
             )
         }
 
-        const versionAsn1 = asn1.valueBlock.value[0]
-        const algorithmAsn1 = asn1.valueBlock.value[1]
-        const privateKeyAsn1 = asn1.valueBlock.value[2]
+        const versionAsn1 = asn1.children[0]
+        const algorithmAsn1 = asn1.children[1]
+        const privateKeyAsn1 = asn1.children[2]
 
-        if (!(versionAsn1 instanceof asn1js.Integer)) {
+        if (!versionAsn1.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: version must be an INTEGER',
             )
         }
 
-        if (!(algorithmAsn1 instanceof asn1js.Sequence)) {
+        if (!algorithmAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: algorithm must be a SEQUENCE',
             )
         }
 
-        if (!(privateKeyAsn1 instanceof asn1js.OctetString)) {
+        if (!privateKeyAsn1.is(UniversalTag.OctetString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: privateKey must be an OCTET STRING',
             )
         }
 
-        const version = versionAsn1.valueBlock.valueDec
+        const version = der.readNumber(versionAsn1)
         const algorithm = AlgorithmIdentifier.fromAsn1(algorithmAsn1)
-        const privateKey = new Uint8Array(
-            privateKeyAsn1.valueBlock.valueHexView,
-        )
+        const privateKey = privateKeyAsn1.bytes()
 
         // Check for optional attributes [0] IMPLICIT
         let attributes: Attribute[] | undefined
-        if (asn1.valueBlock.value.length > 3) {
-            const attributesAsn1 = asn1.valueBlock.value[3]
+        if (asn1.children.length > 3) {
+            const attributesAsn1 = asn1.children[3]
 
-            if (
-                attributesAsn1 instanceof asn1js.Constructed &&
-                attributesAsn1.idBlock.tagClass === 3 &&
-                attributesAsn1.idBlock.tagNumber === 0
-            ) {
-                attributes = attributesAsn1.valueBlock.value.map((attrAsn1) =>
+            if (attributesAsn1.constructed && attributesAsn1.isContext(0)) {
+                attributes = attributesAsn1.children.map((attrAsn1) =>
                     Attribute.fromAsn1(attrAsn1),
                 )
             }

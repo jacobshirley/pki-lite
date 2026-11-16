@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from './AlgorithmIdentifier.js'
 import { OIDs } from '../core/OIDs.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -49,68 +55,25 @@ export class RSASSAPSSParams extends PkiBase<RSASSAPSSParams> {
     /**
      * Converts to ASN.1 structure
      */
-    toAsn1(): Asn1BaseBlock {
-        const sequence = new asn1js.Sequence()
-        const sequenceValue: asn1js.AsnType[] = []
-
-        // Only include non-default values in the encoding
-        if (this.hashAlgorithm) {
-            sequenceValue.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0,
-                    },
-                    value: [this.hashAlgorithm.toAsn1()],
-                }),
-            )
-        }
-
-        if (this.maskGenAlgorithm) {
-            sequenceValue.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 1,
-                    },
-                    value: [this.maskGenAlgorithm.toAsn1()],
-                }),
-            )
-        }
-
-        if (this.saltLength !== undefined) {
-            sequenceValue.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 2,
-                    },
-                    value: [new asn1js.Integer({ value: this.saltLength })],
-                }),
-            )
-        }
-
-        if (this.trailerField !== undefined) {
-            sequenceValue.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 3,
-                    },
-                    value: [new asn1js.Integer({ value: this.trailerField })],
-                }),
-            )
-        }
-
-        sequence.valueBlock.value = sequenceValue
-        return sequence
+    toAsn1(): Asn1Node {
+        // Fields are EXPLICIT [n]; only non-default values are present
+        return der.sequence([
+            this.hashAlgorithm?.toAsn1().explicit(0),
+            this.maskGenAlgorithm?.toAsn1().explicit(1),
+            this.saltLength === undefined
+                ? undefined
+                : der.integer(this.saltLength).explicit(2),
+            this.trailerField === undefined
+                ? undefined
+                : der.integer(this.trailerField).explicit(3),
+        ])
     }
 
     /**
      * Parse from ASN.1 structure
      */
-    static fromAsn1(asn1: Asn1BaseBlock): RSASSAPSSParams {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RSASSAPSSParams {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
@@ -124,31 +87,34 @@ export class RSASSAPSSParams extends PkiBase<RSASSAPSSParams> {
         } = {}
 
         // Extract tagged optional values
-        for (const element of (asn1 as any).valueBlock.value) {
-            if (element instanceof asn1js.Constructed) {
-                const tagNumber = element.idBlock.tagNumber
-                const value = element.valueBlock.value[0]
+        for (const element of asn1.children) {
+            if (
+                element.tagClass !== TagClass.Context ||
+                !element.constructed ||
+                element.children.length === 0
+            ) {
+                continue
+            }
+            const value = element.children[0]
 
-                switch (tagNumber) {
-                    case 0: // hashAlgorithm [0]
-                        options.hashAlgorithm =
-                            AlgorithmIdentifier.fromAsn1(value)
-                        break
-                    case 1: // maskGenAlgorithm [1]
-                        options.maskGenAlgorithm =
-                            AlgorithmIdentifier.fromAsn1(value)
-                        break
-                    case 2: // saltLength [2]
-                        if (value instanceof asn1js.Integer) {
-                            options.saltLength = value.valueBlock.valueDec
-                        }
-                        break
-                    case 3: // trailerField [3]
-                        if (value instanceof asn1js.Integer) {
-                            options.trailerField = value.valueBlock.valueDec
-                        }
-                        break
-                }
+            switch (element.tag) {
+                case 0: // hashAlgorithm [0]
+                    options.hashAlgorithm = AlgorithmIdentifier.fromAsn1(value)
+                    break
+                case 1: // maskGenAlgorithm [1]
+                    options.maskGenAlgorithm =
+                        AlgorithmIdentifier.fromAsn1(value)
+                    break
+                case 2: // saltLength [2]
+                    if (value.is(UniversalTag.Integer)) {
+                        options.saltLength = der.readNumber(value)
+                    }
+                    break
+                case 3: // trailerField [3]
+                    if (value.is(UniversalTag.Integer)) {
+                        options.trailerField = der.readNumber(value)
+                    }
+                    break
             }
         }
 

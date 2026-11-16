@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { asn1js } from '../core/PkiBase.js'
+import { der } from '../core/PkiBase.js'
 import { Attributes } from './Attributes.js'
 import { Attribute } from './Attribute.js'
 import { OIDs } from '../core/OIDs.js'
@@ -10,9 +10,7 @@ describe('Attributes', () => {
             type: OIDs.CURVES.ED25519,
             values: ['value1', 'value2'],
         })
-        const asn1 = new asn1js.Set({
-            value: [test.toAsn1()],
-        })
+        const asn1 = der.set([test.toAsn1()])
 
         const attributes = Attributes.fromAsn1(asn1)
 

@@ -1,4 +1,3 @@
-import * as asn1js from 'asn1js'
 import { ExtendedCertificate } from './ExtendedCertificate.js'
 import { ExtendedCertificateInfo } from './ExtendedCertificateInfo.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
@@ -10,6 +9,7 @@ import { Name } from '../Name.js'
 import { RelativeDistinguishedName } from '../RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../AttributeTypeAndValue.js'
 import { describe, test, expect } from 'vitest'
+import { der, UniversalTag } from '../../core/PkiBase.js'
 import { BitString } from '../../asn1/BitString.js'
 
 describe('ExtendedCertificate', () => {
@@ -113,18 +113,16 @@ describe('ExtendedCertificate', () => {
 
         const asn1 = extCert.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
         // Check that structure has correct elements
-        const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-        expect(valueBlock.value.length).toEqual(3)
-        expect(valueBlock.value[2]).toBeInstanceOf(asn1js.BitString)
+        const items = asn1.children
+        expect(items.length).toEqual(3)
+        expect(items[2].is(UniversalTag.BitString)).toBe(true)
 
         // Check BitString value matches signature
-        const bitString = valueBlock.value[2] as asn1js.BitString
-        expect(new Uint8Array(bitString.valueBlock.valueHexView)).toEqual(
-            signature.bytes,
-        )
+        const bitString = items[2]
+        expect(der.readBitString(bitString).bytes).toEqual(signature.bytes)
     })
 
     test('fromAsn1 should parse ASN.1 structure correctly', () => {
@@ -158,7 +156,7 @@ describe('ExtendedCertificate', () => {
     })
 
     test('fromAsn1 throws error for invalid ASN.1 type', () => {
-        const asn1 = new asn1js.Integer({ value: 123 })
+        const asn1 = der.integer(123)
 
         expect(() => ExtendedCertificate.fromAsn1(asn1)).toThrow(
             'expected SEQUENCE',
@@ -169,49 +167,41 @@ describe('ExtendedCertificate', () => {
         const mockSignatureBytes = new Uint8Array([1, 2, 3, 4])
 
         // Test with incorrect number of elements
-        const invalidSequence = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [] }), // extendedCertificateInfo
-                new asn1js.Sequence({ value: [] }), // signatureAlgorithm
-                // Missing signature
-            ],
-        })
+        const invalidSequence = der.sequence([
+            der.sequence([]), // extendedCertificateInfo
+            der.sequence([]), // signatureAlgorithm
+            // Missing signature
+        ])
         expect(() => ExtendedCertificate.fromAsn1(invalidSequence)).toThrow(
             'Invalid ASN.1 structure: expected 3 elements',
         )
 
         // Test with incorrect type for extendedCertificateInfo
-        const invalidInfoType = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 1 }), // Invalid type
-                new asn1js.Sequence({ value: [] }), // signatureAlgorithm
-                new asn1js.BitString({ valueHex: mockSignatureBytes }), // signature
-            ],
-        })
+        const invalidInfoType = der.sequence([
+            der.integer(1), // Invalid type
+            der.sequence([]), // signatureAlgorithm
+            der.bitString(mockSignatureBytes), // signature
+        ])
         expect(() => ExtendedCertificate.fromAsn1(invalidInfoType)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE for extendedCertificateInfo',
         )
 
         // Test with incorrect type for signatureAlgorithm
-        const invalidAlgoType = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [] }), // extendedCertificateInfo
-                new asn1js.Integer({ value: 1 }), // Invalid type
-                new asn1js.BitString({ valueHex: mockSignatureBytes }), // signature
-            ],
-        })
+        const invalidAlgoType = der.sequence([
+            der.sequence([]), // extendedCertificateInfo
+            der.integer(1), // Invalid type
+            der.bitString(mockSignatureBytes), // signature
+        ])
         expect(() => ExtendedCertificate.fromAsn1(invalidAlgoType)).toThrow(
             'Invalid ASN.1 structure',
         )
 
         // Test with incorrect type for signature
-        const invalidSigType = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [] }), // extendedCertificateInfo
-                new asn1js.Sequence({ value: [] }), // signatureAlgorithm
-                new asn1js.Integer({ value: 1 }), // Invalid type
-            ],
-        })
+        const invalidSigType = der.sequence([
+            der.sequence([]), // extendedCertificateInfo
+            der.sequence([]), // signatureAlgorithm
+            der.integer(1), // Invalid type
+        ])
         expect(() => ExtendedCertificate.fromAsn1(invalidSigType)).toThrow(
             'Invalid ASN.1 structure',
         )

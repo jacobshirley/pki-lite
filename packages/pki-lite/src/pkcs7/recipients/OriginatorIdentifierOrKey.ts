@@ -1,6 +1,6 @@
 import { IssuerAndSerialNumber } from '../IssuerAndSerialNumber.js'
 import { OriginatorPublicKey } from './OriginatorPublicKey.js'
-import { Asn1BaseBlock, asn1js, Choice } from '../../core/PkiBase.js'
+import { Asn1Node, Choice, der, TagClass } from '../../core/PkiBase.js'
 import { SubjectKeyIdentifier } from '../../keys/SubjectKeyIdentifier.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 
@@ -24,10 +24,10 @@ export const OriginatorIdentifierOrKey = Choice('OriginatorIdentifierOrKey', {
     IssuerAndSerialNumber,
     SubjectKeyIdentifier,
     OriginatorPublicKey,
-    fromAsn1: (asn1: Asn1BaseBlock): OriginatorIdentifierOrKey => {
+    fromAsn1: (asn1: Asn1Node): OriginatorIdentifierOrKey => {
         // If it's a context-specific tag
-        if (asn1.idBlock.tagClass === 3) {
-            const tagNumber = asn1.idBlock.tagNumber
+        if (asn1.tagClass === TagClass.Context) {
+            const tagNumber = asn1.tag
 
             // SubjectKeyIdentifier [0]
             if (tagNumber === 0) {
@@ -37,11 +37,7 @@ export const OriginatorIdentifierOrKey = Choice('OriginatorIdentifierOrKey', {
             // OriginatorPublicKey [1]
             if (tagNumber === 1) {
                 // [1] IMPLICIT OriginatorPublicKey: restore the SEQUENCE tag
-                return OriginatorPublicKey.fromAsn1(
-                    new asn1js.Sequence({
-                        value: (asn1 as asn1js.Constructed).valueBlock.value,
-                    }),
-                )
+                return OriginatorPublicKey.fromAsn1(der.sequence(asn1.children))
             }
 
             throw new Asn1ParseError(`Unsupported tag number: ${tagNumber}`)
@@ -50,14 +46,12 @@ export const OriginatorIdentifierOrKey = Choice('OriginatorIdentifierOrKey', {
         // Default to IssuerAndSerialNumber
         return IssuerAndSerialNumber.fromAsn1(asn1)
     },
-    toAsn1: (value: OriginatorIdentifierOrKey): Asn1BaseBlock => {
-        const asn1 = value.toAsn1()
+    toAsn1: (value: OriginatorIdentifierOrKey): Asn1Node => {
+        let asn1 = value.toAsn1()
         if (value instanceof SubjectKeyIdentifier) {
-            asn1.idBlock.tagClass = 3 // Context-specific
-            asn1.idBlock.tagNumber = 0
+            asn1 = asn1.implicit(0) // [0] IMPLICIT
         } else if (value instanceof OriginatorPublicKey) {
-            asn1.idBlock.tagClass = 3 // Context-specific
-            asn1.idBlock.tagNumber = 1
+            asn1 = asn1.implicit(1) // [1] IMPLICIT
         } else if (!(value instanceof IssuerAndSerialNumber)) {
             throw new Asn1ParseError(`Unsupported type: ${typeof value}`)
         }

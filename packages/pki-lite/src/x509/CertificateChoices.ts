@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, Choice } from '../core/PkiBase.js'
+import { Asn1Node, Choice, TagClass, UniversalTag } from '../core/PkiBase.js'
 import { Certificate } from './Certificate.js'
 import { ExtendedCertificate } from './legacy/ExtendedCertificate.js'
 import { AttributeCertificateV1 } from './attribute-certs/AttributeCertificateV1.js'
@@ -41,17 +41,17 @@ export const CertificateChoices = Choice('CertificateChoices', {
     AttributeCertificateV1,
     AttributeCertificate,
     OtherCertificateFormat,
-    fromAsn1: (value: Asn1BaseBlock): CertificateChoices => {
+    fromAsn1: (value: Asn1Node): CertificateChoices => {
         // Check the tag class and tag number to determine the type
-        const tagClass = value.idBlock.tagClass
-        const tagNumber = value.idBlock.tagNumber
+        const tagClass = value.tagClass
+        const tagNumber = value.tag
 
-        // Standard X.509 Certificate has universal tag class and sequence tag number (16)
-        if (tagClass === 1 && tagNumber === 16) {
+        // Standard X.509 Certificate is a universal SEQUENCE
+        if (value.is(UniversalTag.Sequence)) {
             return Certificate.fromAsn1(value)
         }
 
-        if (tagClass !== 3) {
+        if (tagClass !== TagClass.Context) {
             throw new Asn1ParseError(
                 `Unknown CertificateChoices tag class: ${tagClass}`,
             )

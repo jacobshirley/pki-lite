@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase } from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { EncapsulatedContentInfo } from './EncapsulatedContentInfo.js'
 
@@ -39,14 +39,12 @@ export class DigestedData extends PkiBase<DigestedData> {
     /**
      * Converts the DigestedData to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: this.version }),
-                this.digestAlgorithm.toAsn1(),
-                this.encapContentInfo.toAsn1(),
-                new asn1js.OctetString({ valueHex: this.digest }),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            der.integer(this.version),
+            this.digestAlgorithm.toAsn1(),
+            this.encapContentInfo.toAsn1(),
+            der.octetString(this.digest),
+        ])
     }
 }

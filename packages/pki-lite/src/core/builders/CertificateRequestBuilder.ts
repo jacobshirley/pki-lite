@@ -1,3 +1,4 @@
+import { der } from '../PkiBase.js'
 import {
     AlgorithmIdentifier,
     SignatureAlgorithmIdentifier,
@@ -15,7 +16,6 @@ import { ExtKeyCommonNames } from '../../x509/extensions/ExtKeyUsage.js'
 import { GeneralName } from '../../x509/GeneralName.js'
 import { Attribute } from '../../x509/Attribute.js'
 import { OIDs } from '../OIDs.js'
-import { asn1js } from '../PkiBase.js'
 
 /**
  * Builder class for creating PKCS#10 certificate signing requests (CSRs).
@@ -235,14 +235,14 @@ export class CertificateRequestBuilder
         // Create attributes with extension request if extensions exist
         const attributes: Attribute[] = []
         if (this.extensions.length > 0) {
-            const extensionsAsn1 = new asn1js.Sequence({
-                value: this.extensions.map((ext) => ext.toAsn1()),
-            })
+            const extensionsAsn1 = der.sequence(
+                this.extensions.map((ext) => ext.toAsn1()),
+            )
 
             attributes.push(
                 new Attribute({
                     type: OIDs.PKCS9.EXTENSION_REQUEST,
-                    values: [new Uint8Array(extensionsAsn1.toBER())],
+                    values: [extensionsAsn1.encode()],
                 }),
             )
         }

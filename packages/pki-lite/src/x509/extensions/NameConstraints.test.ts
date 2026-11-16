@@ -14,8 +14,7 @@ import { RDNSequence } from '../RDNSequence.js'
 import { RelativeDistinguishedName } from '../RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../AttributeTypeAndValue.js'
 import { OIDs } from '../../core/OIDs.js'
-import * as asn1js from 'asn1js'
-import { derToAsn1 } from '../../core/PkiBase.js'
+import { derToAsn1, UniversalTag } from '../../core/PkiBase.js'
 
 describe('GeneralSubtree', () => {
     test('should create GeneralSubtree with DNS name', () => {
@@ -51,8 +50,8 @@ describe('GeneralSubtree', () => {
         })
 
         const asn1 = subtree.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBeGreaterThan(0)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toBeGreaterThan(0)
     })
 
     test('should match DNS names correctly', () => {
@@ -301,8 +300,8 @@ describe('NameConstraints', () => {
         })
 
         const asn1 = nameConstraints.toAsn1()
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toBeGreaterThan(0)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toBeGreaterThan(0)
     })
 })
 

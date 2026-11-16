@@ -1,8 +1,8 @@
-import * as asn1js from 'asn1js'
 import { AttributeCertificateInfoV1 } from './AttributeCertificateInfoV1.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { Attribute } from '../Attribute.js'
 import { describe, test, expect, beforeEach } from 'vitest'
+import { der, UniversalTag } from '../../core/PkiBase.js'
 
 const latin1 = (bytes: Uint8Array) => String.fromCharCode(...bytes)
 
@@ -15,14 +15,14 @@ describe('AttributeCertificateInfoV1', () => {
         mockSignature = {
             algorithm: '1.2.840.113549.1.1.11',
             parameters: null,
-            toAsn1: () => new asn1js.Sequence({ value: [] }),
+            toAsn1: () => der.sequence([]),
         } as unknown as AlgorithmIdentifier
 
         mockAttributes = [
             {
                 type: '1.2.3.4.5',
                 values: ['test-attribute'],
-                toAsn1: () => new asn1js.Sequence({ value: [] }),
+                toAsn1: () => der.sequence([]),
             } as unknown as Attribute,
         ]
     })
@@ -40,7 +40,7 @@ describe('AttributeCertificateInfoV1', () => {
             },
             attributes: mockAttributes,
         })
-        const text = latin1(new Uint8Array(info.toAsn1().toBER(false)))
+        const text = latin1(info.toDer())
         expect(text).toContain('20261113080323Z')
         expect(text).toContain('20271113080323Z')
     })
@@ -98,26 +98,25 @@ describe('AttributeCertificateInfoV1', () => {
 
         const asn1 = info.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
         // Check the structure has the correct elements
-        const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-        expect(valueBlock.value.length).toEqual(7) // No optional fields
-        expect(valueBlock.value[0]).toBeInstanceOf(asn1js.Integer) // version
-        expect(valueBlock.value[1]).toBeInstanceOf(asn1js.OctetString) // subject
-        expect(valueBlock.value[2]).toBeInstanceOf(asn1js.OctetString) // issuer
+        const items = asn1.children
+        expect(items.length).toEqual(7) // No optional fields
+        expect(items[0].is(UniversalTag.Integer)).toBe(true) // version
+        expect(items[1].is(UniversalTag.OctetString)).toBe(true) // subject
+        expect(items[2].is(UniversalTag.OctetString)).toBe(true) // issuer
 
         // Check version value
-        const versionAsn1 = valueBlock.value[0] as asn1js.Integer
-        expect(versionAsn1.valueBlock.valueDec).toEqual(version)
+        const versionAsn1 = items[0]
+        expect(der.readNumber(versionAsn1)).toEqual(version)
 
         // Check validity period
-        expect(valueBlock.value[5]).toBeInstanceOf(asn1js.Sequence)
-        const validityBlock = (valueBlock.value[5] as asn1js.Sequence)
-            .valueBlock
-        expect(validityBlock.value.length).toEqual(2)
-        expect(validityBlock.value[0]).toBeInstanceOf(asn1js.GeneralizedTime)
-        expect(validityBlock.value[1]).toBeInstanceOf(asn1js.GeneralizedTime)
+        expect(items[5].is(UniversalTag.Sequence)).toBe(true)
+        const validityBlock = items[5].children
+        expect(validityBlock.length).toEqual(2)
+        expect(validityBlock[0].is(UniversalTag.GeneralizedTime)).toBe(true)
+        expect(validityBlock[1].is(UniversalTag.GeneralizedTime)).toBe(true)
     })
 
     test('fromAsn1 should parse ASN.1 structure correctly', () => {
@@ -129,28 +128,20 @@ describe('AttributeCertificateInfoV1', () => {
         const notAfter = new Date('2024-01-01')
 
         // Create mock ASN.1 structure
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: version }),
-                new asn1js.OctetString({ valueHex: subject }), // subject
-                new asn1js.OctetString({ valueHex: issuer }), // issuer
-                new asn1js.Sequence({ value: [] }), // signature
-                new asn1js.Integer({ valueHex: serialNumber }),
-                new asn1js.Sequence({
-                    // validityPeriod
-                    value: [
-                        new asn1js.GeneralizedTime({ valueDate: notBefore }),
-                        new asn1js.GeneralizedTime({ valueDate: notAfter }),
-                    ],
-                }),
-                new asn1js.Sequence({
-                    // attributes
-                    value: [
-                        new asn1js.Sequence({ value: [] }), // attribute
-                    ],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(version),
+            der.octetString(subject), // subject
+            der.octetString(issuer), // issuer
+            der.sequence([]), // signature
+            der.primitive(UniversalTag.Integer, serialNumber),
+            // validityPeriod
+            der.sequence([
+                der.generalizedTime(notBefore),
+                der.generalizedTime(notAfter),
+            ]),
+            // attributes
+            der.sequence([der.sequence([])]),
+        ])
 
         // This test verifies the fromAsn1 method attempts to parse the structure
         // It may throw due to incomplete mock data, which is expected
@@ -163,20 +154,18 @@ describe('AttributeCertificateInfoV1', () => {
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
         // Test with non-Sequence
-        const invalidAsn1 = new asn1js.Integer({ value: 1 })
+        const invalidAsn1 = der.integer(1)
         expect(() => AttributeCertificateInfoV1.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
 
         // Test with insufficient elements
-        const insufficientElements = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 1 }),
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-                new asn1js.OctetString({ valueHex: new Uint8Array([4, 5, 6]) }),
-                // Missing other required elements
-            ],
-        })
+        const insufficientElements = der.sequence([
+            der.integer(1),
+            der.octetString(new Uint8Array([1, 2, 3])),
+            der.octetString(new Uint8Array([4, 5, 6])),
+            // Missing other required elements
+        ])
         expect(() =>
             AttributeCertificateInfoV1.fromAsn1(insufficientElements),
         ).toThrow('Invalid ASN.1 structure: expected at least 7 elements')

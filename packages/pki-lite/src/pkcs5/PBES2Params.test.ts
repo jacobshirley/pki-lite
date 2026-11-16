@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { PBES2Params } from './PBES2Params.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { OIDs } from '../core/OIDs.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('PBES2Params', () => {
     const keyDerivationFunc = new AlgorithmIdentifier({
@@ -31,11 +31,11 @@ describe('PBES2Params', () => {
 
         const asn1 = pbes2Params.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children.length).toEqual(2)
         // Just check that the results look like algorithm identifiers
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[0].is(UniversalTag.Sequence)).toBe(true)
+        expect(asn1.children[1].is(UniversalTag.Sequence)).toBe(true)
     })
 
     test('fromAsn1 should parse ASN.1 structure correctly', () => {
@@ -63,8 +63,8 @@ describe('PBES2Params', () => {
         })
 
         const asn1 = original.toAsn1()
-        const der = asn1.toBER(false)
-        const parsed = PBES2Params.fromDer(new Uint8Array(der))
+        const encoded = asn1.encode()
+        const parsed = PBES2Params.fromDer(new Uint8Array(encoded))
 
         expect(parsed).toBeInstanceOf(PBES2Params)
         expect(parsed.keyDerivationFunc.algorithm.value).toEqual(
@@ -76,7 +76,7 @@ describe('PBES2Params', () => {
     })
 
     test('fromAsn1 should throw if not a Sequence', () => {
-        const notSequence = new asn1js.Integer({ value: 42 })
+        const notSequence = der.integer(42)
 
         expect(() => PBES2Params.fromAsn1(notSequence)).toThrow(
             'PBES2Params: expected SEQUENCE',
@@ -84,9 +84,7 @@ describe('PBES2Params', () => {
     })
 
     test('fromAsn1 should throw if not exactly 2 elements', () => {
-        const wrongSequence = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 1 })],
-        })
+        const wrongSequence = der.sequence([der.integer(1)])
 
         expect(() => PBES2Params.fromAsn1(wrongSequence)).toThrow(
             'PBES2Params: expected 2 elements',

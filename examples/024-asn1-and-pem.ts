@@ -38,7 +38,13 @@ console.log(certificate.tbsCertificate.subjectPublicKeyInfo.toString())
 
 // Parse bytes you know nothing about into a generic ASN.1 tree
 const tree = derToAsn1(der)
-console.log('\nTop level:', tree.constructor.name)
+console.log(
+    '\nTop level:',
+    tree.describe(),
+    'with',
+    tree.children.length,
+    'elements',
+)
 
 // Unknown CMS data: look at the content type first, then parse as that type
 const signed = await SignedData.builder()

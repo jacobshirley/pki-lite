@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { RSAPublicKey } from './RSAPublicKey.js'
-import * as asn1js from 'asn1js'
 
 describe('RSAPublicKey', () => {
     // Sample test data
@@ -22,39 +22,26 @@ describe('RSAPublicKey', () => {
         const key = new RSAPublicKey({ modulus, publicExponent })
         const asn1 = key.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
-        const values = (asn1 as any).valueBlock.value
+        const values = asn1.children
         expect(values.length).toEqual(2)
 
         // Check modulus
-        expect(values[0]).toBeInstanceOf(asn1js.Integer)
-        const modulusBlock = values[0].valueBlock as any
-        expect(
-            new Uint8Array(
-                modulusBlock.valueHexView || modulusBlock.valueBeforeDecodeView,
-            ),
-        ).toEqual(modulus)
+        expect(values[0].is(UniversalTag.Integer)).toBe(true)
+        expect(der.readIntegerBytes(values[0])).toEqual(modulus)
 
         // Check publicExponent
-        expect(values[1]).toBeInstanceOf(asn1js.Integer)
-        const exponentBlock = values[1].valueBlock as any
-        expect(
-            new Uint8Array(
-                exponentBlock.valueHexView ||
-                    exponentBlock.valueBeforeDecodeView,
-            ),
-        ).toEqual(publicExponent)
+        expect(values[1].is(UniversalTag.Integer)).toBe(true)
+        expect(der.readIntegerBytes(values[1])).toEqual(publicExponent)
     })
 
     test('fromAsn1 parses ASN.1 structure correctly', () => {
         // Create an ASN.1 structure
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ valueHex: modulus }),
-                new asn1js.Integer({ valueHex: publicExponent }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.primitive(UniversalTag.Integer, modulus),
+            der.primitive(UniversalTag.Integer, publicExponent),
+        ])
 
         const key = RSAPublicKey.fromAsn1(asn1)
 
@@ -64,8 +51,8 @@ describe('RSAPublicKey', () => {
 
     test('toDer/fromDer roundtrip works correctly', () => {
         const originalKey = new RSAPublicKey({ modulus, publicExponent })
-        const der = originalKey.toDer()
-        const parsedKey = RSAPublicKey.fromDer(der)
+        const encoded = originalKey.toDer()
+        const parsedKey = RSAPublicKey.fromDer(encoded)
 
         expect(parsedKey.modulus).toEqual(originalKey.modulus)
         expect(parsedKey.publicExponent).toEqual(originalKey.publicExponent)
@@ -73,40 +60,34 @@ describe('RSAPublicKey', () => {
 
     test('fromAsn1 throws on invalid ASN.1 structure', () => {
         // Not a sequence
-        const invalidAsn1 = new asn1js.Integer({ value: 123 })
+        const invalidAsn1 = der.integer(123)
 
         expect(() => RSAPublicKey.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
 
         // Wrong number of elements
-        const invalidSequence = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 123 })],
-        })
+        const invalidSequence = der.sequence([der.integer(123)])
 
         expect(() => RSAPublicKey.fromAsn1(invalidSequence)).toThrow(
             'Invalid ASN.1 structure: expected 2 elements',
         )
 
         // First element not an integer
-        const invalidModulus = new asn1js.Sequence({
-            value: [
-                new asn1js.OctetString({ valueHex: modulus }),
-                new asn1js.Integer({ valueHex: publicExponent }),
-            ],
-        })
+        const invalidModulus = der.sequence([
+            der.octetString(modulus),
+            der.primitive(UniversalTag.Integer, publicExponent),
+        ])
 
         expect(() => RSAPublicKey.fromAsn1(invalidModulus)).toThrow(
             'Invalid ASN.1 structure: modulus must be INTEGER',
         )
 
         // Second element not an integer
-        const invalidExponent = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ valueHex: modulus }),
-                new asn1js.OctetString({ valueHex: publicExponent }),
-            ],
-        })
+        const invalidExponent = der.sequence([
+            der.primitive(UniversalTag.Integer, modulus),
+            der.octetString(publicExponent),
+        ])
 
         expect(() => RSAPublicKey.fromAsn1(invalidExponent)).toThrow(
             'Invalid ASN.1 structure: publicExponent must be INTEGER',

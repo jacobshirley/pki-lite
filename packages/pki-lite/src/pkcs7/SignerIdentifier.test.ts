@@ -5,7 +5,7 @@ import { SubjectKeyIdentifier } from '../keys/SubjectKeyIdentifier.js'
 import { Name } from '../x509/Name.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der } from '../core/PkiBase.js'
 
 describe('SignerIdentifier', () => {
     let issuerAndSerialNumber: IssuerAndSerialNumber
@@ -66,8 +66,8 @@ describe('SignerIdentifier', () => {
         // Create a SubjectKeyIdentifier and convert it to DER
         const keyIdentifier = new Uint8Array([5, 6, 7, 8, 9])
         const ski = new SubjectKeyIdentifier({ bytes: keyIdentifier })
-        const octetString = ski.toAsn1()
-        octetString.idBlock.tagNumber = 0
+        // subjectKeyIdentifier [0] IMPLICIT SubjectKeyIdentifier
+        const octetString = ski.toAsn1().implicit(0)
 
         // Now use the SignerIdentifier.fromAsn1 to parse
         const parsedSignerIdentifier = SignerIdentifier.fromAsn1(octetString)
@@ -83,13 +83,7 @@ describe('SignerIdentifier', () => {
 
     it('should default to IssuerAndSerialNumber for unknown ASN.1 structures', () => {
         // Create a constructed ASN.1 element with an unknown tag
-        const constructed = new asn1js.Constructed({
-            idBlock: {
-                tagClass: 3, // CONTEXT-SPECIFIC
-                tagNumber: 99, // Some unknown tag
-            },
-            value: [new asn1js.Integer({ value: 123 })],
-        })
+        const constructed = der.constructed(99, [der.integer(123)])
 
         // This would normally throw an error when trying to parse as IssuerAndSerialNumber
         // but we need to adjust our test expectation based on actual behavior

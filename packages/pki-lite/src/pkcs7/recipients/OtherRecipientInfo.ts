@@ -1,9 +1,10 @@
 import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     ObjectIdentifierString,
     PkiBase,
+    UniversalTag,
 } from '../../core/PkiBase.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 
@@ -19,14 +20,14 @@ import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
  */
 export class OtherRecipientInfo extends PkiBase<OtherRecipientInfo> {
     oriType: ObjectIdentifier
-    oriValue: Asn1BaseBlock
+    oriValue: Asn1Node
 
     /**
      * Creates a new OtherRecipientInfo instance.
      */
     constructor(options: {
         oriType: ObjectIdentifierString
-        oriValue: Asn1BaseBlock
+        oriValue: Asn1Node
     }) {
         super()
         const { oriType, oriValue } = options
@@ -37,23 +38,21 @@ export class OtherRecipientInfo extends PkiBase<OtherRecipientInfo> {
     /**
      * Converts the OtherRecipientInfo to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [this.oriType.toAsn1(), this.oriValue],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([this.oriType.toAsn1(), this.oriValue])
     }
 
     /**
      * Creates an OtherRecipientInfo from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): OtherRecipientInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): OtherRecipientInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for OtherRecipientInfo',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length !== 2) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 2 elements, got ${values.length}`,
@@ -61,12 +60,12 @@ export class OtherRecipientInfo extends PkiBase<OtherRecipientInfo> {
         }
 
         // Extract oriType
-        if (!(values[0] instanceof asn1js.ObjectIdentifier)) {
+        if (!values[0]?.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected ObjectIdentifier for oriType',
             )
         }
-        const oriType = values[0].getValue()
+        const oriType = der.readOid(values[0])
 
         // Extract oriValue (any ASN.1 structure)
         const oriValue = values[1]

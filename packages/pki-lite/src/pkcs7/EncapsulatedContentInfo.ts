@@ -1,10 +1,12 @@
 import { OctetString } from '../asn1/OctetString.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     ObjectIdentifierString,
     PkiBase,
+    TagClass,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -45,28 +47,18 @@ export class EncapsulatedContentInfo extends PkiBase<EncapsulatedContentInfo> {
     /**
      * Converts the EncapsulatedContentInfo to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [this.eContentType.toAsn1()]
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [this.eContentType.toAsn1()]
 
         if (this.eContent !== undefined) {
             // Convert content based on its type
-            const contentAsn1 = new asn1js.OctetString({
-                valueHex: this.eContent,
-            })
+            const contentAsn1 = der.octetString(this.eContent)
 
             // Wrap in [0] EXPLICIT context tag
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [contentAsn1],
-                }),
-            )
+            values.push(der.constructed(0, [contentAsn1]))
         }
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
     /**
@@ -75,14 +67,14 @@ export class EncapsulatedContentInfo extends PkiBase<EncapsulatedContentInfo> {
      * @param asn1 The ASN.1 structure
      * @returns A EncapsulatedContentInfo object
      */
-    static fromAsn1(asn1: Asn1BaseBlock): EncapsulatedContentInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): EncapsulatedContentInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 1 || values.length > 2) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 1-2 elements, got ${values.length}`,
@@ -90,21 +82,21 @@ export class EncapsulatedContentInfo extends PkiBase<EncapsulatedContentInfo> {
         }
 
         // ContentType
-        if (!(values[0] instanceof asn1js.ObjectIdentifier)) {
+        if (!values[0]?.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected ObjectIdentifier for contentType',
             )
         }
-        const contentType = values[0].valueBlock.toString()
+        const contentType = der.readOid(values[0])
 
         // Content (optional)
         let content: Uint8Array<ArrayBuffer> | undefined = undefined
         if (values.length > 1) {
             // Check if the content is properly tagged with [0] EXPLICIT
             if (
-                !(values[1] instanceof asn1js.Constructed) ||
-                values[1].idBlock.tagClass !== 3 || // CONTEXT-SPECIFIC
-                values[1].idBlock.tagNumber !== 0
+                !values[1]?.constructed ||
+                values[1].tagClass !== TagClass.Context || // CONTEXT-SPECIFIC
+                values[1].tag !== 0
             ) {
                 // [0]
                 throw new Asn1ParseError(
@@ -112,8 +104,7 @@ export class EncapsulatedContentInfo extends PkiBase<EncapsulatedContentInfo> {
                 )
             }
 
-            const contentValues = (values[1] as asn1js.Constructed).valueBlock
-                .value
+            const contentValues = values[1].children
 
             if (contentValues.length !== 1) {
                 throw new Asn1ParseError(
@@ -121,14 +112,14 @@ export class EncapsulatedContentInfo extends PkiBase<EncapsulatedContentInfo> {
                 )
             }
 
-            if (!(contentValues[0] instanceof asn1js.OctetString)) {
+            if (!contentValues[0]?.is(UniversalTag.OctetString)) {
                 throw new Asn1ParseError(
                     'Invalid ASN.1 structure: expected OCTET STRING for eContent',
                 )
             }
 
             // May be a constructed (chunked) OCTET STRING in BER, e.g. `openssl cms -stream`
-            content = new Uint8Array(OctetString.contentBytes(contentValues[0]))
+            content = contentValues[0].bytes()
         }
 
         return new EncapsulatedContentInfo({

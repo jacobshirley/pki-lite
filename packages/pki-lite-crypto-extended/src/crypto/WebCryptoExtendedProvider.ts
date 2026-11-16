@@ -15,7 +15,7 @@ import { getPbeAlgorithm } from './pbeAlgorithms.js'
 import { AlgorithmIdentifier } from 'pki-lite/algorithms/AlgorithmIdentifier.js'
 import { OIDs } from 'pki-lite/core/OIDs.js'
 import { PBEParameter } from 'pki-lite/pkcs5/PBEParameter.js'
-import { asn1js } from 'pki-lite/core/PkiBase.js'
+import { der } from 'pki-lite/core/PkiBase.js'
 import { OctetString } from 'pki-lite/asn1/OctetString.js'
 
 const toForgeBuffer = (bytes: Uint8Array) =>
@@ -261,7 +261,7 @@ export class WebCryptoExtendedProvider extends WebCryptoProvider {
             // As a key encryption algorithm this is rsaEncryption, not a signature OID
             return new AlgorithmIdentifier({
                 algorithm: OIDs.RSA.ENCRYPTION,
-                parameters: new asn1js.Null(),
+                parameters: der.nullValue(),
             })
         }
         return super.keyEncryptionAlgorithm(encryptionParams)

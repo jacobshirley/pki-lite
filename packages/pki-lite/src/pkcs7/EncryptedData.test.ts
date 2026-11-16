@@ -1,7 +1,7 @@
 import { describe, it, expect, assert } from 'vitest'
 import { EncryptedData } from './EncryptedData.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { UniversalTag } from '../core/PkiBase.js'
 import { OIDs } from '../core/OIDs.js'
 import { EncryptedContentInfo } from './EncryptedContentInfo.js'
 
@@ -39,8 +39,8 @@ describe('EncryptedData', () => {
         })
         const asn1 = encryptedData.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value).toHaveLength(2) // version, encryptedContentInfo
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children).toHaveLength(2) // version, encryptedContentInfo
     })
 
     it('should convert to string', () => {
@@ -107,7 +107,7 @@ describe('EncryptedData', () => {
               OBJECT IDENTIFIER : 1.2.840.113549.1.7.1
               SEQUENCE :
                 OBJECT IDENTIFIER : 2.16.840.1.101.3.4.1.2
-              OCTET STRING : 0102030405"
+              [0] : 0102030405"
         `)
     })
 
@@ -140,7 +140,7 @@ describe('EncryptedData', () => {
             OBJECT IDENTIFIER : 1.2.840.113549.1.7.1
             SEQUENCE :
               OBJECT IDENTIFIER : 2.16.840.1.101.3.4.1.2
-            OCTET STRING : 0102030405"
+            [0] : 0102030405"
         `)
     })
 

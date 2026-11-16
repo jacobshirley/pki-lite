@@ -1,43 +1,36 @@
-import { Asn1BaseBlock, asn1js } from './PkiBase.js'
+import { Asn1Node } from './der/Asn1Node.js'
+import { UniversalTag } from './der/Asn1Node.js'
 import { Asn1ParseError } from './errors/Asn1ParseError.js'
 
 /**
- * Re-tags a block with a context-specific tag, i.e. applies an IMPLICIT tag.
+ * Re-tags a node with a context-specific tag, i.e. applies an IMPLICIT tag.
  *
  * The X.509 / CMS ASN.1 modules use IMPLICIT TAGS, so a `[n] Type` field is encoded as
  * the underlying value with its universal tag replaced by `[n]` (and nothing wrapped
  * around it). Only a tagged CHOICE (e.g. `directoryName [4] Name`) is EXPLICIT.
  *
- * asn1js (3.0.10) has no helper or constants for implicit tagging; the supported way is
- * to set the block's `idBlock`, which is all this does. Going the other way (reading a
- * context-tagged value as its universal type) is done at the call sites by building the
- * asn1js block (`Sequence`, `Integer`, `BitString`, ...) from the parsed children/content.
+ * Returns a new node; the input is not modified. Going the other way (reading a
+ * context-tagged value as its universal type) is `node.retag(UniversalTag.X)`.
  */
-export function implicitTag<T extends Asn1BaseBlock>(
-    block: T,
-    tagNumber: number,
-): T {
-    block.idBlock.tagClass = 3 // CONTEXT-SPECIFIC
-    block.idBlock.tagNumber = tagNumber
-    return block
+export function implicitTag(block: Asn1Node, tagNumber: number): Asn1Node {
+    return block.implicit(tagNumber)
 }
 
-/** Whether a block carries the context-specific tag `[tagNumber]`. */
-export const isContextTag = (asn1: Asn1BaseBlock, tagNumber: number) =>
-    asn1.idBlock.tagClass === 3 && asn1.idBlock.tagNumber === tagNumber
+/** Whether a node carries the context-specific tag `[tagNumber]`. */
+export const isContextTag = (asn1: Asn1Node, tagNumber: number) =>
+    asn1.isContext(tagNumber)
 
 /**
  * Reads an IMPLICIT `[n]` tag over a SEQUENCE type back as the SEQUENCE: the parsed
- * context-tagged block is a plain constructed block holding the SEQUENCE's elements.
+ * context-tagged node is a constructed node holding the SEQUENCE's elements.
  */
-export function implicitSequence(block: Asn1BaseBlock): asn1js.Sequence {
-    const value = (block.valueBlock as { value?: Asn1BaseBlock[] }).value
-    if (!block.idBlock.isConstructed || !Array.isArray(value)) {
+export function implicitSequence(block: Asn1Node): Asn1Node {
+    if (!block.constructed) {
         throw new Asn1ParseError(
             'Invalid ASN.1 structure: expected a constructed value',
         )
     }
-    return new asn1js.Sequence({ value })
+    return block.retag(UniversalTag.Sequence)
 }
 
 /**
@@ -46,15 +39,15 @@ export function implicitSequence(block: Asn1BaseBlock): asn1js.Sequence {
  * wrote the SEQUENCE wrapped inside the [n] (explicit tagging); that form - a single
  * SEQUENCE child whose own elements are all SEQUENCEs - is still accepted.
  */
-export function implicitSequenceOf(block: Asn1BaseBlock): asn1js.Sequence {
-    const children = implicitSequence(block).valueBlock.value
-    const [only] = children
+export function implicitSequenceOf(block: Asn1Node): Asn1Node {
+    const sequence = implicitSequence(block)
+    const [only] = sequence.children
     if (
-        children.length === 1 &&
-        only instanceof asn1js.Sequence &&
-        only.valueBlock.value.every((item) => item instanceof asn1js.Sequence)
+        sequence.children.length === 1 &&
+        only.is(UniversalTag.Sequence) &&
+        only.children.every((item) => item.is(UniversalTag.Sequence))
     ) {
         return only
     }
-    return new asn1js.Sequence({ value: children })
+    return sequence
 }

@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { Certificate } from '../Certificate.js'
 import { Attribute } from '../Attribute.js'
 import { CMSVersion } from '../../pkcs7/CMSVersion.js'
@@ -49,18 +49,12 @@ export class ExtendedCertificateInfo extends PkiBase<ExtendedCertificateInfo> {
     /**
      * Converts the ExtendedCertificateInfo to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: this.version }),
-                this.certificate.toAsn1(),
-                new asn1js.Set({
-                    value: this.attributes.map((attribute) =>
-                        attribute.toAsn1(),
-                    ),
-                }),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            der.integer(this.version),
+            this.certificate.toAsn1(),
+            der.set(this.attributes.map((attribute) => attribute.toAsn1())),
+        ])
     }
 
     /**
@@ -69,19 +63,14 @@ export class ExtendedCertificateInfo extends PkiBase<ExtendedCertificateInfo> {
      * @param asn1 The ASN.1 structure
      * @returns The ExtendedCertificateInfo
      */
-    static fromAsn1(asn1: Asn1BaseBlock): ExtendedCertificateInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): ExtendedCertificateInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        // Define a type for the valueBlock structure we need to access
-        interface ValueBlock {
-            value: asn1js.BaseBlock[]
-        }
-
-        const values = (asn1.valueBlock as unknown as ValueBlock).value
+        const values = asn1.children
         if (values.length !== 3) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 3 elements',
@@ -89,15 +78,15 @@ export class ExtendedCertificateInfo extends PkiBase<ExtendedCertificateInfo> {
         }
 
         // Extract version
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected INTEGER for version',
             )
         }
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
 
         // Extract certificate
-        if (!(values[1] instanceof asn1js.Sequence)) {
+        if (!values[1]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for certificate',
             )

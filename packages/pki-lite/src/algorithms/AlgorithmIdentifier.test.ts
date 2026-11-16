@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from 'vitest'
 import { AlgorithmIdentifier } from './AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { RSAESOAEPParams } from './RSAESOAEPParams.js'
 import { Any } from '../asn1/Any.js'
 
@@ -34,15 +34,12 @@ describe('AlgorithmIdentifier', () => {
         })
         const asn1 = algId.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(1)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.ObjectIdentifier)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(1)
+        expect(asn1.children[0].is(UniversalTag.ObjectIdentifier)).toBe(true)
 
-        assert(asn1.valueBlock.value[0] instanceof asn1js.ObjectIdentifier)
-        // The toString() method includes "OBJECT IDENTIFIER : " prefix
-        expect(asn1.valueBlock.value[0].toString()).toEqual(
-            'OBJECT IDENTIFIER : 1.2.840.113549.1.1.11',
-        )
+        assert(asn1.children[0].is(UniversalTag.ObjectIdentifier))
+        expect(der.readOid(asn1.children[0])).toEqual('1.2.840.113549.1.1.11')
     })
 
     test('can be converted into ASN.1 with parameters', () => {
@@ -54,25 +51,18 @@ describe('AlgorithmIdentifier', () => {
         })
         const asn1 = algId.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.ObjectIdentifier)
-        assert(asn1.valueBlock.value[0] instanceof asn1js.ObjectIdentifier)
-        // The toString() method includes "OBJECT IDENTIFIER : " prefix
-        expect(asn1.valueBlock.value[0].toString()).toEqual(
-            'OBJECT IDENTIFIER : 1.2.840.113549.1.1.11',
-        )
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
+        expect(asn1.children[0].is(UniversalTag.ObjectIdentifier)).toBe(true)
+        assert(asn1.children[0].is(UniversalTag.ObjectIdentifier))
+        expect(der.readOid(asn1.children[0])).toEqual('1.2.840.113549.1.1.11')
         // Check that the second value exists but don't check its exact type
-        expect(asn1.valueBlock.value[1]).toBeDefined()
+        expect(asn1.children[1]).toBeDefined()
     })
 
     test('can be parsed from ASN.1', () => {
         // Create ASN.1 sequence with algorithm OID
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '1.2.840.113549.1.1.11' }),
-            ],
-        })
+        const asn1 = der.sequence([der.oid('1.2.840.113549.1.1.11')])
 
         const algId = AlgorithmIdentifier.fromAsn1(asn1)
         expect(algId).toBeInstanceOf(AlgorithmIdentifier)
@@ -83,12 +73,10 @@ describe('AlgorithmIdentifier', () => {
     test('can be parsed from ASN.1 with parameters', () => {
         // Create ASN.1 sequence with algorithm OID and parameters
         const paramBytes = new Uint8Array([1, 2, 3, 4])
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '1.2.840.113549.1.1.11' }),
-                new asn1js.OctetString({ valueHex: paramBytes }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.oid('1.2.840.113549.1.1.11'),
+            der.octetString(paramBytes),
+        ])
 
         const algId = AlgorithmIdentifier.fromAsn1(asn1)
         expect(algId).toBeInstanceOf(AlgorithmIdentifier)
@@ -98,9 +86,7 @@ describe('AlgorithmIdentifier', () => {
 
     test('throws an error when parsing invalid ASN.1', () => {
         // Create an ASN.1 structure that's not a sequence
-        const asn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const asn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => AlgorithmIdentifier.fromAsn1(asn1)).toThrow(
             'Expected Sequence',
@@ -109,11 +95,7 @@ describe('AlgorithmIdentifier', () => {
 
     test('throws an error when algorithm is not an ObjectIdentifier', () => {
         // Create an ASN.1 sequence with an invalid algorithm field
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-            ],
-        })
+        const asn1 = der.sequence([der.octetString(new Uint8Array([1, 2, 3]))])
 
         expect(() => AlgorithmIdentifier.fromAsn1(asn1)).toThrow(
             'Expected ObjectIdentifier for algorithm',

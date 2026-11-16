@@ -158,20 +158,20 @@ describe('SignedData', () => {
                                 SEQUENCE :
                                   [0] :
                                     [0] :
-                                      PRIMITIVE : 
+                                      [6] : 687474703a2f2f6c6f63616c686f73743a383038302f63612e63726c
                           SEQUENCE :
                             OBJECT IDENTIFIER : 1.3.6.1.5.5.7.1.1
                             OCTET STRING :
                               SEQUENCE :
                                 SEQUENCE :
                                   OBJECT IDENTIFIER : 1.3.6.1.5.5.7.48.2
-                                  PRIMITIVE : 
+                                  [6] : 687474703a2f2f6c6f63616c686f73743a383038302f63612e637274
                                 SEQUENCE :
                                   OBJECT IDENTIFIER : 1.3.6.1.5.5.7.48.1
-                                  PRIMITIVE : 
+                                  [6] : 687474703a2f2f6c6f63616c686f73743a383038302f6f637370
                                 SEQUENCE :
                                   OBJECT IDENTIFIER : 1.3.6.1.5.5.7.48.1
-                                  PRIMITIVE : 
+                                  [6] : 687474703a2f2f6c6f63616c686f73743a383038302f6f6373702d6261636b7570
                           SEQUENCE :
                             OBJECT IDENTIFIER : 2.5.29.14
                             OCTET STRING :
@@ -180,7 +180,7 @@ describe('SignedData', () => {
                             OBJECT IDENTIFIER : 2.5.29.35
                             OCTET STRING :
                               SEQUENCE :
-                                PRIMITIVE : 
+                                [0] : 86174eb64c961da9f9e57cfc8b62c94ae3cd2908
                     SEQUENCE :
                       OBJECT IDENTIFIER : 1.2.840.113549.1.1.11
                       NULL
@@ -275,7 +275,7 @@ describe('SignedData', () => {
                                       OCTET STRING : c3015d4847d542630bdfe6900831b54d0686bdf6
                                       OCTET STRING : 86174eb64c961da9f9e57cfc8b62c94ae3cd2908
                                       INTEGER : 529545515032761543446203827434351444233499481065
-                                    PRIMITIVE : 
+                                    [2] : 
                                     GeneralizedTime : 2026-10-07T17:03:25.000Z
                                 [1] :
                                   SEQUENCE :
@@ -381,7 +381,7 @@ describe('SignedData', () => {
                                             OBJECT IDENTIFIER : 2.5.29.35
                                             OCTET STRING :
                                               SEQUENCE :
-                                                PRIMITIVE : 
+                                                [0] : 86174eb64c961da9f9e57cfc8b62c94ae3cd2908
                                     SEQUENCE :
                                       OBJECT IDENTIFIER : 1.2.840.113549.1.1.11
                                       NULL

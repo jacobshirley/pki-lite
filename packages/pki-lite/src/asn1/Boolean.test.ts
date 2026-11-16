@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Boolean } from './Boolean.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der } from '../core/PkiBase.js'
 
 describe('Boolean', () => {
     it('should encode and decode true', () => {
@@ -18,8 +18,8 @@ describe('Boolean', () => {
     })
 
     it('should throw if ASN.1 is not a Boolean', () => {
-        expect(() => Boolean.fromAsn1(new asn1js.Null())).toThrow(
-            'Invalid ASN.1 structure: expected Boolean but got Null',
+        expect(() => Boolean.fromAsn1(der.nullValue())).toThrow(
+            'Invalid ASN.1 structure: expected BOOLEAN, got NULL',
         )
     })
 

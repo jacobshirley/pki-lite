@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 /**
@@ -24,23 +24,21 @@ export class OriginatorPublicKey extends PkiBase<OriginatorPublicKey> {
         this.publicKey = options.publicKey
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                this.algorithm.toAsn1(),
-                new asn1js.BitString({ valueHex: this.publicKey }),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            this.algorithm.toAsn1(),
+            der.bitString(this.publicKey),
+        ])
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): OriginatorPublicKey {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): OriginatorPublicKey {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for OriginatorPublicKey',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length !== 2) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 2 elements, got ${values.length}`,
@@ -49,13 +47,13 @@ export class OriginatorPublicKey extends PkiBase<OriginatorPublicKey> {
 
         const algorithm = AlgorithmIdentifier.fromAsn1(values[0])
 
-        if (!(values[1] instanceof asn1js.BitString)) {
+        if (!values[1]?.is(UniversalTag.BitString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected BitString for publicKey',
             )
         }
 
-        const publicKey = new Uint8Array(values[1].valueBlock.valueHexView)
+        const publicKey = der.readBitString(values[1]).bytes
 
         return new OriginatorPublicKey({
             algorithm,

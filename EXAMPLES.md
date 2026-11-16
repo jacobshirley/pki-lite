@@ -1604,7 +1604,7 @@ console.log(
 
 ```typescript
 import { KeyGen } from 'pki-lite/core/KeyGen.js'
-import { asn1js } from 'pki-lite/core/PkiBase.js'
+import { der } from 'pki-lite/core/PkiBase.js'
 import { AuthEnvelopedData } from 'pki-lite/pkcs7/AuthEnvelopedData.js'
 import { Attribute } from 'pki-lite/x509/Attribute.js'
 import { Certificate } from 'pki-lite/x509/Certificate.js'
@@ -1635,17 +1635,17 @@ console.log('Ciphertext bytes:', cipher.encryptedContent?.bytes.length)
 console.log('Authentication tag (mac) bytes:', authEnvelopedData.mac.length)
 
 // Send it as DER (this is what `openssl cms -decrypt -inform DER` reads) ...
-const der = authEnvelopedData.toCms().toDer()
-console.log('CMS size:', der.length, 'bytes')
+const encoded = authEnvelopedData.toCms().toDer()
+console.log('CMS size:', encoded.length, 'bytes')
 
 // ... and the recipient parses and decrypts it
-const received = AuthEnvelopedData.fromCms(der)
+const received = AuthEnvelopedData.fromCms(encoded)
 const plaintext = await received.decrypt(keyPair.privateKey)
 console.log('Decrypted:', new TextDecoder().decode(plaintext))
 
 // Tampering is detected: flipping one bit of the ciphertext or the tag makes
 // decryption fail instead of returning altered data.
-const tampered = AuthEnvelopedData.fromCms(der)
+const tampered = AuthEnvelopedData.fromCms(encoded)
 tampered.mac[0] ^= 1
 try {
     await tampered.decrypt(keyPair.privateKey)
@@ -1661,7 +1661,7 @@ const withAttributes = await AuthEnvelopedData.builder()
     .addAuthenticatedAttribute(
         new Attribute({
             type: '1.2.3.4.5', // an application-specific OID
-            values: [new asn1js.Integer({ value: 42 })],
+            values: [der.integer(42)],
         }),
     )
     .addRecipient({ certificate })
@@ -2154,7 +2154,13 @@ console.log(certificate.tbsCertificate.subjectPublicKeyInfo.toString())
 
 // Parse bytes you know nothing about into a generic ASN.1 tree
 const tree = derToAsn1(der)
-console.log('\nTop level:', tree.constructor.name)
+console.log(
+    '\nTop level:',
+    tree.describe(),
+    'with',
+    tree.children.length,
+    'elements',
+)
 
 // Unknown CMS data: look at the content type first, then parse as that type
 const signed = await SignedData.builder()
@@ -2668,6 +2674,67 @@ const noCrl = await validator.validate(
     { crls: [] },
 )
 console.log('Alice with no CRL:', noCrl.status)
+```
+
+## Building and reading raw ASN.1 with the built-in DER codec
+
+```typescript
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    UniversalTag,
+} from 'pki-lite/core/PkiBase.js'
+import { Asn1ParseError } from 'pki-lite/core/errors/Asn1ParseError.js'
+
+console.log('=== DER Codec Example ===\n')
+
+// Build a structure from typed builders. Undefined entries (absent OPTIONAL
+// fields) are skipped, and everything is encoded as DER.
+//
+//   Example ::= SEQUENCE {
+//       id       OBJECT IDENTIFIER,
+//       count    INTEGER,
+//       label    [0] IMPLICIT UTF8String OPTIONAL,
+//       created  [1] EXPLICIT GeneralizedTime }
+const label: string | undefined = 'hello'
+const node = der.sequence([
+    der.oid('1.2.840.113549.1.7.1'),
+    der.integer(2n ** 70n), // any size: numbers or bigints
+    label === undefined ? undefined : der.utf8String(label).implicit(0),
+    der.generalizedTime(new Date('2026-01-02T03:04:05Z')).explicit(1),
+])
+
+const bytes = node.encode()
+console.log('Encoded:', bytes.length, 'bytes')
+console.log(node.toString())
+
+// Parse bytes back into a tree and read the typed values out of it
+const parsed = Asn1Node.parse(bytes)
+const [id, count, tagged, created] = parsed.items('Example')
+console.log('\nid:', der.readOid(id))
+console.log('count:', der.readBigInt(count))
+// An IMPLICIT field is read back as its underlying type with retag()
+if (tagged.isContext(0)) {
+    console.log('label:', der.readString(tagged.retag(UniversalTag.UTF8String)))
+}
+// An EXPLICIT field wraps the value it tags
+console.log('created:', der.readTime(created.children[0]).toISOString())
+
+// A parsed value re-encodes to exactly the bytes it was parsed from
+console.log(
+    'Round-trips:',
+    parsed.encode().every((b, i) => b === bytes[i]),
+)
+
+// Parsing is strict: truncated input, trailing bytes and bad lengths throw
+for (const bad of [bytes.slice(0, -1), new Uint8Array([...bytes, 0])]) {
+    try {
+        derToAsn1(bad)
+    } catch (e) {
+        console.log('\nRejected:', (e as Asn1ParseError).message)
+    }
+}
 ```
 
 ## Checking an OCSP response: verify, getResponse, isCurrent and revocation checking

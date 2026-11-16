@@ -1,4 +1,11 @@
-import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { Extension } from '../x509/Extension.js'
 import { CertID } from './CertID.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
@@ -22,69 +29,54 @@ export class Request extends PkiBase<Request> {
         this.singleRequestExtensions = options.singleRequestExtensions
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: asn1js.AsnType[] = [this.reqCert.toAsn1()]
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [this.reqCert.toAsn1()]
 
         if (
             this.singleRequestExtensions &&
             this.singleRequestExtensions.length > 0
         ) {
-            const extensions = new asn1js.Sequence({
-                value: this.singleRequestExtensions.map((ext) => ext.toAsn1()),
-            })
-
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [extensions],
-                }),
+            const extensions = der.sequence(
+                this.singleRequestExtensions.map((ext) => ext.toAsn1()),
             )
+
+            values.push(der.constructed(0, [extensions]))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): Request {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): Request {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const sequence = asn1 as asn1js.Sequence
-        if (
-            sequence.valueBlock.value.length < 1 ||
-            sequence.valueBlock.value.length > 2
-        ) {
+        const sequence = asn1
+        if (sequence.children.length < 1 || sequence.children.length > 2) {
             throw new Asn1ParseError(
                 'Invalid Request: expected 1 or 2 elements',
             )
         }
 
-        const reqCert = CertID.fromAsn1(sequence.valueBlock.value[0])
+        const reqCert = CertID.fromAsn1(sequence.children[0])
         let singleRequestExtensions: Extension[] | undefined = undefined
 
-        if (sequence.valueBlock.value.length === 2) {
-            const extensionsContainer = sequence.valueBlock
-                .value[1] as asn1js.Constructed
+        if (sequence.children.length === 2) {
+            const extensionsContainer = sequence.children[1]
             if (
-                extensionsContainer.idBlock.tagClass !== 3 ||
-                extensionsContainer.idBlock.tagNumber !== 0
+                extensionsContainer.tagClass !== TagClass.Context ||
+                extensionsContainer.tag !== 0
             ) {
                 throw new Asn1ParseError(
                     'Invalid Request: expected [0] tag for singleRequestExtensions',
                 )
             }
 
-            const extensionsSequence = extensionsContainer.valueBlock
-                .value[0] as asn1js.Sequence
-            singleRequestExtensions = extensionsSequence.valueBlock.value.map(
-                (ext) => Extension.fromAsn1(ext),
+            const extensionsSequence = extensionsContainer.children[0]
+            singleRequestExtensions = extensionsSequence.children.map((ext) =>
+                Extension.fromAsn1(ext),
             )
         }
 

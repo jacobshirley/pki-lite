@@ -4,7 +4,7 @@ import { RDNSequence } from '../x509/RDNSequence.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
 import { OIDs } from '../core/OIDs.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, TagClass } from '../core/PkiBase.js'
 
 describe('ResponderID', () => {
     test('should create a ResponderID byName', () => {
@@ -25,9 +25,9 @@ describe('ResponderID', () => {
 
         // Verify ASN.1 encoding
         const asn1 = ResponderID.toAsn1(responderIdByName)
-        expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(1) // [1]
+        expect(asn1.constructed).toBe(true)
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.tag).toEqual(1) // [1]
 
         // Verify decoding works
         const decoded = ResponderID.fromAsn1(asn1)
@@ -45,9 +45,9 @@ describe('ResponderID', () => {
 
         // Verify ASN.1 encoding
         const asn1 = ResponderID.toAsn1(keyHash)
-        expect(asn1).toBeInstanceOf(asn1js.Constructed)
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(2) // [2]
+        expect(asn1.constructed).toBe(true)
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.tag).toEqual(2) // [2]
 
         // Verify decoding
         const decoded = ResponderID.fromAsn1(asn1)
@@ -56,13 +56,7 @@ describe('ResponderID', () => {
 
     test('should throw error for invalid ASN.1 structure', () => {
         // Create an invalid ASN.1 structure (wrong tag number)
-        const invalidAsn1 = new asn1js.Constructed({
-            idBlock: {
-                tagClass: 3, // CONTEXT-SPECIFIC
-                tagNumber: 3, // [3] - invalid for ResponderID
-            },
-            value: [],
-        })
+        const invalidAsn1 = der.constructed(3, [])
 
         // Verify error is thrown
         expect(() => ResponderID.fromAsn1(invalidAsn1)).toThrow(

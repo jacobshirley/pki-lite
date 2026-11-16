@@ -4,7 +4,7 @@ import { Name } from '../x509/Name.js'
 import { RDNSequence } from '../x509/RDNSequence.js'
 import { RelativeDistinguishedName } from '../x509/RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from '../x509/AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('IssuerAndSerialNumber', () => {
     it('should create IssuerAndSerialNumber with number serial', () => {
@@ -61,8 +61,8 @@ describe('IssuerAndSerialNumber', () => {
         })
         const asn1 = issuerAndSerial.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock).toBeDefined()
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toBeGreaterThan(0)
     })
 
     it('should have correct properties', () => {
@@ -107,31 +107,19 @@ describe('IssuerAndSerialNumber', () => {
     it('should parse from ASN.1 structure', () => {
         // Create an ASN.1 SEQUENCE with issuer and serialNumber
         const serialNumber = 12345
-        const asn1 = new asn1js.Sequence({
-            value: [
-                // Issuer as DN like "CN=Test CA"
-                new asn1js.Sequence({
-                    value: [
-                        new asn1js.Set({
-                            value: [
-                                new asn1js.Sequence({
-                                    value: [
-                                        new asn1js.ObjectIdentifier({
-                                            value: '2.5.4.3',
-                                        }), // CN OID
-                                        new asn1js.PrintableString({
-                                            value: 'Test CA',
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                // Serial Number
-                new asn1js.Integer({ value: serialNumber }),
-            ],
-        })
+        const asn1 = der.sequence([
+            // Issuer as DN like "CN=Test CA"
+            der.sequence([
+                der.set([
+                    der.sequence([
+                        der.oid('2.5.4.3'), // CN OID
+                        der.printableString('Test CA'),
+                    ]),
+                ]),
+            ]),
+            // Serial Number
+            der.integer(serialNumber),
+        ])
 
         const issuerAndSerial = IssuerAndSerialNumber.fromAsn1(asn1)
         expect(issuerAndSerial).toBeInstanceOf(IssuerAndSerialNumber)
@@ -146,11 +134,7 @@ describe('IssuerAndSerialNumber', () => {
 
     it('should throw error when parsing invalid ASN.1', () => {
         // Create an ASN.1 structure that's not a SEQUENCE
-        const asn1 = new asn1js.Set({
-            value: [
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-            ],
-        })
+        const asn1 = der.set([der.octetString(new Uint8Array([1, 2, 3]))])
 
         expect(() => IssuerAndSerialNumber.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -159,9 +143,7 @@ describe('IssuerAndSerialNumber', () => {
 
     it('should throw error when ASN.1 has wrong number of elements', () => {
         // Create an ASN.1 SEQUENCE with only one element
-        const asn1 = new asn1js.Sequence({
-            value: [new asn1js.Integer({ value: 12345 })],
-        })
+        const asn1 = der.sequence([der.integer(12345)])
 
         expect(() => IssuerAndSerialNumber.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected 2 elements',

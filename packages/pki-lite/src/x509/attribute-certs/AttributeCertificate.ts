@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { AttributeCertificateInfo } from './AttributeCertificateInfo.js'
 import { BitString } from '../../asn1/BitString.js'
@@ -41,14 +41,12 @@ export class AttributeCertificate extends PkiBase<AttributeCertificate> {
     /**
      * Converts the AttributeCertificate to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                this.acInfo.toAsn1(),
-                this.signatureAlgorithm.toAsn1(),
-                this.signatureValue.toAsn1(),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            this.acInfo.toAsn1(),
+            this.signatureAlgorithm.toAsn1(),
+            this.signatureValue.toAsn1(),
+        ])
     }
 
     /**
@@ -57,19 +55,14 @@ export class AttributeCertificate extends PkiBase<AttributeCertificate> {
      * @param asn1 The ASN.1 structure
      * @returns The AttributeCertificate
      */
-    static fromAsn1(asn1: Asn1BaseBlock): AttributeCertificate {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): AttributeCertificate {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        // Define a type for the valueBlock structure we need to access
-        interface ValueBlock {
-            value: asn1js.BaseBlock[]
-        }
-
-        const values = (asn1.valueBlock as unknown as ValueBlock).value
+        const values = asn1.children
         if (values.length !== 3) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 3 elements',
@@ -77,7 +70,7 @@ export class AttributeCertificate extends PkiBase<AttributeCertificate> {
         }
 
         // Extract acInfo
-        if (!(values[0] instanceof asn1js.Sequence)) {
+        if (!values[0]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for acInfo',
             )
@@ -85,7 +78,7 @@ export class AttributeCertificate extends PkiBase<AttributeCertificate> {
         const acInfo = AttributeCertificateInfo.fromAsn1(values[0])
 
         // Extract signatureAlgorithm
-        if (!(values[1] instanceof asn1js.Sequence)) {
+        if (!values[1]?.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE for signatureAlgorithm',
             )
@@ -93,12 +86,12 @@ export class AttributeCertificate extends PkiBase<AttributeCertificate> {
         const signatureAlgorithm = AlgorithmIdentifier.fromAsn1(values[1])
 
         // Extract signatureValue
-        if (!(values[2] instanceof asn1js.BitString)) {
+        if (!values[2]?.is(UniversalTag.BitString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected BIT STRING for signatureValue',
             )
         }
-        const signatureValue = new Uint8Array(values[2].valueBlock.valueHexView)
+        const signatureValue = der.readBitString(values[2]).bytes
 
         return new AttributeCertificate({
             acInfo,

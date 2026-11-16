@@ -1,7 +1,7 @@
 import { assert, describe, expect, test } from 'vitest'
 import { OriginatorIdentifierOrKey } from './OriginatorIdentifierOrKey.js'
 import { KeyIdentifier } from './KeyIdentifier.js'
-import { asn1js } from '../../core/PkiBase.js'
+import { der } from '../../core/PkiBase.js'
 
 describe('OriginatorIdentifierOrKey', () => {
     test('can be parsed from ASN.1', () => {
@@ -17,7 +17,7 @@ describe('OriginatorIdentifierOrKey', () => {
     })
 
     test('throws error on invalid ASN.1 structure type', () => {
-        const asn1 = new asn1js.Integer({ value: 1 })
+        const asn1 = der.integer(1)
         expect(() => OriginatorIdentifierOrKey.fromAsn1(asn1)).toThrow(
             /Invalid ASN.1 structure/,
         )

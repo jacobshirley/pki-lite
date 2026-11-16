@@ -2,10 +2,11 @@ import { Any } from '../../asn1/Any.js'
 import { ObjectIdentifier } from '../../asn1/ObjectIdentifier.js'
 import {
     Asn1Any,
-    Asn1BaseBlock,
-    asn1js,
-    PkiBase,
+    Asn1Node,
+    der,
     ObjectIdentifierString,
+    PkiBase,
+    UniversalTag,
 } from '../../core/PkiBase.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 
@@ -43,10 +44,11 @@ export class OtherCertificateFormat extends PkiBase<OtherCertificateFormat> {
     /**
      * Converts the OtherCertificateFormat to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [this.otherCertFormat.toAsn1(), this.otherCert.toAsn1()],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            this.otherCertFormat.toAsn1(),
+            this.otherCert.toAsn1(),
+        ])
     }
 
     /**
@@ -55,29 +57,29 @@ export class OtherCertificateFormat extends PkiBase<OtherCertificateFormat> {
      * @param asn1 The ASN.1 structure
      * @returns The OtherCertificateFormat
      */
-    static fromAsn1(asn1: Asn1BaseBlock): OtherCertificateFormat {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): OtherCertificateFormat {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        if (asn1.valueBlock.value.length !== 2) {
+        if (asn1.children.length !== 2) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 2 elements',
             )
         }
 
-        const [formatAsn1, certAsn1] = asn1.valueBlock.value
+        const [formatAsn1, certAsn1] = asn1.children
 
-        if (!(formatAsn1 instanceof asn1js.ObjectIdentifier)) {
+        if (!formatAsn1.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OBJECT IDENTIFIER',
             )
         }
 
         // Extract the OID string
-        const otherCertFormat = formatAsn1.getValue()
+        const otherCertFormat = der.readOid(formatAsn1)
         const otherCert = new Any({ derBytes: certAsn1 })
 
         return new OtherCertificateFormat({

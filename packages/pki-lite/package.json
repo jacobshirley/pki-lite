@@ -58,11 +58,9 @@
     "author": "Jacob Shirley",
     "license": "MIT",
     "packageManager": "pnpm@12.3.4",
-    "dependencies": {
-        "asn1js": "3.0.10"
-    },
     "devDependencies": {
         "@types/node": "^24.3.3",
+        "asn1js": "3.0.10",
         "@vitest/browser-playwright": "^3.2.4",
         "playwright": "^1.60.0",
         "typescript": "6.0.3",

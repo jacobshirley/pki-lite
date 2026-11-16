@@ -4,7 +4,7 @@ import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Name } from './Name.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { UniversalTag } from '../core/PkiBase.js'
 import { TBSCertList } from './TBSCertList.js'
 import { RevokedCertificate } from './RevokedCertificate.js'
 import { Extension } from './Extension.js'
@@ -26,17 +26,17 @@ describe('CertificateList', () => {
         const crl = createSampleCRL()
         const asn1 = crl.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3)
 
         // First element should be the tbsCertList (a Sequence)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[0].is(UniversalTag.Sequence)).toBe(true)
 
         // Second element should be the signatureAlgorithm (a Sequence)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[1].is(UniversalTag.Sequence)).toBe(true)
 
         // Third element should be the signature (a BitString)
-        expect(asn1.valueBlock.value[2]).toBeInstanceOf(asn1js.BitString)
+        expect(asn1.children[2].is(UniversalTag.BitString)).toBe(true)
     })
 
     test('can be converted into ASN.1 and back', () => {
@@ -116,12 +116,12 @@ describe('CertificateList', () => {
 
         // Convert to ASN.1 and verify
         const asn1 = crl.toAsn1()
-        assert(asn1 instanceof asn1js.Sequence)
+        assert(asn1.is(UniversalTag.Sequence))
 
         // The tbsCertList should have 3 elements (signature, issuer, thisUpdate)
-        const tbsAsn1 = asn1.valueBlock.value[0]
-        assert(tbsAsn1 instanceof asn1js.Sequence)
-        expect(tbsAsn1.valueBlock.value.length).toEqual(3)
+        const tbsAsn1 = asn1.children[0]
+        assert(tbsAsn1.is(UniversalTag.Sequence))
+        expect(tbsAsn1.children.length).toEqual(3)
     })
 
     test('CertificateList toString snapshot', () => {

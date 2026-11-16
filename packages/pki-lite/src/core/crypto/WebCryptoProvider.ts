@@ -1,3 +1,4 @@
+import { der } from '../PkiBase.js'
 import {
     AlgorithmIdentifier,
     PSourceAlgorithm,
@@ -16,7 +17,6 @@ import type { SubjectPublicKeyInfo } from '../../keys/SubjectPublicKeyInfo.js'
 import { UnsupportedCryptoAlgorithmError } from '../errors/UnsupportedCryptoAlgorithmError.js'
 import { OIDs } from '../OIDs.js'
 import type { Asn1Any, ObjectIdentifierString } from '../PkiBase.js'
-import { asn1js } from '../PkiBase.js'
 import type {
     AsymmetricEncryptionAlgorithmParams,
     CryptoProvider,
@@ -209,19 +209,15 @@ export class WebCryptoProvider implements CryptoProvider {
             return publicKeyInfo.toDer()
         }
         return new Uint8Array(
-            new asn1js.Sequence({
-                value: [
-                    new asn1js.Sequence({
-                        value: [
-                            new asn1js.ObjectIdentifier({
-                                value: OIDs.RSA.ENCRYPTION,
-                            }),
-                            new asn1js.Null(),
-                        ],
-                    }),
+            der
+                .sequence([
+                    der.sequence([
+                        der.oid(OIDs.RSA.ENCRYPTION),
+                        der.nullValue(),
+                    ]),
                     publicKeyInfo.subjectPublicKey.toAsn1(),
-                ],
-            }).toBER(),
+                ])
+                .encode(),
         )
     }
 

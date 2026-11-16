@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { GeneralizedTime } from './GeneralizedTime.js'
-import * as asn1js from 'asn1js'
 
 describe('GeneralizedDate', () => {
     test('should create GeneralizedDate from Date object', () => {
@@ -30,18 +30,15 @@ describe('GeneralizedDate', () => {
         const generalizedDate = new GeneralizedTime({ time: testDate })
         const asn1 = generalizedDate.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.GeneralizedTime)
+        expect(asn1.is(UniversalTag.GeneralizedTime)).toBe(true)
 
         // Verify the date is preserved
-        const asn1GeneralizedTime = asn1 as asn1js.GeneralizedTime
-        expect(asn1GeneralizedTime.toDate().getTime()).toEqual(
-            testDate.getTime(),
-        )
+        expect(der.readTime(asn1).getTime()).toEqual(testDate.getTime())
     })
 
     test('should parse from ASN.1 GeneralizedTime correctly', () => {
         const testDate = new Date('2023-01-15T10:30:00.000Z')
-        const asn1 = new asn1js.GeneralizedTime({ valueDate: testDate })
+        const asn1 = der.generalizedTime(testDate)
 
         const generalizedDate = GeneralizedTime.fromAsn1(asn1)
 
@@ -50,9 +47,7 @@ describe('GeneralizedDate', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => GeneralizedTime.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected GeneralizedTime',
@@ -72,7 +67,7 @@ describe('GeneralizedDate', () => {
 
             // Should be able to convert to ASN.1
             const asn1 = generalizedDate.toAsn1()
-            expect(asn1).toBeInstanceOf(asn1js.GeneralizedTime)
+            expect(asn1.is(UniversalTag.GeneralizedTime)).toBe(true)
         }
     })
 
@@ -108,9 +103,7 @@ describe('GeneralizedDate', () => {
         const time = new GeneralizedTime({
             time: new Date('2026-11-13T08:03:23.166Z'),
         })
-        const text = new TextDecoder().decode(
-            (time.toAsn1() as asn1js.GeneralizedTime).valueBlock.valueHexView,
-        )
+        const text = new TextDecoder().decode(time.toAsn1().bytes())
         expect(text).toBe('20261113080323Z')
     })
 })

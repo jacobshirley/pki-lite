@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiSet } from '../core/PkiBase.js'
+import { Asn1Node, PkiSet, UniversalTag } from '../core/PkiBase.js'
 import { Attribute } from './Attribute.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -11,18 +11,15 @@ import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
  * ```
  */
 export class Attributes extends PkiSet<Attribute> {
-    static fromAsn1(asn1: Asn1BaseBlock): Attributes {
-        if (
-            !(asn1 instanceof asn1js.Set) &&
-            !(asn1 instanceof asn1js.Constructed)
-        ) {
+    static fromAsn1(asn1: Asn1Node): Attributes {
+        if (!asn1.is(UniversalTag.Set) && !asn1?.constructed) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SET/CONSTRUCTED for Attributes but got ' +
-                    asn1.constructor.name,
+                    asn1.describe(),
             )
         }
 
-        const attributes = asn1.valueBlock.value.map((attrAsn1) =>
+        const attributes = asn1.children.map((attrAsn1) =>
             Attribute.fromAsn1(attrAsn1),
         )
 

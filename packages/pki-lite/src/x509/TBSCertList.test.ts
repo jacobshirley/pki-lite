@@ -6,7 +6,7 @@ import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
 import { RevokedCertificate } from './RevokedCertificate.js'
 import { Extension } from './Extension.js'
-import { asn1js } from '../core/PkiBase.js'
+import { TagClass, UniversalTag } from '../core/PkiBase.js'
 import { CRLReason } from './CRLReason.js'
 
 describe('TBSCertList', () => {
@@ -97,8 +97,8 @@ describe('TBSCertList', () => {
         })
         const asn1 = tbsCertList.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3) // signature, issuer, thisUpdate
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3) // signature, issuer, thisUpdate
     })
 
     test('can be converted to ASN.1 with all fields', () => {
@@ -141,22 +141,18 @@ describe('TBSCertList', () => {
 
         const asn1 = tbsCertList.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(7) // version, signature, issuer, thisUpdate, nextUpdate, revokedCerts, extensions
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(7) // version, signature, issuer, thisUpdate, nextUpdate, revokedCerts, extensions
 
         // First element should be the version
-        const versionBlock = asn1.valueBlock.value[0]
-        expect(versionBlock).toBeInstanceOf(asn1js.Integer)
+        const versionBlock = asn1.children[0]
+        expect(versionBlock.is(UniversalTag.Integer)).toBe(true)
 
         // Last element should be the extensions with tagClass 3 (CONTEXT-SPECIFIC)
-        const extensionsBlock = asn1.valueBlock.value[6]
-        expect(extensionsBlock).toBeInstanceOf(asn1js.Constructed)
-        expect(
-            (extensionsBlock as asn1js.Constructed).idBlock.tagClass,
-        ).toEqual(3)
-        expect(
-            (extensionsBlock as asn1js.Constructed).idBlock.tagNumber,
-        ).toEqual(0) // [0]
+        const extensionsBlock = asn1.children[6]
+        expect(extensionsBlock.constructed).toBe(true)
+        expect(extensionsBlock.tagClass).toEqual(TagClass.Context)
+        expect(extensionsBlock.tag).toEqual(0) // [0]
     })
 
     test('can be converted to ASN.1 and back', () => {

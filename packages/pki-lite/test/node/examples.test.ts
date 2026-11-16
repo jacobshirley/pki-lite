@@ -35,6 +35,7 @@ const examples = [
     '026-openssl-defaults-with-extended-crypto',
     '027-certificate-policies',
     '028-crl-checks',
+    '029-der-codec',
     '030-ocsp-checks',
 ]
 

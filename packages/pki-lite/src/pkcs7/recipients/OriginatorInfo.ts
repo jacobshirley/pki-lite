@@ -1,5 +1,11 @@
 import { CertificateSet } from '../../x509/CertificateSet.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../../core/PkiBase.js'
 import { RevocationInfoChoices } from '../../revocation/RevocationInfoChoices.js'
 import { RevocationInfoChoice } from '../../revocation/RevocationInfoChoice.js'
 import { CertificateChoices } from '../../x509/CertificateChoices.js'
@@ -41,27 +47,27 @@ export class OriginatorInfo extends PkiBase<OriginatorInfo> {
     /**
      * Converts the OriginatorInfo to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        const sequence = new asn1js.Sequence()
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
 
         // certs [0] IMPLICIT CertificateSet
         if (this.certs && this.certs.length > 0) {
-            sequence.valueBlock.value.push(implicitTag(this.certs.toAsn1(), 0))
+            values.push(implicitTag(this.certs.toAsn1(), 0))
         }
 
         // crls [1] IMPLICIT RevocationInfoChoices
         if (this.crls && this.crls.length > 0) {
-            sequence.valueBlock.value.push(implicitTag(this.crls.toAsn1(), 1))
+            values.push(implicitTag(this.crls.toAsn1(), 1))
         }
 
-        return sequence
+        return der.sequence(values)
     }
 
     /**
      * Creates an OriginatorInfo from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): OriginatorInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): OriginatorInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for OriginatorInfo',
             )
@@ -70,15 +76,14 @@ export class OriginatorInfo extends PkiBase<OriginatorInfo> {
         let certs: CertificateSet | undefined
         let crls: RevocationInfoChoices | undefined
 
-        for (const element of asn1.valueBlock.value) {
-            if (!(element instanceof asn1js.Constructed)) {
+        for (const element of asn1.children) {
+            if (!element?.constructed) {
                 continue
             }
 
-            const tagClass = element.idBlock.tagClass
-            const tagNumber = element.idBlock.tagNumber
+            const tagNumber = element.tag
 
-            if (tagClass === 3) {
+            if (element.tagClass === TagClass.Context) {
                 // CONTEXT_SPECIFIC
                 if (tagNumber === 0) {
                     // certs [0] IMPLICIT CertificateSet
@@ -102,10 +107,10 @@ export { CertificateSet, RevocationInfoChoices }
  * library wrote the SET wrapped inside the [n] (explicit tagging); that form is
  * recognised by its single universal SET child and still accepted.
  */
-function implicitSet(element: asn1js.Constructed): asn1js.Set {
-    const children = element.valueBlock.value
-    if (children.length === 1 && children[0] instanceof asn1js.Set) {
+function implicitSet(element: Asn1Node): Asn1Node {
+    const children = element.items('a constructed value')
+    if (children.length === 1 && children[0].is(UniversalTag.Set)) {
         return children[0]
     }
-    return new asn1js.Set({ value: children })
+    return element.retag(UniversalTag.Set)
 }

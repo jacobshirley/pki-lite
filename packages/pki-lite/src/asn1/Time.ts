@@ -1,5 +1,4 @@
-import { GeneralizedTime } from './GeneralizedTime.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
 /**
@@ -25,21 +24,20 @@ export class Time extends PkiBase<Time> {
         this.time = new Date(options.time)
     }
 
-    toAsn1(): asn1js.UTCTime | asn1js.GeneralizedTime {
-        const utcTimeCutoff = new Date('2050-01-01T00:00:00.000Z')
-        return this.time < utcTimeCutoff
-            ? new asn1js.UTCTime({ valueDate: this.time })
-            : new GeneralizedTime({ time: this.time }).toAsn1()
+    toAsn1(): Asn1Node {
+        // RFC 5280 4.1.2.5: UTCTime for 1950-2049, GeneralizedTime otherwise;
+        // neither carries fractional seconds
+        const time = new Date(Math.floor(this.time.getTime() / 1000) * 1000)
+        const year = time.getUTCFullYear()
+        return year >= 1950 && year < 2050
+            ? der.utcTime(time)
+            : der.generalizedTime(time)
     }
 
-    /**
-     * @param asn1 A UTCTime or GeneralizedTime
-     * @param fieldName Names the field in the error message, e.g. `notBefore`
-     */
-    static fromAsn1(asn1: Asn1BaseBlock, fieldName?: string): Time {
+    static fromAsn1(asn1: Asn1Node, fieldName?: string): Time {
         if (
-            !(asn1 instanceof asn1js.UTCTime) &&
-            !(asn1 instanceof asn1js.GeneralizedTime)
+            !asn1.is(UniversalTag.UTCTime) &&
+            !asn1.is(UniversalTag.GeneralizedTime)
         ) {
             throw new Asn1ParseError(
                 fieldName
@@ -47,6 +45,6 @@ export class Time extends PkiBase<Time> {
                     : 'Invalid ASN.1 structure: expected UTCTime or GeneralizedTime',
             )
         }
-        return new Time({ time: asn1.toDate() })
+        return new Time({ time: der.readTime(asn1) })
     }
 }

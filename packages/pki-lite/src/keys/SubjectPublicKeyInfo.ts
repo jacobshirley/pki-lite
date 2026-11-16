@@ -1,9 +1,10 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     derToAsn1,
     pemToDer,
     PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { RSAPublicKey } from './RSAPublicKey.js'
@@ -45,10 +46,11 @@ export class SubjectPublicKeyInfo extends PkiBase<SubjectPublicKeyInfo> {
     /**
      * Converts the subject key information to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [this.algorithm.toAsn1(), this.subjectPublicKey.toAsn1()],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            this.algorithm.toAsn1(),
+            this.subjectPublicKey.toAsn1(),
+        ])
     }
 
     /**
@@ -57,29 +59,27 @@ export class SubjectPublicKeyInfo extends PkiBase<SubjectPublicKeyInfo> {
      * @param asn1 The ASN.1 structure
      * @returns A SubjectPublicKeyInfo
      */
-    static fromAsn1(asn1: asn1js.BaseBlock): SubjectPublicKeyInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): SubjectPublicKeyInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('Expected Sequence')
         }
 
-        if (asn1.valueBlock.value.length !== 2) {
+        if (asn1.children.length !== 2) {
             throw new Asn1ParseError(
                 'Expected 2 elements in SubjectPublicKeyInfo sequence',
             )
         }
 
-        const algorithmBlock = asn1.valueBlock.value[0]
-        const subjectPublicKeyBlock = asn1.valueBlock.value[1]
+        const algorithmBlock = asn1.children[0]
+        const subjectPublicKeyBlock = asn1.children[1]
 
         const algorithm = AlgorithmIdentifier.fromAsn1(algorithmBlock)
 
-        if (!(subjectPublicKeyBlock instanceof asn1js.BitString)) {
+        if (!subjectPublicKeyBlock.is(UniversalTag.BitString)) {
             throw new Asn1ParseError('Expected BitString for subjectPublicKey')
         }
 
-        const subjectPublicKey = new Uint8Array(
-            subjectPublicKeyBlock.valueBlock.valueHexView,
-        )
+        const subjectPublicKey = der.readBitString(subjectPublicKeyBlock).bytes
 
         return new SubjectPublicKeyInfo({ algorithm, subjectPublicKey })
     }

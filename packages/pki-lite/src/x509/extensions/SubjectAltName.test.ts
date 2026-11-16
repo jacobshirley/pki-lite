@@ -1,4 +1,5 @@
 import { assert, describe, expect, test } from 'vitest'
+import { der, TagClass, UniversalTag } from '../../core/PkiBase.js'
 import { SubjectAltName } from './SubjectAltName.js'
 import {
     dNSName,
@@ -6,7 +7,6 @@ import {
     uniformResourceIdentifier,
     iPAddress,
 } from '../GeneralName.js'
-import * as asn1js from 'asn1js'
 
 describe('SubjectAltName', () => {
     test('should create empty SubjectAltName', () => {
@@ -65,23 +65,15 @@ describe('SubjectAltName', () => {
         const subjectAltName = new SubjectAltName(dnsName, emailName)
         const asn1 = subjectAltName.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
     })
 
     test('should parse from ASN.1 structure with DNS names', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 2 }, // [2] dNSName
-                    value: [new asn1js.IA5String({ value: 'example.com' })],
-                }),
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 2 }, // [2] dNSName
-                    value: [new asn1js.IA5String({ value: 'www.example.com' })],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.constructed(2, [der.ia5String('example.com')]),
+            der.constructed(2, [der.ia5String('www.example.com')]),
+        ])
 
         const subjectAltName = SubjectAltName.fromAsn1(asn1)
 
@@ -94,26 +86,11 @@ describe('SubjectAltName', () => {
     })
 
     test('should parse from ASN.1 structure with mixed types', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 2 }, // [2] dNSName
-                    value: [new asn1js.IA5String({ value: 'example.com' })],
-                }),
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 1 }, // [1] rfc822Name
-                    value: [
-                        new asn1js.IA5String({ value: 'admin@example.com' }),
-                    ],
-                }),
-                new asn1js.Constructed({
-                    idBlock: { tagClass: 3, tagNumber: 6 }, // [6] uniformResourceIdentifier
-                    value: [
-                        new asn1js.IA5String({ value: 'https://example.com' }),
-                    ],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.constructed(2, [der.ia5String('example.com')]),
+            der.constructed(1, [der.ia5String('admin@example.com')]),
+            der.constructed(6, [der.ia5String('https://example.com')]),
+        ])
 
         const subjectAltName = SubjectAltName.fromAsn1(asn1)
 
@@ -124,7 +101,7 @@ describe('SubjectAltName', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.Integer({ value: 123 })
+        const invalidAsn1 = der.integer(123)
 
         expect(() => SubjectAltName.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected Sequence for SubjectAltName',
@@ -134,14 +111,14 @@ describe('SubjectAltName', () => {
     test('should parse dNSName from OpenSSL implicit-tagged Primitive (issue #84)', () => {
         // OpenSSL uses implicit tagging for SAN entries, encoding dNSName as
         // a Primitive with context-specific tag [2] instead of Constructed + IA5String
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Primitive({
-                    idBlock: { tagClass: 3, tagNumber: 2 }, // [2] IMPLICIT dNSName
-                    valueHex: new TextEncoder().encode('example.com'),
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            // [2] IMPLICIT dNSName
+            der.primitive(
+                2,
+                new TextEncoder().encode('example.com'),
+                TagClass.Context,
+            ),
+        ])
 
         const subjectAltName = SubjectAltName.fromAsn1(asn1)
 
@@ -152,7 +129,7 @@ describe('SubjectAltName', () => {
     })
 
     test('should handle empty ASN.1 sequence', () => {
-        const asn1 = new asn1js.Sequence({ value: [] })
+        const asn1 = der.sequence([])
 
         const subjectAltName = SubjectAltName.fromAsn1(asn1)
 

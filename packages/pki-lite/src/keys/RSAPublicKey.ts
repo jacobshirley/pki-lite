@@ -1,9 +1,10 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
-    PkiBase,
+    Asn1Node,
+    der,
     derToAsn1,
     pemToDer,
+    PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -47,13 +48,11 @@ export class RSAPublicKey extends PkiBase<RSAPublicKey> {
     /**
      * Converts the RSA key to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ valueHex: this.modulus }),
-                new asn1js.Integer({ valueHex: this.publicExponent }),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            der.primitive(UniversalTag.Integer, this.modulus),
+            der.primitive(UniversalTag.Integer, this.publicExponent),
+        ])
     }
 
     /**
@@ -62,14 +61,14 @@ export class RSAPublicKey extends PkiBase<RSAPublicKey> {
      * @param asn1 The ASN.1 structure
      * @returns A new RSAPublicKey instance
      */
-    static fromAsn1(asn1: Asn1BaseBlock): RSAPublicKey {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RSAPublicKey {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const values = (asn1 as any).valueBlock.value
+        const values = asn1.children
         if (values.length !== 2) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 2 elements, got ${values.length}`,
@@ -77,26 +76,20 @@ export class RSAPublicKey extends PkiBase<RSAPublicKey> {
         }
 
         // Modulus
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0].is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: modulus must be INTEGER',
             )
         }
-        const modulusBlock = values[0].valueBlock as any
-        const modulus = new Uint8Array(
-            modulusBlock.valueHexView || modulusBlock.valueBeforeDecodeView,
-        )
+        const modulus = der.readIntegerBytes(values[0])
 
         // Public Exponent
-        if (!(values[1] instanceof asn1js.Integer)) {
+        if (!values[1].is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: publicExponent must be INTEGER',
             )
         }
-        const exponentBlock = values[1].valueBlock as any
-        const publicExponent = new Uint8Array(
-            exponentBlock.valueHexView || exponentBlock.valueBeforeDecodeView,
-        )
+        const publicExponent = der.readIntegerBytes(values[1])
 
         return new RSAPublicKey({
             modulus,

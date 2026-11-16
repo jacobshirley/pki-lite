@@ -1,4 +1,11 @@
-import { Asn1BaseBlock, asn1js, Choice, PkiBase } from '../../core/PkiBase.js'
+import {
+    Asn1Node,
+    Choice,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../../core/PkiBase.js'
 import { KeyIdentifier } from './KeyIdentifier.js'
 import { IssuerAndSerialNumber } from '../IssuerAndSerialNumber.js'
 import { OtherKeyAttribute } from './OtherKeyAttribute.js'
@@ -23,14 +30,14 @@ type KeyAgreeRecipientIdentifier =
 const KeyAgreeRecipientIdentifier = Choice('KeyAgreeRecipientIdentifier', {
     IssuerAndSerialNumber,
     RecipientKeyIdentifier,
-    fromAsn1: (asn1: Asn1BaseBlock): KeyAgreeRecipientIdentifier => {
+    fromAsn1: (asn1: Asn1Node): KeyAgreeRecipientIdentifier => {
         // If it's a context-specific tag
-        if (asn1 instanceof asn1js.Constructed && asn1.idBlock.tagClass === 3) {
-            const tagNumber = asn1.idBlock.tagNumber
+        if (asn1?.constructed && asn1.tagClass === TagClass.Context) {
+            const tagNumber = asn1.tag
 
             // rKeyId [0]
             if (tagNumber === 0) {
-                return RecipientKeyIdentifier.fromAsn1(asn1.valueBlock.value[0])
+                return RecipientKeyIdentifier.fromAsn1(asn1.children[0])
             }
 
             throw new Asn1ParseError(`Unsupported tag number: ${tagNumber}`)
@@ -39,11 +46,10 @@ const KeyAgreeRecipientIdentifier = Choice('KeyAgreeRecipientIdentifier', {
         // Default to IssuerAndSerialNumber
         return IssuerAndSerialNumber.fromAsn1(asn1)
     },
-    toAsn1: (value: KeyAgreeRecipientIdentifier): Asn1BaseBlock => {
-        const asn1 = value.toAsn1()
+    toAsn1: (value: KeyAgreeRecipientIdentifier): Asn1Node => {
+        let asn1 = value.toAsn1()
         if (value instanceof RecipientKeyIdentifier) {
-            asn1.idBlock.tagClass = 3 // Context-specific
-            asn1.idBlock.tagNumber = 0
+            asn1 = asn1.implicit(0) // [0] IMPLICIT
         } else if (!(value instanceof IssuerAndSerialNumber)) {
             throw new Asn1ParseError(`Unsupported type: ${value}`)
         }
@@ -80,25 +86,20 @@ export class RecipientEncryptedKey extends PkiBase<RecipientEncryptedKey> {
         this.encryptedKey = encryptedKey
     }
 
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         const ridAsn1 = KeyAgreeRecipientIdentifier.toAsn1(this.rid)
 
-        return new asn1js.Sequence({
-            value: [
-                ridAsn1,
-                new asn1js.OctetString({ valueHex: this.encryptedKey }),
-            ],
-        })
+        return der.sequence([ridAsn1, der.octetString(this.encryptedKey)])
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): RecipientEncryptedKey {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RecipientEncryptedKey {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for RecipientEncryptedKey',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length !== 2) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 2 elements, got ${values.length}`,
@@ -109,23 +110,23 @@ export class RecipientEncryptedKey extends PkiBase<RecipientEncryptedKey> {
 
         // Check if it's a RecipientKeyIdentifier (with [0] tag)
         if (
-            values[0] instanceof asn1js.Constructed &&
-            values[0].idBlock.tagClass === 3 &&
-            values[0].idBlock.tagNumber === 0
+            values[0]?.constructed &&
+            values[0].tagClass === TagClass.Context &&
+            values[0].tag === 0
         ) {
-            rid = RecipientKeyIdentifier.fromAsn1(values[0].valueBlock.value[0])
+            rid = RecipientKeyIdentifier.fromAsn1(values[0].children[0])
         } else {
             // Otherwise it's an IssuerAndSerialNumber
             rid = IssuerAndSerialNumber.fromAsn1(values[0])
         }
 
-        if (!(values[1] instanceof asn1js.OctetString)) {
+        if (!values[1]?.is(UniversalTag.OctetString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OctetString for encryptedKey',
             )
         }
 
-        const encryptedKey = new Uint8Array(values[1].valueBlock.valueHexView)
+        const encryptedKey = values[1].bytes()
 
         return new RecipientEncryptedKey({ rid, encryptedKey })
     }

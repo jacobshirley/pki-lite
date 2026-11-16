@@ -1,10 +1,10 @@
-import * as asn1js from 'asn1js'
 import { AttributeCertificate } from './AttributeCertificate.js'
 import { AttributeCertificateInfo } from './AttributeCertificateInfo.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { Holder } from './AttributeCertificateInfo.js'
 import { AttCertIssuer } from './AttributeCertificateInfo.js'
 import { describe, test, expect, beforeEach } from 'vitest'
+import { der, UniversalTag } from '../../core/PkiBase.js'
 
 describe('AttributeCertificate', () => {
     // Mock dependencies
@@ -35,13 +35,13 @@ describe('AttributeCertificate', () => {
                 notAfter: new Date(Date.now() + 86400000),
             },
             attributes: [],
-            toAsn1: () => new asn1js.Sequence({ value: [] }),
+            toAsn1: () => der.sequence([]),
         } as unknown as AttributeCertificateInfo
 
         mockSignatureAlgorithm = {
             algorithm: '1.2.840.113549.1.1.11',
             parameters: null,
-            toAsn1: () => new asn1js.Sequence({ value: [] }),
+            toAsn1: () => der.sequence([]),
         } as unknown as AlgorithmIdentifier
 
         mockSignatureValue = new Uint8Array([10, 11, 12])
@@ -68,28 +68,24 @@ describe('AttributeCertificate', () => {
 
         const asn1 = attrCert.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
         // Check the structure has the correct elements
-        const valueBlock = (asn1 as asn1js.Sequence).valueBlock
-        expect(valueBlock.value.length).toEqual(3)
-        expect(valueBlock.value[2]).toBeInstanceOf(asn1js.BitString)
+        const items = asn1.children
+        expect(items.length).toEqual(3)
+        expect(items[2].is(UniversalTag.BitString)).toBe(true)
 
         // Check BitString value matches signatureValue
-        const bitString = valueBlock.value[2] as asn1js.BitString
-        expect(new Uint8Array(bitString.valueBlock.valueHexView)).toEqual(
-            mockSignatureValue,
-        )
+        const bitString = items[2]
+        expect(der.readBitString(bitString).bytes).toEqual(mockSignatureValue)
     })
 
     test('fromAsn1 creates an instance from valid ASN.1', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [] }), // acInfo
-                new asn1js.Sequence({ value: [] }), // signatureAlgorithm
-                new asn1js.BitString({ valueHex: mockSignatureValue }), // signatureValue
-            ],
-        })
+        const asn1 = der.sequence([
+            der.sequence([]), // acInfo
+            der.sequence([]), // signatureAlgorithm
+            der.bitString(mockSignatureValue), // signatureValue
+        ])
 
         // This test verifies the fromAsn1 method attempts to parse the structure
         // It may throw due to incomplete mock data, which is expected
@@ -101,7 +97,7 @@ describe('AttributeCertificate', () => {
     })
 
     test('fromAsn1 throws error for invalid ASN.1 type', () => {
-        const asn1 = new asn1js.Integer({ value: 123 })
+        const asn1 = der.integer(123)
 
         expect(() => AttributeCertificate.fromAsn1(asn1)).toThrow(
             'expected SEQUENCE',
@@ -110,49 +106,41 @@ describe('AttributeCertificate', () => {
 
     test('fromAsn1 throws error for invalid structure', () => {
         // Test with incorrect number of elements
-        const invalidSequence = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [] }), // acInfo
-                new asn1js.Sequence({ value: [] }), // signatureAlgorithm
-                // Missing signatureValue
-            ],
-        })
+        const invalidSequence = der.sequence([
+            der.sequence([]), // acInfo
+            der.sequence([]), // signatureAlgorithm
+            // Missing signatureValue
+        ])
         expect(() => AttributeCertificate.fromAsn1(invalidSequence)).toThrow(
             'Invalid ASN.1 structure: expected 3 elements',
         )
 
         // Test with incorrect type for acInfo
-        const invalidAcInfoType = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 1 }), // Invalid type
-                new asn1js.Sequence({ value: [] }), // signatureAlgorithm
-                new asn1js.BitString({ valueHex: mockSignatureValue }), // signatureValue
-            ],
-        })
+        const invalidAcInfoType = der.sequence([
+            der.integer(1), // Invalid type
+            der.sequence([]), // signatureAlgorithm
+            der.bitString(mockSignatureValue), // signatureValue
+        ])
         expect(() => AttributeCertificate.fromAsn1(invalidAcInfoType)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE for acInfo',
         )
 
         // Test with incorrect type for signatureAlgorithm
-        const invalidAlgoType = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [] }), // acInfo
-                new asn1js.Integer({ value: 1 }), // Invalid type
-                new asn1js.BitString({ valueHex: mockSignatureValue }), // signatureValue
-            ],
-        })
+        const invalidAlgoType = der.sequence([
+            der.sequence([]), // acInfo
+            der.integer(1), // Invalid type
+            der.bitString(mockSignatureValue), // signatureValue
+        ])
         expect(() => AttributeCertificate.fromAsn1(invalidAlgoType)).toThrow(
             'Invalid ASN.1 structure',
         )
 
         // Test with incorrect type for signatureValue
-        const invalidSigType = new asn1js.Sequence({
-            value: [
-                new asn1js.Sequence({ value: [] }), // acInfo
-                new asn1js.Sequence({ value: [] }), // signatureAlgorithm
-                new asn1js.Integer({ value: 1 }), // Invalid type
-            ],
-        })
+        const invalidSigType = der.sequence([
+            der.sequence([]), // acInfo
+            der.sequence([]), // signatureAlgorithm
+            der.integer(1), // Invalid type
+        ])
         expect(() => AttributeCertificate.fromAsn1(invalidSigType)).toThrow(
             'Invalid ASN.1 structure',
         )

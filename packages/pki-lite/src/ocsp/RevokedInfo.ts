@@ -1,5 +1,12 @@
 import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
-import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { CRLReason } from '../x509/CRLReason.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -33,72 +40,56 @@ export class RevokedInfo extends PkiBase<RevokedInfo> {
                   : new CRLReason(options.revocationReason)
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: asn1js.AsnType[] = [
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [
             new GeneralizedTime({ time: this.revocationTime }).toAsn1(),
         ]
 
         if (this.revocationReason !== undefined) {
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [this.revocationReason.toAsn1()],
-                }),
-            )
+            values.push(der.constructed(0, [this.revocationReason.toAsn1()]))
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): RevokedInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RevokedInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const sequence = asn1 as asn1js.Sequence
-        if (
-            sequence.valueBlock.value.length < 1 ||
-            sequence.valueBlock.value.length > 2
-        ) {
+        const sequence = asn1
+        if (sequence.children.length < 1 || sequence.children.length > 2) {
             throw new Asn1ParseError(
                 'Invalid RevokedInfo: expected 1 or 2 elements',
             )
         }
 
-        const revocationTimeBlock = sequence.valueBlock
-            .value[0] as asn1js.GeneralizedTime
+        const revocationTimeBlock = sequence.children[0]
         // Use toDate() method for proper date parsing
-        const revocationTime = revocationTimeBlock.toDate()
+        const revocationTime = der.readTime(revocationTimeBlock)
 
         let revocationReason: number | undefined = undefined
 
-        if (sequence.valueBlock.value.length === 2) {
-            const revocationReasonBlock = sequence.valueBlock
-                .value[1] as asn1js.Constructed
+        if (sequence.children.length === 2) {
+            const revocationReasonBlock = sequence.children[1]
             if (
-                revocationReasonBlock.idBlock.tagClass !== 3 ||
-                revocationReasonBlock.idBlock.tagNumber !== 0
+                revocationReasonBlock.tagClass !== TagClass.Context ||
+                revocationReasonBlock.tag !== 0
             ) {
                 throw new Asn1ParseError(
                     'Invalid RevokedInfo: expected [0] tag for revocationReason',
                 )
             }
 
-            const reasonValue = revocationReasonBlock.valueBlock
-                .value[0] as asn1js.Enumerated
-            if (!(reasonValue instanceof asn1js.Enumerated)) {
+            const reasonValue = revocationReasonBlock.children[0]
+            if (!reasonValue.is(UniversalTag.Enumerated)) {
                 throw new Asn1ParseError(
                     'Invalid ASN.1 structure: expected ENUMERATED for revocation reason',
                 )
             }
-            revocationReason = reasonValue.valueBlock.valueDec
+            revocationReason = der.readEnumerated(reasonValue)
         }
 
         return new RevokedInfo({ revocationTime, revocationReason })

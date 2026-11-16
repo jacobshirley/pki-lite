@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RSAESOAEPParams } from './RSAESOAEPParams.js'
 import { AlgorithmIdentifier, PSourceAlgorithm } from './AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, derToAsn1, TagClass, UniversalTag } from '../core/PkiBase.js'
 import { OctetString } from '../asn1/OctetString.js'
 
 describe('RSAESOAEPParams', () => {
@@ -55,44 +55,32 @@ describe('RSAESOAEPParams', () => {
         })
         const asn1 = params.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
         // Check that all three parameters are present
-        const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value.length).toEqual(3)
+        const sequence = asn1
+        expect(sequence.children.length).toEqual(3)
 
         // Each parameter should be a context-specific tagged value
-        expect((sequence.valueBlock.value[0] as any).idBlock.tagClass).toEqual(
-            3,
-        ) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[0] as any).idBlock.tagNumber).toEqual(
-            0,
-        ) // hashAlgorithm [0]
+        expect(sequence.children[0].tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(sequence.children[0].tag).toEqual(0) // hashAlgorithm [0]
 
-        expect((sequence.valueBlock.value[1] as any).idBlock.tagClass).toEqual(
-            3,
-        ) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[1] as any).idBlock.tagNumber).toEqual(
-            1,
-        ) // maskGenAlgorithm [1]
+        expect(sequence.children[1].tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(sequence.children[1].tag).toEqual(1) // maskGenAlgorithm [1]
 
-        expect((sequence.valueBlock.value[2] as any).idBlock.tagClass).toEqual(
-            3,
-        ) // CONTEXT-SPECIFIC
-        expect((sequence.valueBlock.value[2] as any).idBlock.tagNumber).toEqual(
-            2,
-        ) // pSourceAlgorithm [2]
+        expect(sequence.children[2].tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(sequence.children[2].tag).toEqual(2) // pSourceAlgorithm [2]
     })
 
     it('should convert to ASN.1 with no parameters (empty sequence)', () => {
         const params = new RSAESOAEPParams()
         const asn1 = params.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
 
         // No parameters should result in an empty sequence
-        const sequence = asn1 as asn1js.Sequence
-        expect(sequence.valueBlock.value.length).toEqual(0)
+        const sequence = asn1
+        expect(sequence.children.length).toEqual(0)
     })
 
     it('should parse from ASN.1 with all parameters', () => {
@@ -164,7 +152,7 @@ describe('RSAESOAEPParams', () => {
             der.byteOffset,
             der.byteOffset + der.byteLength,
         )
-        const asn1 = asn1js.fromBER(arrayBuffer as ArrayBuffer).result
+        const asn1 = derToAsn1(arrayBuffer as ArrayBuffer)
         const parsed = RSAESOAEPParams.fromAsn1(asn1)
 
         expect(parsed.hashAlgorithm).toBeDefined()

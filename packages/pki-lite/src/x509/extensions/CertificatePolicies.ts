@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiSequence } from '../../core/PkiBase.js'
+import { Asn1Node, PkiSequence, UniversalTag } from '../../core/PkiBase.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 import { PolicyInformation } from '../PolicyInformation.js'
 
@@ -16,14 +16,14 @@ export class CertificatePolicies extends PkiSequence<PolicyInformation> {
         return this.map((policy) => policy.policyIdentifier.value)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): CertificatePolicies {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): CertificatePolicies {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure for CertificatePolicies',
             )
         }
         return new CertificatePolicies(
-            ...asn1.valueBlock.value.map((policy) =>
+            ...asn1.children.map((policy) =>
                 PolicyInformation.fromAsn1(policy),
             ),
         )

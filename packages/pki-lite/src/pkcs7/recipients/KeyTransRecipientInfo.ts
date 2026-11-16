@@ -1,4 +1,11 @@
-import { Asn1BaseBlock, asn1js, Choice, PkiBase } from '../../core/PkiBase.js'
+import {
+    Asn1Node,
+    Choice,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../../core/PkiBase.js'
 import {
     AlgorithmIdentifier,
     KeyEncryptionAlgorithmIdentifier,
@@ -23,18 +30,17 @@ export type RecipientIdentifier = IssuerAndSerialNumber | SubjectKeyIdentifier
 export const RecipientIdentifier = Choice('RecipientIdentifier', {
     IssuerAndSerialNumber,
     SubjectKeyIdentifier,
-    fromAsn1: (asn1: Asn1BaseBlock): RecipientIdentifier => {
-        if (asn1.idBlock.tagClass === 3 && asn1.idBlock.tagNumber === 0) {
+    fromAsn1: (asn1: Asn1Node): RecipientIdentifier => {
+        if (asn1.tagClass === TagClass.Context && asn1.tag === 0) {
             return SubjectKeyIdentifier.fromAsn1(asn1)
         }
         return IssuerAndSerialNumber.fromAsn1(asn1)
     },
-    toAsn1: (value: RecipientIdentifier): Asn1BaseBlock => {
-        const asn1 = value.toAsn1()
+    toAsn1: (value: RecipientIdentifier): Asn1Node => {
+        let asn1 = value.toAsn1()
 
         if (value instanceof SubjectKeyIdentifier) {
-            asn1.idBlock.tagClass = 3
-            asn1.idBlock.tagNumber = 0
+            asn1 = asn1.implicit(0) // [0] IMPLICIT
         }
 
         return asn1
@@ -100,14 +106,14 @@ export class KeyTransRecipientInfo extends PkiBase<KeyTransRecipientInfo> {
     /**
      * Creates a KeyTransRecipientInfo from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): KeyTransRecipientInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): KeyTransRecipientInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for KeyTransRecipientInfo',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length !== 4) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 4 elements, got ${values.length}`,
@@ -115,13 +121,13 @@ export class KeyTransRecipientInfo extends PkiBase<KeyTransRecipientInfo> {
         }
 
         // Version
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Integer for version',
             )
         }
 
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
 
         // RecipientIdentifier
         let rid: RecipientIdentifier = RecipientIdentifier.fromAsn1(values[1])
@@ -130,12 +136,12 @@ export class KeyTransRecipientInfo extends PkiBase<KeyTransRecipientInfo> {
         const keyEncryptionAlgorithm = AlgorithmIdentifier.fromAsn1(values[2])
 
         // EncryptedKey
-        if (!(values[3] instanceof asn1js.OctetString)) {
+        if (!values[3]?.is(UniversalTag.OctetString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OctetString for encryptedKey',
             )
         }
-        const encryptedKey = new Uint8Array(values[3].valueBlock.valueHexView)
+        const encryptedKey = values[3].bytes()
 
         return new KeyTransRecipientInfo({
             version,
@@ -148,14 +154,12 @@ export class KeyTransRecipientInfo extends PkiBase<KeyTransRecipientInfo> {
     /**
      * Converts the KeyTransRecipientInfo to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: this.version }),
-                RecipientIdentifier.toAsn1(this.rid),
-                this.keyEncryptionAlgorithm.toAsn1(),
-                new asn1js.OctetString({ valueHex: this.encryptedKey }),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            der.integer(this.version),
+            RecipientIdentifier.toAsn1(this.rid),
+            this.keyEncryptionAlgorithm.toAsn1(),
+            der.octetString(this.encryptedKey),
+        ])
     }
 }

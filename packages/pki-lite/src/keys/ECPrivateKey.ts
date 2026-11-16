@@ -1,9 +1,11 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
-    PkiBase,
+    Asn1Node,
+    der,
     derToAsn1,
     pemToDer,
+    PkiBase,
+    TagClass,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { Any } from '../asn1/Any.js'
@@ -77,42 +79,26 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
     /**
      * Converts the ECPrivateKey to an ASN.1 structure
      */
-    toAsn1(): Asn1BaseBlock {
-        const result: Asn1BaseBlock[] = [
-            new asn1js.Integer({ value: this.version }),
-            new asn1js.OctetString({ valueHex: this.privateKey }),
+    toAsn1(): Asn1Node {
+        const result: Asn1Node[] = [
+            der.integer(this.version),
+            der.octetString(this.privateKey),
         ]
 
         // Add [0] parameters if present: a named curve OID, or kept-as-is other parameters
         const parameters = this.namedCurve
-            ? new asn1js.ObjectIdentifier({ value: this.namedCurve })
+            ? der.oid(this.namedCurve)
             : this.otherParameters?.toAsn1()
         if (parameters) {
-            result.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [parameters],
-                }),
-            )
+            result.push(parameters.explicit(0))
         }
 
         // Add [1] publicKey if present
         if (this.publicKey) {
-            result.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 1, // [1]
-                    },
-                    value: [new asn1js.BitString({ valueHex: this.publicKey })],
-                }),
-            )
+            result.push(der.bitString(this.publicKey).explicit(1))
         }
 
-        return new asn1js.Sequence({ value: result })
+        return der.sequence(result)
     }
 
     /**
@@ -128,14 +114,14 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
      * @param asn1 The ASN.1 structure
      * @returns An ECPrivateKey object
      */
-    static fromAsn1(asn1: Asn1BaseBlock): ECPrivateKey {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): ECPrivateKey {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 2 || values.length > 4) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 2-4 elements, got ${values.length}`,
@@ -143,12 +129,12 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
         }
 
         // Version (must be 1)
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0].is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: version must be INTEGER',
             )
         }
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
         if (version !== 1) {
             throw new Asn1ParseError(
                 `Invalid EC private key version: expected 1, got ${version}`,
@@ -156,12 +142,12 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
         }
 
         // Private key
-        if (!(values[1] instanceof asn1js.OctetString)) {
+        if (!values[1].is(UniversalTag.OctetString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: privateKey must be OCTET STRING',
             )
         }
-        const privateKey = new Uint8Array(values[1].valueBlock.valueHexView)
+        const privateKey = values[1].bytes()
 
         let namedCurve: string | undefined
         let otherParameters: Any | undefined
@@ -171,29 +157,29 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
         for (let i = 2; i < values.length; i++) {
             const value = values[i]
 
-            if (!(value instanceof asn1js.Constructed)) {
+            if (value.tagClass !== TagClass.Context || !value.constructed) {
                 throw new Asn1ParseError(
                     'Invalid ASN.1 structure: optional elements must be tagged',
                 )
             }
 
-            const tagNumber = value.idBlock.tagNumber
+            const tagNumber = value.tag
 
             if (tagNumber === 0) {
                 // [0] parameters
                 // Parse the named curve OID
-                if (value.valueBlock.value.length !== 1) {
+                if (value.children.length !== 1) {
                     throw new Asn1ParseError(
                         'Invalid ASN.1 structure: parameters must contain exactly one element',
                     )
                 }
 
-                const curveParam = value.valueBlock.value[0]
-                if (curveParam instanceof asn1js.ObjectIdentifier) {
-                    namedCurve = curveParam.valueBlock.toString()
+                const curveParam = value.children[0]
+                if (curveParam.is(UniversalTag.ObjectIdentifier)) {
+                    namedCurve = der.readOid(curveParam)
                 } else if (
-                    curveParam instanceof asn1js.Sequence ||
-                    curveParam instanceof asn1js.Null
+                    curveParam.is(UniversalTag.Sequence) ||
+                    curveParam.is(UniversalTag.Null)
                 ) {
                     // specifiedCurve / implicitCurve: keep, but do not interpret
                     otherParameters = new Any({ derBytes: curveParam })
@@ -205,20 +191,20 @@ export class ECPrivateKey extends PkiBase<ECPrivateKey> {
             } else if (tagNumber === 1) {
                 // [1] publicKey
                 // Parse the key bit string
-                if (value.valueBlock.value.length !== 1) {
+                if (value.children.length !== 1) {
                     throw new Asn1ParseError(
                         'Invalid ASN.1 structure: publicKey must contain exactly one element',
                     )
                 }
 
-                const pubKeyParam = value.valueBlock.value[0]
-                if (!(pubKeyParam instanceof asn1js.BitString)) {
+                const pubKeyParam = value.children[0]
+                if (!pubKeyParam.is(UniversalTag.BitString)) {
                     throw new Asn1ParseError(
                         'Invalid ASN.1 structure: publicKey must be a BIT STRING',
                     )
                 }
 
-                publicKey = new Uint8Array(pubKeyParam.valueBlock.valueHexView)
+                publicKey = der.readBitString(pubKeyParam).bytes
             } else {
                 throw new Asn1ParseError(
                     `Invalid ASN.1 structure: unexpected tag number ${tagNumber}`,

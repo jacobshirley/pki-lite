@@ -1,4 +1,11 @@
-import { Asn1BaseBlock, asn1js, PkiBase, Asn1Any } from '../core/PkiBase.js'
+import {
+    Asn1Any,
+    Asn1Node,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { AlgorithmIdentifier, PSourceAlgorithm } from './AlgorithmIdentifier.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { OIDs } from '../core/OIDs.js'
@@ -74,56 +81,20 @@ export class RSAESOAEPParams extends PkiBase<RSAESOAEPParams> {
     /**
      * Converts to ASN.1 structure
      */
-    toAsn1(): Asn1BaseBlock {
-        const sequence = new asn1js.Sequence()
-        const sequenceValue: asn1js.AsnType[] = []
-
-        // Only include non-default values in the encoding
-        if (this.hashAlgorithm) {
-            sequenceValue.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0,
-                    },
-                    value: [this.hashAlgorithm.toAsn1()],
-                }),
-            )
-        }
-
-        if (this.maskGenAlgorithm) {
-            sequenceValue.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 1,
-                    },
-                    value: [this.maskGenAlgorithm.toAsn1()],
-                }),
-            )
-        }
-
-        if (this.pSourceAlgorithm) {
-            sequenceValue.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 2,
-                    },
-                    value: [this.pSourceAlgorithm.toAsn1()],
-                }),
-            )
-        }
-
-        sequence.valueBlock.value = sequenceValue
-        return sequence
+    toAsn1(): Asn1Node {
+        // Fields are EXPLICIT [n]; only non-default values are present
+        return der.sequence([
+            this.hashAlgorithm?.toAsn1().explicit(0),
+            this.maskGenAlgorithm?.toAsn1().explicit(1),
+            this.pSourceAlgorithm?.toAsn1().explicit(2),
+        ])
     }
 
     /**
      * Parse from ASN.1 structure
      */
-    static fromAsn1(asn1: Asn1BaseBlock): RSAESOAEPParams {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RSAESOAEPParams {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
@@ -132,25 +103,27 @@ export class RSAESOAEPParams extends PkiBase<RSAESOAEPParams> {
         const params = new RSAESOAEPParams()
 
         // Extract tagged optional values
-        for (const element of (asn1 as any).valueBlock.value) {
-            if (element instanceof asn1js.Constructed) {
-                const tagNumber = element.idBlock.tagNumber
-                const value = element.valueBlock.value[0]
+        for (const element of asn1.children) {
+            if (
+                element.tagClass !== TagClass.Context ||
+                !element.constructed ||
+                element.children.length === 0
+            ) {
+                continue
+            }
+            const value = element.children[0]
 
-                switch (tagNumber) {
-                    case 0: // hashAlgorithm [0]
-                        params.hashAlgorithm =
-                            AlgorithmIdentifier.fromAsn1(value)
-                        break
-                    case 1: // maskGenAlgorithm [1]
-                        params.maskGenAlgorithm =
-                            AlgorithmIdentifier.fromAsn1(value)
-                        break
-                    case 2: // pSourceAlgorithm [2]
-                        params.pSourceAlgorithm =
-                            PSourceAlgorithm.fromAsn1(value)
-                        break
-                }
+            switch (element.tag) {
+                case 0: // hashAlgorithm [0]
+                    params.hashAlgorithm = AlgorithmIdentifier.fromAsn1(value)
+                    break
+                case 1: // maskGenAlgorithm [1]
+                    params.maskGenAlgorithm =
+                        AlgorithmIdentifier.fromAsn1(value)
+                    break
+                case 2: // pSourceAlgorithm [2]
+                    params.pSourceAlgorithm = PSourceAlgorithm.fromAsn1(value)
+                    break
             }
         }
 

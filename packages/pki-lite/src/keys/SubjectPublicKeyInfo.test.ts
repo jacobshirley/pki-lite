@@ -1,7 +1,7 @@
 import { assert, describe, expect, test } from 'vitest'
 import { SubjectPublicKeyInfo } from './SubjectPublicKeyInfo.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, UniversalTag } from '../core/PkiBase.js'
 
 describe('SubjectPublicKeyInfo', () => {
     test('can be created', () => {
@@ -49,16 +49,14 @@ describe('SubjectPublicKeyInfo', () => {
         })
         const asn1 = spki.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2) // algorithm, subjectPublicKey
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2) // algorithm, subjectPublicKey
 
-        const [algorithmBlock, keyBlock] = asn1.valueBlock.value
+        const [algorithmBlock, keyBlock] = asn1.children
 
-        expect(algorithmBlock).toBeInstanceOf(asn1js.Sequence)
-        expect(keyBlock).toBeInstanceOf(asn1js.BitString)
-        expect((keyBlock as asn1js.BitString).valueBlock.valueHexView).toEqual(
-            publicKey,
-        )
+        expect(algorithmBlock.is(UniversalTag.Sequence)).toBe(true)
+        expect(keyBlock.is(UniversalTag.BitString)).toBe(true)
+        expect(der.readBitString(keyBlock).bytes).toEqual(publicKey)
     })
 
     test('can be parsed from ASN.1', () => {
@@ -68,12 +66,10 @@ describe('SubjectPublicKeyInfo', () => {
         const publicKey = new Uint8Array([1, 2, 3, 4, 5])
 
         // Create ASN.1 structure manually
-        const asn1 = new asn1js.Sequence({
-            value: [
-                algorithm.toAsn1(),
-                new asn1js.BitString({ valueHex: publicKey }),
-            ],
-        })
+        const asn1 = der.sequence([
+            algorithm.toAsn1(),
+            der.bitString(publicKey),
+        ])
 
         const spki = SubjectPublicKeyInfo.fromAsn1(asn1)
         expect(spki).toBeInstanceOf(SubjectPublicKeyInfo)
@@ -83,9 +79,7 @@ describe('SubjectPublicKeyInfo', () => {
 
     test('throws an error when parsing invalid ASN.1', () => {
         // Create an ASN.1 structure that's not a sequence
-        const asn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const asn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => SubjectPublicKeyInfo.fromAsn1(asn1)).toThrow(
             'Expected Sequence',
@@ -97,12 +91,10 @@ describe('SubjectPublicKeyInfo', () => {
         const algorithm = new AlgorithmIdentifier({
             algorithm: '1.2.840.113549.1.1.1',
         }) // RSA
-        const asn1 = new asn1js.Sequence({
-            value: [
-                algorithm.toAsn1(),
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-            ],
-        })
+        const asn1 = der.sequence([
+            algorithm.toAsn1(),
+            der.octetString(new Uint8Array([1, 2, 3])),
+        ])
 
         expect(() => SubjectPublicKeyInfo.fromAsn1(asn1)).toThrow(
             'Expected BitString for subjectPublicKey',

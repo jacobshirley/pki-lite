@@ -14,7 +14,7 @@ describe('Data', () => {
         const dataObject = new Data({ data })
         const asn1 = dataObject.toAsn1()
 
-        expect(asn1.constructor.name).toEqual('OctetString')
+        expect(asn1.describe()).toEqual('OCTET STRING')
     })
 
     it('should convert to string', () => {
@@ -34,7 +34,7 @@ describe('Data', () => {
         expect(dataObject.data.length).toEqual(0)
 
         const asn1 = dataObject.toAsn1()
-        expect(asn1.constructor.name).toEqual('OctetString')
+        expect(asn1.describe()).toEqual('OCTET STRING')
     })
 
     it('Data toString snapshot', () => {

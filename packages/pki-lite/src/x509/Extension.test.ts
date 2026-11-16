@@ -1,6 +1,6 @@
 import { assert, describe, expect, test } from 'vitest'
 import { Extension } from './Extension.js'
-import { asn1js, ObjectIdentifierString } from '../core/PkiBase.js'
+import { der, ObjectIdentifierString, UniversalTag } from '../core/PkiBase.js'
 import { BitString } from '../asn1/BitString.js'
 
 describe('Extension', () => {
@@ -37,9 +37,7 @@ describe('Extension', () => {
         expect(extension.critical).toEqual(critical)
         expect(extension.extnValue.toDer()).toEqual(
             new Uint8Array(
-                new asn1js.OctetString({
-                    valueHex: new asn1js.Boolean({ value: value }).toBER(false),
-                }).toBER(false),
+                der.octetString(der.boolean(value).encode()).encode(),
             ),
         )
     })
@@ -56,18 +54,18 @@ describe('Extension', () => {
         })
         const asn1 = extension.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(3) // extnID, critical, extnValue
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(3) // extnID, critical, extnValue
 
-        const [idBlock, criticalBlock, valueBlock] = asn1.valueBlock.value
+        const [idBlock, criticalBlock, valueBlock] = asn1.children
 
-        expect(idBlock).toBeInstanceOf(asn1js.ObjectIdentifier)
+        expect(idBlock.is(UniversalTag.ObjectIdentifier)).toBe(true)
         // OID is represented as an array internally, so we just check it's an ObjectIdentifier
 
-        expect(criticalBlock).toBeInstanceOf(asn1js.Boolean)
-        expect((criticalBlock as asn1js.Boolean).valueBlock.value).toEqual(true)
+        expect(criticalBlock.is(UniversalTag.Boolean)).toBe(true)
+        expect(der.readBoolean(criticalBlock)).toEqual(true)
 
-        expect(valueBlock).toBeInstanceOf(asn1js.OctetString)
+        expect(valueBlock.is(UniversalTag.OctetString)).toBe(true)
         expect(extension.toString()).toMatchInlineSnapshot(`
           "[Extension] SEQUENCE :
             OBJECT IDENTIFIER : 2.5.29.15
@@ -88,18 +86,16 @@ describe('Extension', () => {
         })
         const asn1 = extension.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2) // extnID, extnValue (no critical flag)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2) // extnID, extnValue (no critical flag)
 
-        const [idBlock, valueBlock] = asn1.valueBlock.value
+        const [idBlock, valueBlock] = asn1.children
 
-        expect(idBlock).toBeInstanceOf(asn1js.ObjectIdentifier)
+        expect(idBlock.is(UniversalTag.ObjectIdentifier)).toBe(true)
         // OID is represented as an array internally, so we just check it's an ObjectIdentifier
 
-        expect(valueBlock).toBeInstanceOf(asn1js.OctetString)
-        expect(
-            (valueBlock as asn1js.OctetString).valueBlock.valueHexView,
-        ).toEqual(value)
+        expect(valueBlock.is(UniversalTag.OctetString)).toBe(true)
+        expect(valueBlock.bytes()).toEqual(value)
     })
 
     test('can be converted to and from ASN.1', () => {
@@ -116,21 +112,17 @@ describe('Extension', () => {
 
     test('throws an error when parsing invalid ASN.1', () => {
         // Create an ASN.1 structure that's not a sequence
-        const asn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const asn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => Extension.fromAsn1(asn1)).toThrow('Expected Sequence')
     })
 
     test('throws an error when extnID is not an ObjectIdentifier', () => {
         // Create an ASN.1 sequence with invalid extnID field
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-                new asn1js.OctetString({ valueHex: new Uint8Array([4, 5, 6]) }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.octetString(new Uint8Array([1, 2, 3])),
+            der.octetString(new Uint8Array([4, 5, 6])),
+        ])
 
         expect(() => Extension.fromAsn1(asn1)).toThrow(
             'Expected ObjectIdentifier for extnID',
@@ -139,13 +131,11 @@ describe('Extension', () => {
 
     test('throws an error when critical flag is not a Boolean', () => {
         // Create an ASN.1 sequence with invalid critical field
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '2.5.29.15' }),
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-                new asn1js.OctetString({ valueHex: new Uint8Array([4, 5, 6]) }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.oid('2.5.29.15'),
+            der.octetString(new Uint8Array([1, 2, 3])),
+            der.octetString(new Uint8Array([4, 5, 6])),
+        ])
 
         expect(() => Extension.fromAsn1(asn1)).toThrow(
             'Expected Boolean for critical',
@@ -154,13 +144,11 @@ describe('Extension', () => {
 
     test('throws an error when extnValue is not an OctetString', () => {
         // Create an ASN.1 sequence with invalid extnValue field
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.ObjectIdentifier({ value: '2.5.29.15' }),
-                new asn1js.Boolean({ value: true }),
-                new asn1js.ObjectIdentifier({ value: '1.2.3.4' }),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.oid('2.5.29.15'),
+            der.boolean(true),
+            der.oid('1.2.3.4'),
+        ])
 
         expect(() => Extension.fromAsn1(asn1)).toThrow(
             'Expected OctetString for extnValue',

@@ -1,6 +1,6 @@
 import { Integer } from '../../asn1/Integer.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { KeyIdentifier } from '../../pkcs7/recipients/KeyIdentifier.js'
 import { GeneralName, GeneralNames } from '../GeneralName.js'
 import { implicitTag } from '../../core/tagging.js'
@@ -45,8 +45,8 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
      * authorityCertIssuer is a constructed `[1]` holding the GeneralName
      * elements directly.
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = []
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = []
         if (this.keyIdentifier) {
             values.push(implicitTag(this.keyIdentifier.toAsn1(), 0))
         }
@@ -56,43 +56,38 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
         if (this.authorityCertSerialNumber !== undefined) {
             values.push(implicitTag(this.authorityCertSerialNumber.toAsn1(), 2))
         }
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): AuthorityKeyIdentifier {
+    static fromAsn1(asn1: Asn1Node): AuthorityKeyIdentifier {
         // All three fields are OPTIONAL, so an empty SEQUENCE is valid
-        const sequence = asn1 as asn1js.Sequence
+        const sequence = asn1
 
         let keyIdentifier: KeyIdentifier | undefined
         let authorityCertIssuer: GeneralNames | undefined
         let authorityCertSerialNumber: Integer | undefined
 
-        for (const element of sequence.valueBlock.value) {
+        for (const element of sequence.children) {
             const explicit =
-                element instanceof asn1js.Constructed &&
-                element.valueBlock.value.length === 1
-                    ? element.valueBlock.value[0]
+                element?.constructed && element.children.length === 1
+                    ? element.children[0]
                     : undefined
 
-            switch (element.idBlock.tagNumber) {
+            switch (element.tag) {
                 case 0: // keyIdentifier [0] IMPLICIT OCTET STRING
                     if (explicit) {
                         // explicit form written by earlier versions
                         keyIdentifier = KeyIdentifier.fromAsn1(explicit)
-                    } else if (element instanceof asn1js.OctetString) {
+                    } else if (element.is(UniversalTag.OctetString)) {
                         keyIdentifier = KeyIdentifier.fromAsn1(element)
                     } else {
                         keyIdentifier = new KeyIdentifier({
-                            bytes: new Uint8Array(
-                                (
-                                    element as asn1js.Primitive
-                                ).valueBlock.valueHexView,
-                            ),
+                            bytes: new Uint8Array(element.bytes()),
                         })
                     }
                     break
                 case 1: // authorityCertIssuer [1] IMPLICIT GeneralNames
-                    if (!(element instanceof asn1js.Constructed)) {
+                    if (!element?.constructed) {
                         throw new Asn1ParseError(
                             'Invalid AuthorityKeyIdentifier: authorityCertIssuer must be constructed',
                         )
@@ -103,21 +98,17 @@ export class AuthorityKeyIdentifier extends PkiBase<AuthorityKeyIdentifier> {
                     if (explicit) {
                         // explicit form written by earlier versions
                         authorityCertSerialNumber = Integer.fromAsn1(explicit)
-                    } else if (element instanceof asn1js.Integer) {
+                    } else if (element.is(UniversalTag.Integer)) {
                         authorityCertSerialNumber = Integer.fromAsn1(element)
                     } else {
                         authorityCertSerialNumber = new Integer({
-                            value: new Uint8Array(
-                                (
-                                    element as asn1js.Primitive
-                                ).valueBlock.valueHexView,
-                            ),
+                            value: new Uint8Array(element.bytes()),
                         })
                     }
                     break
                 default:
                     throw new Asn1ParseError(
-                        `Unexpected tag number ${element.idBlock.tagNumber} in AuthorityKeyIdentifier sequence`,
+                        `Unexpected tag number ${element.tag} in AuthorityKeyIdentifier sequence`,
                     )
             }
         }

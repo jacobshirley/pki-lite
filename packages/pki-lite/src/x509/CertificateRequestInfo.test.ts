@@ -4,7 +4,7 @@ import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Attribute } from './Attribute.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der, TagClass, UniversalTag } from '../core/PkiBase.js'
 import { RDNSequence } from './RDNSequence.js'
 import { SubjectPublicKeyInfo } from '../keys/SubjectPublicKeyInfo.js'
 
@@ -24,29 +24,22 @@ describe('CertificateRequestInfo', () => {
         const requestInfo = createSampleRequestInfo()
         const asn1 = requestInfo.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value.length).toEqual(4)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(4)
 
         // Check version
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
+        expect(asn1.children[0].is(UniversalTag.Integer)).toBe(true)
 
         // Check subject
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[1].is(UniversalTag.Sequence)).toBe(true)
 
         // Check publicKey
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value[2]).toBeInstanceOf(asn1js.Sequence)
+        expect(asn1.children[2].is(UniversalTag.Sequence)).toBe(true)
 
         // Check attributes
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value[3]).toBeInstanceOf(asn1js.Constructed)
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value[3].idBlock.tagClass).toEqual(3) // CONTEXT-SPECIFIC
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        expect(asn1.valueBlock.value[3].idBlock.tagNumber).toEqual(0) // [0]
+        expect(asn1.children[3].constructed).toBe(true)
+        expect(asn1.children[3].tagClass).toEqual(TagClass.Context) // CONTEXT-SPECIFIC
+        expect(asn1.children[3].tag).toEqual(0) // [0]
     })
 
     test('without attributes', () => {
@@ -64,12 +57,11 @@ describe('CertificateRequestInfo', () => {
         const asn1 = requestInfo.toAsn1()
         // PKCS#10 makes `attributes [0]` mandatory: without attributes it is written
         // as an empty [0] (A0 00), which is what OpenSSL does too.
-        // @ts-ignore - valueBlock.value exists at runtime but not in typings
-        const children = asn1.valueBlock.value
+        const children = asn1.children
         expect(children.length).toEqual(4)
-        expect(children[3].idBlock.tagClass).toEqual(3)
-        expect(children[3].idBlock.tagNumber).toEqual(0)
-        expect(children[3].valueBlock.value.length).toEqual(0)
+        expect(children[3].tagClass).toEqual(TagClass.Context)
+        expect(children[3].tag).toEqual(0)
+        expect(children[3].children.length).toEqual(0)
     })
 
     test('can be parsed from ASN.1 without attributes', () => {
@@ -92,13 +84,11 @@ describe('CertificateRequestInfo', () => {
         } as any
 
         try {
-            const asn1 = new asn1js.Sequence({
-                value: [
-                    new asn1js.Integer({ value: version }),
-                    new asn1js.Sequence({}), // Subject
-                    new asn1js.Sequence({}), // PublicKey
-                ],
-            })
+            const asn1 = der.sequence([
+                der.integer(version),
+                der.sequence([]), // Subject
+                der.sequence([]), // PublicKey
+            ])
 
             const requestInfo = CertificateRequestInfo.fromAsn1(asn1)
             expect(requestInfo).toBeInstanceOf(CertificateRequestInfo)
@@ -122,7 +112,7 @@ describe('CertificateRequestInfo', () => {
             new Attribute({
                 type: '1.2.840.113549.1.9.14',
                 // extensionRequest
-                values: [new Uint8Array([1, 2, 3])],
+                values: [new Uint8Array([0x30, 0x00])], // empty Extensions
             }),
         ]
 
@@ -145,26 +135,16 @@ describe('CertificateRequestInfo', () => {
         } as any
 
         try {
-            const asn1 = new asn1js.Sequence({
-                value: [
-                    new asn1js.Integer({ value: version }),
-                    new asn1js.Sequence({}), // Subject
-                    new asn1js.Sequence({}), // PublicKey
-                    new asn1js.Constructed({
-                        idBlock: {
-                            tagClass: 3, // CONTEXT_SPECIFIC
-                            tagNumber: 0, // [0]
-                        },
-                        value: [
-                            new asn1js.Set({
-                                value: [
-                                    new asn1js.Sequence({}), // Attribute
-                                ],
-                            }),
-                        ],
-                    }),
-                ],
-            })
+            const asn1 = der.sequence([
+                der.integer(version),
+                der.sequence([]), // Subject
+                der.sequence([]), // PublicKey
+                der.constructed(0, [
+                    der.set([
+                        der.sequence([]), // Attribute
+                    ]),
+                ]),
+            ])
 
             const requestInfo = CertificateRequestInfo.fromAsn1(asn1)
             expect(requestInfo).toBeInstanceOf(CertificateRequestInfo)
@@ -183,59 +163,51 @@ describe('CertificateRequestInfo', () => {
     })
 
     test('fromAsn1 throws error for non-sequence', () => {
-        const asn1 = new asn1js.Integer({ value: 1 })
+        const asn1 = der.integer(1)
         expect(() => CertificateRequestInfo.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
         )
     })
 
     test('fromAsn1 throws error for wrong number of elements', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 0 }),
-                new asn1js.Sequence({}),
-                // Missing publicKey
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(0),
+            der.sequence([]),
+            // Missing publicKey
+        ])
         expect(() => CertificateRequestInfo.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: expected 3 or 4 elements',
         )
     })
 
     test('fromAsn1 throws error for invalid version', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.BitString({}), // Not an Integer
-                new asn1js.Sequence({}),
-                new asn1js.Sequence({}),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.bitString(new Uint8Array(0)), // Not an Integer
+            der.sequence([]),
+            der.sequence([]),
+        ])
         expect(() => CertificateRequestInfo.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: version must be an INTEGER',
         )
     })
 
     test('fromAsn1 throws error for invalid subject', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 0 }),
-                new asn1js.Integer({ value: 1 }), // Not a Sequence
-                new asn1js.Sequence({}),
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(0),
+            der.integer(1), // Not a Sequence
+            der.sequence([]),
+        ])
         expect(() => CertificateRequestInfo.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: subject must be a SEQUENCE',
         )
     })
 
     test('fromAsn1 throws error for invalid publicKey', () => {
-        const asn1 = new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: 0 }),
-                new asn1js.Sequence({}),
-                new asn1js.Integer({ value: 1 }), // Not a Sequence
-            ],
-        })
+        const asn1 = der.sequence([
+            der.integer(0),
+            der.sequence([]),
+            der.integer(1), // Not a Sequence
+        ])
         expect(() => CertificateRequestInfo.fromAsn1(asn1)).toThrow(
             'Invalid ASN.1 structure: publicKey must be a SEQUENCE',
         )
@@ -267,7 +239,7 @@ describe('CertificateRequestInfo', () => {
               SEQUENCE :
                 OBJECT IDENTIFIER : 1.2.840.113549.1.9.14
                 SET :
-                  BOOLEAN: FALSE"
+                  SEQUENCE :"
         `)
     })
 
@@ -307,7 +279,7 @@ describe('CertificateRequestInfo', () => {
         const obj = createSampleRequestInfo()
         expect(obj.toPem()).toMatchInlineSnapshot(`
           "-----BEGIN CERTIFICATEREQUESTINFO-----
-          MHACAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaASMBAGCSqGSIb3DQEJDjEDAQEA
+          MG8CAQAwQDEVMBMGA1UEAxMMVGVzdCBSZXF1ZXN0MRowGAYDVQQKExFUZXN0IE9yZ2FuaXphdGlvbjELMAkGA1UEBhMCVVMwFTALBgkqhkiG9w0BAQEDBgABAgMEBaARMA8GCSqGSIb3DQEJDjECMAA=
           -----END CERTIFICATEREQUESTINFO-----"
         `)
     })
@@ -381,7 +353,7 @@ function createSampleRequestInfo(): CertificateRequestInfo {
         new Attribute({
             type: '1.2.840.113549.1.9.14',
             // extensionRequest
-            values: [new Uint8Array([1, 2, 3])],
+            values: [new Uint8Array([0x30, 0x00])], // empty Extensions
         }),
     ]
 

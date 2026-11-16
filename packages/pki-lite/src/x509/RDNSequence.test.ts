@@ -2,7 +2,7 @@ import { assert, describe, expect, test } from 'vitest'
 import { RDNSequence } from './RDNSequence.js'
 import { RelativeDistinguishedName } from './RelativeDistinguishedName.js'
 import { AttributeTypeAndValue } from './AttributeTypeAndValue.js'
-import { asn1js } from '../core/PkiBase.js'
+import { Asn1Node, der, UniversalTag } from '../core/PkiBase.js'
 
 describe('RDNSequence', () => {
     test('can be created empty', () => {
@@ -57,12 +57,12 @@ describe('RDNSequence', () => {
 
         const asn1 = rdnSequence.toAsn1()
 
-        assert(asn1 instanceof asn1js.Sequence)
-        expect(asn1.valueBlock.value.length).toEqual(2)
+        assert(asn1.is(UniversalTag.Sequence))
+        expect(asn1.children.length).toEqual(2)
 
         // Each item should be a Set (the ASN.1 representation of RelativeDistinguishedName)
-        expect(asn1.valueBlock.value[0]).toBeInstanceOf(asn1js.Set)
-        expect(asn1.valueBlock.value[1]).toBeInstanceOf(asn1js.Set)
+        expect(asn1.children[0].is(UniversalTag.Set)).toBe(true)
+        expect(asn1.children[1].is(UniversalTag.Set)).toBe(true)
     })
 
     test('handles multiple RDNs', () => {
@@ -95,36 +95,22 @@ describe('RDNSequence', () => {
 
     test('can be parsed from ASN.1', () => {
         // Create ASN.1 structure for a DN like "CN=Test,OU=Unit"
-        const asn1 = new asn1js.Sequence({
-            value: [
-                // First RDN - CN=Test
-                new asn1js.Set({
-                    value: [
-                        new asn1js.Sequence({
-                            value: [
-                                new asn1js.ObjectIdentifier({
-                                    value: '2.5.4.3',
-                                }), // CN OID
-                                new asn1js.PrintableString({ value: 'Test' }),
-                            ],
-                        }),
-                    ],
-                }),
-                // Second RDN - OU=Unit
-                new asn1js.Set({
-                    value: [
-                        new asn1js.Sequence({
-                            value: [
-                                new asn1js.ObjectIdentifier({
-                                    value: '2.5.4.11',
-                                }), // OU OID
-                                new asn1js.PrintableString({ value: 'Unit' }),
-                            ],
-                        }),
-                    ],
-                }),
-            ],
-        })
+        const asn1 = der.sequence([
+            // First RDN - CN=Test
+            der.set([
+                der.sequence([
+                    der.oid('2.5.4.3'), // CN OID
+                    der.printableString('Test'),
+                ]),
+            ]),
+            // Second RDN - OU=Unit
+            der.set([
+                der.sequence([
+                    der.oid('2.5.4.11'), // OU OID
+                    der.printableString('Unit'),
+                ]),
+            ]),
+        ])
 
         const rdnSequence = RDNSequence.fromAsn1(asn1)
         expect(rdnSequence).toBeInstanceOf(RDNSequence)
@@ -145,14 +131,10 @@ describe('RDNSequence', () => {
 
     test('throws an error when parsing invalid ASN.1', () => {
         // Create an ASN.1 structure that's not a SEQUENCE
-        const asn1 = new asn1js.Set({
-            value: [
-                new asn1js.OctetString({ valueHex: new Uint8Array([1, 2, 3]) }),
-            ],
-        })
+        const asn1 = der.set([der.octetString(new Uint8Array([1, 2, 3]))])
 
         expect(() => RDNSequence.fromAsn1(asn1)).toThrow(
-            'Invalid ASN.1 structure: expected SEQUENCE but got Set',
+            'Invalid ASN.1 structure: expected SEQUENCE but got SET',
         )
     })
 
@@ -240,7 +222,7 @@ const O = '2.5.4.10'
 const C = '2.5.4.6'
 
 /** A name from [type, value-block] pairs, one attribute per RDN */
-const name = (...rdns: [string, asn1js.BaseBlock][]) => {
+const name = (...rdns: [string, Asn1Node][]) => {
     const sequence = new RDNSequence()
     for (const [type, value] of rdns) {
         const rdn = new RelativeDistinguishedName()
@@ -249,8 +231,8 @@ const name = (...rdns: [string, asn1js.BaseBlock][]) => {
     }
     return sequence
 }
-const printable = (value: string) => new asn1js.PrintableString({ value })
-const utf8 = (value: string) => new asn1js.Utf8String({ value })
+const printable = (value: string) => der.printableString(value)
+const utf8 = (value: string) => der.utf8String(value)
 
 describe('RDNSequence.matches / isWithin (RFC 5280 7.1)', () => {
     test('ignores case', () => {
@@ -307,7 +289,7 @@ describe('RDNSequence.matches / isWithin (RFC 5280 7.1)', () => {
         const value = (n: number) =>
             new AttributeTypeAndValue({
                 type: CN,
-                value: new asn1js.Integer({ value: n }),
+                value: der.integer(n),
             })
         expect(value(1).matches(value(1))).toBe(true)
         expect(value(1).matches(value(2))).toBe(false)

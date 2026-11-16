@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { RevokedInfo } from './RevokedInfo.js'
-import { asn1js } from '../core/PkiBase.js'
+import { der } from '../core/PkiBase.js'
 import { CRLReason } from '../x509/CRLReason.js'
 
 describe('RevokedInfo', () => {
@@ -95,7 +95,7 @@ describe('RevokedInfo', () => {
     })
 
     it('should throw error on invalid ASN.1 structure', () => {
-        const invalidAsn1 = {} as any
+        const invalidAsn1 = der.integer(1) // not a SEQUENCE
 
         expect(() => RevokedInfo.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected SEQUENCE',
@@ -103,13 +103,7 @@ describe('RevokedInfo', () => {
     })
 
     it('should throw error on wrong number of elements', () => {
-        const invalidAsn1 = {
-            constructor: asn1js.Sequence,
-            valueBlock: {
-                value: [], // empty sequence
-            },
-        } as any
-        Object.setPrototypeOf(invalidAsn1, asn1js.Sequence.prototype)
+        const invalidAsn1 = der.sequence([]) // empty sequence
 
         expect(() => RevokedInfo.fromAsn1(invalidAsn1)).toThrow(
             'Invalid RevokedInfo: expected 1 or 2 elements',
@@ -118,21 +112,14 @@ describe('RevokedInfo', () => {
 
     it('should throw error on invalid revocation reason tag', () => {
         const revocationTime = new Date('2025-01-15T10:30:00Z')
-        const validTimeAsn1 = new asn1js.GeneralizedTime({
-            valueDate: revocationTime,
-        })
+        const validTimeAsn1 = der.generalizedTime(revocationTime)
 
-        const invalidReasonContainer = new asn1js.Constructed({
-            idBlock: {
-                tagClass: 3, // CONTEXT-SPECIFIC
-                tagNumber: 1, // [1] - wrong tag, should be [0]
-            },
-            value: [new asn1js.Enumerated({ value: 1 })],
-        })
+        const invalidReasonContainer = der.constructed(1, [der.enumerated(1)])
 
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [validTimeAsn1, invalidReasonContainer],
-        })
+        const invalidAsn1 = der.sequence([
+            validTimeAsn1,
+            invalidReasonContainer,
+        ])
 
         expect(() => RevokedInfo.fromAsn1(invalidAsn1)).toThrow(
             'Invalid RevokedInfo: expected [0] tag for revocationReason',
@@ -141,21 +128,15 @@ describe('RevokedInfo', () => {
 
     it('should throw error on invalid enumerated for revocation reason', () => {
         const revocationTime = new Date('2025-01-15T10:30:00Z')
-        const validTimeAsn1 = new asn1js.GeneralizedTime({
-            valueDate: revocationTime,
-        })
+        const validTimeAsn1 = der.generalizedTime(revocationTime)
 
-        const invalidReasonContainer = new asn1js.Constructed({
-            idBlock: {
-                tagClass: 3, // CONTEXT-SPECIFIC
-                tagNumber: 0, // [0]
-            },
-            value: [new asn1js.Integer({ value: 1 })], // Should be Enumerated, not Integer
-        })
+        // Should be Enumerated, not Integer
+        const invalidReasonContainer = der.constructed(0, [der.integer(1)])
 
-        const invalidAsn1 = new asn1js.Sequence({
-            value: [validTimeAsn1, invalidReasonContainer],
-        })
+        const invalidAsn1 = der.sequence([
+            validTimeAsn1,
+            invalidReasonContainer,
+        ])
 
         expect(() => RevokedInfo.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected ENUMERATED for revocation reason',

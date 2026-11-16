@@ -1,5 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
-import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
+import { Asn1Node, der, PkiBase } from '../core/PkiBase.js'
 
 /**
  * Represents an ASN.1 BOOLEAN value.
@@ -22,24 +21,15 @@ export class Boolean extends PkiBase<Boolean> {
         this.value = options.value
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Boolean({
-            value: this.value,
-        })
+    toAsn1(): Asn1Node {
+        return der.boolean(this.value)
     }
 
     /**
      * Creates a Boolean from an ASN.1 Boolean structure
      */
-    static fromAsn1(asn1: Asn1BaseBlock): Boolean {
-        if (!(asn1 instanceof asn1js.Boolean)) {
-            throw new Asn1ParseError(
-                'Invalid ASN.1 structure: expected Boolean but got ' +
-                    asn1.constructor.name,
-            )
-        }
-
-        return new Boolean({ value: asn1.valueBlock.value })
+    static fromAsn1(asn1: Asn1Node): Boolean {
+        return new Boolean({ value: der.readBoolean(asn1) })
     }
 
     toString() {

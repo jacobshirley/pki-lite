@@ -1,5 +1,5 @@
 import { GeneralizedTime } from '../../asn1/GeneralizedTime.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { KeyIdentifier } from './KeyIdentifier.js'
 import { OctetString } from '../../asn1/OctetString.js'
 import { OtherKeyAttribute } from './OtherKeyAttribute.js'
@@ -46,7 +46,7 @@ export class RecipientKeyIdentifier extends PkiBase<RecipientKeyIdentifier> {
         this.other = other
     }
 
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         const values = [this.subjectKeyIdentifier.toAsn1()]
 
         if (this.date) {
@@ -57,17 +57,17 @@ export class RecipientKeyIdentifier extends PkiBase<RecipientKeyIdentifier> {
             values.push(this.other.toAsn1())
         }
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): RecipientKeyIdentifier {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): RecipientKeyIdentifier {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for RecipientKeyIdentifier',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 1 || values.length > 3) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 1-3 elements, got ${values.length}`,
@@ -82,17 +82,13 @@ export class RecipientKeyIdentifier extends PkiBase<RecipientKeyIdentifier> {
 
         // Date handling is skipped for simplicity
         let date: Date | undefined = undefined
-        if (values[currentIndex] instanceof asn1js.GeneralizedTime) {
-            date = new Date(
-                (
-                    values[currentIndex] as asn1js.GeneralizedTime
-                ).valueBlock.value,
-            )
+        if (values[currentIndex]?.is(UniversalTag.GeneralizedTime)) {
+            date = der.readTime(values[currentIndex])
             currentIndex++
         }
 
         let other: OtherKeyAttribute | undefined = undefined
-        if (values[currentIndex] instanceof asn1js.Sequence) {
+        if (values[currentIndex]?.is(UniversalTag.Sequence)) {
             other = OtherKeyAttribute.fromAsn1(values[currentIndex])
             currentIndex++
         }

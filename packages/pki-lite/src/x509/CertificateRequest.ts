@@ -1,9 +1,10 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     derToAsn1,
     pemToDer,
     PkiBase,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { CertificateRequestInfo } from './CertificateRequestInfo.js'
@@ -43,15 +44,13 @@ export class CertificateRequest extends PkiBase<CertificateRequest> {
     /**
      * Converts the certificate request to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
+    toAsn1(): Asn1Node {
         // Create the main CertificateRequest sequence
-        return new asn1js.Sequence({
-            value: [
-                this.requestInfo.toAsn1(),
-                this.signatureAlgorithm.toAsn1(),
-                this.signature.toAsn1(),
-            ],
-        })
+        return der.sequence([
+            this.requestInfo.toAsn1(),
+            this.signatureAlgorithm.toAsn1(),
+            this.signature.toAsn1(),
+        ])
     }
 
     static fromDer(der: Uint8Array<ArrayBuffer>): CertificateRequest {
@@ -64,36 +63,36 @@ export class CertificateRequest extends PkiBase<CertificateRequest> {
      * @param asn1 The ASN.1 structure
      * @returns A CertificateRequest
      */
-    static fromAsn1(asn1: Asn1BaseBlock): CertificateRequest {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): CertificateRequest {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        if (asn1.valueBlock.value.length !== 3) {
+        if (asn1.children.length !== 3) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected 3 elements',
             )
         }
 
-        const requestInfoAsn1 = asn1.valueBlock.value[0]
-        const signatureAlgorithmAsn1 = asn1.valueBlock.value[1]
-        const signatureAsn1 = asn1.valueBlock.value[2]
+        const requestInfoAsn1 = asn1.children[0]
+        const signatureAlgorithmAsn1 = asn1.children[1]
+        const signatureAsn1 = asn1.children[2]
 
-        if (!(requestInfoAsn1 instanceof asn1js.Sequence)) {
+        if (!requestInfoAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: requestInfo must be a SEQUENCE',
             )
         }
 
-        if (!(signatureAlgorithmAsn1 instanceof asn1js.Sequence)) {
+        if (!signatureAlgorithmAsn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: signatureAlgorithm must be a SEQUENCE',
             )
         }
 
-        if (!(signatureAsn1 instanceof asn1js.BitString)) {
+        if (!signatureAsn1.is(UniversalTag.BitString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: signature must be a BIT STRING',
             )
@@ -104,7 +103,7 @@ export class CertificateRequest extends PkiBase<CertificateRequest> {
             signatureAlgorithmAsn1,
         )
 
-        const signature = new Uint8Array(signatureAsn1.valueBlock.valueHexView)
+        const signature = der.readBitString(signatureAsn1).bytes
 
         return new CertificateRequest({
             requestInfo,

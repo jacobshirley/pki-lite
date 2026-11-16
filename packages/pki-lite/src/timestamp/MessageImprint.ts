@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../algorithms/AlgorithmIdentifier.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 
@@ -61,18 +67,14 @@ export class MessageImprint extends PkiBase<MessageImprint> {
      * @example
      * ```typescript
      * const asn1 = messageImprint.toAsn1()
-     * const der = asn1.toBER(false)
+     * const der = asn1.encode()
      * ```
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                this.hashAlgorithm.toAsn1(),
-                new asn1js.OctetString({
-                    valueHex: this.hashedMessage,
-                }),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            this.hashAlgorithm.toAsn1(),
+            der.octetString(this.hashedMessage),
+        ])
     }
 
     /**
@@ -93,33 +95,27 @@ export class MessageImprint extends PkiBase<MessageImprint> {
      * console.log(messageImprint.hashedMessage) // Hash bytes
      * ```
      */
-    static fromAsn1(asn1: Asn1BaseBlock): MessageImprint {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): MessageImprint {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        if (asn1.valueBlock.value.length !== 2) {
+        if (asn1.children.length !== 2) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected exactly 2 elements',
             )
         }
 
-        const hashAlgorithm = AlgorithmIdentifier.fromAsn1(
-            asn1.valueBlock.value[0],
-        )
+        const hashAlgorithm = AlgorithmIdentifier.fromAsn1(asn1.children[0])
 
-        if (!(asn1.valueBlock.value[1] instanceof asn1js.OctetString)) {
+        if (!asn1.children[1]?.is(UniversalTag.OctetString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OCTET STRING for hashedMessage',
             )
         }
-        const hashedMessage = new Uint8Array(
-            (
-                asn1.valueBlock.value[1] as asn1js.OctetString
-            ).valueBlock.valueHexView,
-        )
+        const hashedMessage = new Uint8Array(asn1.children[1].bytes())
 
         return new MessageImprint({
             hashAlgorithm,

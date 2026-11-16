@@ -10,7 +10,7 @@ import { OtherRecipientInfo } from './OtherRecipientInfo.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { IssuerAndSerialNumber } from '../IssuerAndSerialNumber.js'
 import { Name } from '../../x509/Name.js'
-import { asn1js } from '../../core/PkiBase.js'
+import { der, TagClass, UniversalTag } from '../../core/PkiBase.js'
 import { OriginatorIdentifierOrKey } from './OriginatorIdentifierOrKey.js'
 import { RecipientEncryptedKey } from './RecipientEncryptedKey.js'
 import { KeyIdentifier } from './KeyIdentifier.js'
@@ -67,11 +67,11 @@ describe('RecipientInfo', () => {
 
         const asn1 = recipientInfo.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.Sequence)
-        const valueBlock = asn1.valueBlock as any
-        expect(valueBlock.value).toHaveLength(4)
-        expect(valueBlock.value[0]).toBeInstanceOf(asn1js.Integer)
-        expect(valueBlock.value[3]).toBeInstanceOf(asn1js.OctetString)
+        expect(asn1.is(UniversalTag.Sequence)).toBe(true)
+        const items = asn1.children
+        expect(items).toHaveLength(4)
+        expect(items[0].is(UniversalTag.Integer)).toBe(true)
+        expect(items[3].is(UniversalTag.OctetString)).toBe(true)
     })
 
     it('should parse KeyTransRecipientInfo from ASN.1', () => {
@@ -215,8 +215,8 @@ describe('RecipientInfo', () => {
         const asn1 = RecipientInfo.toAsn1(kari)
 
         // Check that it's properly tagged
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(1) // [1]
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT_SPECIFIC
+        expect(asn1.tag).toEqual(1) // [1]
     })
 
     it('should create a KEKRecipientInfo instance', () => {
@@ -264,8 +264,8 @@ describe('RecipientInfo', () => {
         const asn1 = RecipientInfo.toAsn1(kekri)
 
         // Check that it's properly tagged
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(2) // [2]
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT_SPECIFIC
+        expect(asn1.tag).toEqual(2) // [2]
     })
 
     it('should create a PasswordRecipientInfo instance', () => {
@@ -306,16 +306,14 @@ describe('RecipientInfo', () => {
         const asn1 = RecipientInfo.toAsn1(pwri)
 
         // Check that it's properly tagged
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(3) // [3]
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT_SPECIFIC
+        expect(asn1.tag).toEqual(3) // [3]
     })
 
     it('should create an OtherRecipientInfo instance', () => {
         // Create necessary components
         const oriType = '1.2.3.4.5' // Custom OID
-        const oriValue = new asn1js.OctetString({
-            valueHex: new Uint8Array([13, 14, 15, 16]),
-        })
+        const oriValue = der.octetString(new Uint8Array([13, 14, 15, 16]))
 
         // Create OtherRecipientInfo
         const ori = new OtherRecipientInfo({
@@ -331,9 +329,7 @@ describe('RecipientInfo', () => {
     it('should convert OtherRecipientInfo to ASN.1 with correct tagging', () => {
         // Create necessary components
         const oriType = '1.2.3.4.5' // Custom OID
-        const oriValue = new asn1js.OctetString({
-            valueHex: new Uint8Array([13, 14, 15, 16]),
-        })
+        const oriValue = der.octetString(new Uint8Array([13, 14, 15, 16]))
 
         // Create OtherRecipientInfo
         const ori = new OtherRecipientInfo({
@@ -345,7 +341,7 @@ describe('RecipientInfo', () => {
         const asn1 = RecipientInfo.toAsn1(ori)
 
         // Check that it's properly tagged
-        expect(asn1.idBlock.tagClass).toEqual(3) // CONTEXT_SPECIFIC
-        expect(asn1.idBlock.tagNumber).toEqual(4) // [4]
+        expect(asn1.tagClass).toEqual(TagClass.Context) // CONTEXT_SPECIFIC
+        expect(asn1.tag).toEqual(4) // [4]
     })
 })

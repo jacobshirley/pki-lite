@@ -1,9 +1,9 @@
 import { ContentInfo } from '../pkcs7/ContentInfo.js'
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
     derToAsn1,
     PkiSequence,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { SafeBag } from './SafeBag.js'
@@ -20,13 +20,11 @@ import { EncryptedData } from '../pkcs7/EncryptedData.js'
  * ```
  */
 export class AuthenticatedSafe extends PkiSequence<ContentInfo> {
-    static fromAsn1(asn1: Asn1BaseBlock): AuthenticatedSafe {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): AuthenticatedSafe {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError('AuthenticatedSafe: expected SEQUENCE')
         }
-        const contents = asn1.valueBlock.value.map((x) =>
-            ContentInfo.fromAsn1(x),
-        )
+        const contents = asn1.children.map((x) => ContentInfo.fromAsn1(x))
         return new AuthenticatedSafe(...contents)
     }
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
+import { der, UniversalTag } from '../core/PkiBase.js'
 import { UniversalString } from './UniversalString.js'
-import * as asn1js from 'asn1js'
 
 /** UTF-32BE, the UniversalString encoding */
 const utf32 = (value: string) => {
@@ -62,10 +62,10 @@ describe('UniversalString', () => {
         const universalString = new UniversalString({ value: testString })
         const asn1 = universalString.toAsn1()
 
-        expect(asn1).toBeInstanceOf(asn1js.UniversalString)
+        expect(asn1.is(UniversalTag.UniversalString)).toBe(true)
 
         // Verify the bytes are preserved in ASN.1
-        const valueHex = new Uint8Array((asn1 as any).valueBlock.valueHexView)
+        const valueHex = asn1.content
         const expectedBytes = utf32(testString)
         expect(valueHex).toEqual(expectedBytes)
     })
@@ -73,7 +73,7 @@ describe('UniversalString', () => {
     test('should parse from ASN.1 structure correctly', () => {
         // UniversalString has complex encoding, so we'll just test the basic structure
         const testBytes = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]) // "Hello"
-        const asn1 = new asn1js.UniversalString({ valueHex: testBytes })
+        const asn1 = der.primitive(UniversalTag.UniversalString, testBytes)
 
         const universalString = UniversalString.fromAsn1(asn1)
 
@@ -82,9 +82,7 @@ describe('UniversalString', () => {
     })
 
     test('fromAsn1 should throw error for invalid ASN.1 structure', () => {
-        const invalidAsn1 = new asn1js.OctetString({
-            valueHex: new Uint8Array([1, 2, 3]),
-        })
+        const invalidAsn1 = der.octetString(new Uint8Array([1, 2, 3]))
 
         expect(() => UniversalString.fromAsn1(invalidAsn1)).toThrow(
             'Invalid ASN.1 structure: expected UniversalString',

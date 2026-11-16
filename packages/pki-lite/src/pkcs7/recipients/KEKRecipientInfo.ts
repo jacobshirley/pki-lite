@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../../core/PkiBase.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { CMSVersion } from '../CMSVersion.js'
 import { KEKIdentifier } from './KEKIdentifier.js'
@@ -45,28 +45,26 @@ export class KEKRecipientInfo extends PkiBase<KEKRecipientInfo> {
     /**
      * Converts the KEKRecipientInfo to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: this.version }),
-                this.kekid.toAsn1(),
-                this.keyEncryptionAlgorithm.toAsn1(),
-                new asn1js.OctetString({ valueHex: this.encryptedKey }),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            der.integer(this.version),
+            this.kekid.toAsn1(),
+            this.keyEncryptionAlgorithm.toAsn1(),
+            der.octetString(this.encryptedKey),
+        ])
     }
 
     /**
      * Creates a KEKRecipientInfo from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): KEKRecipientInfo {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): KEKRecipientInfo {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for KEKRecipientInfo',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length !== 4) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 4 elements, got ${values.length}`,
@@ -74,13 +72,13 @@ export class KEKRecipientInfo extends PkiBase<KEKRecipientInfo> {
         }
 
         // Check version
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Integer for version',
             )
         }
 
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
         if (version !== CMSVersion.v4) {
             throw new Asn1ParseError(
                 `Invalid version: expected 4, got ${version}`,
@@ -94,12 +92,12 @@ export class KEKRecipientInfo extends PkiBase<KEKRecipientInfo> {
         const keyEncryptionAlgorithm = AlgorithmIdentifier.fromAsn1(values[2])
 
         // Extract encryptedKey
-        if (!(values[3] instanceof asn1js.OctetString)) {
+        if (!values[3]?.is(UniversalTag.OctetString)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OctetString for encryptedKey',
             )
         }
-        const encryptedKey = new Uint8Array(values[3].valueBlock.valueHexView)
+        const encryptedKey = values[3].bytes()
 
         return new KEKRecipientInfo({
             kekid,

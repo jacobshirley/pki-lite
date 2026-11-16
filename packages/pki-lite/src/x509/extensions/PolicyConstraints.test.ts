@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { PolicyConstraints } from './PolicyConstraints.js'
-import { asn1js, derToAsn1 } from '../../core/PkiBase.js'
+import { der, derToAsn1 } from '../../core/PkiBase.js'
 import { Asn1ParseError } from '../../core/errors/Asn1ParseError.js'
 
 const hex = (b: Uint8Array) =>
@@ -52,19 +52,19 @@ describe('PolicyConstraints', () => {
             requireExplicitPolicy: 5,
             inhibitPolicyMapping: 300,
         })
-        const der = original.toDer()
-        const parsed = PolicyConstraints.fromAsn1(derToAsn1(der))
+        const encoded = original.toDer()
+        const parsed = PolicyConstraints.fromAsn1(derToAsn1(encoded))
         expect(parsed.requireExplicitPolicy).toBe(5)
         expect(parsed.inhibitPolicyMapping).toBe(300)
-        expect(hex(parsed.toDer())).toBe(hex(der))
+        expect(hex(parsed.toDer())).toBe(hex(encoded))
     })
 
     test('rejects unexpected elements and non-SEQUENCEs', () => {
         expect(() =>
             PolicyConstraints.fromAsn1(derToAsn1(fromHex('3003020101'))),
         ).toThrow(Asn1ParseError)
-        expect(() =>
-            PolicyConstraints.fromAsn1(new asn1js.Integer({ value: 1 })),
-        ).toThrow(Asn1ParseError)
+        expect(() => PolicyConstraints.fromAsn1(der.integer(1))).toThrow(
+            Asn1ParseError,
+        )
     })
 })

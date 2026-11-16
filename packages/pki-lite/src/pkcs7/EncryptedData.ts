@@ -1,4 +1,4 @@
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import { Asn1Node, der, PkiBase, UniversalTag } from '../core/PkiBase.js'
 import { EncryptedContentInfo } from './EncryptedContentInfo.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { ContentInfo } from './ContentInfo.js'
@@ -35,26 +35,24 @@ export class EncryptedData extends PkiBase<EncryptedData> {
     /**
      * Converts the EncryptedData to an ASN.1 structure.
      */
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.Sequence({
-            value: [
-                new asn1js.Integer({ value: this.version }),
-                this.encryptedContentInfo.toAsn1(),
-            ],
-        })
+    toAsn1(): Asn1Node {
+        return der.sequence([
+            der.integer(this.version),
+            this.encryptedContentInfo.toAsn1(),
+        ])
     }
 
     /**
      * Creates an EncryptedData from an ASN.1 structure.
      */
-    static fromAsn1(asn1: Asn1BaseBlock): EncryptedData {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): EncryptedData {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence',
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length !== 2) {
             throw new Asn1ParseError(
                 `Invalid ASN.1 structure: expected 2 elements, got ${values.length}`,
@@ -62,12 +60,12 @@ export class EncryptedData extends PkiBase<EncryptedData> {
         }
 
         // Version
-        if (!(values[0] instanceof asn1js.Integer)) {
+        if (!values[0]?.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Integer for version',
             )
         }
-        const version = values[0].valueBlock.valueDec
+        const version = der.readNumber(values[0])
 
         // EncryptedContentInfo
         const encryptedContentInfo = EncryptedContentInfo.fromAsn1(values[1])

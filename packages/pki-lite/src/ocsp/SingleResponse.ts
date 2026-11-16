@@ -1,5 +1,11 @@
 import { GeneralizedTime } from '../asn1/GeneralizedTime.js'
-import { Asn1BaseBlock, asn1js, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    PkiBase,
+    TagClass,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { Extension } from '../x509/Extension.js'
 import { CertID } from './CertID.js'
 import { CertStatus } from './CertStatus.js'
@@ -50,95 +56,72 @@ export class SingleResponse extends PkiBase<SingleResponse> {
         return !this.nextUpdate || time <= this.nextUpdate.time
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: asn1js.AsnType[] = [
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [
             this.certID.toAsn1(),
             this.certStatus.toAsn1(),
             this.thisUpdate.toAsn1(),
         ]
 
         if (this.nextUpdate) {
-            values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 0, // [0]
-                    },
-                    value: [this.nextUpdate.toAsn1()],
-                }),
-            )
+            values.push(der.constructed(0, [this.nextUpdate.toAsn1()]))
         }
 
         if (this.singleExtensions && this.singleExtensions.length > 0) {
             values.push(
-                new asn1js.Constructed({
-                    idBlock: {
-                        tagClass: 3, // CONTEXT-SPECIFIC
-                        tagNumber: 1, // [1]
-                    },
-                    value: [
-                        new asn1js.Sequence({
-                            value: this.singleExtensions.map((ext) =>
-                                ext.toAsn1(),
-                            ),
-                        }),
-                    ],
-                }),
+                der.constructed(1, [
+                    der.sequence(
+                        this.singleExtensions.map((ext) => ext.toAsn1()),
+                    ),
+                ]),
             )
         }
 
-        return new asn1js.Sequence({
-            value: values,
-        })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): SingleResponse {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): SingleResponse {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected SEQUENCE',
             )
         }
 
-        const sequence = asn1 as asn1js.Sequence
-        if (sequence.valueBlock.value.length < 3) {
+        const sequence = asn1
+        if (sequence.children.length < 3) {
             throw new Asn1ParseError(
                 'Invalid SingleResponse: expected at least 3 elements',
             )
         }
 
-        const certID = CertID.fromAsn1(sequence.valueBlock.value[0])
-        const certStatus = CertStatus.fromAsn1(sequence.valueBlock.value[1])
-        const thisUpdateBlock = sequence.valueBlock
-            .value[2] as asn1js.GeneralizedTime
-        const thisUpdate = thisUpdateBlock.toDate()
+        const certID = CertID.fromAsn1(sequence.children[0])
+        const certStatus = CertStatus.fromAsn1(sequence.children[1])
+        const thisUpdateBlock = sequence.children[2]
+        const thisUpdate = der.readTime(thisUpdateBlock)
 
         let nextUpdate: Date | undefined = undefined
         let singleExtensions: Extension[] | undefined = undefined
 
         let currentIndex = 3
-        while (currentIndex < sequence.valueBlock.value.length) {
-            const block = sequence.valueBlock.value[
-                currentIndex
-            ] as asn1js.Constructed
+        while (currentIndex < sequence.children.length) {
+            const block = sequence.children[currentIndex]
             if (
-                block.idBlock.tagClass === 3 &&
-                block.idBlock.tagNumber === 0 &&
+                block.tagClass === TagClass.Context &&
+                block.tag === 0 &&
                 !nextUpdate
             ) {
                 // nextUpdate
-                const nextUpdateBlock = block.valueBlock
-                    .value[0] as asn1js.GeneralizedTime
-                nextUpdate = nextUpdateBlock.toDate()
+                const nextUpdateBlock = block.children[0]
+                nextUpdate = der.readTime(nextUpdateBlock)
             } else if (
-                block.idBlock.tagClass === 3 &&
-                block.idBlock.tagNumber === 1 &&
+                block.tagClass === TagClass.Context &&
+                block.tag === 1 &&
                 !singleExtensions
             ) {
                 // singleExtensions
-                const extensionsSequence = block.valueBlock
-                    .value[0] as asn1js.Sequence
-                singleExtensions = extensionsSequence.valueBlock.value.map(
-                    (ext) => Extension.fromAsn1(ext),
+                const extensionsSequence = block.children[0]
+                singleExtensions = extensionsSequence.children.map((ext) =>
+                    Extension.fromAsn1(ext),
                 )
             }
             currentIndex++

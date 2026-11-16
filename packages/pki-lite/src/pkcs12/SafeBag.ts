@@ -2,13 +2,15 @@ import { Any } from '../asn1/Any.js'
 import { ObjectIdentifier } from '../asn1/ObjectIdentifier.js'
 import { Attribute } from '../x509/Attribute.js'
 import {
-    Asn1BaseBlock,
-    asn1js,
-    PkiBase,
     Asn1Any,
-    ObjectIdentifierString,
+    Asn1Node,
+    der,
     derToAsn1,
+    ObjectIdentifierString,
     ParseableAsn1,
+    PkiBase,
+    TagClass,
+    UniversalTag,
 } from '../core/PkiBase.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { OIDs } from '../core/OIDs.js'
@@ -101,47 +103,40 @@ export class SafeBag extends PkiBase<SafeBag> {
      *
      * @returns The ASN.1 SEQUENCE structure
      */
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [
             this.bagId.toAsn1(),
-            new asn1js.Constructed({
-                idBlock: { tagClass: 3, tagNumber: 0 },
-                value: [this.bagValue.toAsn1()],
-            }),
+            der.constructed(0, [this.bagValue.toAsn1()]),
         ]
 
         if (this.bagAttributes && this.bagAttributes.length > 0) {
-            values.push(
-                new asn1js.Set({
-                    value: this.bagAttributes.map((a) => a.toAsn1()),
-                }),
-            )
+            values.push(der.set(this.bagAttributes.map((a) => a.toAsn1())))
         }
 
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): SafeBag {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): SafeBag {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
-                'SafeBag: expected SEQUENCE but got ' + asn1.constructor.name,
+                'SafeBag: expected SEQUENCE but got ' + asn1.describe(),
             )
         }
 
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         if (values.length < 2 || values.length > 3) {
             throw new Asn1ParseError('SafeBag: expected 2 or 3 elements')
         }
         const id = values[0]
         const bagVal = values[1]
-        if (!(id instanceof asn1js.ObjectIdentifier)) {
+        if (!id.is(UniversalTag.ObjectIdentifier)) {
             throw new Asn1ParseError('SafeBag: bagId must be OBJECT IDENTIFIER')
         }
         if (
-            !(bagVal instanceof asn1js.Constructed) ||
-            bagVal.idBlock.tagClass !== 3 ||
-            bagVal.idBlock.tagNumber !== 0 ||
-            bagVal.valueBlock.value.length !== 1
+            !bagVal?.constructed ||
+            bagVal.tagClass !== TagClass.Context ||
+            bagVal.tag !== 0 ||
+            bagVal.children.length !== 1
         ) {
             throw new Asn1ParseError(
                 'SafeBag: bagValue must be [0] EXPLICIT with single element',
@@ -151,15 +146,15 @@ export class SafeBag extends PkiBase<SafeBag> {
         let attrs: Attribute[] | undefined
         if (values.length === 3) {
             const set = values[2]
-            if (!(set instanceof asn1js.Set)) {
+            if (!set.is(UniversalTag.Set)) {
                 throw new Asn1ParseError('SafeBag: bagAttributes must be SET')
             }
-            attrs = set.valueBlock.value.map((x) => Attribute.fromAsn1(x))
+            attrs = set.children.map((x) => Attribute.fromAsn1(x))
         }
 
         return new SafeBag({
-            bagId: id.valueBlock.toString(),
-            bagValue: new Any({ derBytes: bagVal.valueBlock.value[0] }),
+            bagId: der.readOid(id),
+            bagValue: new Any({ derBytes: bagVal.children[0] }),
             bagAttributes: attrs,
         })
     }

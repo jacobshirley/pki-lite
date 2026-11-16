@@ -1,7 +1,9 @@
 import {
-    Asn1BaseBlock,
-    asn1js,
+    Asn1Node,
+    der,
     derToAsn1,
+    TagClass,
+    UniversalTag,
     ParseableAsn1,
     PkiArray,
     PkiBase,
@@ -47,53 +49,27 @@ export class OctetString extends PkiBase<OctetString> {
         }
     }
 
-    toAsn1(): Asn1BaseBlock {
-        return new asn1js.OctetString({ valueHex: this.bytes })
+    toAsn1(): Asn1Node {
+        return der.octetString(this.bytes)
     }
 
     toUint8Array(): Uint8Array<ArrayBuffer> {
         return this.bytes
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): OctetString {
+    static fromAsn1(asn1: Asn1Node): OctetString {
+        // Also accepts an implicitly tagged primitive, e.g. `[0] IMPLICIT OCTET STRING`
         if (
-            !(asn1 instanceof asn1js.OctetString) &&
-            !(asn1 instanceof asn1js.Primitive)
+            !asn1.is(UniversalTag.OctetString) &&
+            (asn1.tagClass === TagClass.Universal || asn1.constructed)
         ) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected OCTET STRING but got ' +
-                    asn1.constructor.name,
+                    asn1.describe(),
             )
         }
 
-        return new OctetString({ bytes: OctetString.contentBytes(asn1) })
-    }
-
-    /**
-     * The value bytes of an OCTET STRING. BER allows a *constructed* encoding (what
-     * indefinite-length streaming writers such as `openssl cms -stream` produce): a
-     * sequence of OCTET STRING chunks whose contents are concatenated.
-     */
-    static contentBytes(asn1: Asn1BaseBlock): Uint8Array {
-        if (asn1.idBlock.isConstructed) {
-            const chunks = (asn1.valueBlock as { value?: Asn1BaseBlock[] })
-                .value
-            if (chunks && chunks.length > 0) {
-                const parts = chunks.map((chunk) =>
-                    OctetString.contentBytes(chunk),
-                )
-                const out = new Uint8Array(
-                    parts.reduce((total, part) => total + part.length, 0),
-                )
-                let offset = 0
-                for (const part of parts) {
-                    out.set(part, offset)
-                    offset += part.length
-                }
-                return out
-            }
-        }
-        return (asn1 as asn1js.Primitive).valueBlock.valueHexView
+        return new OctetString({ bytes: asn1.bytes() })
     }
 
     static fromDer(der: Uint8Array<ArrayBuffer>): OctetString {

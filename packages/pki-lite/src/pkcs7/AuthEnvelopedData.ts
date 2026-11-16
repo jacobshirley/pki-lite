@@ -1,4 +1,10 @@
-import { Asn1BaseBlock, asn1js, derToAsn1, PkiBase } from '../core/PkiBase.js'
+import {
+    Asn1Node,
+    der,
+    derToAsn1,
+    PkiBase,
+    UniversalTag,
+} from '../core/PkiBase.js'
 import { ContentInfo } from './ContentInfo.js'
 import { OIDs } from '../core/OIDs.js'
 import { OriginatorInfo } from './recipients/OriginatorInfo.js'
@@ -72,10 +78,8 @@ export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
             : undefined
     }
 
-    toAsn1(): Asn1BaseBlock {
-        const values: Asn1BaseBlock[] = [
-            new asn1js.Integer({ value: this.version }),
-        ]
+    toAsn1(): Asn1Node {
+        const values: Asn1Node[] = [der.integer(this.version)]
         if (this.originatorInfo) {
             values.push(implicitTag(this.originatorInfo.toAsn1(), 0))
         }
@@ -84,24 +88,24 @@ export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
         if (this.authAttrs) {
             values.push(implicitTag(this.authAttrs.toAsn1(), 1))
         }
-        values.push(new asn1js.OctetString({ valueHex: this.mac }))
+        values.push(der.octetString(this.mac))
         if (this.unauthAttrs) {
             values.push(implicitTag(this.unauthAttrs.toAsn1(), 2))
         }
-        return new asn1js.Sequence({ value: values })
+        return der.sequence(values)
     }
 
-    static fromAsn1(asn1: Asn1BaseBlock): AuthEnvelopedData {
-        if (!(asn1 instanceof asn1js.Sequence)) {
+    static fromAsn1(asn1: Asn1Node): AuthEnvelopedData {
+        if (!asn1.is(UniversalTag.Sequence)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Sequence for AuthEnvelopedData',
             )
         }
-        const values = asn1.valueBlock.value
+        const values = asn1.children
         let index = 0
 
         const version = values[index]
-        if (!(version instanceof asn1js.Integer)) {
+        if (!version.is(UniversalTag.Integer)) {
             throw new Asn1ParseError(
                 'Invalid ASN.1 structure: expected Integer for version',
             )
@@ -112,10 +116,7 @@ export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
         if (values[index] && isContextTag(values[index], 0)) {
             // originatorInfo [0] IMPLICIT OriginatorInfo (a SEQUENCE)
             originatorInfo = OriginatorInfo.fromAsn1(
-                new asn1js.Sequence({
-                    value: (values[index] as asn1js.Constructed).valueBlock
-                        .value,
-                }),
+                der.sequence(values[index].children),
             )
             index++
         }
@@ -144,12 +145,12 @@ export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
         }
 
         const macBlock = values[index++]
-        if (!(macBlock instanceof asn1js.OctetString)) {
+        if (!macBlock.is(UniversalTag.OctetString)) {
             throw new Asn1ParseError(
                 'AuthEnvelopedData: expected an OCTET STRING for mac',
             )
         }
-        const mac = new Uint8Array(macBlock.valueBlock.valueHexView)
+        const mac = macBlock.bytes()
 
         let unauthAttrs: Attributes | undefined
         if (values[index] && isContextTag(values[index], 2)) {
@@ -163,7 +164,7 @@ export class AuthEnvelopedData extends PkiBase<AuthEnvelopedData> {
         }
 
         return new AuthEnvelopedData({
-            version: version.valueBlock.valueDec,
+            version: der.readNumber(version),
             originatorInfo,
             recipientInfos: [...recipientInfos],
             authEncryptedContentInfo,
