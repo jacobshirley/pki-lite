@@ -16,19 +16,29 @@ permissions:
     checks: write
 jobs:
     Tests:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-26.04
         name: Tests
+        defaults:
+            run:
+                # Every step runs in the flake's dev shell: Node 24, the pinned pnpm, OpenSSL
+                # and nixpkgs' Chromium for the browser tests (no Playwright download).
+                shell: nix develop --command bash -euo pipefail {0}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-            - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+            - uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
+            # No nix store cache: the dev shell comes prebuilt from cache.nixos.org (all but
+            # the small pnpm wrapper), which takes ~13s, while restoring the same closure (1.1 GB)
+            # from the GitHub Actions cache took ~22s and used a tenth of the cache quota.
+            - name: Locate the pnpm store
+              id: pnpm-store
+              run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+            - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
               with:
-                  run_install: true
-            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-              with:
-                  node-version: '24'
-                  cache: 'pnpm'
-            - name: Install Playwright Browsers
-              run: pnpm exec playwright install chromium --only-shell
+                  path: ${{ steps.pnpm-store.outputs.path }}
+                  key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+                  restore-keys: pnpm-${{ runner.os }}-
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
             - name: Compile
               run: pnpm compile
             - name: Run tests

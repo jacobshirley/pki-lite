@@ -37,24 +37,34 @@
           dontStrip = true;
           installPhase = "install -Dm755 pnpm $out/bin/pnpm";
         };
+
+      headlessChromium = pkgs: pkgs.playwright-driver.browsers.override {
+        withChromium = false;
+        withFirefox = false;
+        withWebkit = false;
+        withFfmpeg = false;
+      };
     in
     {
       packages = forAllSystems (pkgs: { pnpm = mkPnpm pkgs; });
 
       devShells = forAllSystems (pkgs: {
-        default = pkgs.mkShell {
+        # mkShellNoCC and gitMinimal keep the closure small (no C toolchain, no perl): CI
+        # runs in this shell too (.github/workflows/test.yaml) and downloads all of it.
+        default = pkgs.mkShellNoCC {
           packages = [
             pkgs.nodejs_24 # CI uses Node 24
             (mkPnpm pkgs)
             pkgs.openssl # the OpenSSL compatibility tests fall back to this when docker is absent
-            pkgs.git
+            pkgs.gitMinimal
           ];
 
           shellHook = nixpkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
             # Playwright's own downloaded browsers cannot run on NixOS, so point the browser
-            # tests at the Chromium that nixpkgs ships (see vitest.config.ts).
+            # tests at the headless Chromium that nixpkgs ships (see vitest.config.ts). Only
+            # that one: the full set (Firefox, WebKit, Chromium) is 2.2 GiB.
             export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-            for chrome in ${pkgs.playwright-driver.browsers}/chromium-*/chrome-linux*/chrome; do
+            for chrome in ${headlessChromium pkgs}/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell; do
               export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="$chrome"
             done
           '';
