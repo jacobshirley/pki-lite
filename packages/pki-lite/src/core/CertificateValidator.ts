@@ -200,7 +200,11 @@ export interface CertificateValidationOptions {
     validateNameConstraints?: boolean
     /** Whether to process certificate policies (RFC 5280 6.1). On by default. */
     validatePolicies?: boolean
-    /** Policy OIDs that must all be valid for the path (implies an explicit policy) */
+    /**
+     * Policy OIDs that must all be valid for the path (implies an explicit policy), in the
+     * trust anchor's policy domain like `initialPolicySet`: with policy mappings, a policy
+     * as the first CA asserts it, not as the leaf does
+     */
     requiredPolicies?: string[]
     /** user-initial-policy-set: the path must be valid for at least one of these (default: any) */
     initialPolicySet?: string[]
