@@ -12,7 +12,7 @@ permissions:
 
 jobs:
     gate:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         name: Check release trigger
         outputs:
             run: ${{ steps.gate.outputs.run }}
@@ -29,7 +29,7 @@ jobs:
                       echo "run=false" >> $GITHUB_OUTPUT
                   fi
     publish:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         name: Publish to npm
         needs: gate
         permissions:
@@ -85,7 +85,7 @@ jobs:
                   name: pki-lite-${{ steps.get_release_version.outputs.version }}
                   path: ./*.tgz
     github-release:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         name: Create GitHub Release
         needs: publish
         permissions:
