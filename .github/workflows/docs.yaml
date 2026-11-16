@@ -28,7 +28,7 @@ defaults:
 jobs:
     build:
         name: Build Docs for ${{ matrix.version }}
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-26.04
         strategy:
             matrix:
                 version:
@@ -70,7 +70,7 @@ jobs:
               run: echo "You can find the documentation for version ${{ matrix.version }} at https://jacobshirley.github.io/pki-lite/${{ steps.formatted-ref-name.outputs.formatted_ref_name }}" >> $GITHUB_STEP_SUMMARY
     combine:
         name: Combine Docs
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-26.04
         needs: build
         steps:
             - name: Download artifacts
@@ -87,7 +87,7 @@ jobs:
 
     deploy:
         name: Deploy
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-26.04
         needs: combine
         steps:
             - name: Deploy to GitHub Pages

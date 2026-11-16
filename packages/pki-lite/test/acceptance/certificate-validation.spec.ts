@@ -10,7 +10,8 @@ import {
 import { OIDs } from '../../src/core/OIDs.js'
 import { GeneralName } from '../../src/x509/GeneralName.js'
 
-describe('Certificate Validation', () => {
+// Generating 4096-bit RSA keys takes a variable few seconds each, so allow more than 5s
+describe('Certificate Validation', { timeout: 60_000 }, () => {
     test('Certificate chain validation', async () => {
         const rootCaKeys = await KeyGen.generate({
             algorithm: 'RSA',
