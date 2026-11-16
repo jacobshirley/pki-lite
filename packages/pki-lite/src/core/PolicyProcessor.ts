@@ -23,7 +23,11 @@ export interface PolicyProcessingOptions {
 export interface PolicyProcessingResult {
     /** whether path processing succeeded (RFC 5280 6.1.5 (g)) */
     isValid: boolean
-    /** the user-constrained policy set: the policies valid for the whole path */
+    /**
+     * the user-constrained policy set: the policies valid for the whole path, as policies
+     * of the trust anchor's domain (that of the initial policy set, before any policy
+     * mappings)
+     */
     validPolicies: string[]
     /** why processing failed */
     violations: string[]
@@ -343,9 +347,20 @@ export function processPolicies(
         if (tree.isNull) tree.nullify()
     }
 
+    // The user-constrained policy set (RFC 5280 6.1.5 (g)) is in the trust anchor's
+    // domain, that of the initial policy set: policy mappings rename a policy further down
+    // a branch, so each leaf reports the topmost policy of its branch below anyPolicy (its
+    // valid_policy_node_set node), or its own policy if the branch above it is all anyPolicy
+    const topmostPolicy = (leaf: PolicyNode) => {
+        let top = leaf
+        for (let node = leaf.parent; node?.parent; node = node.parent) {
+            if (node.policy !== ANY_POLICY) top = node
+        }
+        return top.policy
+    }
     const validPolicies = tree.isNull
         ? []
-        : [...new Set((tree.levels[n] ?? []).map((node) => node.policy))]
+        : [...new Set((tree.levels[n] ?? []).map(topmostPolicy))]
 
     if (explicitPolicy > 0 || !tree.isNull) {
         return { isValid: true, validPolicies, violations: [] }

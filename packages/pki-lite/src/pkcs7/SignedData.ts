@@ -26,6 +26,7 @@ import { CertificateList } from '../x509/CertificateList.js'
 import {
     CertificateValidationOptions,
     CertificateValidator,
+    TrustAnchor,
 } from '../core/CertificateValidator.js'
 import { Asn1ParseError } from '../core/errors/Asn1ParseError.js'
 import { OctetString } from '../asn1/OctetString.js'
@@ -65,6 +66,15 @@ class DigestAlgorithmIdentifiers extends PkiSet<DigestAlgorithmIdentifier> {
  * ```
  */
 class SignerInfos extends PkiSet<SignerInfo> {}
+
+/**
+ * Validation of a SignedData signer's certificate (SignedData.verify): the options of
+ * CertificateValidator, with the trust anchors required, since without them nothing ties
+ * the signer to a root you trust.
+ */
+export type SignedDataCertificateValidation = CertificateValidationOptions & {
+    trustAnchors: TrustAnchor[]
+}
 
 /**
  * Represents a CMS/PKCS#7 SignedData structure.
@@ -409,12 +419,15 @@ export class SignedData extends PkiBase<SignedData> {
      *
      * @param options Verification options
      * @param options.data Optional original data for detached signatures
-     * @param options.certificateValidation Certificate validation options or true for default validation
+     * @param options.certificateValidation Validates the signer's certificate: its path
+     *   to one of `trustAnchors` (required), with the certificates the message carries
+     *   offered for path building and its CRLs and OCSP responses checked, unless these
+     *   options say otherwise (see CertificateValidationOptions)
      * @returns
      */
     async verify(options: {
         data?: Uint8Array<ArrayBuffer>
-        certificateValidation?: CertificateValidationOptions | true
+        certificateValidation?: SignedDataCertificateValidation
     }): Promise<
         | {
               valid: true
@@ -470,25 +483,54 @@ export class SignedData extends PkiBase<SignedData> {
         }
 
         if (options.certificateValidation) {
+            const validation = options.certificateValidation as
+                | SignedDataCertificateValidation
+                | boolean
+            if (
+                typeof validation !== 'object' ||
+                !validation.trustAnchors?.length
+            ) {
+                throw new Error(
+                    'certificateValidation needs trustAnchors: without them nothing ties the signer to a root you trust',
+                )
+            }
             const certificateValidator = new CertificateValidator()
-            const validationOptions: CertificateValidationOptions =
-                options.certificateValidation === true
-                    ? {
-                          validateChain: true,
-                          checkCRL: true,
-                          checkOCSP: true,
-                          otherCertificates: this.certificates?.filter(
-                              (c): c is Certificate => c instanceof Certificate,
-                          ),
-                          checkSignature: true,
-                          enforceCAConstraints: true,
-                          validateNameConstraints: true,
-                      }
-                    : options.certificateValidation
+            const signerCertificate =
+                this.findCertificateForSignerInfo(validSignerInfo)!
+            const certificates =
+                this.certificates?.filter(
+                    (c): c is Certificate => c instanceof Certificate,
+                ) ?? []
+            const crls = [...(this.crls ?? [])].filter(
+                (c): c is CertificateList => c instanceof CertificateList,
+            )
+            const ocspResponses = this.embeddedOcspResponses()
+            // the message's revocation data is checked unless the options say otherwise,
+            // and its certificates are offered for path building
+            const validationOptions: CertificateValidationOptions = {
+                validateChain: true,
+                checkCRL: crls.length > 0,
+                checkOCSP: ocspResponses.length > 0,
+                ...validation,
+                otherCertificates: [
+                    ...certificates,
+                    ...(validation.otherCertificates ?? []),
+                ],
+            }
 
             const validationResult = await certificateValidator.validate(
-                this.findCertificateForSignerInfo(validSignerInfo)!,
+                signerCertificate,
                 validationOptions,
+                {
+                    crls,
+                    ocspResponses,
+                    // the signer's issuer, to check the CRLs' signatures with
+                    issuerCertificate: certificates.find((c) =>
+                        c.tbsCertificate.subject.matches(
+                            signerCertificate.tbsCertificate.issuer,
+                        ),
+                    ),
+                },
             )
 
             if (validationResult.status !== 'VALID') {
@@ -496,12 +538,31 @@ export class SignedData extends PkiBase<SignedData> {
                     valid: false,
                     reasons: [
                         `Certificate validation failed: ${validationResult.status}`,
+                        ...validationResult.messages,
                     ],
                 }
             }
         }
 
         return { valid: true, signerInfo: validSignerInfo }
+    }
+
+    /** The OCSP responses the message carries (RevocationInfoChoice other, RFC 5940). */
+    private embeddedOcspResponses(): OCSPResponse[] {
+        const responses: OCSPResponse[] = []
+        for (const choice of this.crls ?? []) {
+            if (
+                choice instanceof OtherRevocationInfoFormat &&
+                choice.otherRevInfoFormat.value === OIDs.OTHER_REV_INFO.OCSP
+            ) {
+                try {
+                    responses.push(choice.otherRevInfo.parseAs(OCSPResponse))
+                } catch {
+                    // an unreadable response is not used
+                }
+            }
+        }
+        return responses
     }
 
     private findCertificateForSignerInfo(

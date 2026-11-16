@@ -1,3 +1,6 @@
+import { OIDs } from '../core/OIDs.js'
+import { OctetString } from '../asn1/OctetString.js'
+import { Extension } from '../x509/Extension.js'
 import { Asn1BaseBlock, asn1js, PkiBase, derToAsn1 } from '../core/PkiBase.js'
 import { TBSRequest } from './TBSRequest.js'
 import { OCSPSignature } from './OCSPSignature.js'
@@ -87,6 +90,11 @@ export class OCSPRequest extends PkiBase<OCSPRequest> {
      *     .build()
      * ```
      */
+    /** The request's nonce (RFC 8954), if it has one; see {@link OCSPRequestBuilder.addNonce}. */
+    get nonce(): Uint8Array<ArrayBuffer> | undefined {
+        return nonceOf(this.tbsRequest.requestExtensions)
+    }
+
     static builder(): OCSPRequestBuilder {
         return new OCSPRequestBuilder()
     }
@@ -190,5 +198,25 @@ export class OCSPRequest extends PkiBase<OCSPRequest> {
 
         const responseDer = new Uint8Array(await res.arrayBuffer())
         return OCSPResponse.fromDer(responseDer)
+    }
+}
+
+/**
+ * The nonce (RFC 8954) in a list of extensions: an OCTET STRING, or (from some older
+ * responders) the raw bytes.
+ *
+ * @internal
+ */
+export function nonceOf(
+    extensions: Extension[] | undefined,
+): Uint8Array<ArrayBuffer> | undefined {
+    const extension = extensions?.find(
+        (e) => e.extnID.value === OIDs.PKIX.ID_PKIX_OCSP_NONCE,
+    )
+    if (!extension) return undefined
+    try {
+        return extension.extnValue.parseAs(OctetString).bytes
+    } catch {
+        return extension.extnValue.bytes
     }
 }

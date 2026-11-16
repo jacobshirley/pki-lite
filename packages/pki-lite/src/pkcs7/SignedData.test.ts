@@ -20,6 +20,7 @@ import { Attribute } from '../x509/Attribute.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
 import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
+import { rsaSigningKeys as otherKeys } from '../../test-fixtures/signing-keys/rsa-3072/index.js'
 
 describe('SignedData', () => {
     let digestAlgorithms: DigestAlgorithmIdentifier[]
@@ -705,5 +706,121 @@ describe('SignedData - Message Digest Verification', () => {
         if (result.valid) {
             expect(result.signerInfo).toBe(signedData.signerInfos[0])
         }
+    })
+})
+
+describe('SignedData.verify certificateValidation', () => {
+    // a CA (3072-bit fixture key) and a signer it issued (2048-bit fixture key)
+    const caKey = PrivateKeyInfo.fromPem(otherKeys.privateKeyPem)
+    const signerKey = PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem)
+    const setup = async () => {
+        const ca = await Certificate.builder()
+            .setSubject('CN=SignedData CA')
+            .setPublicKey(
+                Certificate.fromPem(otherKeys.certPem).tbsCertificate
+                    .subjectPublicKeyInfo,
+            )
+            .setPrivateKey(caKey)
+            .setValidityDays(30)
+            .addBasicConstraints(true)
+            .addKeyUsage({ keyCertSign: true, cRLSign: true })
+            .selfSign()
+        const signer = await Certificate.builder()
+            .setSubject('CN=Signer')
+            .setPublicKey(
+                Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                    .subjectPublicKeyInfo,
+            )
+            .setIssuer(ca)
+            .setIssuerPrivateKey(caKey)
+            .setSerialNumber(77)
+            .setValidityDays(30)
+            .sign()
+        const crl = (revoked: boolean) => {
+            const builder = CertificateList.builder()
+                .setIssuerFromCertificate(ca)
+                .setPrivateKey(caKey)
+            if (revoked) builder.revokeCertificate(signer)
+            return builder.build()
+        }
+        const sign = (crls: CertificateList[]) => {
+            const builder = SignedData.builder()
+                .setData(new TextEncoder().encode('content'))
+                .addSigner({
+                    privateKeyInfo: signerKey,
+                    certificate: signer,
+                    encryptionAlgorithm: {
+                        type: 'RSASSA_PKCS1_v1_5',
+                        params: { hash: 'SHA-256' },
+                    },
+                })
+                .addCertificate(ca)
+            for (const c of crls) builder.addCrl(c)
+            return builder.build()
+        }
+        const trusted = { trustAnchors: [{ certificate: ca }] }
+        return { crl, sign, trusted }
+    }
+
+    it('without CRLs in the message, revocation is not checked', async () => {
+        const { sign, trusted } = await setup()
+        const result = await (
+            await sign([])
+        ).verify({ certificateValidation: trusted })
+        expect(result.valid).toBe(true)
+    })
+
+    it('checks the signer against the CRLs the message carries', async () => {
+        const { crl, sign, trusted } = await setup()
+        const clean = await (
+            await sign([await crl(false)])
+        ).verify({
+            certificateValidation: trusted,
+        })
+        expect(clean.valid).toBe(true)
+        const revoked = await (
+            await sign([await crl(true)])
+        ).verify({
+            certificateValidation: trusted,
+        })
+        expect(revoked.valid).toBe(false)
+        if (!revoked.valid) {
+            expect(revoked.reasons.join('; ')).toContain('REVOKED')
+        }
+    })
+
+    it('requires trust anchors', async () => {
+        const { sign } = await setup()
+        const signed = await sign([])
+        await expect(
+            // a caller from JavaScript, or one that casts around the type
+            signed.verify({ certificateValidation: true as never }),
+        ).rejects.toThrow('certificateValidation needs trustAnchors')
+        await expect(
+            signed.verify({ certificateValidation: { trustAnchors: [] } }),
+        ).rejects.toThrow('certificateValidation needs trustAnchors')
+    })
+
+    it('a signer under another root is not valid', async () => {
+        const { sign } = await setup()
+        const otherRoot = await Certificate.builder()
+            .setSubject('CN=Unrelated Root')
+            .setPublicKey(
+                Certificate.fromPem(otherKeys.certPem).tbsCertificate
+                    .subjectPublicKeyInfo,
+            )
+            .setPrivateKey(caKey)
+            .setValidityDays(30)
+            .addBasicConstraints(true)
+            .addKeyUsage({ keyCertSign: true, cRLSign: true })
+            .selfSign()
+        const result = await (
+            await sign([])
+        ).verify({
+            certificateValidation: {
+                trustAnchors: [{ certificate: otherRoot }],
+            },
+        })
+        expect(result.valid).toBe(false)
     })
 })

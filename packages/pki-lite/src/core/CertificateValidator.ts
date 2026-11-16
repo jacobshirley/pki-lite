@@ -4,13 +4,15 @@ import { OCSPResponse } from '../ocsp/OCSPResponse.js'
 import { BasicConstraints } from '../x509/extensions/BasicConstraints.js'
 import { NameConstraints } from '../x509/extensions/NameConstraints.js'
 import { checkNameConstraints } from './NameConstraintsChecker.js'
+import { checkCertificateProfile } from './CertificateProfile.js'
 import { SubjectKeyIdentifier } from '../keys/SubjectKeyIdentifier.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { AuthorityKeyIdentifier } from '../x509/extensions/AuthorityKeyIdentifier.js'
-import { CrlChecker } from './CrlChecker.js'
+import { CrlChecker, CrlStatus } from './CrlChecker.js'
 import { OIDs } from './OIDs.js'
 import { ANY_POLICY, processPolicies } from './PolicyProcessor.js'
 import { KeyUsage } from '../x509/extensions/KeyUsage.js'
+import { ExtKeyCommonNames } from '../x509/extensions/ExtKeyUsage.js'
 
 /**
  * Enumeration of certificate validation status codes.
@@ -50,6 +52,8 @@ export const CertificateValidationStatus = {
     CHAIN_INVALID: 'CHAIN_INVALID',
     CRL_UNAVAILABLE: 'CRL_UNAVAILABLE',
     OCSP_UNAVAILABLE: 'OCSP_UNAVAILABLE',
+    HOSTNAME_MISMATCH: 'HOSTNAME_MISMATCH',
+    EXTENDED_KEY_USAGE_NOT_ALLOWED: 'EXTENDED_KEY_USAGE_NOT_ALLOWED',
 } as const
 
 export type CertificateValidationStatus =
@@ -121,11 +125,51 @@ export interface CertificateValidationOptions {
      * not understood, and it is signed by a certificate with cRLSign whose path validates
      * (delta CRLs are applied on top). Every certificate below the trust anchor needs CRLs
      * covering all revocation reasons (or an OCSP answer, with `checkOCSP`); otherwise the
-     * result is `CRL_UNAVAILABLE`. Applies when revocation data is passed to `validate`.
+     * result is `CRL_UNAVAILABLE`, including when no revocation data is passed to
+     * `validate`.
      */
     checkCRL?: boolean
-    /** Check certificate revocation using OCSP */
+    /**
+     * Check certificate revocation using OCSP (RFC 6960): a response counts only if it is
+     * successful, gives a current status for this certificate from its issuer, and is
+     * signed by the issuer or a responder it authorised. With `checkCRL` too, CRLs decide
+     * when no response does. Otherwise every certificate below the trust anchor needs such
+     * a response, or the result is `OCSP_UNAVAILABLE`, including when no revocation data
+     * is passed to `validate`.
+     */
     checkOCSP?: boolean
+    /**
+     * The DNS name or IP address the certificate must be valid for, as a TLS client
+     * checks a server (RFC 9525; see {@link Certificate.matchesHostname}). If the
+     * certificate does not match, the result is `HOSTNAME_MISMATCH`.
+     */
+    hostname?: string
+    /**
+     * Extended key usages the certificate must allow (by common name, e.g. `serverAuth`,
+     * or OID; see {@link Certificate.allowsExtendedKeyUsage}). If it does not, the result
+     * is `EXTENDED_KEY_USAGE_NOT_ALLOWED`.
+     */
+    requiredExtendedKeyUsages?: (ExtKeyCommonNames | string)[]
+    /**
+     * The most intermediate CA certificates a path may have, not counting self-issued
+     * ones: a pathLenConstraint the relying party sets on the trust anchor (RFC 5280
+     * 6.1.1 (k)). Part of chain validation.
+     */
+    maxPathLength?: number
+    /**
+     * Whether to enforce the RFC 5280 certificate and CRL profiles: the rules for what
+     * conforming CAs issue (sections 4 and 5), beyond the path validation algorithm. For
+     * every certificate in the path, the trust anchor included: extension criticality
+     * (AKI, SKI, AIA non-critical; basicConstraints in a CA, nameConstraints,
+     * policyConstraints critical), required extensions (authorityKeyIdentifier,
+     * subjectKeyIdentifier in CAs), no duplicate extensions, positive serial numbers of at
+     * most 20 octets, well-formed subjectAltName names and name constraints, and no
+     * unrecognised critical extension in the trust anchor. For CRLs: cRLNumber present
+     * and non-critical, and no serial number listed twice. Off by default (many real PKIs
+     * break some of these rules), as OpenSSL checks them only with X509_STRICT.
+     * Part of chain validation.
+     */
+    strictProfile?: boolean
     /** Tolerance for time-based validations (in milliseconds) */
     timeTolerance?: number
     /** Custom validation date (defaults to current time) */
@@ -143,6 +187,15 @@ export interface CertificateValidationOptions {
     /** Whether to build and validate the full certificate chain */
     validateChain?: boolean
     /**
+     * Whether path building may download a missing issuer from the caIssuers URL of a
+     * certificate's authorityInfoAccess extension (http and https only; optionally with a
+     * per-request `timeout` in milliseconds, 10,000 by default). Off by default: the URLs
+     * come from the certificates being validated, so following them makes requests
+     * wherever those certificates point, and validation then depends on the network.
+     * Pass the intermediates in `otherCertificates` instead where you can.
+     */
+    fetchIssuerCertificates?: boolean | { timeout?: number }
+    /**
      * Whether to enforce CA constraints on the issuing certificates (RFC 5280 6.1.4):
      * basicConstraints cA, keyUsage keyCertSign and pathLenConstraint. On by default.
      */
@@ -156,7 +209,11 @@ export interface CertificateValidationOptions {
     validateNameConstraints?: boolean
     /** Whether to process certificate policies (RFC 5280 6.1). On by default. */
     validatePolicies?: boolean
-    /** Policy OIDs that must all be valid for the path (implies an explicit policy) */
+    /**
+     * Policy OIDs that must all be valid for the path (implies an explicit policy), in the
+     * trust anchor's policy domain like `initialPolicySet`: with policy mappings, a policy
+     * as the first CA asserts it, not as the leaf does
+     */
     requiredPolicies?: string[]
     /** user-initial-policy-set: the path must be valid for at least one of these (default: any) */
     initialPolicySet?: string[]
@@ -255,6 +312,40 @@ export class CertificateValidator {
         }
 
         diagnostics.stepsPerformed.push('Starting certificate validation')
+
+        const disallowed = (options.requiredExtendedKeyUsages ?? []).filter(
+            (purpose) => !certificate.allowsExtendedKeyUsage(purpose),
+        )
+        if (disallowed.length > 0) {
+            return {
+                status: CertificateValidationStatus.EXTENDED_KEY_USAGE_NOT_ALLOWED,
+                isValid: false,
+                messages: [
+                    `Certificate's extendedKeyUsage does not allow: ${disallowed.join(', ')}`,
+                ],
+                revocationStatus: { isRevoked: false, source: 'NONE' },
+                certificate,
+                validatedAt: new Date(),
+                diagnostics,
+            }
+        }
+
+        if (
+            options.hostname !== undefined &&
+            !certificate.matchesHostname(options.hostname)
+        ) {
+            return {
+                status: CertificateValidationStatus.HOSTNAME_MISMATCH,
+                isValid: false,
+                messages: [
+                    `Certificate is not valid for '${options.hostname}': no matching subjectAltName`,
+                ],
+                revocationStatus: { isRevoked: false, source: 'NONE' },
+                certificate,
+                validatedAt: new Date(),
+                diagnostics,
+            }
+        }
         diagnostics.context.validationTime = validationTime
         diagnostics.context.timeTolerance = timeTolerance
 
@@ -271,14 +362,40 @@ export class CertificateValidator {
         if (options.validateChain && options.trustAnchors) {
             diagnostics.stepsPerformed.push('Building certificate chain')
             try {
-                chain = await this.buildCertificateChain(certificate, options)
-                diagnostics.context.chainLength = chain.certificates.length
-
-                const chainValidationResult = await this.validateChain(
-                    chain,
+                // try each candidate path in turn: the first valid one is used, and if
+                // none is, the first failure is reported
+                const search = this.newPathSearch()
+                let chainValidationResult:
+                    | CertificateValidationResult
+                    | undefined
+                for await (const candidate of this.candidatePaths(
+                    certificate,
                     options,
-                    revocationData,
-                )
+                    search,
+                )) {
+                    const result = await this.validateChain(
+                        candidate,
+                        options,
+                        revocationData,
+                    )
+                    if (!chainValidationResult || result.isValid) {
+                        chain = candidate
+                        chainValidationResult = result
+                    }
+                    if (result.isValid) break
+                }
+                if (!chainValidationResult) {
+                    chain = {
+                        certificates: search.firstDeadEnd ?? [certificate],
+                        isComplete: false,
+                    }
+                    chainValidationResult = await this.validateChain(
+                        chain,
+                        options,
+                        revocationData,
+                    )
+                }
+                diagnostics.context.chainLength = chain!.certificates.length
 
                 // Update overall result based on chain validation
                 if (!chainValidationResult.isValid) {
@@ -375,23 +492,23 @@ export class CertificateValidator {
         let finalStatus: CertificateValidationStatus =
             CertificateValidationStatus.VALID
 
-        // Check revocation status if requested and data is available
-        if ((options.checkCRL || options.checkOCSP) && revocationData) {
+        // Check revocation status if requested: without revocation data, it cannot be
+        // determined
+        if (options.checkCRL || options.checkOCSP) {
             diagnostics.stepsPerformed.push('Checking revocation status')
+            const data = revocationData ?? {}
             const revocationResult = await this.checkRevocationStatus(
                 certificate,
-                revocationData,
+                data,
                 options,
                 // without chain validation, the issuer given is taken on trust
-                revocationData.issuerCertificate
-                    ? [revocationData.issuerCertificate]
-                    : [],
+                data.issuerCertificate ? [data.issuerCertificate] : [],
             )
 
             revocationStatus = revocationResult
 
             if (revocationResult.undetermined) {
-                finalStatus = CertificateValidationStatus.CRL_UNAVAILABLE
+                finalStatus = this.unavailableStatus(options)
                 messages.push(
                     `Revocation status could not be determined: ${revocationResult.details}`,
                 )
@@ -432,81 +549,129 @@ export class CertificateValidator {
         certificate: Certificate,
         options: CertificateValidationOptions,
     ): Promise<CertificateChain> {
-        const chain: Certificate[] = [certificate]
-        const availableCerts = options.otherCertificates || []
-        const trustAnchors = options.trustAnchors || []
-        const seenCerts = new Set<string>() // Track certificates to prevent loops
-
-        let current = certificate
-        let trustAnchor: TrustAnchor | undefined
-
-        // Add current certificate to seen set
-        const currentKey = this.getCertificateKey(current)
-        seenCerts.add(currentKey)
-
-        // Build chain by following issuer relationships
-        while (true) {
-            // Check if current certificate is self-signed (root)
-            if (await this.isSelfSigned(current)) {
-                // Check if this root is a trust anchor
-                trustAnchor = trustAnchors.find((ta) =>
-                    this.certificatesEqual(ta.certificate, current),
-                )
-                break
-            }
-
-            // Find issuer certificate
-            const issuer: Certificate | undefined =
-                this.findIssuer(current, [
-                    ...availableCerts,
-                    ...trustAnchors.map((ta) => ta.certificate),
-                ]) ?? (await current.requestIssuerCertificate())
-
-            if (!issuer) {
-                // Chain is incomplete
-                break
-            }
-
-            // Check for loops before adding issuer
-            const issuerKey = this.getCertificateKey(issuer)
-            if (seenCerts.has(issuerKey)) {
-                throw new Error(
-                    'Certificate chain contains a loop - circular chain detected',
-                )
-            }
-
-            // Check if issuer is a trust anchor
-            const issuerTrustAnchor = trustAnchors.find((ta) =>
-                this.certificatesEqual(ta.certificate, issuer),
-            )
-
-            if (issuerTrustAnchor) {
-                // Found trust anchor, add to chain and stop
-                chain.push(issuer)
-                trustAnchor = issuerTrustAnchor
-                break
-            }
-
-            // Add intermediate certificate to chain and track it
-            chain.push(issuer)
-            seenCerts.add(issuerKey)
-            current = issuer
-
-            // Prevent extremely long chains
-            if (chain.length > 10) {
-                throw new Error(
-                    'Certificate chain too long (maximum 10 certificates allowed)',
-                )
-            }
+        const search = this.newPathSearch()
+        for await (const chain of this.candidatePaths(
+            certificate,
+            options,
+            search,
+        )) {
+            return chain
         }
-
-        const isComplete = trustAnchor !== undefined
-
         return {
-            certificates: chain,
-            isComplete,
-            trustAnchor,
+            certificates: search.firstDeadEnd ?? [certificate],
+            isComplete: false,
         }
+    }
+
+    private newPathSearch(): {
+        firstDeadEnd?: Certificate[]
+        lookups: number
+    } {
+        return { lookups: 0 }
+    }
+
+    /**
+     * The certification paths from `certificate` to a trust anchor, most preferred
+     * first: a depth-first search over every issuer candidate (subject matching the
+     * issuer name, and key identifiers if present), trying trust anchors before other
+     * certificates, never using a certificate twice in a path. Path validation tries
+     * them in turn, so a path that fails (an expired cross-certificate, a name
+     * constraint) does not hide a valid alternative. Bounded: at most 10 certificates in
+     * a path, 1,000 issuer lookups and 32 complete paths.
+     */
+    private async *candidatePaths(
+        certificate: Certificate,
+        options: CertificateValidationOptions,
+        search: { firstDeadEnd?: Certificate[]; lookups: number },
+    ): AsyncGenerator<CertificateChain> {
+        const trustAnchors = options.trustAnchors || []
+
+        // keys computed once per certificate: a path search can compare certificates
+        // many times (x509-limbo's pathological chains have 100 candidate parents)
+        const memo = (compute: (cert: Certificate) => string) => {
+            const keys = new Map<Certificate, string>()
+            return (cert: Certificate) => {
+                let key = keys.get(cert)
+                if (key === undefined) {
+                    key = compute(cert)
+                    keys.set(cert, key)
+                }
+                return key
+            }
+        }
+        const derKey = memo((cert) => cert.toDer().join(','))
+        // the same logical CA: the same subject and public key
+        const caKey = memo(
+            (cert) =>
+                `${cert.tbsCertificate.subject.toDer().join(',')}|${cert.tbsCertificate.subjectPublicKeyInfo.toDer().join(',')}`,
+        )
+
+        const anchors = new Map(
+            trustAnchors.map((ta) => [derKey(ta.certificate), ta]),
+        )
+        // the certificates to build from, each once, trust anchors first
+        const pool: Certificate[] = []
+        const pooled = new Set<string>()
+        for (const cert of [
+            ...trustAnchors.map((ta) => ta.certificate),
+            ...(options.otherCertificates || []),
+        ]) {
+            if (!pooled.has(derKey(cert))) {
+                pooled.add(derKey(cert))
+                pool.push(cert)
+            }
+        }
+        const issuersOf = new Map<Certificate, Certificate[]>()
+        let found = 0
+
+        const visit = async function* (
+            this: CertificateValidator,
+            path: Certificate[],
+        ): AsyncGenerator<CertificateChain> {
+            const current = path[path.length - 1]
+            const anchor = anchors.get(derKey(current))
+            if (anchor) {
+                found++
+                yield {
+                    certificates: path,
+                    isComplete: true,
+                    trustAnchor: anchor,
+                }
+                return
+            }
+            if (path.length >= 10) return
+            search.lookups++
+
+            let issuers = issuersOf.get(current)
+            if (!issuers) {
+                issuers = this.findIssuers(current, pool)
+                if (issuers.length === 0 && options.fetchIssuerCertificates) {
+                    const fetched = await current.requestIssuerCertificate(
+                        typeof options.fetchIssuerCertificates === 'object'
+                            ? options.fetchIssuerCertificates
+                            : undefined,
+                    )
+                    issuers = fetched ? [fetched] : []
+                }
+                issuersOf.set(current, issuers)
+            }
+            // never the same certificate, or the same logical CA, twice in a path
+            const inPath = new Set(path.slice(1).map(caKey))
+            const next = issuers.filter(
+                (issuer) =>
+                    !path.includes(issuer) && !inPath.has(caKey(issuer)),
+            )
+            if (next.length === 0) {
+                search.firstDeadEnd ??= path
+                return
+            }
+            for (const issuer of next) {
+                if (found >= 32 || search.lookups >= 1000) return
+                yield* visit.call(this, [...path, issuer])
+            }
+        }
+
+        yield* visit.call(this, [certificate])
     }
 
     /**
@@ -540,6 +705,28 @@ export class CertificateValidator {
                 validatedAt: new Date(),
                 chain,
                 diagnostics,
+            }
+        }
+
+        if (options.maxPathLength !== undefined) {
+            // the certificates between the leaf and the trust anchor, not counting
+            // self-issued ones (as for pathLenConstraint)
+            const intermediates = chain.certificates
+                .slice(1, -1)
+                .filter((cert) => !this.isSelfIssued(cert)).length
+            if (intermediates > options.maxPathLength) {
+                return {
+                    status: CertificateValidationStatus.CHAIN_INVALID,
+                    isValid: false,
+                    messages: [
+                        `The path has ${intermediates} intermediate certificates, more than the maxPathLength of ${options.maxPathLength}`,
+                    ],
+                    revocationStatus: { isRevoked: false, source: 'NONE' },
+                    certificate: chain.certificates[0],
+                    validatedAt: new Date(),
+                    chain,
+                    diagnostics,
+                }
             }
         }
 
@@ -578,9 +765,33 @@ export class CertificateValidator {
                 }
             }
 
+            // RFC 5280 certificate profile (section 4), with strictProfile: for every
+            // certificate in the path, the trust anchor included
+            if (options.strictProfile) {
+                // a leaf trusted directly is still checked as a leaf
+                const problems = checkCertificateProfile(cert, {
+                    trustAnchor: isRoot && !isEndEntity,
+                })
+                if (problems.length > 0) {
+                    return {
+                        status: CertificateValidationStatus.CHAIN_INVALID,
+                        isValid: false,
+                        messages: [
+                            `Certificate ${i + 1} breaks the RFC 5280 profile: ${problems.join('; ')}`,
+                        ],
+                        revocationStatus: { isRevoked: false, source: 'NONE' },
+                        certificate: chain.certificates[0],
+                        validatedAt: new Date(),
+                        chain,
+                        diagnostics,
+                    }
+                }
+            }
+
             // RFC 5280 6.1.4 (o), 6.1.5 (f): a critical extension that is not processed
-            // makes the path invalid (the trust anchor's extensions are not processed)
-            if (!isRoot) {
+            // makes the path invalid. The trust anchor's extensions are not processed,
+            // except with strictProfile, which does not use a trust anchor with one.
+            if (!isRoot || options.strictProfile) {
                 const unknown = cert.tbsCertificate.extensions?.find(
                     (extension) =>
                         extension.critical &&
@@ -810,20 +1021,20 @@ export class CertificateValidator {
             isRevoked: false,
             source: 'NONE',
         }
-        if ((options.checkCRL || options.checkOCSP) && revocationData) {
+        if (options.checkCRL || options.checkOCSP) {
             for (let i = 0; i < chain.certificates.length - 1; i++) {
                 // Skip root
                 const cert = chain.certificates[i]
                 const certRevocationStatus = await this.checkRevocationStatus(
                     cert,
-                    revocationData,
+                    revocationData ?? {},
                     options,
                     chain.certificates.slice(i + 1),
                 )
 
                 if (certRevocationStatus.undetermined) {
                     return {
-                        status: CertificateValidationStatus.CRL_UNAVAILABLE,
+                        status: this.unavailableStatus(options),
                         isValid: false,
                         messages: [
                             `Revocation status of certificate ${i + 1} in chain could not be determined: ${certRevocationStatus.details}`,
@@ -886,21 +1097,24 @@ export class CertificateValidator {
         const notBefore = validity.notBefore
         const notAfter = validity.notAfter
 
-        const adjustedValidationTime = new Date(
-            validationTime.getTime() + timeTolerance,
-        )
-        const adjustedValidationTimeBefore = new Date(
-            validationTime.getTime() - timeTolerance,
-        )
+        // Validity times have whole-second granularity (RFC 5280 4.1.2.5), so compare
+        // whole seconds: a time within the second of notAfter is still valid, and a
+        // certificate built in memory (whose times may carry milliseconds the encoding
+        // drops) is valid from the second of its notBefore
+        const seconds = (time: number) => Math.floor(time / 1000)
+        const validFrom = seconds(notBefore.getTime())
+        const validUntil = seconds(notAfter.getTime())
+        const latest = seconds(validationTime.getTime() + timeTolerance)
+        const earliest = seconds(validationTime.getTime() - timeTolerance)
 
-        if (adjustedValidationTime < notBefore) {
+        if (latest < validFrom) {
             return {
                 status: CertificateValidationStatus.NOT_YET_VALID,
                 message: `Certificate is not yet valid. Valid from: ${notBefore.toISOString()}`,
             }
         }
 
-        if (adjustedValidationTimeBefore > notAfter) {
+        if (earliest > validUntil) {
             return {
                 status: CertificateValidationStatus.EXPIRED,
                 message: `Certificate has expired. Valid until: ${notAfter.toISOString()}`,
@@ -935,39 +1149,28 @@ export class CertificateValidator {
         const issuer = trustedSigners[0]
 
         // Check OCSP responses first (more current)
+        let ocspDetails: string | undefined
         if (options.checkOCSP && revocationData.ocspResponses) {
             const ocspResult = await this.checkOCSPRevocation(
                 certificate,
-                revocationData.ocspResponses,
+                revocationData,
+                options,
                 issuer,
-                options.validationTime ?? new Date(),
             )
             if (ocspResult.source !== 'NONE') {
                 return ocspResult
             }
+            ocspDetails = ocspResult.details
         }
 
         // Check CRLs (RFC 5280 6.3)
         if (options.checkCRL) {
-            const anchors = (options.trustAnchors ?? []).map(
-                (anchor) => anchor.certificate,
+            const result = await this.crlStatus(
+                certificate,
+                revocationData,
+                options,
+                trustedSigners,
             )
-            const checker = new CrlChecker({
-                crls: revocationData.crls ?? [],
-                certificates: [
-                    ...trustedSigners,
-                    ...(revocationData.issuerCertificate
-                        ? [revocationData.issuerCertificate]
-                        : []),
-                    ...(options.otherCertificates ?? []),
-                    ...anchors,
-                ],
-                trustAnchors: [...anchors, ...trustedSigners],
-                time: options.validationTime ?? new Date(),
-                validateSigner: (signer) =>
-                    this.validateCrlSigner(signer, options, revocationData),
-            })
-            const result = await checker.check(certificate)
             if (result.status === 'revoked') {
                 return {
                     isRevoked: true,
@@ -996,11 +1199,58 @@ export class CertificateValidator {
             }
         }
 
+        // only OCSP was asked for, and no usable response gave a status
         return {
             isRevoked: false,
             source: 'NONE',
-            details: 'No revocation information available',
+            details:
+                ocspDetails ??
+                (revocationData.ocspResponses?.length
+                    ? 'No usable OCSP response for this certificate'
+                    : 'No OCSP response'),
+            undetermined: true,
         }
+    }
+
+    /** A certificate's revocation status from the CRLs available (RFC 5280 6.3). */
+    private crlStatus(
+        certificate: Certificate,
+        revocationData: {
+            crls?: CertificateList[]
+            issuerCertificate?: Certificate
+        },
+        options: CertificateValidationOptions,
+        trustedSigners: Certificate[],
+    ): Promise<CrlStatus> {
+        const anchors = (options.trustAnchors ?? []).map(
+            (anchor) => anchor.certificate,
+        )
+        const checker = new CrlChecker({
+            crls: revocationData.crls ?? [],
+            certificates: [
+                ...trustedSigners,
+                ...(revocationData.issuerCertificate
+                    ? [revocationData.issuerCertificate]
+                    : []),
+                ...(options.otherCertificates ?? []),
+                ...anchors,
+            ],
+            trustAnchors: [...anchors, ...trustedSigners],
+            time: options.validationTime ?? new Date(),
+            strictProfile: options.strictProfile,
+            validateSigner: (signer) =>
+                this.validateCrlSigner(signer, options, revocationData),
+        })
+        return checker.check(certificate)
+    }
+
+    /** The status for a revocation status that could not be determined. */
+    private unavailableStatus(
+        options: CertificateValidationOptions,
+    ): CertificateValidationStatus {
+        return options.checkCRL
+            ? CertificateValidationStatus.CRL_UNAVAILABLE
+            : CertificateValidationStatus.OCSP_UNAVAILABLE
     }
 
     /** CRL signers whose path is being validated (the recursion guard of validateCrlSigner). */
@@ -1050,12 +1300,17 @@ export class CertificateValidator {
      */
     private async checkOCSPRevocation(
         certificate: Certificate,
-        ocspResponses: OCSPResponse[],
+        revocationData: {
+            crls?: CertificateList[]
+            ocspResponses?: OCSPResponse[]
+            issuerCertificate?: Certificate
+        },
+        options: CertificateValidationOptions,
         issuer: Certificate | undefined,
-        time: Date,
     ): Promise<RevocationStatus> {
+        const time = options.validationTime ?? new Date()
         const ignored = new Set<string>()
-        for (const response of ocspResponses) {
+        for (const response of revocationData.ocspResponses ?? []) {
             if (!response.isSuccessful) {
                 ignored.add('an unsuccessful response')
                 continue
@@ -1072,11 +1327,33 @@ export class CertificateValidator {
                 ignored.add('a response that is not current')
                 continue
             }
-            if (!(await response.verify(issuer, { time }))) {
+            const signer = await response.getSigner(issuer, { time })
+            if (!signer) {
                 ignored.add(
                     'a response not signed by the issuer or a responder it authorised',
                 )
                 continue
+            }
+            // RFC 6960 4.2.2.2.1: a delegated responder's own certificate must not be
+            // revoked; without id-pkix-ocsp-nocheck, it is checked against the CRLs
+            if (
+                !signer.equals(issuer) &&
+                !signer.getExtensionByOid(OIDs.PKIX.ID_PKIX_OCSP_NOCHECK)
+            ) {
+                const responderStatus = await this.crlStatus(
+                    signer,
+                    revocationData,
+                    options,
+                    [issuer],
+                )
+                if (responderStatus.status !== 'good') {
+                    ignored.add(
+                        responderStatus.status === 'revoked'
+                            ? 'a response from a delegated responder whose certificate is revoked'
+                            : "a response from a delegated responder without id-pkix-ocsp-nocheck whose certificate's status the CRLs do not show",
+                    )
+                    continue
+                }
             }
 
             const certStatus = single.certStatus
@@ -1150,25 +1427,17 @@ export class CertificateValidator {
     /**
      * Finds the issuer certificate for a given certificate.
      */
-    private findIssuer(
+    private findIssuers(
         certificate: Certificate,
         candidates: Certificate[],
-    ): Certificate | undefined {
+    ): Certificate[] {
         const issuerName = certificate.tbsCertificate.issuer
-
-        for (const candidate of candidates) {
-            const candidateSubject = candidate.tbsCertificate.subject
-
-            // Check if subject name matches issuer name (RFC 5280 7.1)
-            if (candidateSubject.matches(issuerName)) {
-                // Additional check: verify key identifiers if present
-                if (this.verifyKeyIdentifiers(certificate, candidate)) {
-                    return candidate
-                }
-            }
-        }
-
-        return undefined
+        // subject matching the issuer name (RFC 5280 7.1), and key identifiers if present
+        return candidates.filter(
+            (candidate) =>
+                candidate.tbsCertificate.subject.matches(issuerName) &&
+                this.verifyKeyIdentifiers(certificate, candidate),
+        )
     }
 
     /**

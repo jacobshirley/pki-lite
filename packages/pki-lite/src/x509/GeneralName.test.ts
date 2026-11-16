@@ -406,3 +406,39 @@ describe('GeneralName encoding (RFC 5280, IMPLICIT TAGS)', () => {
         expect(der[0]).toBe(0xa5) // [5] constructed, IMPLICIT
     })
 })
+
+describe('iPAddress.fromString', () => {
+    const hex = (ip: string) =>
+        Array.from(GeneralName.iPAddress.fromString(ip).bytes, (b) =>
+            b.toString(16).padStart(2, '0'),
+        ).join('')
+
+    test('IPv4', () => {
+        expect(hex('192.0.2.1')).toBe('c0000201')
+        expect(hex('0.0.0.0')).toBe('00000000')
+    })
+
+    test('IPv6, compressed, bracketed and with an IPv4 tail', () => {
+        expect(hex('2001:db8::1')).toBe('20010db8000000000000000000000001')
+        expect(hex('[::1]')).toBe('00000000000000000000000000000001')
+        expect(hex('::ffff:192.0.2.1')).toBe('00000000000000000000ffffc0000201')
+        expect(hex('2001:DB8:0:0:0:0:0:1')).toBe(
+            '20010db8000000000000000000000001',
+        )
+    })
+
+    test('rejects what is not an IP address', () => {
+        for (const text of [
+            'example.com',
+            '192.0.2',
+            '192.0.2.256',
+            '192.0.02.1', // leading zero: octal in some parsers
+            '1::2::3',
+            '1:2:3:4:5:6:7:8:9',
+            '1:2:3:4:5:6:7:8::',
+            'g::1',
+        ]) {
+            expect(() => GeneralName.iPAddress.fromString(text), text).toThrow()
+        }
+    })
+})

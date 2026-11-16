@@ -14,6 +14,8 @@
  */
 import { describe, expect, test } from 'vitest'
 import { pkitsFiles, pkitsTests } from '../../test-fixtures/pkits/pkits.js'
+import { pkitsMessages } from '../../test-fixtures/pkits/pkits-smime.js'
+import { SignedData } from '../../src/pkcs7/SignedData.js'
 import { CertificateValidator } from '../../src/core/CertificateValidator.js'
 import { Certificate } from '../../src/x509/Certificate.js'
 import { CertificateList } from '../../src/x509/CertificateList.js'
@@ -133,9 +135,10 @@ function runsFor(id: string, title: string): Run[] {
     throw new Error(`PKITS ${id} "${title}": no expected result`)
 }
 
-const der = (name: string) =>
-    Uint8Array.from(atob(pkitsFiles[name]), (c) => c.charCodeAt(0))
+const der = (name: string) => base64(pkitsFiles[name])
 const isCrl = (name: string) => name.endsWith('CRL')
+const base64 = (text: string) =>
+    Uint8Array.from(atob(text), (c) => c.charCodeAt(0))
 
 const describeSettings = (settings: Settings) => {
     const parts = [
@@ -203,6 +206,59 @@ const UNDETERMINED = new Set([
     '4.15.1',
     '4.15.10',
 ])
+
+/**
+ * The authorities-constrained-policy-set each policy test's "Expected Result" states
+ * (sections 4.8 to 4.12), for the tests with a run that validates: `'any'` for
+ * any-policy, [] for empty. The user-constrained-policy-set a run should give is this set
+ * intersected with the run's initial-policy-set (RFC 5280 6.1.5 (g)), which is how each
+ * Expected Result words it, and it is checked against the policies the validator reports.
+ */
+const AUTHORITIES_POLICIES: Record<string, string[] | 'any'> = {
+    '4.8.1': [P(1)],
+    '4.8.2': [],
+    '4.8.3': [],
+    '4.8.6': [P(1)],
+    '4.8.10': [P(1), P(2)],
+    '4.8.11': 'any',
+    '4.8.13': [P(1), P(2), P(3)],
+    '4.8.14': [P(1)],
+    '4.8.15': [P(1)],
+    '4.8.16': [P(1)],
+    '4.8.17': [P(1)],
+    '4.8.18': [P(1), P(2)],
+    '4.8.19': [P(1)],
+    '4.8.20': [P(1)],
+    '4.9.4': [P(1)],
+    '4.10.1': [P(1)],
+    '4.10.3': [P(2)],
+    '4.10.5': [P(1)],
+    '4.10.6': [P(1)],
+    '4.10.9': [P(1)],
+    '4.10.11': [P(1)],
+    '4.10.12': [P(1), P(2)],
+    '4.10.13': [P(1)],
+    '4.10.14': [P(1)],
+    '4.11.2': [P(1)],
+    '4.11.4': [P(2)],
+    '4.11.7': [P(1)],
+    '4.12.2': [P(1)],
+    '4.12.3': [P(1)],
+    '4.12.7': [P(1)],
+    '4.12.9': [P(1)],
+}
+
+/** The user-constrained-policy-set expected for a run (sorted; anyPolicy as its OID). */
+function userPolicies(
+    authorities: string[] | 'any',
+    initialPolicySet: string[] | undefined,
+): string[] {
+    if (authorities === 'any') {
+        return [...(initialPolicySet ?? ['2.5.29.32.0'])].sort()
+    }
+    if (!initialPolicySet) return [...authorities].sort()
+    return authorities.filter((p) => initialPolicySet.includes(p)).sort()
+}
 
 /**
  * Tests pki-lite does not pass yet, each with the reason. They run with `test.fails`, so
@@ -280,10 +336,63 @@ describe('NIST PKITS section 4', () => {
                     },
                 )
                 expect(result.isValid, result.messages.join('; ')).toBe(valid)
+                const authorities = AUTHORITIES_POLICIES[id]
+                if (valid && authorities) {
+                    expect(
+                        [...(result.policyResult?.validPolicies ?? [])].sort(),
+                        'user-constrained-policy-set',
+                    ).toEqual(
+                        userPolicies(authorities, settings.initialPolicySet),
+                    )
+                }
                 if (REVOKED.has(id)) expect(result.status).toBe('REVOKED')
                 if (UNDETERMINED.has(id)) {
                     expect(result.status).toBe('CRL_UNAVAILABLE')
                 }
+            })
+        }
+    }
+})
+
+/**
+ * Section 6.2 (signed S/MIME messages): PKITS gives a message for every test in section 4,
+ * signed by the test's end entity, whose detached CMS signature carries the intermediate
+ * certificates and the CRLs. Verifying it with only the trust anchor must give the same
+ * result as the certification path.
+ */
+const messageFor = (title: string) =>
+    pkitsMessages[title.replace(/[^A-Za-z0-9]/g, '')]
+
+describe('NIST PKITS section 6 (signed messages)', () => {
+    test('has a message for every test', () => {
+        expect(
+            pkitsTests.filter((t) => !messageFor(t.title)).map((t) => t.id),
+        ).toEqual([])
+    })
+
+    for (const { id, title, path } of pkitsTests) {
+        for (const run of runsFor(id, title)) {
+            const { valid, ...settings } = run
+            const label = describeSettings(settings)
+            const name = `${id} ${title} (${label}): ${valid ? 'valid' : 'invalid'}`
+            const issue = KNOWN_ISSUES[id] ?? KNOWN_ISSUES[`${id} (${label})`]
+            ;(issue ? test.fails : test)(name, async () => {
+                const message = messageFor(title)
+                const signedData = SignedData.fromCms(base64(message.signature))
+                const result = await signedData.verify({
+                    data: base64(message.content),
+                    certificateValidation: {
+                        trustAnchors: [
+                            { certificate: Certificate.fromDer(der(path[0])) },
+                        ],
+                        checkCRL: true,
+                        ...settings,
+                    },
+                })
+                expect(
+                    result.valid,
+                    result.valid ? '' : result.reasons.join('; '),
+                ).toBe(valid)
             })
         }
     }

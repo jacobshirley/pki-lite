@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PkiBase, PkiSet, Asn1BaseBlock, asn1js } from './PkiBase.js'
+import { PkiBase, PkiSet, Asn1BaseBlock, asn1js, derToAsn1 } from './PkiBase.js'
 import { OctetString } from '../asn1/OctetString.js'
 import { Asn1ParseError } from './errors/Asn1ParseError.js'
 
@@ -60,5 +60,17 @@ describe('toJSON', () => {
         const set = new PkiSet(new OctetString({ bytes: new Uint8Array([7]) }))
         expect(set.toJSON()).toEqual([{ bytes: { 0: 7 } }])
         expect(JSON.parse(JSON.stringify(set))).toEqual([{ bytes: { 0: 7 } }])
+    })
+})
+
+describe('derToAsn1', () => {
+    it('parses structures with more than 10,000 nodes (a CRL with thousands of entries)', () => {
+        // SEQUENCE of 20,000 INTEGER 1 (02 01 01), over asn1js' default node limit
+        const count = 20_000
+        const body = new Uint8Array(count * 3)
+        for (let i = 0; i < count; i++) body.set([0x02, 0x01, 0x01], i * 3)
+        const der = new Uint8Array([0x30, 0x83, 0x00, 0xea, 0x60, ...body])
+        const parsed = derToAsn1(der) as asn1js.Sequence
+        expect(parsed.valueBlock.value).toHaveLength(count)
     })
 })

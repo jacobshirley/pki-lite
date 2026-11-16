@@ -57,6 +57,21 @@ export class BasicOCSPResponse extends PkiBase<BasicOCSPResponse> {
         issuer: Certificate,
         options: { time?: Date } = {},
     ): Promise<boolean> {
+        return (await this.getSigner(issuer, options)) !== undefined
+    }
+
+    /**
+     * The certificate that signed the response, if it is `issuer` or a responder `issuer`
+     * authorised (see {@link verify}): `issuer` itself, or the delegated responder's
+     * certificate from the response.
+     *
+     * A delegated responder's certificate can itself be revoked: a relying party checks
+     * its status unless it has the id-pkix-ocsp-nocheck extension (RFC 6960 4.2.2.2.1).
+     */
+    async getSigner(
+        issuer: Certificate,
+        options: { time?: Date } = {},
+    ): Promise<Certificate | undefined> {
         const time = options.time ?? new Date()
         const algorithm = SignatureAlgorithmIdentifier.fromDer(
             this.signatureAlgorithm.toDer(),
@@ -79,13 +94,13 @@ export class BasicOCSPResponse extends PkiBase<BasicOCSPResponse> {
                         signer.getSubjectPublicKeyInfo(),
                     )
                 ) {
-                    return true
+                    return signer
                 }
             } catch {
                 // an unsupported algorithm or a malformed key: not a usable signature
             }
         }
-        return false
+        return undefined
     }
 
     /** Whether the responderID names `certificate`: by subject, or by key hash (SHA-1). */

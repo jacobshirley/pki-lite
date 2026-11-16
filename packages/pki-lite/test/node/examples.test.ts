@@ -36,6 +36,7 @@ const examples = [
     '027-certificate-policies',
     '028-crl-checks',
     '030-ocsp-checks',
+    '031-tls-server-validation',
 ]
 
 /** Silences console output while an example runs, keeping what went to stderr. */

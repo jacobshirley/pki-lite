@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, beforeAll } from 'vitest'
 import {
     CertificateValidator,
     CertificateValidationStatus,
@@ -32,6 +32,7 @@ import { CRLReason } from '../x509/CRLReason.js'
 import { OIDs } from './OIDs.js'
 import { PrivateKeyInfo } from '../keys/PrivateKeyInfo.js'
 import { rsaSigningKeys } from '../../test-fixtures/signing-keys/rsa-2048/index.js'
+import { ocspTestPki } from '../../test-fixtures/ocsp.js'
 
 describe('CertificateValidator', () => {
     let validator: CertificateValidator
@@ -86,6 +87,54 @@ describe('CertificateValidator', () => {
             // Should still be expired if it's more than the tolerance
             expect(result.isValid).toEqual(false)
             expect(result.status).toEqual(CertificateValidationStatus.EXPIRED)
+        })
+
+        test('compares validity at whole-second granularity (RFC 5280 4.1.2.5)', async () => {
+            // the sample certificate is valid until 2026-12-31T23:59:59Z
+            const at = (time: string) =>
+                validator.validate(sampleCertificate, {
+                    validationTime: new Date(time),
+                })
+            expect((await at('2026-12-31T23:59:59.999Z')).status).toEqual(
+                CertificateValidationStatus.VALID,
+            )
+            expect((await at('2027-01-01T00:00:00.000Z')).status).toEqual(
+                CertificateValidationStatus.EXPIRED,
+            )
+            expect((await at('2022-12-31T23:59:59.999Z')).status).toEqual(
+                CertificateValidationStatus.NOT_YET_VALID,
+            )
+        })
+
+        test('hostname: the certificate must be valid for it', async () => {
+            const cert = await Certificate.builder()
+                .setSubject('CN=Host')
+                .setPublicKey(
+                    Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                        .subjectPublicKeyInfo,
+                )
+                .setPrivateKey(
+                    PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem),
+                )
+                .setValidityDays(1)
+                .addSubjectAltName(
+                    new GeneralName.dNSName({ value: 'www.example.com' }),
+                )
+                .selfSign()
+            expect(
+                (
+                    await validator.validate(cert, {
+                        hostname: 'www.example.com',
+                    })
+                ).status,
+            ).toEqual(CertificateValidationStatus.VALID)
+            const mismatch = await validator.validate(cert, {
+                hostname: 'other.example.com',
+            })
+            expect(mismatch.status).toEqual(
+                CertificateValidationStatus.HOSTNAME_MISMATCH,
+            )
+            expect(mismatch.isValid).toBe(false)
         })
 
         test('should use custom validation time', async () => {
@@ -434,15 +483,41 @@ describe('CertificateValidator', () => {
             expect(result.revocationStatus.source).toEqual('NONE')
         })
 
-        test('should handle missing revocation data', async () => {
-            const result = await validator.validate(sampleCertificate, {
+        test('asking for a revocation check without revocation data fails', async () => {
+            // the status cannot be determined, so the certificate is not taken as good
+            const crl = await validator.validate(sampleCertificate, {
                 checkCRL: true,
                 checkOCSP: true,
             })
+            expect(crl.isValid).toEqual(false)
+            expect(crl.status).toEqual(
+                CertificateValidationStatus.CRL_UNAVAILABLE,
+            )
+            expect(crl.revocationStatus.source).toEqual('NONE')
 
-            expect(result.isValid).toEqual(true)
-            expect(result.status).toEqual(CertificateValidationStatus.VALID)
-            expect(result.revocationStatus.source).toEqual('NONE')
+            const ocsp = await validator.validate(sampleCertificate, {
+                checkOCSP: true,
+            })
+            expect(ocsp.status).toEqual(
+                CertificateValidationStatus.OCSP_UNAVAILABLE,
+            )
+
+            const unusable = await validator.validate(
+                sampleCertificate,
+                { checkOCSP: true },
+                {
+                    // an OCSP response that cannot be checked without the issuer
+                    ocspResponses: [
+                        await createSampleOCSPResponse(
+                            sampleCertificate,
+                            'good',
+                        ),
+                    ],
+                },
+            )
+            expect(unusable.status).toEqual(
+                CertificateValidationStatus.OCSP_UNAVAILABLE,
+            )
         })
     })
 
@@ -597,8 +672,11 @@ describe('CertificateValidator', () => {
                 const result = await validator.validate(circularCert1, options)
 
                 expect(result.isValid).toEqual(false)
+                // the loop is not followed: no path reaches a trust anchor
                 expect(result.messages).toEqual(
-                    expect.arrayContaining([expect.stringContaining('loop')]),
+                    expect.arrayContaining([
+                        expect.stringContaining('no trust anchor found'),
+                    ]),
                 )
             })
         })
@@ -1648,6 +1726,152 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
         })
     })
 
+    describe('path building', () => {
+        const key = PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem)
+        const publicKey = Certificate.fromPem(rsaSigningKeys.certPem)
+            .tbsCertificate.subjectPublicKeyInfo
+        const ca = (subject: string, issuer?: Certificate, notAfter?: Date) => {
+            const builder = Certificate.builder()
+                .setSubject(subject)
+                .setPublicKey(publicKey)
+                .setValidityPeriod(
+                    new Date('2020-01-01'),
+                    notAfter ?? new Date('2040-01-01'),
+                )
+                .addBasicConstraints(true)
+                .addKeyUsage({ keyCertSign: true, cRLSign: true })
+            return issuer
+                ? builder.setIssuer(issuer).setIssuerPrivateKey(key).sign()
+                : builder.setPrivateKey(key).selfSign()
+        }
+
+        test('a path that fails does not hide a valid alternative', async () => {
+            // the leaf's intermediate is certified twice: by the root (valid) and by an
+            // older root (expired, and offered first)
+            const root = await ca('CN=Root')
+            const oldRoot = await ca('CN=Old Root')
+            const viaRoot = await ca('CN=Intermediate', root)
+            const viaOldRoot = await ca(
+                'CN=Intermediate',
+                oldRoot,
+                new Date('2021-01-01'),
+            )
+            const leaf = await Certificate.builder()
+                .setSubject('CN=Leaf')
+                .setPublicKey(publicKey)
+                .setIssuer(viaRoot)
+                .setIssuerPrivateKey(key)
+                .setValidityPeriod(
+                    new Date('2020-01-01'),
+                    new Date('2040-01-01'),
+                )
+                .sign()
+
+            const result = await validator.validate(leaf, {
+                validateChain: true,
+                trustAnchors: [{ certificate: oldRoot }, { certificate: root }],
+                otherCertificates: [viaOldRoot, viaRoot],
+                validationTime: new Date('2026-01-01'),
+            })
+            expect(result.isValid, result.messages.join('; ')).toBe(true)
+            expect(result.chain?.certificates).toEqual([leaf, viaRoot, root])
+        })
+
+        test('without a valid path, the first failure is reported', async () => {
+            const oldRoot = await ca('CN=Old Root')
+            const expired = await ca(
+                'CN=Intermediate',
+                oldRoot,
+                new Date('2021-01-01'),
+            )
+            const leaf = await Certificate.builder()
+                .setSubject('CN=Leaf')
+                .setPublicKey(publicKey)
+                .setIssuer(expired)
+                .setIssuerPrivateKey(key)
+                .setValidityPeriod(
+                    new Date('2020-01-01'),
+                    new Date('2040-01-01'),
+                )
+                .sign()
+            const result = await validator.validate(leaf, {
+                validateChain: true,
+                trustAnchors: [{ certificate: oldRoot }],
+                otherCertificates: [expired],
+                validationTime: new Date('2026-01-01'),
+            })
+            expect(result.status).toBe(CertificateValidationStatus.EXPIRED)
+        })
+    })
+
+    describe('relying party limits', () => {
+        test('maxPathLength limits the intermediates, not counting self-issued ones', async () => {
+            const root = createRootCertificate()
+            const ca = createIntermediateCertificate(root)
+            const leaf = createEndEntityCertificateFor(ca)
+            const validate = (maxPathLength: number) =>
+                validator.validate(leaf, {
+                    validateChain: true,
+                    trustAnchors: [{ certificate: root }],
+                    otherCertificates: [ca],
+                    // the test certificates are not signed
+                    checkSignature: false,
+                    maxPathLength,
+                })
+            expect((await validate(1)).isValid).toBe(true)
+            const tooLong = await validate(0)
+            expect(tooLong.isValid).toBe(false)
+            expect(tooLong.messages.join('; ')).toContain('maxPathLength')
+        })
+
+        test('strictProfile enforces the RFC 5280 profile, off by default', async () => {
+            // the test root has no subjectKeyIdentifier, which a conforming CA must have
+            const root = createRootCertificate()
+            const leaf = createEndEntityCertificateFor(root)
+            const options = {
+                validateChain: true,
+                trustAnchors: [{ certificate: root }],
+                // the test certificates are not signed
+                checkSignature: false,
+            }
+            expect((await validator.validate(leaf, options)).isValid).toBe(true)
+            const strict = await validator.validate(leaf, {
+                ...options,
+                strictProfile: true,
+            })
+            expect(strict.isValid).toBe(false)
+            expect(strict.messages.join('; ')).toContain('RFC 5280 profile')
+        })
+
+        test('requiredExtendedKeyUsages: the leaf must allow each', async () => {
+            const leaf = await Certificate.builder()
+                .setSubject('CN=Client')
+                .setPublicKey(
+                    Certificate.fromPem(rsaSigningKeys.certPem).tbsCertificate
+                        .subjectPublicKeyInfo,
+                )
+                .setPrivateKey(
+                    PrivateKeyInfo.fromPem(rsaSigningKeys.privateKeyPem),
+                )
+                .setValidityDays(1)
+                .addExtendedKeyUsage({ clientAuth: true })
+                .selfSign()
+            expect(
+                (
+                    await validator.validate(leaf, {
+                        requiredExtendedKeyUsages: ['clientAuth'],
+                    })
+                ).isValid,
+            ).toBe(true)
+            const server = await validator.validate(leaf, {
+                requiredExtendedKeyUsages: ['serverAuth'],
+            })
+            expect(server.status).toEqual(
+                CertificateValidationStatus.EXTENDED_KEY_USAGE_NOT_ALLOWED,
+            )
+        })
+    })
+
     describe('defaults', () => {
         test('signatures are checked unless checkSignature is false', async () => {
             const root = createRootCertificate()
@@ -1709,5 +1933,65 @@ describe('CertificateValidator CA checks (RFC 5280)', () => {
         })
         expect(result.isValid).toBe(false)
         expect(result.messages.join('; ')).toContain('could not be verified')
+    })
+})
+
+describe('CertificateValidator OCSP delegated responders (RFC 6960 4.2.2.2.1)', () => {
+    let pki: Awaited<ReturnType<typeof ocspTestPki>>
+    beforeAll(async () => {
+        pki = await ocspTestPki()
+    })
+    const validator = new CertificateValidator()
+    const crl = (revokeResponder: boolean) => {
+        const builder = CertificateList.builder()
+            .setIssuerFromCertificate(pki.ca)
+            .setPrivateKey(pki.caKey)
+        if (revokeResponder) builder.revokeCertificate(pki.responder)
+        return builder.build()
+    }
+    const validate = async (responder: Certificate, crls: CertificateList[]) =>
+        validator.validate(
+            pki.leaf,
+            { checkOCSP: true },
+            {
+                issuerCertificate: pki.ca,
+                crls,
+                ocspResponses: [
+                    await pki.respond({
+                        signer: responder,
+                        key: pki.otherKey,
+                        include: [responder],
+                    }),
+                ],
+            },
+        )
+
+    test('a responder without id-pkix-ocsp-nocheck needs its own status shown', async () => {
+        const unknown = await validate(pki.responder, [])
+        expect(unknown.status).toBe(
+            CertificateValidationStatus.OCSP_UNAVAILABLE,
+        )
+        expect(unknown.revocationStatus.details).toContain(
+            'id-pkix-ocsp-nocheck',
+        )
+
+        const good = await validate(pki.responder, [await crl(false)])
+        expect(good.status, good.messages.join('; ')).toBe(
+            CertificateValidationStatus.VALID,
+        )
+        expect(good.revocationStatus.source).toBe('OCSP')
+
+        const revoked = await validate(pki.responder, [await crl(true)])
+        expect(revoked.status).toBe(
+            CertificateValidationStatus.OCSP_UNAVAILABLE,
+        )
+        expect(revoked.revocationStatus.details).toContain('revoked')
+    })
+
+    test('a responder with id-pkix-ocsp-nocheck is not checked', async () => {
+        const result = await validate(pki.noCheckResponder, [])
+        expect(result.status, result.messages.join('; ')).toBe(
+            CertificateValidationStatus.VALID,
+        )
     })
 })

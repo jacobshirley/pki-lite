@@ -250,6 +250,8 @@ export const OIDs = {
         OCSP_SIGNING: '1.3.6.1.5.5.7.3.9',
         /** Document Signing (Microsoft) */
         DOCUMENT_SIGNING: '1.3.6.1.4.1.311.10.3.12',
+        /** anyExtendedKeyUsage: any purpose (RFC 5280 4.2.1.12) */
+        ANY: '2.5.29.37.0',
     },
 
     /**
@@ -260,6 +262,8 @@ export const OIDs = {
         ID_PKIX_OCSP_BASIC: '1.3.6.1.5.5.7.48.1.1',
         /** OCSP Nonce Extension */
         ID_PKIX_OCSP_NONCE: '1.3.6.1.5.5.7.48.1.2',
+        /** OCSP No Check: a delegated responder's certificate need not be revocation checked */
+        ID_PKIX_OCSP_NOCHECK: '1.3.6.1.5.5.7.48.1.5',
     },
 
     /**
@@ -507,6 +511,10 @@ export const OIDToFriendlyName: Record<string, string> = {
     [OIDs.EKU.EMAIL_PROTECTION]: 'Email Protection',
     [OIDs.EKU.TIME_STAMPING]: 'Time Stamping',
     [OIDs.EKU.OCSP_SIGNING]: 'OCSP Signing',
+    [OIDs.PKIX.ID_PKIX_OCSP_BASIC]: 'OCSP Basic Response',
+    [OIDs.PKIX.ID_PKIX_OCSP_NONCE]: 'OCSP Nonce',
+    [OIDs.PKIX.ID_PKIX_OCSP_NOCHECK]: 'OCSP No Check',
+    [OIDs.EKU.ANY]: 'Any Extended Key Usage',
     [OIDs.EKU.DOCUMENT_SIGNING]: 'Document Signing',
 
     // Distinguished Name
