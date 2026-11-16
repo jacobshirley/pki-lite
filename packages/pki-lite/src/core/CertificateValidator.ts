@@ -187,6 +187,15 @@ export interface CertificateValidationOptions {
     /** Whether to build and validate the full certificate chain */
     validateChain?: boolean
     /**
+     * Whether path building may download a missing issuer from the caIssuers URL of a
+     * certificate's authorityInfoAccess extension (http and https only; optionally with a
+     * per-request `timeout` in milliseconds, 10,000 by default). Off by default: the URLs
+     * come from the certificates being validated, so following them makes requests
+     * wherever those certificates point, and validation then depends on the network.
+     * Pass the intermediates in `otherCertificates` instead where you can.
+     */
+    fetchIssuerCertificates?: boolean | { timeout?: number }
+    /**
      * Whether to enforce CA constraints on the issuing certificates (RFC 5280 6.1.4):
      * basicConstraints cA, keyUsage keyCertSign and pathLenConstraint. On by default.
      */
@@ -636,8 +645,12 @@ export class CertificateValidator {
             let issuers = issuersOf.get(current)
             if (!issuers) {
                 issuers = this.findIssuers(current, pool)
-                if (issuers.length === 0) {
-                    const fetched = await current.requestIssuerCertificate()
+                if (issuers.length === 0 && options.fetchIssuerCertificates) {
+                    const fetched = await current.requestIssuerCertificate(
+                        typeof options.fetchIssuerCertificates === 'object'
+                            ? options.fetchIssuerCertificates
+                            : undefined,
+                    )
                     issuers = fetched ? [fetched] : []
                 }
                 issuersOf.set(current, issuers)
