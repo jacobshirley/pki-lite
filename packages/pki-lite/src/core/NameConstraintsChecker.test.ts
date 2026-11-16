@@ -11,7 +11,10 @@ import {
     GeneralName,
 } from '../x509/GeneralName.js'
 import { Name } from '../x509/Name.js'
-import { GeneralSubtree, NameConstraints } from '../x509/extensions/NameConstraints.js'
+import {
+    GeneralSubtree,
+    NameConstraints,
+} from '../x509/extensions/NameConstraints.js'
 import {
     checkNameConstraints,
     dnsWithin,
