@@ -125,10 +125,18 @@ export interface CertificateValidationOptions {
      * not understood, and it is signed by a certificate with cRLSign whose path validates
      * (delta CRLs are applied on top). Every certificate below the trust anchor needs CRLs
      * covering all revocation reasons (or an OCSP answer, with `checkOCSP`); otherwise the
-     * result is `CRL_UNAVAILABLE`. Applies when revocation data is passed to `validate`.
+     * result is `CRL_UNAVAILABLE`, including when no revocation data is passed to
+     * `validate`.
      */
     checkCRL?: boolean
-    /** Check certificate revocation using OCSP */
+    /**
+     * Check certificate revocation using OCSP (RFC 6960): a response counts only if it is
+     * successful, gives a current status for this certificate from its issuer, and is
+     * signed by the issuer or a responder it authorised. With `checkCRL` too, CRLs decide
+     * when no response does. Otherwise every certificate below the trust anchor needs such
+     * a response, or the result is `OCSP_UNAVAILABLE`, including when no revocation data
+     * is passed to `validate`.
+     */
     checkOCSP?: boolean
     /**
      * The DNS name or IP address the certificate must be valid for, as a TLS client
@@ -471,23 +479,23 @@ export class CertificateValidator {
         let finalStatus: CertificateValidationStatus =
             CertificateValidationStatus.VALID
 
-        // Check revocation status if requested and data is available
-        if ((options.checkCRL || options.checkOCSP) && revocationData) {
+        // Check revocation status if requested: without revocation data, it cannot be
+        // determined
+        if (options.checkCRL || options.checkOCSP) {
             diagnostics.stepsPerformed.push('Checking revocation status')
+            const data = revocationData ?? {}
             const revocationResult = await this.checkRevocationStatus(
                 certificate,
-                revocationData,
+                data,
                 options,
                 // without chain validation, the issuer given is taken on trust
-                revocationData.issuerCertificate
-                    ? [revocationData.issuerCertificate]
-                    : [],
+                data.issuerCertificate ? [data.issuerCertificate] : [],
             )
 
             revocationStatus = revocationResult
 
             if (revocationResult.undetermined) {
-                finalStatus = CertificateValidationStatus.CRL_UNAVAILABLE
+                finalStatus = this.unavailableStatus(options)
                 messages.push(
                     `Revocation status could not be determined: ${revocationResult.details}`,
                 )
@@ -996,20 +1004,20 @@ export class CertificateValidator {
             isRevoked: false,
             source: 'NONE',
         }
-        if ((options.checkCRL || options.checkOCSP) && revocationData) {
+        if (options.checkCRL || options.checkOCSP) {
             for (let i = 0; i < chain.certificates.length - 1; i++) {
                 // Skip root
                 const cert = chain.certificates[i]
                 const certRevocationStatus = await this.checkRevocationStatus(
                     cert,
-                    revocationData,
+                    revocationData ?? {},
                     options,
                     chain.certificates.slice(i + 1),
                 )
 
                 if (certRevocationStatus.undetermined) {
                     return {
-                        status: CertificateValidationStatus.CRL_UNAVAILABLE,
+                        status: this.unavailableStatus(options),
                         isValid: false,
                         messages: [
                             `Revocation status of certificate ${i + 1} in chain could not be determined: ${certRevocationStatus.details}`,
@@ -1186,11 +1194,24 @@ export class CertificateValidator {
             }
         }
 
+        // only OCSP was asked for, and no usable response gave a status
         return {
             isRevoked: false,
             source: 'NONE',
-            details: 'No revocation information available',
+            details: revocationData.ocspResponses?.length
+                ? 'No usable OCSP response for this certificate'
+                : 'No OCSP response',
+            undetermined: true,
         }
+    }
+
+    /** The status for a revocation status that could not be determined. */
+    private unavailableStatus(
+        options: CertificateValidationOptions,
+    ): CertificateValidationStatus {
+        return options.checkCRL
+            ? CertificateValidationStatus.CRL_UNAVAILABLE
+            : CertificateValidationStatus.OCSP_UNAVAILABLE
     }
 
     /** CRL signers whose path is being validated (the recursion guard of validateCrlSigner). */

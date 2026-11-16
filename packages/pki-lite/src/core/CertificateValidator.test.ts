@@ -482,15 +482,41 @@ describe('CertificateValidator', () => {
             expect(result.revocationStatus.source).toEqual('NONE')
         })
 
-        test('should handle missing revocation data', async () => {
-            const result = await validator.validate(sampleCertificate, {
+        test('asking for a revocation check without revocation data fails', async () => {
+            // the status cannot be determined, so the certificate is not taken as good
+            const crl = await validator.validate(sampleCertificate, {
                 checkCRL: true,
                 checkOCSP: true,
             })
+            expect(crl.isValid).toEqual(false)
+            expect(crl.status).toEqual(
+                CertificateValidationStatus.CRL_UNAVAILABLE,
+            )
+            expect(crl.revocationStatus.source).toEqual('NONE')
 
-            expect(result.isValid).toEqual(true)
-            expect(result.status).toEqual(CertificateValidationStatus.VALID)
-            expect(result.revocationStatus.source).toEqual('NONE')
+            const ocsp = await validator.validate(sampleCertificate, {
+                checkOCSP: true,
+            })
+            expect(ocsp.status).toEqual(
+                CertificateValidationStatus.OCSP_UNAVAILABLE,
+            )
+
+            const unusable = await validator.validate(
+                sampleCertificate,
+                { checkOCSP: true },
+                {
+                    // an OCSP response that cannot be checked without the issuer
+                    ocspResponses: [
+                        await createSampleOCSPResponse(
+                            sampleCertificate,
+                            'good',
+                        ),
+                    ],
+                },
+            )
+            expect(unusable.status).toEqual(
+                CertificateValidationStatus.OCSP_UNAVAILABLE,
+            )
         })
     })
 
