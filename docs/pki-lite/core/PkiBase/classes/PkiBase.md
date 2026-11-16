@@ -6,12 +6,6 @@
 
 # Abstract Class: PkiBase\<T\>
 
-Base class for all PKI objects in the library.
-
-Provides common functionality for ASN.1 encoding/decoding, PEM formatting,
-DER serialization, and object comparison. All PKI structures extend this class
-to ensure consistent behavior across the library.
-
 ## Extended by
 
 - [`OtherRevInfo`](../../../adobe/OtherRevInfo/classes/OtherRevInfo.md)
@@ -32,6 +26,7 @@ to ensure consistent behavior across the library.
 - [`OctetString`](../../../asn1/OctetString/classes/OctetString.md)
 - [`PrintableString`](../../../asn1/PrintableString/classes/PrintableString.md)
 - [`TeletexString`](../../../asn1/TeletexString/classes/TeletexString.md)
+- [`Time`](../../../asn1/Time/classes/Time.md)
 - [`UTCTime`](../../../asn1/UTCTime/classes/UTCTime.md)
 - [`GeneralizedTime`](../../../asn1/UTCTime/classes/GeneralizedTime.md)
 - [`UTF8String`](../../../asn1/UTF8String/classes/UTF8String.md)
@@ -133,9 +128,13 @@ to ensure consistent behavior across the library.
 - [`AuthorityKeyIdentifier`](../../../x509/extensions/AuthorityKeyIdentifier/classes/AuthorityKeyIdentifier.md)
 - [`BasicConstraints`](../../../x509/extensions/BasicConstraints/classes/BasicConstraints.md)
 - [`DistributionPoint`](../../../x509/extensions/CRLDistributionPoints/classes/DistributionPoint.md)
+- [`InhibitAnyPolicy`](../../../x509/extensions/InhibitAnyPolicy/classes/InhibitAnyPolicy.md)
+- [`IssuingDistributionPoint`](../../../x509/extensions/IssuingDistributionPoint/classes/IssuingDistributionPoint.md)
 - [`KeyUsage`](../../../x509/extensions/KeyUsage/classes/KeyUsage.md)
 - [`GeneralSubtree`](../../../x509/extensions/NameConstraints/classes/GeneralSubtree.md)
 - [`NameConstraints`](../../../x509/extensions/NameConstraints/classes/NameConstraints.md)
+- [`PolicyConstraints`](../../../x509/extensions/PolicyConstraints/classes/PolicyConstraints.md)
+- [`PolicyMapping`](../../../x509/extensions/PolicyMappings/classes/PolicyMapping.md)
 - [`ExtendedCertificate`](../../../x509/legacy/ExtendedCertificate/classes/ExtendedCertificate.md)
 - [`ExtendedCertificateInfo`](../../../x509/legacy/ExtendedCertificateInfo/classes/ExtendedCertificateInfo.md)
 - [`OtherCertificateFormat`](../../../x509/legacy/OtherCertificateFormat/classes/OtherCertificateFormat.md)
@@ -145,8 +144,6 @@ to ensure consistent behavior across the library.
 ### T
 
 `T` _extends_ `object` = `any`
-
-The specific PKI type that extends this base class
 
 ## Constructors
 
@@ -299,6 +296,25 @@ Converts this object to a JSON representation.
 [`ToJson`](../type-aliases/ToJson.md)\<`T`\>
 
 A JSON-serializable representation of this object
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
 
 ---
 

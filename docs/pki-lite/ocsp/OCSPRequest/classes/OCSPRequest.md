@@ -99,6 +99,20 @@ The "to be signed" request containing the certificate status queries.
 
 ## Accessors
 
+### nonce
+
+#### Get Signature
+
+> **get** **nonce**(): `undefined` \| `Uint8Array`\<`ArrayBuffer`\>
+
+The request's nonce (RFC 8954), if it has one; see [OCSPRequestBuilder.addNonce](../../../core/builders/OCSPRequestBuilder/classes/OCSPRequestBuilder.md#addnonce).
+
+##### Returns
+
+`undefined` \| `Uint8Array`\<`ArrayBuffer`\>
+
+---
+
 ### pemHeader
 
 #### Get Signature
@@ -291,6 +305,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -332,21 +369,9 @@ A string representation for debugging
 
 > `static` **builder**(): [`OCSPRequestBuilder`](../../../core/builders/OCSPRequestBuilder/classes/OCSPRequestBuilder.md)
 
-Creates a fluent builder for constructing OCSP requests.
-
 #### Returns
 
 [`OCSPRequestBuilder`](../../../core/builders/OCSPRequestBuilder/classes/OCSPRequestBuilder.md)
-
-A new OCSPRequestBuilder instance
-
-#### Example
-
-```typescript
-const request = await OCSPRequest.builder()
-    .addCertificate({ certificate: clientCert, issuerCertificate: caCert })
-    .build()
-```
 
 ---
 

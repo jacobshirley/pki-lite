@@ -111,6 +111,28 @@ builder.addBasicConstraints(false)
 
 ---
 
+### addCertificatePolicies()
+
+> **addCertificatePolicies**(...`policies`): `this`
+
+Adds a Certificate Policies extension (RFC 5280 4.2.1.4).
+
+#### Parameters
+
+##### policies
+
+...(`string` \| [`PolicyInformation`](../../../../x509/PolicyInformation/classes/PolicyInformation.md))[]
+
+Policy OIDs, or full PolicyInformation objects
+
+#### Returns
+
+`this`
+
+This builder for chaining
+
+---
+
 ### addExtendedKeyUsage()
 
 > **addExtendedKeyUsage**(`options`): `this`
@@ -186,6 +208,28 @@ This builder for chaining
 
 ---
 
+### addInhibitAnyPolicy()
+
+> **addInhibitAnyPolicy**(`skipCerts`): `this`
+
+Adds a (critical) Inhibit Any Policy extension (RFC 5280 4.2.1.14).
+
+#### Parameters
+
+##### skipCerts
+
+`number`
+
+Number of additional certificates before anyPolicy stops matching
+
+#### Returns
+
+`this`
+
+This builder for chaining
+
+---
+
 ### addKeyUsage()
 
 > **addKeyUsage**(`options`): `this`
@@ -214,6 +258,56 @@ builder.addKeyUsage({
     keyEncipherment: true,
 })
 ```
+
+---
+
+### addPolicyConstraints()
+
+> **addPolicyConstraints**(`options`): `this`
+
+Adds a (critical) Policy Constraints extension (RFC 5280 4.2.1.11).
+
+#### Parameters
+
+##### options
+
+requireExplicitPolicy / inhibitPolicyMapping skip counts
+
+###### inhibitPolicyMapping?
+
+`number`
+
+###### requireExplicitPolicy?
+
+`number`
+
+#### Returns
+
+`this`
+
+This builder for chaining
+
+---
+
+### addPolicyMappings()
+
+> **addPolicyMappings**(...`mappings`): `this`
+
+Adds a Policy Mappings extension (RFC 5280 4.2.1.5); CA certificates only.
+
+#### Parameters
+
+##### mappings
+
+...([`PolicyMapping`](../../../../x509/extensions/PolicyMappings/classes/PolicyMapping.md) \| \{ `issuerDomainPolicy`: [`ObjectIdentifierString`](../../../PkiBase/type-aliases/ObjectIdentifierString.md); `subjectDomainPolicy`: [`ObjectIdentifierString`](../../../PkiBase/type-aliases/ObjectIdentifierString.md); \})[]
+
+issuer domain policy -> subject domain policy pairs
+
+#### Returns
+
+`this`
+
+This builder for chaining
 
 ---
 
@@ -304,7 +398,7 @@ Promise resolving to the signed certificate
 
 > **generateSerialNumber**(): `this`
 
-Generates a random serial number.
+Generates a random 20-octet serial number (158 random bits).
 
 #### Returns
 

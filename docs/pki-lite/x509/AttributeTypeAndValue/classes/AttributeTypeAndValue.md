@@ -6,17 +6,6 @@
 
 # Class: AttributeTypeAndValue
 
-Represents an attribute type and value pair.
-
-## Asn
-
-```asn
-AttributeTypeAndValue ::= SEQUENCE {
-    type  OBJECT IDENTIFIER,
-    value ANY DEFINED BY type
-}
-```
-
 ## Extends
 
 - [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`AttributeTypeAndValue`\>
@@ -138,6 +127,36 @@ true if the objects are equal, false otherwise
 
 ---
 
+### matches()
+
+> **matches**(`other`): `boolean`
+
+Whether this attribute matches another as RFC 5280 7.1 compares names: the same
+type, and values equal after RFC 4518 string preparation. A character string, in
+whatever ASN.1 string type, is Unicode-normalised (NFKC), case-folded and has
+leading, trailing and repeated whitespace removed, so PrintableString "Test CA"
+matches UTF8String "test ca". Other values must have the same DER encoding.
+
+#### Parameters
+
+##### other
+
+`AttributeTypeAndValue`
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+AttributeTypeAndValue.parse('CN=Test  CA').matches(
+    AttributeTypeAndValue.parse('cn=test ca'),
+) // true
+```
+
+---
+
 ### parseAs()
 
 > **parseAs**\<`T`\>(`type`): `T`
@@ -244,6 +263,29 @@ A JSON-serializable representation of this object
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toJSON`](../../../core/PkiBase/classes/PkiBase.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
 
 ---
 

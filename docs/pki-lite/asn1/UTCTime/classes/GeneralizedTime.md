@@ -4,13 +4,12 @@
 
 [PKI-Lite](../../../../README.md) / [pki-lite](../../../README.md) / [asn1/UTCTime](../README.md) / GeneralizedTime
 
-# Class: GeneralizedTime
+# ~~Class: GeneralizedTime~~
 
-Base class for all PKI objects in the library.
+## Deprecated
 
-Provides common functionality for ASN.1 encoding/decoding, PEM formatting,
-DER serialization, and object comparison. All PKI structures extend this class
-to ensure consistent behavior across the library.
+A duplicate kept for compatibility with imports from `UTCTime.js`;
+use `GeneralizedTime` from `./GeneralizedTime.js` (whose field is `time`).
 
 ## Extends
 
@@ -40,13 +39,13 @@ to ensure consistent behavior across the library.
 
 ## Properties
 
-### date
+### ~~date~~
 
 > **date**: `Date`
 
 ## Accessors
 
-### pemHeader
+### ~~pemHeader~~
 
 #### Get Signature
 
@@ -65,7 +64,7 @@ Converts the class name to uppercase for use in PEM encoding.
 
 ---
 
-### pkiType
+### ~~pkiType~~
 
 #### Get Signature
 
@@ -84,7 +83,7 @@ Used for PEM headers and debugging output.
 
 ## Methods
 
-### equals()
+### ~~equals()~~
 
 > **equals**(`other`): `boolean`
 
@@ -111,7 +110,7 @@ true if the objects are equal, false otherwise
 
 ---
 
-### parseAs()
+### ~~parseAs()~~
 
 > **parseAs**\<`T`\>(`type`): `T`
 
@@ -146,7 +145,7 @@ A new instance of the target type
 
 ---
 
-### toAsn1()
+### ~~toAsn1()~~
 
 > **toAsn1**(): `GeneralizedTime`
 
@@ -164,7 +163,7 @@ The ASN.1 representation of this object
 
 ---
 
-### toDer()
+### ~~toDer()~~
 
 > **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
@@ -182,7 +181,7 @@ The DER-encoded bytes of this object
 
 ---
 
-### toHumanString()
+### ~~toHumanString()~~
 
 > **toHumanString**(): `string`
 
@@ -202,7 +201,7 @@ A human-readable string representation
 
 ---
 
-### toJSON()
+### ~~toJSON()~~
 
 > **toJSON**(): [`ToJson`](../../../core/PkiBase/type-aliases/ToJson.md)\<`T`\>
 
@@ -220,7 +219,30 @@ A JSON-serializable representation of this object
 
 ---
 
-### toPem()
+### ~~toOriginalDer()~~
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
+### ~~toPem()~~
 
 > **toPem**(): `string`
 
@@ -238,7 +260,7 @@ A PEM-encoded string with appropriate headers
 
 ---
 
-### toString()
+### ~~toString()~~
 
 > **toString**(): `string`
 
@@ -257,7 +279,7 @@ A string representation for debugging
 
 ---
 
-### fromAsn1()
+### ~~fromAsn1()~~
 
 > `static` **fromAsn1**(`asn1`): `GeneralizedTime`
 

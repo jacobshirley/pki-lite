@@ -228,6 +228,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -272,6 +295,26 @@ A string representation for debugging
 #### Returns
 
 `Uint8Array`\<`ArrayBuffer`\>
+
+---
+
+### contentBytes()
+
+> `static` **contentBytes**(`asn1`): `Uint8Array`
+
+The value bytes of an OCTET STRING. BER allows a _constructed_ encoding (what
+indefinite-length streaming writers such as `openssl cms -stream` produce): a
+sequence of OCTET STRING chunks whose contents are concatenated.
+
+#### Parameters
+
+##### asn1
+
+[`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
+
+#### Returns
+
+`Uint8Array`
 
 ---
 

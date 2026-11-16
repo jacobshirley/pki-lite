@@ -146,6 +146,10 @@ Array of signers to include in the SignedData.
 
 > **get** **allCertificates**(): [`CertificateChoices`](../../../../x509/CertificateChoices/type-aliases/CertificateChoices.md)[]
 
+The certificates to embed: the signers' certificates followed by the additional ones,
+each only once. A certificate that is both a signer's and added with
+`addCertificate`, or shared by several signers, would otherwise be written twice.
+
 ##### Returns
 
 [`CertificateChoices`](../../../../x509/CertificateChoices/type-aliases/CertificateChoices.md)[]

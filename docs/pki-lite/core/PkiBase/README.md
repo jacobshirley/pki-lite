@@ -31,4 +31,5 @@
 - [Choice](functions/Choice.md)
 - [derToAsn1](functions/derToAsn1.md)
 - [hexBytesToBytes](functions/hexBytesToBytes.md)
+- [keepOriginalDer](functions/keepOriginalDer.md)
 - [pemToDer](functions/pemToDer.md)

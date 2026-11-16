@@ -194,15 +194,15 @@ The ASN.1 representation of this object
 
 > **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
-Converts this PKI object to DER (Distinguished Encoding Rules) format.
+Returns the stored bytes unchanged (DER NULL when there are none). They are
+not re-parsed: re-encoding a parse of bytes that are not exactly one ASN.1
+value would change them.
 
 #### Returns
 
 `Uint8Array`\<`ArrayBuffer`\>
 
-The DER-encoded bytes of this object
-
-#### Inherited from
+#### Overrides
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toDer`](../../../core/PkiBase/classes/PkiBase.md#toder)
 
@@ -243,6 +243,29 @@ A JSON-serializable representation of this object
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toJSON`](../../../core/PkiBase/classes/PkiBase.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
 
 ---
 

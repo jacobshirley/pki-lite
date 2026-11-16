@@ -9,3 +9,7 @@
 ## Classes
 
 - [SignedData](classes/SignedData.md)
+
+## Type Aliases
+
+- [SignedDataCertificateValidation](type-aliases/SignedDataCertificateValidation.md)

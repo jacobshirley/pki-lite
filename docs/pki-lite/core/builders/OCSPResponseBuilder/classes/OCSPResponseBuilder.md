@@ -131,7 +131,7 @@ Adds a certificate status response.
 
 The issuer certificate (when using Certificate) or CertID directly
 
-[`CertID`](../../../../ocsp/CertID/classes/CertID.md) | [`Certificate`](../../../../x509/Certificate/classes/Certificate.md)
+[`Certificate`](../../../../x509/Certificate/classes/Certificate.md) | [`CertID`](../../../../ocsp/CertID/classes/CertID.md)
 
 ##### certificateOrStatus
 

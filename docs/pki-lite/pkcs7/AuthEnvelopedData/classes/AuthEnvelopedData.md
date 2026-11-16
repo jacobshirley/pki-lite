@@ -6,19 +6,22 @@
 
 # Class: AuthEnvelopedData
 
-Authenticated Enveloped Data
+Represents a CMS AuthEnvelopedData structure (RFC 5083), what
+`openssl cms -encrypt -aes-256-gcm` writes: EnvelopedData whose content is encrypted
+with an authenticated cipher (AES-GCM or AES-CCM). The authentication tag is the
+`mac` field and is not part of the encrypted content.
 
 ## Asn
 
 ```asn
 AuthEnvelopedData ::= SEQUENCE {
-    version CMSVersion,
-    originatorInfo [0] IMPLICIT OriginatorInfo OPTIONAL,
-    recipientInfos RecipientInfos,
-    authEncryptedContentInfo EncryptedContentInfo,
-    authAttrs [1] IMPLICIT AuthAttributes OPTIONAL,
-    mac MessageAuthenticationCode,
-    unauthAttrs [2] IMPLICIT UnauthAttributes OPTIONAL
+     version CMSVersion,
+     originatorInfo [0] IMPLICIT OriginatorInfo OPTIONAL,
+     recipientInfos RecipientInfos,
+     authEncryptedContentInfo EncryptedContentInfo,
+     authAttrs [1] IMPLICIT AuthAttributes OPTIONAL,
+     mac MessageAuthenticationCode,
+     unauthAttrs [2] IMPLICIT UnauthAttributes OPTIONAL
 }
 ```
 
@@ -31,8 +34,6 @@ AuthEnvelopedData ::= SEQUENCE {
 ### Constructor
 
 > **new AuthEnvelopedData**(`options`): `AuthEnvelopedData`
-
-Creates a new AuthEnvelopedData instance.
 
 #### Parameters
 
@@ -48,7 +49,7 @@ Creates a new AuthEnvelopedData instance.
 
 ###### mac
 
-`Uint8Array`\<`ArrayBuffer`\> \| [`MessageAuthenticationCode`](../../MessageAuthenticationCode/classes/MessageAuthenticationCode.md)
+`Uint8Array`\<`ArrayBuffer`\>
 
 ###### originatorInfo?
 
@@ -62,7 +63,7 @@ Creates a new AuthEnvelopedData instance.
 
 [`Attribute`](../../../x509/Attribute/classes/Attribute.md)[]
 
-###### version
+###### version?
 
 `number`
 
@@ -80,7 +81,7 @@ Creates a new AuthEnvelopedData instance.
 
 > `optional` **authAttrs**: [`Attributes`](../../../x509/Attributes/classes/Attributes.md)
 
-Optional authenticated attributes.
+Authenticated attributes: covered by the tag as additional authenticated data
 
 ---
 
@@ -88,15 +89,15 @@ Optional authenticated attributes.
 
 > **authEncryptedContentInfo**: [`EncryptedContentInfo`](../../EncryptedContentInfo/classes/EncryptedContentInfo.md)
 
-The authenticated encrypted content and associated parameters.
+The content, encrypted without its authentication tag
 
 ---
 
 ### mac
 
-> **mac**: [`MessageAuthenticationCode`](../../MessageAuthenticationCode/classes/MessageAuthenticationCode.md)
+> **mac**: `Uint8Array`\<`ArrayBuffer`\>
 
-The message authentication code.
+The authentication tag
 
 ---
 
@@ -104,15 +105,11 @@ The message authentication code.
 
 > `optional` **originatorInfo**: [`OriginatorInfo`](../../recipients/OriginatorInfo/classes/OriginatorInfo.md)
 
-Optional information about the originator.
-
 ---
 
 ### recipientInfos
 
 > **recipientInfos**: `RecipientInfos`
-
-A collection of per-recipient information.
 
 ---
 
@@ -120,47 +117,13 @@ A collection of per-recipient information.
 
 > `optional` **unauthAttrs**: [`Attributes`](../../../x509/Attributes/classes/Attributes.md)
 
-Optional unauthenticated attributes.
-
 ---
 
 ### version
 
 > **version**: `number`
 
-The version of the AuthEnvelopedData structure.
-
----
-
-### AuthAttributes
-
-> `static` **AuthAttributes**: _typeof_ [`Attributes`](../../../x509/Attributes/classes/Attributes.md)
-
-Internal AuthAttributes class
-
----
-
-### MessageAuthenticationCode
-
-> `static` **MessageAuthenticationCode**: _typeof_ [`MessageAuthenticationCode`](../../MessageAuthenticationCode/classes/MessageAuthenticationCode.md)
-
-Internal MessageAuthenticationCode class
-
----
-
-### RecipientInfos
-
-> `static` **RecipientInfos**: _typeof_ `RecipientInfos`
-
-Internal RecipientInfos class
-
----
-
-### UnauthAttributes
-
-> `static` **UnauthAttributes**: _typeof_ [`Attributes`](../../../x509/Attributes/classes/Attributes.md)
-
-Internal UnauthAttributes class
+Always 0 (RFC 5083 2.1)
 
 ## Accessors
 
@@ -201,6 +164,25 @@ Used for PEM headers and debugging output.
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`pkiType`](../../../core/PkiBase/classes/PkiBase.md#pkitype)
 
 ## Methods
+
+### decrypt()
+
+> **decrypt**(`privateKey`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
+
+Decrypts and authenticates the content with the key of a key-transport recipient.
+Fails if the authentication tag does not match.
+
+#### Parameters
+
+##### privateKey
+
+[`PrivateKeyInfo`](../../../keys/PrivateKeyInfo/classes/PrivateKeyInfo.md)
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
+
+---
 
 ### equals()
 
@@ -268,11 +250,13 @@ A new instance of the target type
 
 > **toAsn1**(): [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
-Converts the AuthEnvelopedData to an ASN.1 structure.
+Converts this PKI object to its ASN.1 representation.
 
 #### Returns
 
 [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
+
+The ASN.1 representation of this object
 
 #### Overrides
 
@@ -283,8 +267,6 @@ Converts the AuthEnvelopedData to an ASN.1 structure.
 ### toCms()
 
 > **toCms**(): [`ContentInfo`](../../ContentInfo/classes/ContentInfo.md)
-
-Wraps this AuthEnvelopedData in a ContentInfo structure.
 
 #### Returns
 
@@ -348,6 +330,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -385,17 +390,57 @@ A string representation for debugging
 
 ---
 
+### builder()
+
+> `static` **builder**(): [`AuthEnvelopedDataBuilder`](../../../core/builders/AuthEnvelopedDataBuilder/classes/AuthEnvelopedDataBuilder.md)
+
+#### Returns
+
+[`AuthEnvelopedDataBuilder`](../../../core/builders/AuthEnvelopedDataBuilder/classes/AuthEnvelopedDataBuilder.md)
+
+---
+
 ### fromAsn1()
 
 > `static` **fromAsn1**(`asn1`): `AuthEnvelopedData`
-
-Creates an AuthEnvelopedData from an ASN.1 structure.
 
 #### Parameters
 
 ##### asn1
 
 [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
+
+#### Returns
+
+`AuthEnvelopedData`
+
+---
+
+### fromCms()
+
+> `static` **fromCms**(`cms`): `AuthEnvelopedData`
+
+#### Parameters
+
+##### cms
+
+`Uint8Array`\<`ArrayBuffer`\> | [`ContentInfo`](../../ContentInfo/classes/ContentInfo.md)
+
+#### Returns
+
+`AuthEnvelopedData`
+
+---
+
+### fromDer()
+
+> `static` **fromDer**(`der`): `AuthEnvelopedData`
+
+#### Parameters
+
+##### der
+
+`Uint8Array`\<`ArrayBuffer`\>
 
 #### Returns
 

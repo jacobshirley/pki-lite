@@ -170,6 +170,12 @@ Re-exports [hexBytesToBytes](PkiBase/functions/hexBytesToBytes.md)
 
 ---
 
+### keepOriginalDer
+
+Re-exports [keepOriginalDer](PkiBase/functions/keepOriginalDer.md)
+
+---
+
 ### KeyGen
 
 Re-exports [KeyGen](KeyGen/classes/KeyGen.md)

@@ -85,21 +85,37 @@ This builder for chaining
 
 > **addExtension**(`extension`): `this`
 
-Adds a request-level extension (e.g., nonce).
-
 #### Parameters
 
 ##### extension
 
 [`Extension`](../../../../x509/Extension/classes/Extension.md)
 
-The extension to add
-
 #### Returns
 
 `this`
 
-This builder for chaining
+---
+
+### addNonce()
+
+> **addNonce**(`nonce?`): `this`
+
+Adds a nonce (RFC 8954): random bytes the responder echoes in its response, so a
+response cannot be a replay of one to an earlier request (see
+OCSPResponse.nonceMatches). 32 random bytes unless given.
+
+#### Parameters
+
+##### nonce?
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The nonce, 1 to 32 octets
+
+#### Returns
+
+`this`
 
 ---
 

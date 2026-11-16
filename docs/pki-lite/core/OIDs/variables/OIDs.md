@@ -216,6 +216,12 @@ SHA-512 with ECDSA Signature
 
 Extended Key Usage Purpose OIDs
 
+#### EKU.ANY
+
+> `readonly` **ANY**: `"2.5.29.37.0"` = `'2.5.29.37.0'`
+
+anyExtendedKeyUsage: any purpose (RFC 5280 4.2.1.12)
+
 #### EKU.CLIENT_AUTH
 
 > `readonly` **CLIENT_AUTH**: `"1.3.6.1.5.5.7.3.2"` = `'1.3.6.1.5.5.7.3.2'`
@@ -348,6 +354,12 @@ Triple DES in CBC mode
 
 X.509 Certificate Extensions
 
+#### EXTENSION.ANY_POLICY
+
+> `readonly` **ANY_POLICY**: `"2.5.29.32.0"` = `'2.5.29.32.0'`
+
+The special policy that stands for every policy
+
 #### EXTENSION.AUTHORITY_INFO_ACCESS
 
 > `readonly` **AUTHORITY_INFO_ACCESS**: `"1.3.6.1.5.5.7.1.1"` = `'1.3.6.1.5.5.7.1.1'`
@@ -365,6 +377,12 @@ Authority Key Identifier
 > `readonly` **BASIC_CONSTRAINTS**: `"2.5.29.19"` = `'2.5.29.19'`
 
 Basic Constraints
+
+#### EXTENSION.CERTIFICATE_ISSUER
+
+> `readonly` **CERTIFICATE_ISSUER**: `"2.5.29.29"` = `'2.5.29.29'`
+
+Certificate Issuer (CRL entry extension)
 
 #### EXTENSION.CERTIFICATE_POLICIES
 
@@ -390,17 +408,77 @@ CRL Number
 
 CRL Reason Code
 
+#### EXTENSION.DELTA_CRL_INDICATOR
+
+> `readonly` **DELTA_CRL_INDICATOR**: `"2.5.29.27"` = `'2.5.29.27'`
+
+Delta CRL Indicator
+
 #### EXTENSION.EXTENDED_KEY_USAGE
 
 > `readonly` **EXTENDED_KEY_USAGE**: `"2.5.29.37"` = `'2.5.29.37'`
 
 Extended Key Usage
 
+#### EXTENSION.FRESHEST_CRL
+
+> `readonly` **FRESHEST_CRL**: `"2.5.29.46"` = `'2.5.29.46'`
+
+Freshest CRL
+
+#### EXTENSION.HOLD_INSTRUCTION_CODE
+
+> `readonly` **HOLD_INSTRUCTION_CODE**: `"2.5.29.23"` = `'2.5.29.23'`
+
+Hold Instruction Code (CRL entry extension)
+
+#### EXTENSION.INHIBIT_ANY_POLICY
+
+> `readonly` **INHIBIT_ANY_POLICY**: `"2.5.29.54"` = `'2.5.29.54'`
+
+Inhibit anyPolicy
+
+#### EXTENSION.INVALIDITY_DATE
+
+> `readonly` **INVALIDITY_DATE**: `"2.5.29.24"` = `'2.5.29.24'`
+
+Invalidity Date (CRL entry extension)
+
+#### EXTENSION.ISSUER_ALT_NAME
+
+> `readonly` **ISSUER_ALT_NAME**: `"2.5.29.18"` = `'2.5.29.18'`
+
+Issuer Alternative Name
+
+#### EXTENSION.ISSUING_DISTRIBUTION_POINT
+
+> `readonly` **ISSUING_DISTRIBUTION_POINT**: `"2.5.29.28"` = `'2.5.29.28'`
+
+Issuing Distribution Point
+
 #### EXTENSION.KEY_USAGE
 
 > `readonly` **KEY_USAGE**: `"2.5.29.15"` = `'2.5.29.15'`
 
 Key Usage
+
+#### EXTENSION.NAME_CONSTRAINTS
+
+> `readonly` **NAME_CONSTRAINTS**: `"2.5.29.30"` = `'2.5.29.30'`
+
+Name Constraints
+
+#### EXTENSION.POLICY_CONSTRAINTS
+
+> `readonly` **POLICY_CONSTRAINTS**: `"2.5.29.36"` = `'2.5.29.36'`
+
+Policy Constraints
+
+#### EXTENSION.POLICY_MAPPINGS
+
+> `readonly` **POLICY_MAPPINGS**: `"2.5.29.33"` = `'2.5.29.33'`
+
+Policy Mappings
 
 #### EXTENSION.SUBJECT_ALT_NAME
 
@@ -793,6 +871,12 @@ PKIX (Public Key Infrastructure X.509)
 > `readonly` **ID_PKIX_OCSP_BASIC**: `"1.3.6.1.5.5.7.48.1.1"` = `'1.3.6.1.5.5.7.48.1.1'`
 
 OCSP Basic Response
+
+#### PKIX.ID_PKIX_OCSP_NOCHECK
+
+> `readonly` **ID_PKIX_OCSP_NOCHECK**: `"1.3.6.1.5.5.7.48.1.5"` = `'1.3.6.1.5.5.7.48.1.5'`
+
+OCSP No Check: a delegated responder's certificate need not be revocation checked
 
 #### PKIX.ID_PKIX_OCSP_NONCE
 

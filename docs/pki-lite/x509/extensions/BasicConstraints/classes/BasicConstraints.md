@@ -31,7 +31,7 @@ BasicConstraints ::= SEQUENCE {
 
 ##### options
 
-###### cA
+###### cA?
 
 `boolean`
 
@@ -167,6 +167,9 @@ A new instance of the target type
 
 Converts the BasicConstraints to an ASN.1 structure.
 
+DER forbids encoding a DEFAULT value, so `cA` is omitted when false
+(`CA:FALSE` encodes as an empty SEQUENCE, as OpenSSL does).
+
 #### Returns
 
 `Sequence`
@@ -233,6 +236,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -275,6 +301,9 @@ A string representation for debugging
 > `static` **fromAsn1**(`asn1`): `BasicConstraints`
 
 Creates a BasicConstraints from an ASN.1 structure
+
+Both fields are optional/defaulted, so an empty SEQUENCE (cA FALSE) and
+a SEQUENCE holding only the pathLenConstraint are valid.
 
 #### Parameters
 

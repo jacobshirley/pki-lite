@@ -62,7 +62,7 @@
 
 ### toAsn1()
 
-> **toAsn1**(`value`): `Sequence`
+> **toAsn1**(`value`): [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
 #### Parameters
 
@@ -72,4 +72,4 @@
 
 #### Returns
 
-`Sequence`
+[`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)

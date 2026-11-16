@@ -259,6 +259,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -309,6 +332,28 @@ Creates a TimeStampResp from an ASN.1 structure.
 [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
 The ASN.1 structure
+
+#### Returns
+
+`TimeStampResp`
+
+A TimeStampResp
+
+---
+
+### fromDer()
+
+> `static` **fromDer**(`der`): `TimeStampResp`
+
+Creates a TimeStampResp from DER-encoded bytes (an application/timestamp-reply body).
+
+#### Parameters
+
+##### der
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The DER-encoded timestamp response
 
 #### Returns
 

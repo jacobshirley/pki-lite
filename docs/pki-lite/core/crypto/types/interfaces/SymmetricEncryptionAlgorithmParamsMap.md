@@ -65,6 +65,12 @@ Initialization vector/nonce
 
 AES-128 in Galois/Counter Mode parameters.
 
+#### additionalData?
+
+> `optional` **additionalData**: `Uint8Array`\<`ArrayBuffer`\>
+
+Additional authenticated data (AAD)
+
 #### icvLen?
 
 > `optional` **icvLen**: `number`
@@ -123,6 +129,12 @@ Initialization vector/nonce
 
 AES-192 in Galois/Counter Mode parameters.
 
+#### additionalData?
+
+> `optional` **additionalData**: `Uint8Array`\<`ArrayBuffer`\>
+
+Additional authenticated data (AAD)
+
 #### icvLen?
 
 > `optional` **icvLen**: `number`
@@ -180,6 +192,12 @@ Initialization vector/nonce
 > **AES_256_GCM**: `object`
 
 AES-256 in Galois/Counter Mode parameters.
+
+#### additionalData?
+
+> `optional` **additionalData**: `Uint8Array`\<`ArrayBuffer`\>
+
+Additional authenticated data (AAD)
 
 #### icvLen?
 

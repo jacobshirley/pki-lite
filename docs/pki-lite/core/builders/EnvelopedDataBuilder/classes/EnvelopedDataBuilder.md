@@ -355,3 +355,26 @@ This builder instance for method chaining
 builder.setData('Secret message')
 builder.setData(documentBytes, '1.2.840.113549.1.7.1') // PKCS#7 data
 ```
+
+---
+
+### createRecipientInfo()
+
+> `static` **createRecipientInfo**(`recipient`, `contentEncryptionKey`): `Promise`\<[`KeyTransRecipientInfo`](../../../../pkcs7/recipients/KeyTransRecipientInfo/classes/KeyTransRecipientInfo.md)\>
+
+Creates the KeyTransRecipientInfo for one recipient: the content encryption key,
+encrypted for that recipient's certificate. Shared with AuthEnvelopedDataBuilder.
+
+#### Parameters
+
+##### recipient
+
+[`EnvelopedDataBuilderRecipient`](../type-aliases/EnvelopedDataBuilderRecipient.md)
+
+##### contentEncryptionKey
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Returns
+
+`Promise`\<[`KeyTransRecipientInfo`](../../../../pkcs7/recipients/KeyTransRecipientInfo/classes/KeyTransRecipientInfo.md)\>

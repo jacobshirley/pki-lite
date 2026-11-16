@@ -234,6 +234,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -254,9 +277,19 @@ A PEM-encoded string with appropriate headers
 
 ### toRaw()
 
-> **toRaw**(): `Uint8Array`\<`ArrayBuffer`\>
+> **toRaw**(`componentLength?`): `Uint8Array`\<`ArrayBuffer`\>
 
-Convert to raw format (r || s)
+Convert to raw format (r || s), as used by WebCrypto.
+
+#### Parameters
+
+##### componentLength?
+
+`number`
+
+The byte length of r and s, i.e. of the curve order (32 for
+P-256, 48 for P-384, 66 for P-521). Pass it whenever it is known: r and s are often
+shorter than that, and without it they are only padded to the longer of the two.
 
 #### Returns
 

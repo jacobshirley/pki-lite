@@ -6,12 +6,6 @@
 
 # Class: otherName
 
-Base class for all PKI objects in the library.
-
-Provides common functionality for ASN.1 encoding/decoding, PEM formatting,
-DER serialization, and object comparison. All PKI structures extend this class
-to ensure consistent behavior across the library.
-
 ## Extends
 
 - [`AnotherName`](AnotherName.md)
@@ -168,17 +162,32 @@ A new instance of the target type
 
 > **toAsn1**(): `Sequence`
 
-Converts this PKI object to its ASN.1 representation.
+[0] IMPLICIT AnotherName: the SEQUENCE's children sit directly in [0]
 
 #### Returns
 
 `Sequence`
 
-The ASN.1 representation of this object
-
 #### Overrides
 
 [`AnotherName`](AnotherName.md).[`toAsn1`](AnotherName.md#toasn1)
+
+---
+
+### toAsn1Children()
+
+> `protected` **toAsn1Children**(): [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)[]
+
+The children of the structure: `type-id OBJECT IDENTIFIER` followed by
+`value [0] EXPLICIT ANY`.
+
+#### Returns
+
+[`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)[]
+
+#### Inherited from
+
+[`AnotherName`](AnotherName.md).[`toAsn1Children`](AnotherName.md#toasn1children)
 
 ---
 
@@ -238,6 +247,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`AnotherName`](AnotherName.md).[`toOriginalDer`](AnotherName.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -277,18 +309,21 @@ A string representation for debugging
 
 ### fromAsn1()
 
-> `static` **fromAsn1**(`asn1`): [`AnotherName`](AnotherName.md)
+> `static` **fromAsn1**(`asn1`): `otherName`
 
 #### Parameters
 
 ##### asn1
 
-`Sequence`
+[`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
+
+A SEQUENCE (or an element whose children are the same two
+fields, as is the case for the implicitly tagged otherName)
 
 #### Returns
 
-[`AnotherName`](AnotherName.md)
+`otherName`
 
-#### Inherited from
+#### Overrides
 
 [`AnotherName`](AnotherName.md).[`fromAsn1`](AnotherName.md#fromasn1)
