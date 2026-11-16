@@ -8,7 +8,7 @@ import { checkCertificateProfile } from './CertificateProfile.js'
 import { SubjectKeyIdentifier } from '../keys/SubjectKeyIdentifier.js'
 import { SubjectAltName } from '../x509/extensions/SubjectAltName.js'
 import { AuthorityKeyIdentifier } from '../x509/extensions/AuthorityKeyIdentifier.js'
-import { CrlChecker } from './CrlChecker.js'
+import { CrlChecker, CrlStatus } from './CrlChecker.js'
 import { OIDs } from './OIDs.js'
 import { ANY_POLICY, processPolicies } from './PolicyProcessor.js'
 import { KeyUsage } from '../x509/extensions/KeyUsage.js'
@@ -1132,40 +1132,28 @@ export class CertificateValidator {
         const issuer = trustedSigners[0]
 
         // Check OCSP responses first (more current)
+        let ocspDetails: string | undefined
         if (options.checkOCSP && revocationData.ocspResponses) {
             const ocspResult = await this.checkOCSPRevocation(
                 certificate,
-                revocationData.ocspResponses,
+                revocationData,
+                options,
                 issuer,
-                options.validationTime ?? new Date(),
             )
             if (ocspResult.source !== 'NONE') {
                 return ocspResult
             }
+            ocspDetails = ocspResult.details
         }
 
         // Check CRLs (RFC 5280 6.3)
         if (options.checkCRL) {
-            const anchors = (options.trustAnchors ?? []).map(
-                (anchor) => anchor.certificate,
+            const result = await this.crlStatus(
+                certificate,
+                revocationData,
+                options,
+                trustedSigners,
             )
-            const checker = new CrlChecker({
-                crls: revocationData.crls ?? [],
-                certificates: [
-                    ...trustedSigners,
-                    ...(revocationData.issuerCertificate
-                        ? [revocationData.issuerCertificate]
-                        : []),
-                    ...(options.otherCertificates ?? []),
-                    ...anchors,
-                ],
-                trustAnchors: [...anchors, ...trustedSigners],
-                time: options.validationTime ?? new Date(),
-                strictProfile: options.strictProfile,
-                validateSigner: (signer) =>
-                    this.validateCrlSigner(signer, options, revocationData),
-            })
-            const result = await checker.check(certificate)
             if (result.status === 'revoked') {
                 return {
                     isRevoked: true,
@@ -1198,11 +1186,45 @@ export class CertificateValidator {
         return {
             isRevoked: false,
             source: 'NONE',
-            details: revocationData.ocspResponses?.length
-                ? 'No usable OCSP response for this certificate'
-                : 'No OCSP response',
+            details:
+                ocspDetails ??
+                (revocationData.ocspResponses?.length
+                    ? 'No usable OCSP response for this certificate'
+                    : 'No OCSP response'),
             undetermined: true,
         }
+    }
+
+    /** A certificate's revocation status from the CRLs available (RFC 5280 6.3). */
+    private crlStatus(
+        certificate: Certificate,
+        revocationData: {
+            crls?: CertificateList[]
+            issuerCertificate?: Certificate
+        },
+        options: CertificateValidationOptions,
+        trustedSigners: Certificate[],
+    ): Promise<CrlStatus> {
+        const anchors = (options.trustAnchors ?? []).map(
+            (anchor) => anchor.certificate,
+        )
+        const checker = new CrlChecker({
+            crls: revocationData.crls ?? [],
+            certificates: [
+                ...trustedSigners,
+                ...(revocationData.issuerCertificate
+                    ? [revocationData.issuerCertificate]
+                    : []),
+                ...(options.otherCertificates ?? []),
+                ...anchors,
+            ],
+            trustAnchors: [...anchors, ...trustedSigners],
+            time: options.validationTime ?? new Date(),
+            strictProfile: options.strictProfile,
+            validateSigner: (signer) =>
+                this.validateCrlSigner(signer, options, revocationData),
+        })
+        return checker.check(certificate)
     }
 
     /** The status for a revocation status that could not be determined. */
@@ -1261,12 +1283,17 @@ export class CertificateValidator {
      */
     private async checkOCSPRevocation(
         certificate: Certificate,
-        ocspResponses: OCSPResponse[],
+        revocationData: {
+            crls?: CertificateList[]
+            ocspResponses?: OCSPResponse[]
+            issuerCertificate?: Certificate
+        },
+        options: CertificateValidationOptions,
         issuer: Certificate | undefined,
-        time: Date,
     ): Promise<RevocationStatus> {
+        const time = options.validationTime ?? new Date()
         const ignored = new Set<string>()
-        for (const response of ocspResponses) {
+        for (const response of revocationData.ocspResponses ?? []) {
             if (!response.isSuccessful) {
                 ignored.add('an unsuccessful response')
                 continue
@@ -1283,11 +1310,33 @@ export class CertificateValidator {
                 ignored.add('a response that is not current')
                 continue
             }
-            if (!(await response.verify(issuer, { time }))) {
+            const signer = await response.getSigner(issuer, { time })
+            if (!signer) {
                 ignored.add(
                     'a response not signed by the issuer or a responder it authorised',
                 )
                 continue
+            }
+            // RFC 6960 4.2.2.2.1: a delegated responder's own certificate must not be
+            // revoked; without id-pkix-ocsp-nocheck, it is checked against the CRLs
+            if (
+                !signer.equals(issuer) &&
+                !signer.getExtensionByOid(OIDs.PKIX.ID_PKIX_OCSP_NOCHECK)
+            ) {
+                const responderStatus = await this.crlStatus(
+                    signer,
+                    revocationData,
+                    options,
+                    [issuer],
+                )
+                if (responderStatus.status !== 'good') {
+                    ignored.add(
+                        responderStatus.status === 'revoked'
+                            ? 'a response from a delegated responder whose certificate is revoked'
+                            : "a response from a delegated responder without id-pkix-ocsp-nocheck whose certificate's status the CRLs do not show",
+                    )
+                    continue
+                }
             }
 
             const certStatus = single.certStatus

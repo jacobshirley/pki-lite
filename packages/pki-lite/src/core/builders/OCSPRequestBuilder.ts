@@ -5,6 +5,8 @@ import { CertID } from '../../ocsp/CertID.js'
 import { AlgorithmIdentifier } from '../../algorithms/AlgorithmIdentifier.js'
 import { Certificate } from '../../x509/Certificate.js'
 import { Name } from '../../x509/Name.js'
+import { OIDs } from '../OIDs.js'
+import { OctetString } from '../../asn1/OctetString.js'
 import { Extension } from '../../x509/Extension.js'
 import { HashAlgorithm } from '../crypto/types.js'
 import { AsyncBuilder } from './types.js'
@@ -105,6 +107,26 @@ export class OCSPRequestBuilder implements AsyncBuilder<OCSPRequest> {
      * @param extension The extension to add
      * @returns This builder for chaining
      */
+    /**
+     * Adds a nonce (RFC 8954): random bytes the responder echoes in its response, so a
+     * response cannot be a replay of one to an earlier request (see
+     * {@link OCSPResponse.nonceMatches}). 32 random bytes unless given.
+     *
+     * @param nonce The nonce, 1 to 32 octets
+     */
+    addNonce(nonce?: Uint8Array<ArrayBuffer>): this {
+        const value = nonce ?? AlgorithmIdentifier.randomBytes(32)
+        if (value.length < 1 || value.length > 32) {
+            throw new Error('An OCSP nonce is 1 to 32 octets (RFC 8954)')
+        }
+        return this.addExtension(
+            new Extension({
+                extnID: OIDs.PKIX.ID_PKIX_OCSP_NONCE,
+                extnValue: new OctetString({ bytes: value }),
+            }),
+        )
+    }
+
     addExtension(extension: Extension): this {
         this.requestExtensions.push(extension)
         return this
