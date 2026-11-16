@@ -29,7 +29,9 @@ export class Time extends PkiBase<Time> {
         const utcTimeCutoff = new Date('2050-01-01T00:00:00.000Z')
         return this.time < utcTimeCutoff
             ? new asn1js.UTCTime({ valueDate: this.time })
-            : new GeneralizedTime({ time: this.time }).toAsn1()
+            : new GeneralizedTime({ time: this.time })
+                  .stripFractionalSeconds()
+                  .toAsn1()
     }
 
     /**

@@ -61,7 +61,9 @@ export class ResponseData extends PkiBase<ResponseData> {
 
         values.push(
             responderIdAsn1,
-            new GeneralizedTime({ time: this.producedAt }).toAsn1(),
+            new GeneralizedTime({ time: this.producedAt })
+                .stripFractionalSeconds()
+                .toAsn1(),
             new asn1js.Sequence({
                 value: this.responses.map((resp) => resp.toAsn1()),
             }),

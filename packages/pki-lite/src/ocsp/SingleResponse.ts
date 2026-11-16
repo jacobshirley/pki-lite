@@ -54,7 +54,7 @@ export class SingleResponse extends PkiBase<SingleResponse> {
         const values: asn1js.AsnType[] = [
             this.certID.toAsn1(),
             this.certStatus.toAsn1(),
-            this.thisUpdate.toAsn1(),
+            this.thisUpdate.stripFractionalSeconds().toAsn1(),
         ]
 
         if (this.nextUpdate) {
@@ -64,7 +64,7 @@ export class SingleResponse extends PkiBase<SingleResponse> {
                         tagClass: 3, // CONTEXT-SPECIFIC
                         tagNumber: 0, // [0]
                     },
-                    value: [this.nextUpdate.toAsn1()],
+                    value: [this.nextUpdate.stripFractionalSeconds().toAsn1()],
                 }),
             )
         }
