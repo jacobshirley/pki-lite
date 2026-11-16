@@ -258,6 +258,25 @@ A comma-separated string of child elements
 
 ---
 
+### toImplicitAsn1()
+
+> **toImplicitAsn1**(`tagNumber`): `Constructed`
+
+Encodes these names as an implicitly tagged `[tagNumber] GeneralNames`: a
+constructed `[tagNumber]` holding the GeneralName elements directly (no SEQUENCE).
+
+#### Parameters
+
+##### tagNumber
+
+`number`
+
+#### Returns
+
+`Constructed`
+
+---
+
 ### toJSON()
 
 > **toJSON**(): [`ToJson`](../../../core/PkiBase/type-aliases/ToJson.md)\<[`GeneralName`](../type-aliases/GeneralName.md)\>
@@ -273,6 +292,22 @@ A JSON-serializable representation of this array
 #### Inherited from
 
 [`PkiSequence`](../../../core/PkiBase/classes/PkiSequence.md).[`toJSON`](../../../core/PkiBase/classes/PkiSequence.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this was parsed from, if unchanged since; see [PkiBase.toOriginalDer](../../../core/PkiBase/classes/PkiBase.md#tooriginalder).
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Inherited from
+
+[`PkiSequence`](../../../core/PkiBase/classes/PkiSequence.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiSequence.md#tooriginalder)
 
 ---
 
@@ -315,6 +350,26 @@ A string representation for debugging
 ### fromAsn1()
 
 > `static` **fromAsn1**(`asn1`): `GeneralNames`
+
+#### Parameters
+
+##### asn1
+
+[`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
+
+#### Returns
+
+`GeneralNames`
+
+---
+
+### fromImplicitAsn1()
+
+> `static` **fromImplicitAsn1**(`asn1`): `GeneralNames`
+
+Reads an implicitly tagged `[n] GeneralNames` as written by `toImplicitAsn1`.
+The explicit form written by earlier versions (the SEQUENCE wrapped in [n]) is
+accepted too.
 
 #### Parameters
 

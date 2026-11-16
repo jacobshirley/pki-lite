@@ -8,8 +8,6 @@
 
 > `const` **CertificateValidationStatus**: `object`
 
-Enumeration of certificate validation status codes.
-
 ## Type Declaration
 
 ### CHAIN_INVALID
@@ -23,6 +21,14 @@ Enumeration of certificate validation status codes.
 ### EXPIRED
 
 > `readonly` **EXPIRED**: `"EXPIRED"` = `'EXPIRED'`
+
+### EXTENDED_KEY_USAGE_NOT_ALLOWED
+
+> `readonly` **EXTENDED_KEY_USAGE_NOT_ALLOWED**: `"EXTENDED_KEY_USAGE_NOT_ALLOWED"` = `'EXTENDED_KEY_USAGE_NOT_ALLOWED'`
+
+### HOSTNAME_MISMATCH
+
+> `readonly` **HOSTNAME_MISMATCH**: `"HOSTNAME_MISMATCH"` = `'HOSTNAME_MISMATCH'`
 
 ### ISSUER_UNKNOWN
 

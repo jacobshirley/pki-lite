@@ -6,7 +6,8 @@
 
 # Class: x400Address
 
-TODO: define this properly
+x400Address [3] ORAddress. The ORAddress structure is not modelled: the
+original element is kept as-is and written back unchanged.
 
 ## Extends
 
@@ -176,13 +177,13 @@ A new instance of the target type
 
 ### toAsn1()
 
-> **toAsn1**(): `Sequence`
+> **toAsn1**(): [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
 Converts this PKI object to its ASN.1 representation.
 
 #### Returns
 
-`Sequence`
+[`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
 The ASN.1 representation of this object
 
@@ -196,13 +197,13 @@ The ASN.1 representation of this object
 
 > **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
 
-Converts this PKI object to DER (Distinguished Encoding Rules) format.
+Returns the stored bytes unchanged (DER NULL when there are none). They are
+not re-parsed: re-encoding a parse of bytes that are not exactly one ASN.1
+value would change them.
 
 #### Returns
 
 `Uint8Array`\<`ArrayBuffer`\>
-
-The DER-encoded bytes of this object
 
 #### Inherited from
 
@@ -245,6 +246,29 @@ A JSON-serializable representation of this object
 #### Inherited from
 
 [`Any`](../../../asn1/Any/classes/Any.md).[`toJSON`](../../../asn1/Any/classes/Any.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`Any`](../../../asn1/Any/classes/Any.md).[`toOriginalDer`](../../../asn1/Any/classes/Any.md#tooriginalder)
 
 ---
 

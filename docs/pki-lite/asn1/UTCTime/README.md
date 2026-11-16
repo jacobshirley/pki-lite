@@ -8,5 +8,5 @@
 
 ## Classes
 
-- [GeneralizedTime](classes/GeneralizedTime.md)
+- [~~GeneralizedTime~~](classes/GeneralizedTime.md)
 - [UTCTime](classes/UTCTime.md)

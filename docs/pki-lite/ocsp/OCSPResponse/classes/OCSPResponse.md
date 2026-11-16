@@ -66,6 +66,35 @@ ResponseBytes ::=       SEQUENCE {
 
 ## Accessors
 
+### isSuccessful
+
+#### Get Signature
+
+> **get** **isSuccessful**(): `boolean`
+
+Whether the responder answered (responseStatus successful). Other statuses
+(malformedRequest, tryLater, ...) carry no certificate status.
+
+##### Returns
+
+`boolean`
+
+---
+
+### nonce
+
+#### Get Signature
+
+> **get** **nonce**(): `undefined` \| `Uint8Array`\<`ArrayBuffer`\>
+
+The response's nonce (RFC 8954), if it is successful and has one.
+
+##### Returns
+
+`undefined` \| `Uint8Array`\<`ArrayBuffer`\>
+
+---
+
 ### pemHeader
 
 #### Get Signature
@@ -141,6 +170,79 @@ and if the responseType is id-pkix-ocsp-basic
 #### Returns
 
 [`BasicOCSPResponse`](../../BasicOCSPResponse/classes/BasicOCSPResponse.md)
+
+---
+
+### getResponse()
+
+> **getResponse**(`certificate`, `issuer`): `Promise`\<`undefined` \| [`SingleResponse`](../../SingleResponse/classes/SingleResponse.md)\>
+
+The status the response gives for `certificate`, issued by `issuer`: the single
+response whose CertID identifies it, if any (none for an unsuccessful response).
+
+Does not check that the response is genuine or current: see [verify](#verify) and
+[SingleResponse.isCurrent](../../SingleResponse/classes/SingleResponse.md#iscurrent).
+
+#### Parameters
+
+##### certificate
+
+[`Certificate`](../../../x509/Certificate/classes/Certificate.md)
+
+##### issuer
+
+[`Certificate`](../../../x509/Certificate/classes/Certificate.md)
+
+#### Returns
+
+`Promise`\<`undefined` \| [`SingleResponse`](../../SingleResponse/classes/SingleResponse.md)\>
+
+---
+
+### getSigner()
+
+> **getSigner**(`issuer`, `options`): `Promise`\<`undefined` \| [`Certificate`](../../../x509/Certificate/classes/Certificate.md)\>
+
+The certificate that signed a successful response, if it is `issuer` or a responder
+it authorised; see [BasicOCSPResponse.getSigner](../../BasicOCSPResponse/classes/BasicOCSPResponse.md#getsigner).
+
+#### Parameters
+
+##### issuer
+
+[`Certificate`](../../../x509/Certificate/classes/Certificate.md)
+
+##### options
+
+###### time?
+
+`Date`
+
+#### Returns
+
+`Promise`\<`undefined` \| [`Certificate`](../../../x509/Certificate/classes/Certificate.md)\>
+
+---
+
+### nonceMatches()
+
+> **nonceMatches**(`request`): `undefined` \| `boolean`
+
+Whether the response echoes the nonce of `request` (RFC 8954): true if it does,
+false if it has a different one (a reply to another request, perhaps replayed), and
+undefined if either has none. Many responders send pre-signed responses without
+a nonce; their freshness rests on thisUpdate and nextUpdate
+([SingleResponse.isCurrent](../../SingleResponse/classes/SingleResponse.md#iscurrent)).
+
+#### Parameters
+
+##### request
+
+[`OCSPRequest`](../../OCSPRequest/classes/OCSPRequest.md)
+
+#### Returns
+
+`undefined` \| `boolean`
 
 ---
 
@@ -253,6 +355,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -287,6 +412,41 @@ A string representation for debugging
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toString`](../../../core/PkiBase/classes/PkiBase.md#tostring)
+
+---
+
+### verify()
+
+> **verify**(`issuer`, `options`): `Promise`\<`boolean`\>
+
+Verifies that a successful response comes from `issuer` or a responder it
+authorised; see [BasicOCSPResponse.verify](../../BasicOCSPResponse/classes/BasicOCSPResponse.md#verify).
+
+#### Parameters
+
+##### issuer
+
+[`Certificate`](../../../x509/Certificate/classes/Certificate.md)
+
+##### options
+
+###### time?
+
+`Date`
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+#### Example
+
+```typescript
+const response = OCSPResponse.fromDer(der)
+if (await response.verify(caCertificate)) {
+    const single = await response.getResponse(certificate, caCertificate)
+    if (single?.isCurrent()) console.log(single.certStatus.status)
+}
+```
 
 ---
 

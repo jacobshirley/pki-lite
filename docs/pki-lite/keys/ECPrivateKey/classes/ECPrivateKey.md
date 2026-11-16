@@ -8,6 +8,10 @@
 
 Represents an EC private key according to RFC 5915.
 
+Only named curves are interpreted. Explicit (`specifiedCurve`) or `implicitCurve`
+parameters, which RFC 5480 deprecates, are kept as-is in [otherParameters](#otherparameters) so the
+key can still be read and written back unchanged.
+
 ASN.1 Structure:
 
 ```
@@ -39,6 +43,10 @@ Creates a new ECPrivateKey
 
 `string`
 
+###### otherParameters?
+
+[`Any`](../../../asn1/Any/classes/Any.md)
+
 ###### privateKey
 
 `Uint8Array`\<`ArrayBuffer`\>
@@ -63,6 +71,15 @@ Creates a new ECPrivateKey
 
 The named curve OID (if parameters are present)
 Most commonly this is a string like '1.2.840.10045.3.1.7' for P-256
+
+---
+
+### otherParameters?
+
+> `optional` **otherParameters**: [`Any`](../../../asn1/Any/classes/Any.md)
+
+The `parameters` value when it is not a named curve OID: an explicit
+`SpecifiedECDomain` SEQUENCE or `implicitCurve NULL`. Not interpreted.
 
 ---
 
@@ -259,6 +276,29 @@ A JSON-serializable representation of this object
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toJSON`](../../../core/PkiBase/classes/PkiBase.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
 
 ---
 

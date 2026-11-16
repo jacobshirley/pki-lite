@@ -6,12 +6,6 @@
 
 # Class: ediPartyName
 
-Base class for all PKI objects in the library.
-
-Provides common functionality for ASN.1 encoding/decoding, PEM formatting,
-DER serialization, and object comparison. All PKI structures extend this class
-to ensure consistent behavior across the library.
-
 ## Extends
 
 - [`EDIPartyName`](EDIPartyName-1.md)
@@ -168,13 +162,11 @@ A new instance of the target type
 
 > **toAsn1**(): `Sequence`
 
-Converts this PKI object to its ASN.1 representation.
+[5] IMPLICIT EDIPartyName
 
 #### Returns
 
 `Sequence`
-
-The ASN.1 representation of this object
 
 #### Overrides
 
@@ -238,6 +230,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`EDIPartyName`](EDIPartyName-1.md).[`toOriginalDer`](EDIPartyName-1.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -284,6 +299,9 @@ A string representation for debugging
 ##### asn1
 
 [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
+
+A SEQUENCE (or an element whose children are the same fields,
+as is the case for the implicitly tagged ediPartyName)
 
 #### Returns
 

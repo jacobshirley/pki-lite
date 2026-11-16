@@ -136,6 +136,58 @@ true if the sequences are equal, false otherwise
 
 ---
 
+### isWithin()
+
+> **isWithin**(`base`): `boolean`
+
+Whether this name is within the subtree of `base` (RFC 5280 4.2.1.10): `base`'s RDNs
+match the first RDNs of this name.
+
+#### Parameters
+
+##### base
+
+`RDNSequence`
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+Name.parse('C=US, O=Example, CN=Alice').isWithin(Name.parse('C=US, O=Example')) // true
+```
+
+---
+
+### matches()
+
+> **matches**(`other`): `boolean`
+
+Whether this name matches another as RFC 5280 7.1 compares distinguished names: the
+same number of RDNs, each matching (case, whitespace and string type do not matter;
+see AttributeTypeAndValue.matches). Use it to compare a certificate's issuer
+with its issuer's subject, rather than [equals](#equals), which compares encodings.
+
+#### Parameters
+
+##### other
+
+`RDNSequence`
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+cert.tbsCertificate.issuer.matches(ca.tbsCertificate.subject)
+```
+
+---
+
 ### parseAs()
 
 > **parseAs**\<`T`\>(`type`): `T`
@@ -271,6 +323,22 @@ A JSON-serializable representation of this array
 #### Inherited from
 
 [`PkiSequence`](../../../core/PkiBase/classes/PkiSequence.md).[`toJSON`](../../../core/PkiBase/classes/PkiSequence.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this was parsed from, if unchanged since; see [PkiBase.toOriginalDer](../../../core/PkiBase/classes/PkiBase.md#tooriginalder).
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Inherited from
+
+[`PkiSequence`](../../../core/PkiBase/classes/PkiSequence.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiSequence.md#tooriginalder)
 
 ---
 

@@ -170,6 +170,57 @@ Used for PEM headers and debugging output.
 
 ## Methods
 
+### allowsExtendedKeyUsage()
+
+> **allowsExtendedKeyUsage**(`purpose`): `boolean`
+
+Whether the certificate may be used for an extended key usage `purpose` (by common
+name, e.g. `serverAuth`, or OID): it has no extendedKeyUsage extension (no limit),
+or the extension lists the purpose or anyExtendedKeyUsage (RFC 5280 4.2.1.12).
+
+#### Parameters
+
+##### purpose
+
+`string`
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+serverCert.allowsExtendedKeyUsage('serverAuth')
+```
+
+---
+
+### allowsKeyUsage()
+
+> **allowsKeyUsage**(`usage`): `boolean`
+
+Whether the certificate's key may be used for `usage`: its keyUsage extension sets
+that bit, or it has no keyUsage extension (which places no limit; RFC 5280 4.2.1.3).
+
+#### Parameters
+
+##### usage
+
+keyof [`KeyUsageOptions`](../../extensions/KeyUsage/interfaces/KeyUsageOptions.md)
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+ca.allowsKeyUsage('cRLSign')
+```
+
+---
+
 ### equals()
 
 > **equals**(`other`): `boolean`
@@ -209,6 +260,18 @@ Returns the Common Name (CN) from the certificate's subject, or undefined if not
 
 ---
 
+### getCrlDistributionPoints()
+
+> **getCrlDistributionPoints**(): [`DistributionPoint`](../../extensions/CRLDistributionPoints/classes/DistributionPoint.md)[]
+
+The certificate's CRL distribution points (none if it has no such extension).
+
+#### Returns
+
+[`DistributionPoint`](../../extensions/CRLDistributionPoints/classes/DistributionPoint.md)[]
+
+---
+
 ### getExtensionByName()
 
 > **getExtensionByName**(`name`): `undefined` \| [`Extension`](../../Extension/classes/Extension.md)
@@ -217,7 +280,7 @@ Returns the Common Name (CN) from the certificate's subject, or undefined if not
 
 ##### name
 
-`"SUBJECT_KEY_IDENTIFIER"` | `"KEY_USAGE"` | `"SUBJECT_ALT_NAME"` | `"BASIC_CONSTRAINTS"` | `"CRL_NUMBER"` | `"CRL_DISTRIBUTION_POINTS"` | `"CERTIFICATE_POLICIES"` | `"AUTHORITY_KEY_IDENTIFIER"` | `"EXTENDED_KEY_USAGE"` | `"AUTHORITY_INFO_ACCESS"` | `"CRL_REASON_CODE"`
+`"SUBJECT_KEY_IDENTIFIER"` | `"KEY_USAGE"` | `"SUBJECT_ALT_NAME"` | `"BASIC_CONSTRAINTS"` | `"CRL_NUMBER"` | `"NAME_CONSTRAINTS"` | `"CRL_DISTRIBUTION_POINTS"` | `"CERTIFICATE_POLICIES"` | `"ANY_POLICY"` | `"POLICY_MAPPINGS"` | `"POLICY_CONSTRAINTS"` | `"INHIBIT_ANY_POLICY"` | `"AUTHORITY_KEY_IDENTIFIER"` | `"EXTENDED_KEY_USAGE"` | `"AUTHORITY_INFO_ACCESS"` | `"CRL_REASON_CODE"` | `"DELTA_CRL_INDICATOR"` | `"ISSUING_DISTRIBUTION_POINT"` | `"CERTIFICATE_ISSUER"` | `"FRESHEST_CRL"` | `"ISSUER_ALT_NAME"` | `"INVALIDITY_DATE"` | `"HOLD_INSTRUCTION_CODE"`
 
 #### Returns
 
@@ -249,7 +312,7 @@ Returns the Common Name (CN) from the certificate's subject, or undefined if not
 
 ##### name
 
-`"SUBJECT_KEY_IDENTIFIER"` | `"KEY_USAGE"` | `"SUBJECT_ALT_NAME"` | `"BASIC_CONSTRAINTS"` | `"CRL_NUMBER"` | `"CRL_DISTRIBUTION_POINTS"` | `"CERTIFICATE_POLICIES"` | `"AUTHORITY_KEY_IDENTIFIER"` | `"EXTENDED_KEY_USAGE"` | `"AUTHORITY_INFO_ACCESS"` | `"CRL_REASON_CODE"`
+`"SUBJECT_KEY_IDENTIFIER"` | `"KEY_USAGE"` | `"SUBJECT_ALT_NAME"` | `"BASIC_CONSTRAINTS"` | `"CRL_NUMBER"` | `"NAME_CONSTRAINTS"` | `"CRL_DISTRIBUTION_POINTS"` | `"CERTIFICATE_POLICIES"` | `"ANY_POLICY"` | `"POLICY_MAPPINGS"` | `"POLICY_CONSTRAINTS"` | `"INHIBIT_ANY_POLICY"` | `"AUTHORITY_KEY_IDENTIFIER"` | `"EXTENDED_KEY_USAGE"` | `"AUTHORITY_INFO_ACCESS"` | `"CRL_REASON_CODE"` | `"DELTA_CRL_INDICATOR"` | `"ISSUING_DISTRIBUTION_POINT"` | `"CERTIFICATE_ISSUER"` | `"FRESHEST_CRL"` | `"ISSUER_ALT_NAME"` | `"INVALIDITY_DATE"` | `"HOLD_INSTRUCTION_CODE"`
 
 #### Returns
 
@@ -336,6 +399,19 @@ An array of strings representing the Subject Alternative Names.
 
 ---
 
+### isCA()
+
+> **isCA**(): `boolean`
+
+Whether this is a CA certificate: it has a basicConstraints extension with cA set
+(RFC 5280 4.2.1.9).
+
+#### Returns
+
+`boolean`
+
+---
+
 ### isIssuedBy()
 
 > **isIssuedBy**(`issuer`): `Promise`\<`boolean`\>
@@ -359,6 +435,40 @@ An array of strings representing the Subject Alternative Names.
 #### Returns
 
 `Promise`\<`boolean`\>
+
+---
+
+### matchesHostname()
+
+> **matchesHostname**(`hostname`): `boolean`
+
+Whether the certificate is valid for `hostname`, a DNS name or an IP address, as
+RFC 9525 (TLS server identity) describes:
+
+- an IP address matches an iPAddress subjectAltName with the same bytes
+- a DNS name matches a dNSName subjectAltName ignoring case and a trailing dot, with
+  internationalised names compared as A-labels (punycode); a `*` wildcard matches
+  exactly one label, only as the whole leftmost label of a name with at least two
+  more labels (`*.example.com`, not `*.com` or `f*.example.com`)
+
+The subject's common name is not used, even without a subjectAltName.
+
+#### Parameters
+
+##### hostname
+
+`string`
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+cert.matchesHostname('www.example.com')
+cert.matchesHostname('192.0.2.1')
+```
 
 ---
 
@@ -419,6 +529,11 @@ A new instance of the target type
 
 > **requestIssuerCertificate**(`options?`): `Promise`\<`undefined` \| `Certificate`\>
 
+Downloads the certificate's issuer from the caIssuers URLs of its
+authorityInfoAccess extension (and any given), trying each in turn. Only http: and
+https: URLs are followed; the URLs come from the certificate, so this is a request
+to wherever its issuer says.
+
 #### Parameters
 
 ##### options?
@@ -427,9 +542,20 @@ A new instance of the target type
 
 `string`[]
 
+More URLs to try, before the certificate's own
+
+###### timeout?
+
+`number`
+
+How long to wait for each URL, in milliseconds (default
+10,000)
+
 #### Returns
 
 `Promise`\<`undefined` \| `Certificate`\>
+
+The issuer certificate, or undefined if none could be fetched
 
 ---
 
@@ -528,6 +654,29 @@ A JSON-serializable representation of this object
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toJSON`](../../../core/PkiBase/classes/PkiBase.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
 
 ---
 

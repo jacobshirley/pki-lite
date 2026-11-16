@@ -6,12 +6,6 @@
 
 # Class: AnotherName
 
-Base class for all PKI objects in the library.
-
-Provides common functionality for ASN.1 encoding/decoding, PEM formatting,
-DER serialization, and object comparison. All PKI structures extend this class
-to ensure consistent behavior across the library.
-
 ## Extends
 
 - [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`AnotherName`\>
@@ -178,6 +172,19 @@ The ASN.1 representation of this object
 
 ---
 
+### toAsn1Children()
+
+> `protected` **toAsn1Children**(): [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)[]
+
+The children of the structure: `type-id OBJECT IDENTIFIER` followed by
+`value [0] EXPLICIT ANY`.
+
+#### Returns
+
+[`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)[]
+
+---
+
 ### toDer()
 
 > **toDer**(): `Uint8Array`\<`ArrayBuffer`\>
@@ -234,6 +241,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -280,6 +310,9 @@ A string representation for debugging
 ##### asn1
 
 `Sequence`
+
+A SEQUENCE (or an element whose children are the same two
+fields, as is the case for the implicitly tagged otherName)
 
 #### Returns
 

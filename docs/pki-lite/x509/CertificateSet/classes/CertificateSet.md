@@ -207,15 +207,15 @@ Error if adding items would exceed maxSize
 
 > **toAsn1**(): [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
-Converts this set to ASN.1 SET structure.
+Encodes the set, tagging each alternative other than a plain Certificate with
+its CertificateChoices tag (all IMPLICIT): extendedCertificate [0], v1AttrCert
+[1], v2AttrCert [2] and other [3].
 
 #### Returns
 
 [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
-An ASN.1 SET containing all items in this collection
-
-#### Inherited from
+#### Overrides
 
 [`PkiSet`](../../../core/PkiBase/classes/PkiSet.md).[`toAsn1`](../../../core/PkiBase/classes/PkiSet.md#toasn1)
 
@@ -273,6 +273,22 @@ A JSON-serializable representation of this array
 #### Inherited from
 
 [`PkiSet`](../../../core/PkiBase/classes/PkiSet.md).[`toJSON`](../../../core/PkiBase/classes/PkiSet.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this was parsed from, if unchanged since; see [PkiBase.toOriginalDer](../../../core/PkiBase/classes/PkiBase.md#tooriginalder).
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Inherited from
+
+[`PkiSet`](../../../core/PkiBase/classes/PkiSet.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiSet.md#tooriginalder)
 
 ---
 

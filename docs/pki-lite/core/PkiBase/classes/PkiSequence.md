@@ -25,8 +25,10 @@ and comparison methods.
 - [`PostalAddress`](../../../x509/attributes/SignerLocation/classes/PostalAddress.md)
 - [`AuthorityInfoAccess`](../../../x509/extensions/AuthorityInfoAccess/classes/AuthorityInfoAccess.md)
 - [`CRLDistributionPoints`](../../../x509/extensions/CRLDistributionPoints/classes/CRLDistributionPoints.md)
+- [`CertificatePolicies`](../../../x509/extensions/CertificatePolicies/classes/CertificatePolicies.md)
 - [`ExtKeyUsage`](../../../x509/extensions/ExtKeyUsage/classes/ExtKeyUsage.md)
 - [`GeneralSubtrees`](../../../x509/extensions/NameConstraints/classes/GeneralSubtrees.md)
+- [`PolicyMappings`](../../../x509/extensions/PolicyMappings/classes/PolicyMappings.md)
 
 ## Type Parameters
 
@@ -277,6 +279,22 @@ A JSON-serializable representation of this array
 #### Inherited from
 
 [`PkiArray`](PkiArray.md).[`toJSON`](PkiArray.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this was parsed from, if unchanged since; see [PkiBase.toOriginalDer](PkiBase.md#tooriginalder).
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Inherited from
+
+[`PkiArray`](PkiArray.md).[`toOriginalDer`](PkiArray.md#tooriginalder)
 
 ---
 

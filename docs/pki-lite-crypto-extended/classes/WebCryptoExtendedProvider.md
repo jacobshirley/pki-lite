@@ -268,6 +268,116 @@ Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
 ---
 
+### generateSymmetricKey()
+
+> **generateSymmetricKey**(`algorithm`): `Uint8Array`\<`ArrayBuffer`\>
+
+Generates a symmetric key for the specified encryption algorithm.
+
+#### Parameters
+
+##### algorithm
+
+[`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md)
+
+The encryption algorithm to use
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The generated symmetric key as a Uint8Array<ArrayBuffer>
+
+#### Overrides
+
+[`WebCryptoProvider`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md).[`generateSymmetricKey`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md#generatesymmetrickey)
+
+---
+
+### keyEncryptionAlgorithm()
+
+> **keyEncryptionAlgorithm**(`encryptionParams`): [`AlgorithmIdentifier`](../../pki-lite/algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
+
+Converts asymmetric encryption algorithm parameters to a key encryption algorithm identifier.
+
+#### Parameters
+
+##### encryptionParams
+
+[`AsymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md)
+
+The asymmetric encryption algorithm parameters
+
+#### Returns
+
+[`AlgorithmIdentifier`](../../pki-lite/algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
+
+Key encryption algorithm as an AlgorithmIdentifier
+
+#### Overrides
+
+[`WebCryptoProvider`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md).[`keyEncryptionAlgorithm`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md#keyencryptionalgorithm)
+
+---
+
+### sign()
+
+> **sign**(`data`, `privateKeyInfo`, `algorithm`): `Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
+
+Ed448 is not in WebCrypto, so it is done with @noble/curves.
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+##### privateKeyInfo
+
+[`PrivateKeyInfo`](../../pki-lite/keys/PrivateKeyInfo/classes/PrivateKeyInfo.md)
+
+##### algorithm
+
+[`AsymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md)
+
+#### Returns
+
+`Promise`\<`Uint8Array`\<`ArrayBuffer`\>\>
+
+#### Overrides
+
+[`WebCryptoProvider`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md).[`sign`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md#sign)
+
+---
+
+### toAsymmetricEncryptionAlgorithmParams()
+
+> **toAsymmetricEncryptionAlgorithmParams**(`algorithm`, `publicKeyInfo?`): [`AsymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md)
+
+`rsaEncryption` as a key encryption algorithm (CMS key transport, RFC 3370 4.2.1)
+is RSAES-PKCS1-v1_5, which WebCrypto cannot do; it is handled by `encrypt` /
+`decrypt` above. The hash is not used by that scheme.
+
+#### Parameters
+
+##### algorithm
+
+[`AlgorithmIdentifier`](../../pki-lite/algorithms/AlgorithmIdentifier/classes/AlgorithmIdentifier.md)
+
+##### publicKeyInfo?
+
+[`SubjectPublicKeyInfo`](../../pki-lite/keys/SubjectPublicKeyInfo/classes/SubjectPublicKeyInfo.md)
+
+#### Returns
+
+[`AsymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md)
+
+#### Overrides
+
+[`WebCryptoProvider`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md).[`toAsymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md#toasymmetricencryptionalgorithmparams)
+
+---
+
 ### toSymmetricEncryptionAlgorithmParams()
 
 > **toSymmetricEncryptionAlgorithmParams**(`algorithm`): [`SymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/SymmetricEncryptionAlgorithmParams.md)
@@ -291,3 +401,47 @@ Symmetric encryption algorithm parameters
 #### Overrides
 
 [`WebCryptoProvider`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md).[`toSymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md#tosymmetricencryptionalgorithmparams)
+
+---
+
+### verify()
+
+> **verify**(`data`, `publicKeyInfo`, `signature`, `algorithm`): `Promise`\<`boolean`\>
+
+Verifies a digital signature against the original data.
+
+#### Parameters
+
+##### data
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original data that was signed
+
+##### publicKeyInfo
+
+[`SubjectPublicKeyInfo`](../../pki-lite/keys/SubjectPublicKeyInfo/classes/SubjectPublicKeyInfo.md)
+
+The signer's public key
+
+##### signature
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The signature to verify
+
+##### algorithm
+
+[`AsymmetricEncryptionAlgorithmParams`](../../pki-lite/core/crypto/types/type-aliases/AsymmetricEncryptionAlgorithmParams.md)
+
+The signature algorithm and parameters
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+Promise resolving to true if signature is valid
+
+#### Overrides
+
+[`WebCryptoProvider`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md).[`verify`](../../pki-lite/core/crypto/WebCryptoProvider/classes/WebCryptoProvider.md#verify)

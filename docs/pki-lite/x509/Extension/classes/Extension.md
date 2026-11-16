@@ -262,6 +262,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -347,6 +370,22 @@ A string representation for debugging
 
 ---
 
+### certificatePolicies()
+
+> `static` **certificatePolicies**(`policies`): `Extension`
+
+#### Parameters
+
+##### policies
+
+(`string` \| [`PolicyInformation`](../../PolicyInformation/classes/PolicyInformation.md))[]
+
+#### Returns
+
+`Extension`
+
+---
+
 ### extendedKeyUsage()
 
 > `static` **extendedKeyUsage**(`options`): `Extension`
@@ -401,6 +440,22 @@ An Extension
 
 ---
 
+### inhibitAnyPolicy()
+
+> `static` **inhibitAnyPolicy**(`skipCerts`): `Extension`
+
+#### Parameters
+
+##### skipCerts
+
+`number`
+
+#### Returns
+
+`Extension`
+
+---
+
 ### keyUsage()
 
 > `static` **keyUsage**(`options?`): `Extension`
@@ -410,6 +465,44 @@ An Extension
 ##### options?
 
 [`KeyUsageOptions`](../../extensions/KeyUsage/interfaces/KeyUsageOptions.md)
+
+#### Returns
+
+`Extension`
+
+---
+
+### policyConstraints()
+
+> `static` **policyConstraints**(`options`): `Extension`
+
+#### Parameters
+
+##### options
+
+###### inhibitPolicyMapping?
+
+`number`
+
+###### requireExplicitPolicy?
+
+`number`
+
+#### Returns
+
+`Extension`
+
+---
+
+### policyMappings()
+
+> `static` **policyMappings**(`mappings`): `Extension`
+
+#### Parameters
+
+##### mappings
+
+([`PolicyMapping`](../../extensions/PolicyMappings/classes/PolicyMapping.md) \| \{ `issuerDomainPolicy`: [`ObjectIdentifierString`](../../../core/PkiBase/type-aliases/ObjectIdentifierString.md); `subjectDomainPolicy`: [`ObjectIdentifierString`](../../../core/PkiBase/type-aliases/ObjectIdentifierString.md); \})[]
 
 #### Returns
 

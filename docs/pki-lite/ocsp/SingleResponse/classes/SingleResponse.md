@@ -153,6 +153,28 @@ true if the objects are equal, false otherwise
 
 ---
 
+### isCurrent()
+
+> **isCurrent**(`time`): `boolean`
+
+Whether the status is current at `time` (RFC 6960 3.2, 4.2.2.1): given at or before
+it (thisUpdate), and not yet due for replacement (nextUpdate). Without nextUpdate
+the responder has newer information at any time, so only thisUpdate is checked.
+
+#### Parameters
+
+##### time
+
+`Date` = `...`
+
+The time to check at (default now)
+
+#### Returns
+
+`boolean`
+
+---
+
 ### parseAs()
 
 > **parseAs**\<`T`\>(`type`): `T`
@@ -259,6 +281,29 @@ A JSON-serializable representation of this object
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toJSON`](../../../core/PkiBase/classes/PkiBase.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
 
 ---
 

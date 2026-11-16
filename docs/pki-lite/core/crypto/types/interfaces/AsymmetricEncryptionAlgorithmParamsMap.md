@@ -45,6 +45,23 @@ Named curve identifier
 
 ---
 
+### ED25519
+
+> **ED25519**: `Record`\<`string`, `never`\>
+
+Ed25519 (RFC 8032, RFC 8410). It has no parameters: the hash is built in.
+
+---
+
+### ED448
+
+> **ED448**: `Record`\<`string`, `never`\>
+
+Ed448 (RFC 8032, RFC 8410). No parameters. WebCrypto has no Ed448, so signing and
+verifying need a provider that implements it (pki-lite-crypto-extended).
+
+---
+
 ### RSA_OAEP
 
 > **RSA_OAEP**: `object`

@@ -126,7 +126,7 @@ RSA key generation options (defaults: keySize=2048, hash='SHA-256')
 
 ###### hash?
 
-`"SHA-1"` \| `"SHA-256"` \| `"SHA-384"` \| `"SHA-512"`
+`"SHA-256"` \| `"SHA-1"` \| `"SHA-384"` \| `"SHA-512"`
 
 ###### keySize?
 

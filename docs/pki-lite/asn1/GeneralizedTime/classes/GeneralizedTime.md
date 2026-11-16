@@ -148,17 +148,37 @@ A new instance of the target type
 
 ---
 
-### toAsn1()
+### stripFractionalSeconds()
 
-> **toAsn1**(): `GeneralizedTime`
+> **stripFractionalSeconds**(): `GeneralizedTime`
 
-Converts this PKI object to its ASN.1 representation.
+A copy at whole seconds, dropping any fraction (rounding down).
+
+GeneralizedTime may carry fractional seconds, but most profiles forbid them:
+certificates and CRLs (RFC 5280 4.1.2.5.2), OCSP (RFC 6960), attribute certificates
+(RFC 5755) and CMS signingTime (RFC 5652 11.3) require `YYYYMMDDHHMMSSZ`. Encode those
+fields through this. RFC 3161 timestamps (TSTInfo genTime) may keep the fraction.
 
 #### Returns
 
 `GeneralizedTime`
 
-The ASN.1 representation of this object
+A new GeneralizedTime at the start of the same second
+
+---
+
+### toAsn1()
+
+> **toAsn1**(): `GeneralizedTime`
+
+Encodes the time by the DER rules (X.690 11.7): UTC with a `Z`, seconds always
+present, and fractional seconds (to the millisecond a Date holds) only when not
+zero, without trailing zeros: `20261116120000Z`, `20261116120000.5Z`. Profiles that
+forbid fractions call [stripFractionalSeconds](#stripfractionalseconds) first.
+
+#### Returns
+
+`GeneralizedTime`
 
 #### Overrides
 
@@ -219,6 +239,29 @@ A JSON-serializable representation of this object
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toJSON`](../../../core/PkiBase/classes/PkiBase.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
 
 ---
 

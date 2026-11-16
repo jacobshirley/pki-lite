@@ -22,4 +22,6 @@ The trusted root certificate
 
 > `optional` **nameConstraints**: [`NameConstraints`](../../../x509/extensions/NameConstraints/classes/NameConstraints.md)
 
-Optional name constraints to apply
+Optional name constraints to apply to every certificate below this trust anchor,
+in addition to any in the trust anchor's own certificate (when validating name
+constraints).

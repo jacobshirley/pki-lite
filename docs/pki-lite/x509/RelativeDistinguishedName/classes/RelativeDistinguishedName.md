@@ -136,6 +136,25 @@ true if the sets are equal, false otherwise
 
 ---
 
+### matches()
+
+> **matches**(`other`): `boolean`
+
+Whether this RDN matches another (RFC 5280 7.1): the same set of attributes, each
+matching as [AttributeTypeAndValue.matches](../../AttributeTypeAndValue/classes/AttributeTypeAndValue.md#matches) describes, in any order.
+
+#### Parameters
+
+##### other
+
+`RelativeDistinguishedName`
+
+#### Returns
+
+`boolean`
+
+---
+
 ### parseAs()
 
 > **parseAs**\<`T`\>(`type`): `T`
@@ -271,6 +290,22 @@ A JSON-serializable representation of this array
 #### Inherited from
 
 [`PkiSet`](../../../core/PkiBase/classes/PkiSet.md).[`toJSON`](../../../core/PkiBase/classes/PkiSet.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this was parsed from, if unchanged since; see [PkiBase.toOriginalDer](../../../core/PkiBase/classes/PkiBase.md#tooriginalder).
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Inherited from
+
+[`PkiSet`](../../../core/PkiBase/classes/PkiSet.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiSet.md#tooriginalder)
 
 ---
 

@@ -73,6 +73,21 @@ RevokedCertificate  ::=  SEQUENCE  {
 
 ## Accessors
 
+### certificateIssuer
+
+#### Get Signature
+
+> **get** **certificateIssuer**(): `undefined` \| [`GeneralNames`](../../GeneralName/classes/GeneralNames.md)
+
+The certificateIssuer extension of an entry on an indirect CRL (RFC 5280 5.3.3): the
+issuer of the certificates from this entry on, until another entry names another.
+
+##### Returns
+
+`undefined` \| [`GeneralNames`](../../GeneralName/classes/GeneralNames.md)
+
+---
+
 ### pemHeader
 
 #### Get Signature
@@ -108,6 +123,21 @@ Used for PEM headers and debugging output.
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`pkiType`](../../../core/PkiBase/classes/PkiBase.md#pkitype)
+
+---
+
+### reason
+
+#### Get Signature
+
+> **get** **reason**(): `undefined` \| `number`
+
+The revocation reason code from the entry's reasonCode extension (RFC 5280 5.3.1:
+1 keyCompromise, 6 certificateHold, 8 removeFromCRL, ...), if it has one.
+
+##### Returns
+
+`undefined` \| `number`
 
 ## Methods
 
@@ -170,6 +200,19 @@ A new instance of the target type
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`parseAs`](../../../core/PkiBase/classes/PkiBase.md#parseas)
+
+---
+
+### serialAsBigInt()
+
+> **serialAsBigInt**(): `bigint`
+
+The serial number as a bigint. A string `userCertificate` is read as hex;
+separators such as `:` and a `0x` prefix are ignored.
+
+#### Returns
+
+`bigint`
 
 ---
 
@@ -242,6 +285,29 @@ A JSON-serializable representation of this object
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toJSON`](../../../core/PkiBase/classes/PkiBase.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
 
 ---
 

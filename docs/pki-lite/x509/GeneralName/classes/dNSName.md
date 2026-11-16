@@ -154,13 +154,13 @@ A new instance of the target type
 
 ### toAsn1()
 
-> **toAsn1**(): `Sequence`
+> **toAsn1**(): [`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
 Converts this PKI object to its ASN.1 representation.
 
 #### Returns
 
-`Sequence`
+[`Asn1BaseBlock`](../../../core/PkiBase/type-aliases/Asn1BaseBlock.md)
 
 The ASN.1 representation of this object
 
@@ -239,6 +239,29 @@ A JSON-serializable representation of this object
 #### Inherited from
 
 [`IA5String`](../../../asn1/IA5String/classes/IA5String.md).[`toJSON`](../../../asn1/IA5String/classes/IA5String.md#tojson)
+
+---
+
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`IA5String`](../../../asn1/IA5String/classes/IA5String.md).[`toOriginalDer`](../../../asn1/IA5String/classes/IA5String.md#tooriginalder)
 
 ---
 

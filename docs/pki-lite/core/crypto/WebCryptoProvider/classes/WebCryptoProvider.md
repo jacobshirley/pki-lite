@@ -442,39 +442,19 @@ Promise resolving to the encrypted data as a Uint8Array<ArrayBuffer>
 
 > **generateKeyPair**(`options`): `Promise`\<\{ `privateKey`: `Uint8Array`\<`ArrayBuffer`\>; `publicKey`: `Uint8Array`\<`ArrayBuffer`\>; \}\>
 
-Generates an asymmetric key pair for the specified algorithm and options.
+Generates a key pair. Takes the `{ algorithm, params }` form declared by
+`CryptoProvider` (what `KeyGen` passes). The older flat form
+(`{ algorithm, keySize, namedCurve, ... }`) is still accepted.
 
 #### Parameters
 
 ##### options
 
-Configuration options including algorithm, key size, and other parameters
-
-###### algorithm
-
-`"RSA"` \| `"EC"`
-
-###### hash?
-
-`string`
-
-###### keySize?
-
-`number`
-
-###### namedCurve?
-
-`string`
-
-###### publicExponent?
-
-`Uint8Array`\<`ArrayBuffer`\>
+[`KeyPairGenOptions`](../../types/type-aliases/KeyPairGenOptions.md) | \{ `algorithm`: `"RSA"` \| `"EC"`; `hash?`: `string`; `keySize?`: `number`; `namedCurve?`: `string`; `publicExponent?`: `number` \| `Uint8Array`\<`ArrayBuffer`\>; \}
 
 #### Returns
 
 `Promise`\<\{ `privateKey`: `Uint8Array`\<`ArrayBuffer`\>; `publicKey`: `Uint8Array`\<`ArrayBuffer`\>; \}\>
-
-A Promise that resolves to an object containing the public and private keys
 
 #### Implementation of
 
@@ -610,7 +590,7 @@ Array containing the random bytes
 
 ### getWebCryptoAlgorithm()
 
-> **getWebCryptoAlgorithm**(`algorithm`): `EcKeyImportParams` \| `RsaPssParams` \| `RsaOaepParams` \| `RsaHashedKeyAlgorithm`
+> **getWebCryptoAlgorithm**(`algorithm`): `Algorithm` \| `EcKeyImportParams` \| `RsaPssParams` \| `RsaOaepParams` \| `RsaHashedKeyAlgorithm`
 
 **`Internal`**
 
@@ -626,7 +606,7 @@ The PKI algorithm parameters
 
 #### Returns
 
-`EcKeyImportParams` \| `RsaPssParams` \| `RsaOaepParams` \| `RsaHashedKeyAlgorithm`
+`Algorithm` \| `EcKeyImportParams` \| `RsaPssParams` \| `RsaOaepParams` \| `RsaHashedKeyAlgorithm`
 
 Web Crypto API compatible algorithm specification
 
@@ -987,6 +967,27 @@ Symmetric encryption algorithm parameters
 #### Implementation of
 
 [`CryptoProvider`](../../types/interfaces/CryptoProvider.md).[`toSymmetricEncryptionAlgorithmParams`](../../types/interfaces/CryptoProvider.md#tosymmetricencryptionalgorithmparams)
+
+---
+
+### toWebCryptoSpki()
+
+> **toWebCryptoSpki**(`publicKeyInfo`): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER of a public key as WebCrypto accepts it. A key restricted to RSA-PSS or
+RSA-OAEP (RFC 4055) is an RSA key whose SubjectPublicKeyInfo names `id-RSASSA-PSS`
+or `id-RSAES-OAEP`; WebCrypto only imports RSA keys labelled `rsaEncryption`, and the
+key bits are the same, so relabel it.
+
+#### Parameters
+
+##### publicKeyInfo
+
+[`SubjectPublicKeyInfo`](../../../../keys/SubjectPublicKeyInfo/classes/SubjectPublicKeyInfo.md)
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
 
 ---
 

@@ -6,19 +6,11 @@
 
 # Class: ExtKeyUsage
 
-Represents the Extended Key Usage extension defined in RFC 5280.
+Represents a SEQUENCE OF PKI objects in ASN.1.
 
-The Extended Key Usage extension indicates one or more purposes for which
-the certified public key may be used, in addition to or in place of the
-basic purposes indicated in the key usage extension.
-
-## Asn
-
-```asn
-ExtKeyUsageSyntax ::= SEQUENCE SIZE (1..MAX) OF KeyPurposeId
-
-KeyPurposeId ::= OBJECT IDENTIFIER
-```
+A SEQUENCE contains an ordered collection of objects, which may be of
+different types. This class provides SEQUENCE-specific ASN.1 encoding
+and comparison methods.
 
 ## Extends
 
@@ -280,6 +272,22 @@ A JSON-serializable representation of this array
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this was parsed from, if unchanged since; see [PkiBase.toOriginalDer](../../../../core/PkiBase/classes/PkiBase.md#tooriginalder).
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Inherited from
+
+[`PkiSequence`](../../../../core/PkiBase/classes/PkiSequence.md).[`toOriginalDer`](../../../../core/PkiBase/classes/PkiSequence.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -345,3 +353,22 @@ A string representation for debugging
 #### Returns
 
 `ExtKeyUsage`
+
+---
+
+### oidOf()
+
+> `static` **oidOf**(`purpose`): `string`
+
+The OID of a purpose given by its common name (`serverAuth`, `clientAuth`, ...) or
+as an OID.
+
+#### Parameters
+
+##### purpose
+
+`string`
+
+#### Returns
+
+`string`

@@ -142,6 +142,35 @@ true if the objects are equal, false otherwise
 
 ---
 
+### getSigner()
+
+> **getSigner**(`issuer`, `options`): `Promise`\<`undefined` \| [`Certificate`](../../../x509/Certificate/classes/Certificate.md)\>
+
+The certificate that signed the response, if it is `issuer` or a responder `issuer`
+authorised (see [verify](#verify)): `issuer` itself, or the delegated responder's
+certificate from the response.
+
+A delegated responder's certificate can itself be revoked: a relying party checks
+its status unless it has the id-pkix-ocsp-nocheck extension (RFC 6960 4.2.2.2.1).
+
+#### Parameters
+
+##### issuer
+
+[`Certificate`](../../../x509/Certificate/classes/Certificate.md)
+
+##### options
+
+###### time?
+
+`Date`
+
+#### Returns
+
+`Promise`\<`undefined` \| [`Certificate`](../../../x509/Certificate/classes/Certificate.md)\>
+
+---
+
 ### parseAs()
 
 > **parseAs**\<`T`\>(`type`): `T`
@@ -251,6 +280,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -285,6 +337,43 @@ A string representation for debugging
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toString`](../../../core/PkiBase/classes/PkiBase.md#tostring)
+
+---
+
+### verify()
+
+> **verify**(`issuer`, `options`): `Promise`\<`boolean`\>
+
+Verifies that the response comes from `issuer`, the CA whose certificates it gives
+the status of (RFC 6960 4.2.2.2): it is signed either by the CA itself or by a
+delegated responder, a certificate in the response that the CA issued with
+extendedKeyUsage OCSPSigning (valid at `time`). The responderID must name the
+signer, and the signature must verify.
+
+This checks the response, not the CA: whether `issuer` is trusted is up to
+certification path validation (CertificateValidator).
+
+#### Parameters
+
+##### issuer
+
+[`Certificate`](../../../x509/Certificate/classes/Certificate.md)
+
+The certificate of the CA that issued the certificates in question
+
+##### options
+
+###### time?
+
+`Date`
+
+When a delegated responder's certificate must be valid (default now)
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+Whether the response is signed by the CA or a responder it authorised
 
 ---
 

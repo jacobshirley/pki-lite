@@ -6,49 +6,6 @@
 
 # Class: CertificateList
 
-X.509 Certificate Revocation List (CRL) implementation.
-
-A CRL is a time-stamped list identifying revoked certificates that is signed by a CA.
-CRLs are used to check if a certificate has been revoked before relying on it.
-Each CRL has a validity period and contains information about when the next update
-will be available.
-
-## Asn
-
-CertificateList ::= SEQUENCE {
-tbsCertList TBSCertList,
-signatureAlgorithm AlgorithmIdentifier,
-signatureValue BIT STRING }
-
-## Example
-
-```typescript
-// Create an empty CRL
-const crl = await CertificateList.createEmpty({
-    issuer: caName,
-    privateKey: caPrivateKey,
-    signatureAlgorithmParams: {
-        type: 'RSASSA_PKCS1_v1_5',
-        params: { hash: 'SHA-256' },
-    },
-})
-
-// Load CRL from PEM
-const crlFromPem = CertificateList.fromPem(pemString)
-
-// Fetch CRL from URL
-const crlFromUrl = await CertificateList.fetch('http://example.com/ca.crl')
-
-// Check if certificate is revoked
-const isRevoked = crl.tbsCertList.isRevoked(
-    certificate.tbsCertificate.serialNumber,
-)
-```
-
-## See
-
-RFC 5280 Section 5 - CRL and CRL Extensions Profile
-
 ## Extends
 
 - [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md)\<`CertificateList`\>
@@ -129,6 +86,62 @@ The TBS (To Be Signed) portion of the CRL containing the revocation list
 
 ## Accessors
 
+### baseCrlNumber
+
+#### Get Signature
+
+> **get** **baseCrlNumber**(): `undefined` \| `bigint`
+
+For a delta CRL, the number of the complete CRL it updates (deltaCRLIndicator).
+
+##### Returns
+
+`undefined` \| `bigint`
+
+---
+
+### crlNumber
+
+#### Get Signature
+
+> **get** **crlNumber**(): `undefined` \| `bigint`
+
+The CRL number (cRLNumber extension), if present.
+
+##### Returns
+
+`undefined` \| `bigint`
+
+---
+
+### isDelta
+
+#### Get Signature
+
+> **get** **isDelta**(): `boolean`
+
+Whether this is a delta CRL (it has a deltaCRLIndicator extension).
+
+##### Returns
+
+`boolean`
+
+---
+
+### issuingDistributionPoint
+
+#### Get Signature
+
+> **get** **issuingDistributionPoint**(): `undefined` \| [`IssuingDistributionPoint`](../../extensions/IssuingDistributionPoint/classes/IssuingDistributionPoint.md)
+
+Which certificates and reasons the CRL covers (issuingDistributionPoint), if limited.
+
+##### Returns
+
+`undefined` \| [`IssuingDistributionPoint`](../../extensions/IssuingDistributionPoint/classes/IssuingDistributionPoint.md)
+
+---
+
 ### pemHeader
 
 #### Get Signature
@@ -192,6 +205,106 @@ true if the objects are equal, false otherwise
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`equals`](../../../core/PkiBase/classes/PkiBase.md#equals)
+
+---
+
+### getExtensionByName()
+
+> **getExtensionByName**(`name`): `undefined` \| [`Extension`](../../Extension/classes/Extension.md)
+
+#### Parameters
+
+##### name
+
+`"SUBJECT_KEY_IDENTIFIER"` | `"KEY_USAGE"` | `"SUBJECT_ALT_NAME"` | `"BASIC_CONSTRAINTS"` | `"CRL_NUMBER"` | `"NAME_CONSTRAINTS"` | `"CRL_DISTRIBUTION_POINTS"` | `"CERTIFICATE_POLICIES"` | `"ANY_POLICY"` | `"POLICY_MAPPINGS"` | `"POLICY_CONSTRAINTS"` | `"INHIBIT_ANY_POLICY"` | `"AUTHORITY_KEY_IDENTIFIER"` | `"EXTENDED_KEY_USAGE"` | `"AUTHORITY_INFO_ACCESS"` | `"CRL_REASON_CODE"` | `"DELTA_CRL_INDICATOR"` | `"ISSUING_DISTRIBUTION_POINT"` | `"CERTIFICATE_ISSUER"` | `"FRESHEST_CRL"` | `"ISSUER_ALT_NAME"` | `"INVALIDITY_DATE"` | `"HOLD_INSTRUCTION_CODE"`
+
+#### Returns
+
+`undefined` \| [`Extension`](../../Extension/classes/Extension.md)
+
+---
+
+### getExtensionByOid()
+
+> **getExtensionByOid**(`oid`): `undefined` \| [`Extension`](../../Extension/classes/Extension.md)
+
+#### Parameters
+
+##### oid
+
+`string`
+
+#### Returns
+
+`undefined` \| [`Extension`](../../Extension/classes/Extension.md)
+
+---
+
+### getRevokedEntry()
+
+> **getRevokedEntry**(`certificate`): `undefined` \| [`RevokedCertificate`](../../RevokedCertificate/classes/RevokedCertificate.md)
+
+The entry listing `certificate`, if this CRL has one: the same serial number, from
+the certificate's issuer. On an indirect CRL, the issuer of each entry comes from
+the certificateIssuer extensions (RFC 5280 5.3.3); otherwise it is the CRL issuer.
+
+Does not check that the CRL is genuine or current: see [verify](#verify) and
+[isCurrent](#iscurrent).
+
+#### Parameters
+
+##### certificate
+
+[`Certificate`](../../Certificate/classes/Certificate.md)
+
+#### Returns
+
+`undefined` \| [`RevokedCertificate`](../../RevokedCertificate/classes/RevokedCertificate.md)
+
+---
+
+### isCurrent()
+
+> **isCurrent**(`time`): `boolean`
+
+Whether the CRL is current at `time`: issued (thisUpdate) at or before it, and not
+yet due for replacement (nextUpdate). A CRL without nextUpdate is never current,
+since its freshness cannot be established (RFC 5280 5.1.2.5).
+
+#### Parameters
+
+##### time
+
+`Date` = `...`
+
+The time to check at (default now)
+
+#### Returns
+
+`boolean`
+
+---
+
+### isRevoked()
+
+> **isRevoked**(`certificate`): `boolean`
+
+Whether this CRL lists `certificate` as revoked (or on hold). An entry with reason
+removeFromCRL, which a delta CRL uses to lift a hold, does not count.
+
+Does not check that the CRL is genuine or current: see [verify](#verify) and
+[isCurrent](#iscurrent). To check revocation as part of path validation, use
+CertificateValidator with `checkCRL`.
+
+#### Parameters
+
+##### certificate
+
+[`Certificate`](../../Certificate/classes/Certificate.md)
+
+#### Returns
+
+`boolean`
 
 ---
 
@@ -311,6 +424,29 @@ A JSON-serializable representation of this object
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this object was parsed from, if it has not been changed since; otherwise
+[toDer](../../../core/PkiBase/classes/PkiBase.md#toder). Use it for the bytes a signature covers (a certificate's or CRL's
+TBS part): re-encoding a parsed value does not always give back the same bytes (a
+GeneralizedTime before 2050 becomes a UTCTime, a string changes type, ...), and any
+difference breaks the signature. Only types that keep their encoding when parsed
+(TBSCertificate, TBSCertList, CertificateRequestInfo) have one to return.
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+The original encoding, or the current one
+
+#### Inherited from
+
+[`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toOriginalDer`](../../../core/PkiBase/classes/PkiBase.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
@@ -345,6 +481,45 @@ A string representation for debugging
 #### Inherited from
 
 [`PkiBase`](../../../core/PkiBase/classes/PkiBase.md).[`toString`](../../../core/PkiBase/classes/PkiBase.md#tostring)
+
+---
+
+### verify()
+
+> **verify**(`issuer`): `Promise`\<`boolean`\>
+
+Verifies that `issuer` signed this CRL: the CRL's issuer name matches the
+certificate's subject (RFC 5280 7.1), the certificate's key may sign CRLs (keyUsage
+cRLSign), and the signature verifies over the bytes that were signed.
+
+This checks the CRL, not the issuer: whether the issuer's certificate is itself
+trusted is up to certification path validation (CertificateValidator).
+
+#### Parameters
+
+##### issuer
+
+[`Certificate`](../../Certificate/classes/Certificate.md)
+
+The certificate of the CRL issuer
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+Whether the CRL is signed by `issuer`
+
+#### Throws
+
+If the signature algorithm is not supported
+
+#### Example
+
+```typescript
+const crl = CertificateList.fromPem(crlPem)
+if (!(await crl.verify(caCertificate)))
+    throw new Error('CRL not signed by the CA')
+```
 
 ---
 

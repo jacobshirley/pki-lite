@@ -8,6 +8,7 @@
 
 ## Functions
 
+- [bigEndianBytes](functions/bigEndianBytes.md)
 - [hexToUint8Array](functions/hexToUint8Array.md)
 - [padUint8Array](functions/padUint8Array.md)
 - [uint8ArrayToHex](functions/uint8ArrayToHex.md)

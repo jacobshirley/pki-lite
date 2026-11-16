@@ -275,6 +275,22 @@ A JSON-serializable representation of this array
 
 ---
 
+### toOriginalDer()
+
+> **toOriginalDer**(): `Uint8Array`\<`ArrayBuffer`\>
+
+The DER this was parsed from, if unchanged since; see [PkiBase.toOriginalDer](PkiBase.md#tooriginalder).
+
+#### Returns
+
+`Uint8Array`\<`ArrayBuffer`\>
+
+#### Inherited from
+
+[`PkiArray`](PkiArray.md).[`toOriginalDer`](PkiArray.md#tooriginalder)
+
+---
+
 ### toPem()
 
 > **toPem**(): `string`
