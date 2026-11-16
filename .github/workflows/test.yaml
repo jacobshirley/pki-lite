@@ -26,16 +26,9 @@ jobs:
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
             - uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
-            # The dev shell's closure, cached in the GitHub Actions cache. It changes only
-            # with the flake, so most runs restore it and download nothing from nixpkgs.
-            - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
-              with:
-                  primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock', 'nix/pnpm.json') }}
-                  restore-prefixes-first-match: nix-${{ runner.os }}-
-                  purge: true
-                  purge-prefixes: nix-${{ runner.os }}-
-                  purge-created: 0
-                  purge-primary-key: never
+            # No nix store cache: the dev shell comes prebuilt from cache.nixos.org (all but
+            # the small pnpm wrapper), which takes ~13s, while restoring the same closure (1.1 GB)
+            # from the GitHub Actions cache took ~22s and used a tenth of the cache quota.
             - name: Locate the pnpm store
               id: pnpm-store
               run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
