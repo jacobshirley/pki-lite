@@ -59,7 +59,7 @@
     "license": "MIT",
     "packageManager": "pnpm@12.3.4",
     "dependencies": {
-        "asn1js": "3.1.0"
+        "asn1js": "4.0.0"
     },
     "devDependencies": {
         "@types/node": "^24.3.3",
